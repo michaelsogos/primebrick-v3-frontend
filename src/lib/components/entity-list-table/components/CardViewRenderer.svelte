@@ -175,9 +175,9 @@
         </div>
         <div class="text-sm font-medium text-muted-foreground">
           {#if showSelectedOnly && selectionCount > 0 && orderedSelectedRows.length === 0}
-            {$t('system.entities.list.selectedRowsNotLoadedHint')}
+            {$t('system.entities.list.selected_rows_not_loaded_hint')}
           {:else}
-            {$t('system.entities.list.noSelectedRowsInView')}
+            {$t('system.entities.list.no_selected_rows_in_view')}
           {/if}
         </div>
       </div>
@@ -194,16 +194,16 @@
             checked={allOnPageSelected}
             indeterminate={headerIndeterminate}
             onCheckedChange={() => toggleAllOnPage()}
-            aria-label={$t('system.entities.list.selectAll')}
+            aria-label={$t('system.entities.list.select_all')}
           />
           <span class="text-xs font-medium text-muted-foreground">
-            {allOnPageSelected ? $t('system.entities.list.deselectAll') : $t('system.entities.list.selectAll')}
+            {allOnPageSelected ? $t('system.entities.list.deselect_all') : $t('system.entities.list.select_all')}
           </span>
         {/if}
 
         <div class="mx-1 h-6 w-px divider-primary-gradient" aria-hidden="true"></div>
 
-        <span class="text-xs font-medium text-muted-foreground">{$t('system.entities.list.sortBy')}</span>
+        <span class="text-xs font-medium text-muted-foreground">{$t('system.entities.list.sort_by')}</span>
         <DropdownMenu.Root>
           <DropdownMenu.Trigger>
             {#snippet child({ props })}
@@ -224,7 +224,7 @@
           </DropdownMenu.Content>
         </DropdownMenu.Root>
 
-        <span class="ml-1 text-xs font-medium text-muted-foreground">{$t('system.entities.list.inOrder')}</span>
+        <span class="ml-1 text-xs font-medium text-muted-foreground">{$t('system.entities.list.in_order')}</span>
         <DropdownMenu.Root>
           <DropdownMenu.Trigger>
             {#snippet child({ props })}
@@ -267,11 +267,11 @@
               checked={(datetimeIanaModeByKey[col.key] ?? 'browser') === 'record'}
               disabled={rowsLoading}
               aria-label={(datetimeIanaModeByKey[col.key] ?? 'browser') === 'browser'
-                ? $t('system.entities.list.datetimeIana.hintBrowser')
-                : $t('system.entities.list.datetimeIana.hintRecord')}
+                ? $t('system.entities.list.datetime_iana.hint_browser')
+                : $t('system.entities.list.datetime_iana.hint_record')}
               title={(datetimeIanaModeByKey[col.key] ?? 'browser') === 'browser'
-                ? $t('system.entities.list.datetimeIana.hintBrowser')
-                : $t('system.entities.list.datetimeIana.hintRecord')}
+                ? $t('system.entities.list.datetime_iana.hint_browser')
+                : $t('system.entities.list.datetime_iana.hint_record')}
               onCheckedChange={() => toggleDatetimeIana(col)}
             >
               {#snippet thumbIcons({ checked })}

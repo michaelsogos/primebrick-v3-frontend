@@ -58,7 +58,7 @@
   // triggers" / "Elimina clienti" — one construction for every override.
   let actionLabel = $derived($t(chrome?.label_key ?? 'app.common.delete'));
   let affectedCount = $derived(deleteScope === 'all' && totalCount != null ? Number(totalCount) : selectedCount);
-  let confirmKey = $derived(chrome?.confirm_key ?? 'app.common.deleteEntitiesConfirm');
+  let confirmKey = $derived(chrome?.confirm_key ?? 'app.common.delete_entities_confirm');
   let busyKey = $derived(chrome?.busy_key ?? 'app.common.deleting');
   let severity = $derived(chrome?.color ?? 'destructive');
 </script>
@@ -76,13 +76,13 @@
     <div class="py-4">
       <Choicebox.Root bind:value={deleteScope} onValueChange={(v) => onDeleteScopeChange(v as 'selected' | 'all')}>
         <Choicebox.Item value="selected">
-          <Choicebox.Title>{$t('app.common.bulkScopeSelectedTitle', { count: selectedCount })}</Choicebox.Title>
-          <Choicebox.Description>{$t('app.common.bulkScopeSelectedDesc')}</Choicebox.Description>
+          <Choicebox.Title>{$t('app.common.bulk_scope_selected_title', { count: selectedCount })}</Choicebox.Title>
+          <Choicebox.Description>{$t('app.common.bulk_scope_selected_desc')}</Choicebox.Description>
           <Choicebox.Indicator />
         </Choicebox.Item>
         <Choicebox.Item value="all">
-          <Choicebox.Title>{$t('app.common.bulkScopeAllTitle', { count: Number(totalCount ?? 0n) })}</Choicebox.Title>
-          <Choicebox.Description>{$t('app.common.bulkScopeAllDesc')}</Choicebox.Description>
+          <Choicebox.Title>{$t('app.common.bulk_scope_all_title', { count: Number(totalCount ?? 0n) })}</Choicebox.Title>
+          <Choicebox.Description>{$t('app.common.bulk_scope_all_desc')}</Choicebox.Description>
           <Choicebox.Indicator />
         </Choicebox.Item>
       </Choicebox.Root>

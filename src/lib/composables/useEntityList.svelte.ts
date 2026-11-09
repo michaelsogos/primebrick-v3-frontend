@@ -488,10 +488,10 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
     const isDbDown = code === 'DATABASE_UNAVAILABLE';
 
     if (isBackendGatewayUnreachable(code, status)) {
-      _state.error = tFn('app.serverUnreachable');
+      _state.error = tFn('app.server_unreachable');
       pushNotification({
         impact: 'CRITICAL',
-        messageKey: 'app.serverUnreachable',
+        messageKey: 'app.server_unreachable',
         scopeKey,
         tags: backendOfflineTags(status),
         toast: false
@@ -499,7 +499,7 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
       return;
     }
 
-    _state.error = isDbDown ? tFn('app.common.dbUnavailable') : tFn('app.common.loadFailed');
+    _state.error = isDbDown ? tFn('app.common.db_unavailable') : tFn('app.common.load_failed');
     const tags: AppErrorTag[] = [
       { label: code, tone: 'danger' },
       ...(status !== null ? [{ label: `HTTP ${status}`, tone: 'danger' } as const] : [])
@@ -508,7 +508,7 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
     if (e instanceof ApiListError && e.instance) tags.push({ label: e.instance, tone: 'danger' });
     pushNotification({
       impact: isDbDown ? 'CRITICAL' : 'HIGH',
-      messageKey: isDbDown ? 'app.common.dbUnavailable' : 'app.common.loadFailed',
+      messageKey: isDbDown ? 'app.common.db_unavailable' : 'app.common.load_failed',
       scopeKey,
       tags,
       toast: false

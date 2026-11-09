@@ -178,7 +178,7 @@
 
     {#if modulesLoadError}
       <p class="translations-admin__error" role="alert">
-        {$t('app.modulesLoadFailed')}
+        {$t('app.modules_load_failed')}
         <button onclick={loadModules}>{$t('app.retry')}</button>
       </p>
     {/if}

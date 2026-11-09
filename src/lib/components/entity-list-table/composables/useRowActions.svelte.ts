@@ -255,16 +255,16 @@ export function useRowActions<TRow extends Record<string, unknown>>(
       if (result.errors.length > 0) {
         pushNotification({
           impact: 'MEDIUM',
-          messageKey: 'system.entities.list.duplicatePartialSuccess',
+          messageKey: 'system.entities.list.duplicate_partial_success',
           messageParams: { count: result.uuids.length, failed: result.errors.length },
-          scope: tFn('app.common.errors.scope.duplicateApi')
+          scope: tFn('app.common.errors.scope.duplicate_api')
         });
       } else {
         pushNotification({
           impact: 'LOW',
-          messageKey: 'system.entities.list.duplicateSuccess',
+          messageKey: 'system.entities.list.duplicate_success',
           messageParams: { count: result.uuids.length },
-          scope: tFn('app.common.errors.scope.duplicateApi')
+          scope: tFn('app.common.errors.scope.duplicate_api')
         });
       }
 
@@ -382,9 +382,9 @@ export function useRowActions<TRow extends Record<string, unknown>>(
         // but isn't wired anywhere (contract violation).
         pushNotification({
           type: '/errors/not-implemented',
-          title: tFn('app.common.errors.notImplemented.title'),
+          title: tFn('app.common.errors.not_implemented.title'),
           status: 501,
-          detail: tFn('app.common.errors.notImplemented.detail', { action: action.action_name }),
+          detail: tFn('app.common.errors.not_implemented.detail', { action: action.action_name }),
           instance: `customAction:${action.action_name}`,
           internal_code: 'CUSTOM_ACTION_NO_HANDLER',
           severity: 'LOW',

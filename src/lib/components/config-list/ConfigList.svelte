@@ -134,7 +134,7 @@
       formErrors = {};
       pushNotification({
         impact: 'NONE',
-        messageKey: 'app.common.saveSuccess',
+        messageKey: 'app.common.save_success',
         scope: $t('system.settings.configurations.title'),
       });
       // Reload entries to get updated version/updated_at
@@ -147,7 +147,7 @@
       } else {
         pushNotification({
           impact: 'HIGH',
-          messageKey: 'app.common.saveFailed',
+          messageKey: 'app.common.save_failed',
           scope: $t('system.settings.configurations.title'),
           detail: err instanceof Error ? err.message : undefined,
         });
@@ -267,7 +267,7 @@
   </div>
 {:else if entries.length === 0}
   <div class="flex flex-col items-center justify-center py-8 text-center text-muted-foreground">
-    <p class="text-sm">{$t('system.settings.configurations.noEntries')}</p>
+    <p class="text-sm">{$t('system.settings.configurations.no_entries')}</p>
   </div>
 {:else}
   <div class="flex h-full flex-col min-h-0">
@@ -290,7 +290,7 @@
               data-testid="config-toolbar-bulk-revert"
             >
               <Undo2 class="size-4" />
-              {$t('app.common.bulkRevert')}
+              {$t('app.common.bulk_revert')}
               <span class="ml-1 text-xs opacity-70">({selectedTaintedCount})</span>
             </Button>
           {/if}
@@ -316,7 +316,7 @@
             data-testid="config-toolbar-create"
           >
             <Plus class="size-4" />
-            {$t('system.settings.configurations.addConfigKey')}
+            {$t('system.settings.configurations.add_config_key')}
           </Button>
         {/if}
       </div>
@@ -366,7 +366,7 @@
         <div class="flex items-center gap-2">
           {#if hasChanges}
             <span class="text-xs text-primary">
-              {$t('system.settings.configurations.changesPendingFields')}
+              {$t('system.settings.configurations.changes_pending_fields')}
             </span>
             {#if taintedKeys.length <= 5}
               {#each taintedKeys as key (key)}
@@ -378,11 +378,11 @@
               <Badge variant="outline" class="text-xs font-mono border-warning/40 bg-warning/10 text-muted-foreground">
                 {taintedKeys.length}
               </Badge>
-              <span class="text-xs text-primary">{$t('system.settings.configurations.changesPendingCount')}</span>
+              <span class="text-xs text-primary">{$t('system.settings.configurations.changes_pending_count')}</span>
             {/if}
           {:else}
             <span class="text-xs text-muted-foreground/60">
-              {$t('system.settings.configurations.noChanges')}
+              {$t('system.settings.configurations.no_changes')}
             </span>
           {/if}
         </div>
@@ -396,7 +396,7 @@
             {#if isBulkSaving}
               {$t('app.common.saving')}
             {:else}
-              {$t('app.common.saveChanges')}
+              {$t('app.common.save_changes')}
             {/if}
           </Button>
         </div>

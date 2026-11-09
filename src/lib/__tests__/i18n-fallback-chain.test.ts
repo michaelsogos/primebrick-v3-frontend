@@ -21,7 +21,7 @@ describe('i18n fallback chain', () => {
 		uiLang.set('it-IT');
 		const translate = get(t);
 		// A key that exists in the generated file must render English.
-		expect(translate('app.serverUnreachable')).toBe(
+		expect(translate('app.server_unreachable')).toBe(
 			'Unable to reach the server. Make sure your network connection can reach the server.',
 		);
 		// Non-app keys are NOT floored — they stay raw (the detector).
@@ -48,7 +48,7 @@ describe('i18n fallback chain', () => {
 	it('en-GB uiLang also sees the static floor offline', () => {
 		uiLang.set(DEFAULT_LANG);
 		const translate = get(t);
-		expect(translate('app.serverUnreachable')).not.toBe('app.serverUnreachable');
+		expect(translate('app.server_unreachable')).not.toBe('app.server_unreachable');
 	});
 
 	it('fallback dict exposes the full generated app.* surface', () => {

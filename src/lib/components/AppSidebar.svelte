@@ -106,7 +106,7 @@
     </Sidebar.Group>
 
     <Sidebar.Group class="pt-0 pb-0">
-      <Sidebar.GroupLabel class="h-7">{$t('app.nav.rootLevel')}</Sidebar.GroupLabel>
+      <Sidebar.GroupLabel class="h-7">{$t('app.nav.root_level')}</Sidebar.GroupLabel>
       <Sidebar.GroupContent>
         <SidebarAppLauncher {collapsed} />
       </Sidebar.GroupContent>
@@ -120,7 +120,7 @@
             <div class="px-2 py-1.5 text-xs text-muted-foreground">{$t('app.common.loading')}</div>
           {:else if moduleNavError}
             <div class="px-2 py-1.5 text-xs text-destructive">
-              {$t('app.modulesLoadFailed')}
+              {$t('app.modules_load_failed')}
               <button onclick={() => shellNav.reloadModuleNav()} class="ml-2 underline">
                 {$t('app.retry')}
               </button>
@@ -140,7 +140,7 @@
       class="text-sidebar-foreground/70 ring-sidebar-ring flex h-7 shrink-0 items-center rounded-md px-2 text-xs font-medium outline-hidden transition-[margin,opa] duration-200 ease-linear group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0"
       data-sidebar="group-label"
     >
-      {$t('app.userMenu.title')}
+      {$t('app.user_menu.title')}
     </div>
     <SidebarProfileMenu {user} {collapsed} onLogout={handleLogout} />
 

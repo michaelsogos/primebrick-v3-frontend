@@ -34,7 +34,7 @@
     idp_code: z.string().optional(),
     display_name: displayNameSchema(z.string()),
     website_url: z.string()
-      .url({ message: 'app.common.validation.invalidUrl' })
+      .url({ message: 'app.common.validation.invalid_url' })
       .max(2048, { message: maxMsg(2048) })
       .optional()
       .or(z.literal('')),
@@ -167,7 +167,7 @@
 
   const { handleBeforeUnload, handleCancel } = useUnsavedChangesGuard(
     () => formGuard.hasChanges,
-    'system.settings.organizations.update.unsavedChanges',
+    'system.settings.organizations.update.unsaved_changes',
   );
 </script>
 
@@ -196,11 +196,11 @@
                 <FormControl>
                   {#snippet children({ props })}
                     <div class="space-y-2">
-                      <FormLabel for={props.id}>{$t('system.settings.organizations.update.displayName')}</FormLabel>
+                      <FormLabel for={props.id}>{$t('system.settings.organizations.update.display_name')}</FormLabel>
                       <TextInput
                         {...props}
                         bind:value={$form.display_name}
-                        placeholder={$t('system.settings.organizations.update.displayNamePlaceholder')}
+                        placeholder={$t('system.settings.organizations.update.display_name_placeholder')}
                       />
                       <TranslatedFormFieldErrors />
                     </div>
@@ -212,7 +212,7 @@
                 <FormControl>
                   {#snippet children({ props })}
                     <div class="space-y-2">
-                      <FormLabel for={props.id}>{$t('system.settings.organizations.update.websiteUrl')}</FormLabel>
+                      <FormLabel for={props.id}>{$t('system.settings.organizations.update.website_url')}</FormLabel>
                       <TextInput
                         {...props}
                         bind:value={$form.website_url}
@@ -231,12 +231,12 @@
                 <FormControl>
                   {#snippet children({ props })}
                     <div class="space-y-2">
-                      <FormLabel for={props.id}>{$t('system.settings.organizations.update.idpCode')}</FormLabel>
+                      <FormLabel for={props.id}>{$t('system.settings.organizations.update.idp_code')}</FormLabel>
                       <TextInput
                         {...props}
                         bind:value={$form.idp_code}
                         readonly
-                        copyTooltipLabel={$t('system.settings.organizations.update.copyIdpCode')}
+                        copyTooltipLabel={$t('system.settings.organizations.update.copy_idp_code')}
                       />
                     </div>
                   {/snippet}
@@ -247,12 +247,12 @@
                 <FormControl>
                   {#snippet children({ props })}
                     <div class="space-y-2">
-                      <FormLabel for={props.id}>{$t('system.settings.organizations.update.idpOwner')}</FormLabel>
+                      <FormLabel for={props.id}>{$t('system.settings.organizations.update.idp_owner')}</FormLabel>
                       <TextInput
                         {...props}
                         bind:value={$form.idp_owner}
                         readonly
-                        copyTooltipLabel={$t('system.settings.organizations.update.copyIdpOwner')}
+                        copyTooltipLabel={$t('system.settings.organizations.update.copy_idp_owner')}
                       />
                     </div>
                   {/snippet}
@@ -263,12 +263,12 @@
                 <FormControl>
                   {#snippet children({ props })}
                     <div class="space-y-2">
-                      <FormLabel for={props.id}>{$t('system.settings.organizations.update.idpName')}</FormLabel>
+                      <FormLabel for={props.id}>{$t('system.settings.organizations.update.idp_name')}</FormLabel>
                       <TextInput
                         {...props}
                         bind:value={$form.idp_name}
                         readonly
-                        copyTooltipLabel={$t('system.settings.organizations.update.copyIdpName')}
+                        copyTooltipLabel={$t('system.settings.organizations.update.copy_idp_name')}
                       />
                     </div>
                   {/snippet}

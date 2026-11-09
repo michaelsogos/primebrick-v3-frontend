@@ -184,9 +184,9 @@ export function useBulkActions(options: BulkActionsOptions) {
       const result = (await res.json().catch(() => null)) as { received?: number; affected?: number } | null;
       pushNotification({
         impact: 'NONE',
-        messageKey: 'app.common.deleteSuccess',
+        messageKey: 'app.common.delete_success',
         messageParams: { count: result?.affected ?? items.length },
-        scope: tFn('app.common.errors.scope.bulkDeleteApi'),
+        scope: tFn('app.common.errors.scope.bulk_delete_api'),
       });
 
       // Clear selection after successful deletion
@@ -205,8 +205,8 @@ export function useBulkActions(options: BulkActionsOptions) {
       } else {
         pushNotification({
           impact: 'MEDIUM',
-          messageKey: 'system.entities.list.bulkDeleteFailed',
-          scope: tFn('app.common.errors.scope.bulkDeleteApi'),
+          messageKey: 'system.entities.list.bulk_delete_failed',
+          scope: tFn('app.common.errors.scope.bulk_delete_api'),
           detail: error instanceof Error ? error.message : String(error),
           toast: true,
         });
@@ -268,7 +268,7 @@ export function useBulkActions(options: BulkActionsOptions) {
       const result = (await res.json().catch(() => null)) as { received?: number; affected?: number } | null;
       pushNotification({
         impact: 'NONE',
-        messageKey: 'system.entities.versionHistory.recordRestored',
+        messageKey: 'system.entities.version_history.record_restored',
         messageParams: { count: result?.affected ?? items.length },
         scope: tFn('app.common.errors.scope.bulkRestoreApi'),
       });
@@ -289,7 +289,7 @@ export function useBulkActions(options: BulkActionsOptions) {
       } else {
         pushNotification({
           impact: 'MEDIUM',
-          messageKey: 'system.entities.list.bulkRestoreFailed',
+          messageKey: 'system.entities.list.bulk_restore_failed',
           scope: tFn('app.common.errors.scope.bulkRestoreApi'),
           detail: error instanceof Error ? error.message : String(error),
           toast: true,
@@ -314,8 +314,8 @@ export function useBulkActions(options: BulkActionsOptions) {
     if (selectedKeysFn().length > 50) {
       pushNotification({
         impact: 'MEDIUM',
-        messageKey: 'system.entities.list.duplicateMaxLimit',
-        scope: tFn('app.common.errors.scope.duplicateAction'),
+        messageKey: 'system.entities.list.duplicate_max_limit',
+        scope: tFn('app.common.errors.scope.duplicate_action'),
         toast: true
       });
       return;
@@ -348,16 +348,16 @@ export function useBulkActions(options: BulkActionsOptions) {
       if (result.errors.length > 0) {
         pushNotification({
           impact: 'MEDIUM',
-          messageKey: 'system.entities.list.duplicatePartialSuccess',
+          messageKey: 'system.entities.list.duplicate_partial_success',
           messageParams: { count: result.uuids.length, failed: result.errors.length },
-          scope: tFn('app.common.errors.scope.duplicateApi')
+          scope: tFn('app.common.errors.scope.duplicate_api')
         });
       } else {
         pushNotification({
           impact: 'LOW',
-          messageKey: 'system.entities.list.duplicateSuccess',
+          messageKey: 'system.entities.list.duplicate_success',
           messageParams: { count: result.uuids.length },
-          scope: tFn('app.common.errors.scope.duplicateApi')
+          scope: tFn('app.common.errors.scope.duplicate_api')
         });
       }
 
@@ -392,9 +392,9 @@ export function useBulkActions(options: BulkActionsOptions) {
     if (!ep) {
       pushNotification({
         type: '/errors/not-implemented',
-        title: tFn('app.common.errors.notImplemented.title'),
+        title: tFn('app.common.errors.not_implemented.title'),
         status: 501,
-        detail: tFn('app.common.errors.notImplemented.detail', { action: action.action_name }),
+        detail: tFn('app.common.errors.not_implemented.detail', { action: action.action_name }),
         instance: `bulkCustomAction:${action.action_name}`,
         internal_code: 'CUSTOM_ACTION_NO_ENDPOINT',
         severity: 'LOW',

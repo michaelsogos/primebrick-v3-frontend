@@ -203,7 +203,7 @@
           {row['code']}
         </Badge>
         {#if deleted}
-          <Badge variant="destructive" class="shrink-0 text-xs">{$t('app.common.deletedRecord')}</Badge>
+          <Badge variant="destructive" class="shrink-0 text-xs">{$t('app.common.deleted_record')}</Badge>
         {/if}
       </div>
       <!-- L2: desc — hidden when the meta carries no desc column -->
@@ -220,7 +220,7 @@
               type="button"
               onclick={openVersionHistory}
               class="inline-flex"
-              title={$t('system.entities.versionHistory.title')}
+              title={$t('system.entities.version_history.title')}
             >
               <Badge class="cursor-pointer border border-primary text-xs font-semibold hover:bg-primary/10" variant="outline">
                 v{version}
@@ -229,14 +229,14 @@
           {/if}
           {#if updatedAt && updatedByName}
             <div class="flex items-center gap-x-2 whitespace-nowrap text-xs">
-              <span class="text-primary">{$t('app.common.lastUpdatedPrefix')}</span>
+              <span class="text-primary">{$t('app.common.last_updated_prefix')}</span>
               <span class="italic text-muted-foreground">{updatedAt}</span>
-              <span class="text-primary">{$t('app.common.lastUpdatedByMid')}</span>
+              <span class="text-primary">{$t('app.common.last_updated_by_mid')}</span>
               <span class="italic text-muted-foreground">{updatedByName}</span>
             </div>
           {:else if updatedAt}
             <div class="flex items-center gap-x-2 whitespace-nowrap text-xs">
-              <span class="text-primary">{$t('app.common.lastUpdatedPrefix')}</span>
+              <span class="text-primary">{$t('app.common.last_updated_prefix')}</span>
               <span class="italic text-muted-foreground">{updatedAt}</span>
             </div>
           {/if}
@@ -283,7 +283,7 @@
         size="icon-sm"
         disabled={reorder_first || deleted}
         onclick={onmoveup}
-        title={$t('system.entities.list.keys.moveUp')}
+        title={$t('app.common.move_up')}
         data-testid="dict-row-move-up"
       >
         <ChevronUp class="size-4" />
@@ -293,7 +293,7 @@
         size="icon-sm"
         disabled={reorder_last || deleted}
         onclick={onmovedown}
-        title={$t('system.entities.list.keys.moveDown')}
+        title={$t('app.common.move_down')}
         data-testid="dict-row-move-down"
       >
         <ChevronDown class="size-4" />
@@ -304,7 +304,7 @@
         variant="ghost"
         size="icon-sm"
         onclick={onrevert}
-        title={$t('app.common.revertChanges')}
+        title={$t('app.common.revert_changes')}
         data-testid="dict-row-revert"
       >
         <Undo2 class="size-4 text-warning" />

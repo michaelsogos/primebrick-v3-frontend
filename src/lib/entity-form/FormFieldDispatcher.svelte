@@ -163,8 +163,8 @@
 			ctl === 'url' ||
 			ctl === 'phone'
 		)
-			return $t('system.entities.list.filterValueHint');
-		return $t('system.entities.list.selectValue');
+			return $t('system.entities.list.filter_value_hint');
+		return $t('system.entities.list.select_value');
 	}
 	const placeholder = $derived(
 		placeholderProp ??
@@ -458,9 +458,9 @@
 
 	/** Boolean tri-state filter vocabulary — `any` clears the constraint. */
 	const booleanOptions = [
-		{ key: '', icon: null, labelKey: 'system.entities.list.booleanAny' },
-		{ key: 'true', icon: 'true', labelKey: 'system.entities.list.booleanTrue' },
-		{ key: 'false', icon: 'false', labelKey: 'system.entities.list.booleanFalse' },
+		{ key: '', icon: null, labelKey: 'system.entities.list.boolean_any' },
+		{ key: 'true', icon: 'true', labelKey: 'system.entities.list.boolean_true' },
+		{ key: 'false', icon: 'false', labelKey: 'system.entities.list.boolean_false' },
 	] as const;
 	const triStateValue = {
 		get value(): string {

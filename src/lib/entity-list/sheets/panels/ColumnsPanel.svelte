@@ -87,21 +87,21 @@
 
   {#if stickyColumns.length > 0}
     <div>
-      <SheetSectionTitle>{$t('system.entities.list.stickyFields')}</SheetSectionTitle>
+      <SheetSectionTitle>{$t('system.entities.list.sticky_fields')}</SheetSectionTitle>
       {@render columnRows(stickyColumns, 'sticky')}
     </div>
   {/if}
 
   {#if nonAuditingColumns.length > 0}
     <div>
-      <SheetSectionTitle>{$t('system.entities.list.dataFields')}</SheetSectionTitle>
+      <SheetSectionTitle>{$t('system.entities.list.data_fields')}</SheetSectionTitle>
       {@render columnRows(nonAuditingColumns, 'data')}
     </div>
   {/if}
 
   {#if auditingColumns.length > 0}
     <div>
-      <SheetSectionTitle>{$t('system.entities.list.auditingFields')}</SheetSectionTitle>
+      <SheetSectionTitle>{$t('system.entities.list.auditing_fields')}</SheetSectionTitle>
       {@render columnRows(auditingColumns, 'auditing')}
     </div>
   {/if}

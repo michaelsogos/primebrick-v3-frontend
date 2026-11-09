@@ -613,7 +613,7 @@
             class="absolute -top-3.5 left-1/2 z-10 flex h-7 w-12 -translate-x-1/2 items-center justify-center rounded-full border border-border bg-background text-muted-foreground shadow-md transition-colors hover:bg-accent hover:text-foreground"
             onclick={scrollToBottom}
             data-testid="{testid_prefix}-scroll-bottom"
-            aria-label={$t('app.common.scrollToBottom')}
+            aria-label={$t('app.common.scroll_to_bottom')}
           >
             <ArrowDown class="size-4" />
           </button>

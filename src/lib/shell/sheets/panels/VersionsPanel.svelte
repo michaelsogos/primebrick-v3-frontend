@@ -68,20 +68,20 @@
     <Blocks class="size-4" />
   {/snippet}
   {#snippet title()}
-    {$t('app.health.versionsTitle')}
+    {$t('app.health.versions_title')}
   {/snippet}
 
   <Accordion.Root type="multiple" class="w-full" value={['core']}>
 
       <!-- 1. Core Modules -->
       <Accordion.Item value="core" data-testid="versions-accordion-core">
-        <Accordion.Trigger>{$t('app.health.coreModulesTitle')}</Accordion.Trigger>
+        <Accordion.Trigger>{$t('app.health.core_modules_title')}</Accordion.Trigger>
         <Accordion.Content class="py-3">
           <div class="space-y-3">
             <div class="flex items-center justify-between gap-3 text-sm">
               <div class="flex items-center gap-2 text-muted-foreground">
                 <PanelsTopLeft class="size-4 shrink-0 text-primary" />
-                <span>{$t('app.health.shellVersion')}</span>
+                <span>{$t('app.health.shell_version')}</span>
               </div>
               <Badge variant="outline" class="font-mono text-[11px] font-medium tabular-nums">
                 v{APP_VERSION}
@@ -91,7 +91,7 @@
             <div class="flex items-center justify-between gap-3 text-sm">
               <div class="flex items-center gap-2 text-muted-foreground">
                 <Server class="size-4 shrink-0 text-primary" />
-                <span>{$t('app.health.backendVersion')}</span>
+                <span>{$t('app.health.backend_version')}</span>
               </div>
               <div class="flex items-center gap-2">
                 <Badge
@@ -118,7 +118,7 @@
             <div class="flex items-center justify-between gap-3 text-sm">
               <div class="flex items-center gap-2 text-muted-foreground">
                 <KeyRound class="size-4 shrink-0 text-primary" />
-                <span>{$t('app.health.identityProvider')}</span>
+                <span>{$t('app.health.identity_provider')}</span>
               </div>
               <div class="flex items-center gap-2">
                 {#if backendState.health?.checks?.idp?.ok}
@@ -188,7 +188,7 @@
             <div class="flex items-center justify-between gap-3 text-sm">
               <div class="flex items-center gap-2 text-muted-foreground">
                 <BrainCircuit class="size-4 shrink-0 text-primary" />
-                <span>{$t('app.health.aiLlm')}</span>
+                <span>{$t('app.health.ai_llm')}</span>
               </div>
               <div class="flex items-center gap-2">
                 {#if backendState.health?.checks?.llm?.ok}
@@ -197,7 +197,7 @@
                     Online
                   </Badge>
                   {#if backendState.health.checks.llm.model}
-                    <Badge variant="outline" class="font-mono text-[11px] font-medium" title={$t('app.health.aiLlm')}>
+                    <Badge variant="outline" class="font-mono text-[11px] font-medium" title={$t('app.health.ai_llm')}>
                       {backendState.health.checks.llm.model}
                     </Badge>
                   {/if}
@@ -220,12 +220,12 @@
 
       <!-- 2. Installed Modules -->
       <Accordion.Item value="installed" data-testid="versions-accordion-installed">
-        <Accordion.Trigger>{$t('app.health.installedModulesTitle')}</Accordion.Trigger>
+        <Accordion.Trigger>{$t('app.health.installed_modules_title')}</Accordion.Trigger>
         <Accordion.Content class="py-3">
           {#if servicesState.loading}
             <div class="text-xs text-muted-foreground">{$t('app.common.loading')}</div>
           {:else if groupedServices.size === 0}
-            <div class="text-xs text-muted-foreground">{$t('app.health.noMicroservices')}</div>
+            <div class="text-xs text-muted-foreground">{$t('app.health.no_microservices')}</div>
           {:else}
             <div class="space-y-2">
               {#each groupedServices as [code, instances] (code)}
@@ -315,7 +315,7 @@
                   <div class="space-y-1">
                     {#if isReserved}
                       <div class="flex items-center justify-between gap-3 text-xs">
-                        <div class="truncate text-muted-foreground">{$t('app.health.backendVersion')}</div>
+                        <div class="truncate text-muted-foreground">{$t('app.health.backend_version')}</div>
                         <div class={cn('size-2 rounded-full', statusDotClass(beStatus))}></div>
                       </div>
                     {:else}
@@ -336,7 +336,7 @@
 
       <!-- 3. System Info -->
       <Accordion.Item value="system" data-testid="versions-accordion-system">
-        <Accordion.Trigger>{$t('app.health.systemInfoTitle')}</Accordion.Trigger>
+        <Accordion.Trigger>{$t('app.health.system_info_title')}</Accordion.Trigger>
         <Accordion.Content class="py-3">
           <BrowserClientInfo />
         </Accordion.Content>

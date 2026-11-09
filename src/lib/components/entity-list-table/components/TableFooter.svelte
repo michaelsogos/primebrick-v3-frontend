@@ -99,11 +99,11 @@
       class="hidden items-center gap-1.5 rounded-md px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground lg:inline-flex"
     >
       <Keyboard class="size-3.5" />
-      {$t('system.entities.list.keyboardCommands')}
+      {$t('system.entities.list.keyboard_commands')}
     </Tooltip.Trigger>
     <Tooltip.PriorityContent
       priority="HINT"
-      title={$t('system.entities.list.keyboardCommands')}
+      title={$t('system.entities.list.keyboard_commands')}
       side="top"
       sideOffset={8}
       data-testid="elt-kbd-legend-panel"
@@ -121,7 +121,7 @@
           ...(create_label_key ? [{ keys: ['Ins'], size: 'modifier-lg' as const, label: $t(create_label_key) }] : []),
           { keys: ['Esc'], size: 'modifier-lg' as const, label: $t('app.common.close') },
           { keys: [{ label: 'Pag.', glyph: '↑' }, { label: 'Pag.', glyph: '↓' }], size: 'modifier-lg' as const, label: $t('system.entities.list.keys.page') },
-          { keys: [{ label: 'Home', glyph: '↖' }, { label: 'End', glyph: '↘' }], size: 'modifier-lg' as const, label: $t('system.entities.list.keys.firstLast') },
+          { keys: [{ label: 'Home', glyph: '↖' }, { label: 'End', glyph: '↘' }], size: 'modifier-lg' as const, label: $t('system.entities.list.keys.first_last') },
         ]}
       />
     </Tooltip.PriorityContent>
@@ -130,7 +130,7 @@
 
   <!-- Right side: Page size + Pagination controls -->
   <div class="flex items-center gap-2">
-    <span class="text-muted-foreground">{$t('system.entities.list.pageSize')}</span>
+    <span class="text-muted-foreground">{$t('system.entities.list.page_size')}</span>
     <DropdownMenu.Root>
       <DropdownMenu.Trigger>
         {#snippet child({ props })}
@@ -156,7 +156,7 @@
     <div class="mx-1 h-6 w-px divider-primary-gradient" aria-hidden="true"></div>
 
     <div class="flex items-center gap-2">
-      <ButtonGroup segmented aria-label={$t('system.entities.list.pagination.firstPage')}>
+      <ButtonGroup segmented aria-label={$t('system.entities.list.pagination.first_page')}>
         <Button
           variant="ghost"
           size="icon-sm"
@@ -165,8 +165,8 @@
             if (footerUsesClientPaging) clientSelectedPage = 1;
             else onPageChange(1);
           }}
-          aria-label={$t('system.entities.list.pagination.firstPage')}
-          title={$t('system.entities.list.pagination.firstPage')}
+          aria-label={$t('system.entities.list.pagination.first_page')}
+          title={$t('system.entities.list.pagination.first_page')}
         >
           <ChevronsLeft class="size-4" />
         </Button>
@@ -178,8 +178,8 @@
             if (footerUsesClientPaging) clientSelectedPage = Math.max(1, clientSelectedPage - 1);
             else onPageChange(Math.max(1, page - 1));
           }}
-          aria-label={$t('system.entities.list.pagination.previousPage')}
-          title={$t('system.entities.list.pagination.previousPage')}
+          aria-label={$t('system.entities.list.pagination.previous_page')}
+          title={$t('system.entities.list.pagination.previous_page')}
         >
           <ChevronLeft class="size-4" />
         </Button>
@@ -188,11 +188,11 @@
         class="whitespace-nowrap px-0.5 text-center tabular-nums text-muted-foreground"
         data-testid="elt-pagination-status"
       >
-        {$t('system.entities.list.paginationStatus')
+        {$t('system.entities.list.pagination_status')
           .replace('{page}', String(footerPage))
           .replace('{total}', String(footerTotalPages))}
       </div>
-      <ButtonGroup segmented aria-label={$t('system.entities.list.pagination.nextPage')}>
+      <ButtonGroup segmented aria-label={$t('system.entities.list.pagination.next_page')}>
         <Button
           variant="ghost"
           size="icon-sm"
@@ -201,8 +201,8 @@
             if (footerUsesClientPaging) clientSelectedPage = Math.min(footerTotalPages, clientSelectedPage + 1);
             else onPageChange(Math.min(totalPages, page + 1));
           }}
-          aria-label={$t('system.entities.list.pagination.nextPage')}
-          title={$t('system.entities.list.pagination.nextPage')}
+          aria-label={$t('system.entities.list.pagination.next_page')}
+          title={$t('system.entities.list.pagination.next_page')}
         >
           <ChevronRight class="size-4" />
         </Button>
@@ -214,8 +214,8 @@
             if (footerUsesClientPaging) clientSelectedPage = footerTotalPages;
             else onPageChange(totalPages);
           }}
-          aria-label={$t('system.entities.list.pagination.lastPage')}
-          title={$t('system.entities.list.pagination.lastPage')}
+          aria-label={$t('system.entities.list.pagination.last_page')}
+          title={$t('system.entities.list.pagination.last_page')}
         >
           <ChevronsRight class="size-4" />
         </Button>

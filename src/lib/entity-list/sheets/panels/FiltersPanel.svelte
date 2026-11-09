@@ -59,6 +59,7 @@
   import {
     getOperatorsForColumnType,
     FILTER_OPERATOR_ICON,
+    FILTER_OPERATOR_KEY,
   } from '$lib/entity-list/types';
 
   interface Props {
@@ -266,7 +267,7 @@
   const operatorOptions = $derived(
     availableOperators.map((op) => ({
       value: op,
-      label: $t(`system.entities.list.operators.${op}`),
+      label: $t(`system.entities.list.operators.${FILTER_OPERATOR_KEY[op]}`),
       _icon: FILTER_OPERATOR_ICON[op],
     })),
   );
@@ -391,8 +392,8 @@
     if (Array.isArray(v)) return v.map((x) => badgeLabel(col, x)).join(', ');
     if (col?.type === 'boolean' || col?.pg_type === 'boolean') {
       return v === 'true' || v === true
-        ? $t('system.entities.list.booleanTrue')
-        : $t('system.entities.list.booleanFalse');
+        ? $t('system.entities.list.boolean_true')
+        : $t('system.entities.list.boolean_false');
     }
     if (
       filter.operator === 'BETWEEN' &&
@@ -454,12 +455,12 @@
       {#if tabValue === 'standard'}
         <SearchInput
           bind:value={fieldSearch}
-          placeholder={$t('system.entities.list.searchFields')}
+          placeholder={$t('system.entities.list.search_fields')}
           data_testid="filters-field-search"
         />
       {:else}
         <ButtonGroup segmented class="w-full">
-          {#each [['AND', 'ampersand', 'system.entities.list.allCriteria'], ['OR', 'split', 'system.entities.list.atLeastOneCriteria']] as [conn, icon, labelKey] (conn)}
+          {#each [['AND', 'ampersand', 'system.entities.list.all_criteria'], ['OR', 'split', 'system.entities.list.at_least_one_criteria']] as [conn, icon, labelKey] (conn)}
             <Button
               variant="ghost"
               size="sm"
@@ -517,7 +518,7 @@
                   {column ? $t(column.label_key) : filter.field}
                 </span>
                 <span class="text-primary inline-flex items-center gap-0.5">
-                  {$t(`system.entities.list.operators.${filter.operator}`)}
+                  {$t(`system.entities.list.operators.${FILTER_OPERATOR_KEY[filter.operator]}`)}
                 </span>
                 <span class="italic text-muted-foreground">
                   {summaryValue(column, filter)}
@@ -561,7 +562,7 @@
               valueField="value"
               labelField="label"
               iconField="_icon"
-              placeholder={$t('system.entities.list.selectField')}
+              placeholder={$t('system.entities.list.select_field')}
             />
           {/snippet}
         </PrimeField>
@@ -640,7 +641,7 @@
               disabled={addDisabled}
               data-testid="filters-add-criterion"
             >
-              {$t('system.entities.list.addFilter')}
+              {$t('system.entities.list.add_filter')}
             </Button>
           {/if}
         {/if}
@@ -650,7 +651,7 @@
 
   {#if filterableColumns.length === 0}
     <div class="flex flex-col items-center justify-center py-8 text-center text-muted-foreground">
-      <p class="text-sm">{$t('system.entities.list.noFilterableFields')}</p>
+      <p class="text-sm">{$t('system.entities.list.no_filterable_fields')}</p>
     </div>
   {/if}
 </SheetPanelLayout>

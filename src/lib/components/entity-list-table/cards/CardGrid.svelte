@@ -134,7 +134,7 @@
                 class={checkboxInteractiveClass}
                 checked={selectedKeys.includes(rk)}
                 onCheckedChange={() => toggleRowSelect(rk)}
-                aria-label={$t('system.entities.list.selectRow')}
+                aria-label={$t('system.entities.list.select_row')}
               />
             </div>
           {/if}
@@ -191,7 +191,7 @@
                 <DropdownMenu.Item onclick={() => onVersionHistory(r)}>
                   <div class="flex items-center gap-2">
                     <FileClock class="size-4" />
-                    <span>{$t('app.common.versionHistory')}</span>
+                    <span>{$t('app.common.version_history')}</span>
                   </div>
                 </DropdownMenu.Item>
               {/if}

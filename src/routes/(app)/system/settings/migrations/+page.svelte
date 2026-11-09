@@ -167,8 +167,8 @@
         impact: 'NONE',
         messageKey:
           patchDialogMode === 'approve'
-            ? 'system.migrations.approveOk'
-            : 'system.migrations.resolveOk',
+            ? 'system.migrations.approve_ok'
+            : 'system.migrations.resolve_ok',
         scope: $t('system.migrations.title'),
         detail: 'detail' in res && res.detail ? String(res.detail) : undefined,
       });
@@ -176,7 +176,7 @@
     } catch (e) {
       pushNotification({
         impact: 'HIGH',
-        messageKey: 'system.migrations.actionFailed',
+        messageKey: 'system.migrations.action_failed',
         scope: $t('system.migrations.title'),
         detail: e instanceof Error ? e.message : undefined,
       });
@@ -191,14 +191,14 @@
       await dbMigrationRetry(code);
       pushNotification({
         impact: 'NONE',
-        messageKey: 'system.migrations.retryOk',
+        messageKey: 'system.migrations.retry_ok',
         scope: $t('system.migrations.title'),
       });
       await loadStatus(code);
     } catch (e) {
       pushNotification({
         impact: 'HIGH',
-        messageKey: 'system.migrations.actionFailed',
+        messageKey: 'system.migrations.action_failed',
         scope: $t('system.migrations.title'),
         detail: e instanceof Error ? e.message : undefined,
       });
@@ -290,7 +290,7 @@
                 </div>
                 {#if st?.kind === 'ok' && st.status.last_error}
                   <p class="text-xs text-red-600 dark:text-red-400 truncate" title={st.status.last_error}>
-                    {$t('system.migrations.lastError')}: {st.status.last_error}
+                    {$t('system.migrations.last_error')}: {st.status.last_error}
                   </p>
                 {/if}
               </div>
@@ -319,7 +319,7 @@
                 data-testid="migrations-drift-{card.code}"
                 onclick={() => void runDriftCheck(card.code)}
               >
-                {$t('system.migrations.actions.driftCheck')}
+                {$t('system.migrations.actions.drift_check')}
               </Button>
               <Button
                 variant="ghost"
@@ -369,7 +369,7 @@
                 {$t('system.migrations.unreachable')} — {st.detail}
               </div>
             {:else if st.status.patches.length === 0}
-              <div class="p-4 text-sm text-muted-foreground">{$t('system.migrations.noPatches')}</div>
+              <div class="p-4 text-sm text-muted-foreground">{$t('system.migrations.no_patches')}</div>
             {:else}
               <Table.Root>
                 <Table.Header>
@@ -378,8 +378,8 @@
                     <Table.Head>{$t('system.migrations.columns.status')}</Table.Head>
                     <Table.Head class="w-20">{$t('system.migrations.columns.attempts')}</Table.Head>
                     <Table.Head class="w-24">{$t('system.migrations.columns.duration')}</Table.Head>
-                    <Table.Head>{$t('system.migrations.columns.signedBy')}</Table.Head>
-                    <Table.Head>{$t('system.migrations.columns.appliedAt')}</Table.Head>
+                    <Table.Head>{$t('system.migrations.columns.signed_by')}</Table.Head>
+                    <Table.Head>{$t('system.migrations.columns.applied_at')}</Table.Head>
                     <Table.Head class="w-32 text-right">{$t('system.migrations.columns.actions')}</Table.Head>
                   </Table.Row>
                 </Table.Header>
@@ -450,8 +450,8 @@
     <Dialog.Header>
       <Dialog.Title>
         {patchDialogMode === 'approve'
-          ? $t('system.migrations.dialog.approveTitle')
-          : $t('system.migrations.dialog.resolveTitle')}
+          ? $t('system.migrations.dialog.approve_title')
+          : $t('system.migrations.dialog.resolve_title')}
       </Dialog.Title>
       <Dialog.Description>
         <span class="font-mono text-xs">{patchDialogCode}:{patchDialogPatch}</span>

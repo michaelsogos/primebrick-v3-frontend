@@ -96,9 +96,9 @@
   {#snippet headerTitle()}
     {@const rowDeleted = isRowDeleted(row)}
     <div class="relative flex items-center">
-      <div>{$t('system.entities.list.previewPanelTitle')}</div>
+      <div>{$t('system.entities.list.preview_panel_title')}</div>
       {#if rowDeleted}
-        <div class="absolute left-0 top-full -mt-[2px] text-destructive text-[10px] whitespace-nowrap">{$t('app.common.deletedRecord')}</div>
+        <div class="absolute left-0 top-full -mt-[2px] text-destructive text-[10px] whitespace-nowrap">{$t('app.common.deleted_record')}</div>
       {/if}
     </div>
   {/snippet}
@@ -143,7 +143,7 @@
         <Switch
           checked={previewEditMode}
           onCheckedChange={onPreviewEditModeChange}
-          aria-label={$t('system.entities.list.editModeLabel')}
+          aria-label={$t('system.entities.list.edit_mode_label')}
           disabled={rowDeleted}
         />
       </div>
@@ -192,7 +192,7 @@
         >
           <div class="flex items-center gap-2">
             <FileClock class="size-4 opacity-70" />
-            <span>{$t('app.common.versionHistory')}</span>
+            <span>{$t('app.common.version_history')}</span>
           </div>
         </DropdownMenu.Item>
         {#if entityRowActions?.delete !== false}
@@ -244,7 +244,7 @@
         <div class="my-2 sticky top-0 z-10 bg-background">
           <div class="flex items-center gap-2">
             <div class="h-px flex-1 bg-muted-foreground/50"></div>
-            <div class="text-xs font-medium text-muted-foreground">{$t('system.entities.list.stickyFields')}</div>
+            <div class="text-xs font-medium text-muted-foreground">{$t('system.entities.list.sticky_fields')}</div>
             <div class="h-px flex-1 bg-muted-foreground/50"></div>
           </div>
         </div>
@@ -263,7 +263,7 @@
         <div class="my-2 sticky top-0 z-10 bg-background">
           <div class="flex items-center gap-2">
             <div class="h-px flex-1 bg-muted-foreground/50"></div>
-            <div class="text-xs font-medium text-muted-foreground">{$t('system.entities.list.dataFields')}</div>
+            <div class="text-xs font-medium text-muted-foreground">{$t('system.entities.list.data_fields')}</div>
             <div class="h-px flex-1 bg-muted-foreground/50"></div>
           </div>
         </div>
@@ -282,7 +282,7 @@
         <div class="my-2 sticky top-0 z-10 bg-background">
           <div class="flex items-center gap-2">
             <div class="h-px flex-1 bg-muted-foreground/50"></div>
-            <div class="text-xs font-medium text-muted-foreground">{$t('system.entities.list.auditingFields')}</div>
+            <div class="text-xs font-medium text-muted-foreground">{$t('system.entities.list.auditing_fields')}</div>
             <div class="h-px flex-1 bg-muted-foreground/50"></div>
           </div>
         </div>

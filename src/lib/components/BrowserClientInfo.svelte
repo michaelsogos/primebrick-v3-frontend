@@ -188,49 +188,49 @@
       <div class="flex items-start justify-between gap-3 text-sm">
         <div class="flex shrink-0 items-center gap-2 text-muted-foreground">
           <MapPin class="size-4 shrink-0 text-primary" />
-          <span>{$t('app.health.ianaTimezone')}</span>
+          <span>{$t('app.health.iana_timezone')}</span>
         </div>
         <div class="min-w-0 break-all text-right text-xs">{snapshot.ianaTz}</div>
       </div>
       <div class="flex items-start justify-between gap-3 text-sm">
         <div class="flex shrink-0 items-center gap-2 text-muted-foreground">
           <Languages class="size-4 shrink-0 text-primary" />
-          <span>{$t('app.health.preferredLanguages')}</span>
+          <span>{$t('app.health.preferred_languages')}</span>
         </div>
         <div class="min-w-0 break-all text-right text-xs">{snapshot.languages}</div>
       </div>
       <div class="flex items-start justify-between gap-3 text-sm">
         <div class="flex shrink-0 items-center gap-2 text-muted-foreground">
           <Globe class="size-4 shrink-0 text-primary" />
-          <span>{$t('app.health.resolvedLocale')}</span>
+          <span>{$t('app.health.resolved_locale')}</span>
         </div>
         <div class="min-w-0 break-all text-right text-xs">{snapshot.resolvedLocale}</div>
       </div>
       <div class="flex items-start justify-between gap-3 text-sm">
         <div class="flex shrink-0 items-center gap-2 text-muted-foreground">
           <Calendar class="size-4 shrink-0 text-primary" />
-          <span>{$t('app.health.calendarSystem')}</span>
+          <span>{$t('app.health.calendar_system')}</span>
         </div>
         <div class="min-w-0 text-right text-xs">{snapshot.calendar}</div>
       </div>
       <div class="flex items-start justify-between gap-3 text-sm">
         <div class="flex shrink-0 items-center gap-2 text-muted-foreground">
           <Hash class="size-4 shrink-0 text-primary" />
-          <span>{$t('app.health.numberingSystem')}</span>
+          <span>{$t('app.health.numbering_system')}</span>
         </div>
         <div class="min-w-0 text-right text-xs">{snapshot.numberingSystem}</div>
       </div>
       <div class="flex items-start justify-between gap-3 text-sm">
         <div class="flex shrink-0 items-center gap-2 text-muted-foreground">
           <Clock class="size-4 shrink-0 text-primary" />
-          <span>{$t('app.health.hourCycle')}</span>
+          <span>{$t('app.health.hour_cycle')}</span>
         </div>
         <div class="min-w-0 text-right text-xs">{snapshot.hourCycle}</div>
       </div>
       <div class="flex items-start justify-between gap-3 text-sm">
         <div class="flex shrink-0 items-center gap-2 text-muted-foreground">
           <Monitor class="size-4 shrink-0 text-primary" />
-          <span>{$t('app.health.operatingSystem')}</span>
+          <span>{$t('app.health.operating_system')}</span>
         </div>
         <div class="min-w-0 text-right text-xs">{snapshot.os} ({snapshot.osVersion} - {snapshot.osArch})</div>
       </div>
@@ -249,14 +249,14 @@
         <div class="flex min-w-0 flex-col items-end gap-1 text-right text-xs">
           <span class="truncate">{caps?.gpu_name ?? (measuring ? '…' : '—')}</span>
           {#if machineRank !== null}
-            <RankMeter rank={machineRank} label={$t('app.health.gpuRank')} class="w-24" />
+            <RankMeter rank={machineRank} label={$t('app.health.gpu_rank')} class="w-24" />
           {/if}
         </div>
       </div>
       <div class="flex items-start justify-between gap-3 text-sm">
         <div class="flex shrink-0 items-center gap-2 text-muted-foreground">
           <CircuitBoard class="size-4 shrink-0 text-primary" />
-          <span>{$t('app.health.gpuDriver')}</span>
+          <span>{$t('app.health.gpu_driver')}</span>
         </div>
         <div class="min-w-0 break-all text-right text-xs">
           {[caps?.adapter_description, caps?.adapter_vendor, caps?.adapter_architecture]
@@ -267,14 +267,14 @@
       <div class="flex items-start justify-between gap-3 text-sm">
         <div class="flex shrink-0 items-center gap-2 text-muted-foreground">
           <Cpu class="size-4 shrink-0 text-primary" />
-          <span>{$t('app.health.cpuThreads')}</span>
+          <span>{$t('app.health.cpu_threads')}</span>
         </div>
         <div class="min-w-0 text-right text-xs">{caps?.cpu_threads ?? (measuring ? '…' : '—')}</div>
       </div>
       <div class="flex items-start justify-between gap-3 text-sm">
         <div class="flex shrink-0 items-center gap-2 text-muted-foreground">
           <MemoryStick class="size-4 shrink-0 text-primary" />
-          <span>{$t('app.health.systemRam')}</span>
+          <span>{$t('app.health.system_ram')}</span>
         </div>
         <div class="min-w-0 text-right text-xs">
           {caps?.system_memory_gb != null ? `~${caps.system_memory_gb} GB` : (measuring ? '…' : '—')}
@@ -283,7 +283,7 @@
       <div class="flex items-start justify-between gap-3 text-sm">
         <div class="flex shrink-0 items-center gap-2 text-muted-foreground">
           <MemoryStick class="size-4 shrink-0 text-primary" />
-          <span>{$t('app.health.vramEstimate')}</span>
+          <span>{$t('app.health.vram_estimate')}</span>
         </div>
         <div class="min-w-0 text-right text-xs">
           {caps?.memory_fast_mb != null
@@ -294,7 +294,7 @@
       <div class="flex items-start justify-between gap-3 text-sm">
         <div class="flex shrink-0 items-center gap-2 text-muted-foreground">
           <BrainCircuit class={cn('size-4 shrink-0', caps?.available === false ? 'text-destructive' : 'text-primary')} />
-          <span>{$t('app.health.aiEnabled')}</span>
+          <span>{$t('app.health.ai_enabled')}</span>
         </div>
         <div class={cn('min-w-0 text-right text-xs', caps?.available === false && 'text-destructive')}>
           {caps === null ? '—' : caps.available ? $t('app.smart.regex.ai.yes') : $t('app.smart.regex.ai.no')}

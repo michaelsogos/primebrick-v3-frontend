@@ -24,7 +24,7 @@
     <Link class="size-4" />
   {/snippet}
   {#snippet title()}
-    {$t('system.settings.config.protocolSelect.title')}
+    {$t('system.settings.config.protocol_select.title')}
   {/snippet}
 
   {#each allowedProtocols as protocol (protocol)}
@@ -48,7 +48,7 @@
     </button>
   {:else}
     <div class="px-3 py-8 text-center text-sm text-muted-foreground">
-      {$t('system.settings.config.protocolSelect.noResults')}
+      {$t('system.settings.config.protocol_select.no_results')}
     </div>
   {/each}
 </SheetPanelLayout>

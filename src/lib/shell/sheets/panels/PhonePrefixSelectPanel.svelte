@@ -133,24 +133,24 @@
     <Phone class="size-4" />
   {/snippet}
   {#snippet title()}
-    {$t('system.settings.config.phonePrefixSelect.title')}
+    {$t('system.settings.config.phone_prefix_select.title')}
   {/snippet}
   {#snippet toolbar()}
     <div class="flex items-center gap-2">
       <SearchInput
         bind:value={searchQuery}
-        placeholder={$t('system.settings.config.phonePrefixSelect.searchPlaceholder')}
+        placeholder={$t('system.settings.config.phone_prefix_select.search_placeholder')}
         class="flex-1 min-w-0"
         data_testid="phone-prefix-search"
       />
-      <ButtonGroup segmented aria-label={$t('system.settings.config.phonePrefixSelect.sortByName')}>
+      <ButtonGroup segmented aria-label={$t('system.settings.config.phone_prefix_select.sort_by_name')}>
         <Button
           variant="ghost"
           size="icon-sm"
           type="button"
           class={cn(sortMode === 'name' && 'bg-foreground/10 text-foreground shadow-xs')}
           aria-pressed={sortMode === 'name'}
-          title={$t('system.settings.config.phonePrefixSelect.sortByName')}
+          title={$t('system.settings.config.phone_prefix_select.sort_by_name')}
           data-testid="phone-prefix-sort-name"
           onclick={() => (sortMode = 'name')}
         >
@@ -162,7 +162,7 @@
           type="button"
           class={cn(sortMode === 'prefix' && 'bg-foreground/10 text-foreground shadow-xs')}
           aria-pressed={sortMode === 'prefix'}
-          title={$t('system.settings.config.phonePrefixSelect.sortByPrefix')}
+          title={$t('system.settings.config.phone_prefix_select.sort_by_prefix')}
           data-testid="phone-prefix-sort-prefix"
           onclick={() => (sortMode = 'prefix')}
         >
@@ -175,7 +175,7 @@
   {#if !searchQuery && suggestedCountries.length > 0}
     <div>
       <SheetSectionTitle>
-        {$t('system.settings.config.phonePrefixSelect.suggested')}
+        {$t('system.settings.config.phone_prefix_select.suggested')}
       </SheetSectionTitle>
       {#each suggestedCountries as country (country.code)}
         {@render countryRow(country)}
@@ -183,7 +183,7 @@
     </div>
     <div>
       <SheetSectionTitle>
-        {$t('system.settings.config.phonePrefixSelect.allCountries')}
+        {$t('system.settings.config.phone_prefix_select.all_countries')}
       </SheetSectionTitle>
       {#each nonSuggestedCountries as country (country.code)}
         {@render countryRow(country)}
@@ -194,7 +194,7 @@
       {@render countryRow(country)}
     {:else}
       <div class="px-3 py-8 text-center text-sm text-muted-foreground">
-        {$t('system.settings.config.phonePrefixSelect.noResults')}
+        {$t('system.settings.config.phone_prefix_select.no_results')}
       </div>
     {/each}
   {/if}

@@ -94,7 +94,7 @@
         configCache.invalidate();
         pushNotification({
           impact: 'NONE',
-          messageKey: 'app.common.deleteSuccess',
+          messageKey: 'app.common.delete_success',
           scope: $t('system.settings.configurations.title'),
         });
         deleteDialogOpen = false;
@@ -103,7 +103,7 @@
         const errorData = await resp.json().catch(() => null);
         pushNotification({
           impact: 'HIGH',
-          messageKey: 'app.common.deleteFailed',
+          messageKey: 'app.common.delete_failed',
           scope: $t('system.settings.configurations.title'),
           detail: errorData?.detail ?? `HTTP ${resp.status}`,
         });
@@ -111,7 +111,7 @@
     } catch (err) {
       pushNotification({
         impact: 'HIGH',
-        messageKey: 'app.common.deleteFailed',
+        messageKey: 'app.common.delete_failed',
         scope: $t('system.settings.configurations.title'),
         detail: err instanceof Error ? err.message : undefined,
       });
@@ -141,7 +141,7 @@
         configCache.invalidate();
         pushNotification({
           impact: 'NONE',
-          messageKey: 'app.common.deleteSuccess',
+          messageKey: 'app.common.delete_success',
           scope: $t('system.settings.configurations.title'),
         });
         bulkDeleteDialogOpen = false;
@@ -155,7 +155,7 @@
         } else {
           pushNotification({
             impact: 'HIGH',
-            messageKey: 'app.common.deleteFailed',
+            messageKey: 'app.common.delete_failed',
             scope: $t('system.settings.configurations.title'),
             detail: errorData?.detail ?? `HTTP ${resp.status}`,
           });
@@ -164,7 +164,7 @@
     } catch (err) {
       pushNotification({
         impact: 'HIGH',
-        messageKey: 'app.common.deleteFailed',
+        messageKey: 'app.common.delete_failed',
         scope: $t('system.settings.configurations.title'),
         detail: err instanceof Error ? err.message : undefined,
       });

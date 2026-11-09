@@ -261,14 +261,14 @@
 						}
 						pushNotification({
 							impact: 'HIGH',
-							message: detail?.error ?? $t('app.common.saveFailed'),
+							message: detail?.error ?? $t('app.common.save_failed'),
 							scope: decl.entity!,
 						});
 						return;
 					}
 					pushNotification({
 						impact: 'NONE',
-						message: $t('app.common.saveSuccess'),
+						message: $t('app.common.save_success'),
 						scope: decl.entity!,
 					});
 					if (isDetail) {
@@ -306,7 +306,7 @@
 				} catch {
 					pushNotification({
 						impact: 'HIGH',
-						message: $t('app.common.saveFailed'),
+						message: $t('app.common.save_failed'),
 						scope: decl.entity!,
 					});
 				} finally {
@@ -323,8 +323,8 @@
 			pushNotification({
 				impact: 'NONE',
 				toastImpact: 'LOW',
-				message: $t('app.common.draftRestored', { count: draft.restoredCount }),
-				scopeKey: 'app.common.draftRestoredTitle',
+				message: $t('app.common.draft_restored', { count: draft.restoredCount }),
+				scopeKey: 'app.common.draft_restored_title',
 				tags: [{ label: decl.entity!, tone: 'info' }],
 			});
 		}
@@ -398,7 +398,7 @@
 	);
 	const { handleBeforeUnload, handleCancel } = useUnsavedChangesGuard(
 		() => formGuard.hasChanges,
-		'app.common.unsavedChanges',
+		'app.common.unsaved_changes',
 	);
 	// Sender — a parent tab showing this entity's list (receiver mode via
 	// EntityTablePage `syncChannel`) refreshes its rows after our save. The
@@ -494,7 +494,7 @@
 			} catch {
 				pushNotification({
 					impact: 'HIGH',
-					message: $t('app.common.loadError'),
+					message: $t('app.common.load_error'),
 					scope: decl.entity!,
 				});
 				return;
@@ -535,7 +535,7 @@
 		onRetry={() => void attemptLoad()}
 	/>
 {:else if loadError}
-	<div class="p-6 text-destructive">{$t('app.common.loadError')}: {loadError}</div>
+	<div class="p-6 text-destructive">{$t('app.common.load_error')}: {loadError}</div>
 {:else if !prepared || !formObj}
 	<div class="p-6 text-muted-foreground">{$t('app.common.loading')}</div>
 {:else}

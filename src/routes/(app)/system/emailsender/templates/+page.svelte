@@ -41,8 +41,8 @@
 <EntityTablePage
   basePath={entityApiBase('email_template')}
   storageKeyPrefix="pb:emailsender:templates:"
-  errorScopeKey="app.common.errors.scope.emailsenderTemplatesList"
-  errorScopeKeyInit="app.common.errors.scope.emailsenderTemplatesPageInit"
+  errorScopeKey="app.common.errors.scope.emailsender_templates_list"
+  errorScopeKeyInit="app.common.errors.scope.emailsender_templates_page_init"
   editPath={edit_path}
   deletionFilter={false}
   syncChannel="primebrick_email_template_sync"

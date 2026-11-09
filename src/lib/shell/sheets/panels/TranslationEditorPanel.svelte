@@ -10,7 +10,7 @@
    *   - values queue into the OWNER-SCOPED pending-translations store
    *     (`pending_owner` prop) and flush only with the owning page's save;
    *   - at least one EN value (en-GB|en-US) is mandatory — Save is gated;
-   *   - the EN base card shows while editing another language (never for
+   *   - the EN base preview shows while editing another language (never for
    *     the EN row itself — the textarea already IS that text);
    *   - AI (Browser Translator API, tier-0) suggests single-language text
    *     or fills every uncovered language — every AI output is reviewed
@@ -36,6 +36,7 @@
   } from '$lib/ai/browser-translator';
   import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import { SheetPanelLayout, SheetPanelFooter, Button, Badge, ComboSelect, Textarea, AiIcon, CopyButton } from '@primebrick/ui';
+  import { GradientIcon, GRADIENT_ICON_PATHS } from '$lib/components/ui/gradient-icon';
   import { Languages, LoaderCircle, Check, Clock, CircleHelp, X } from '@primebrick/ui/vendor/lucide';
 
   let { i18n_key, pending_owner }: { i18n_key: string; pending_owner: string } = $props();
@@ -141,7 +142,7 @@
   /** The EN base — first EN language holding any text (saved or draft). */
   const baseLang = $derived(EN_LANGS.find((l) => langText(l).trim() !== '') ?? DEFAULT_LANG);
   const baseValue = $derived(langText(baseLang));
-  /** LINE 2 visible only when there IS a base and it isn't the selected row. */
+  /** LINE 3 visible only when there IS a base and it isn't the selected row. */
   const showBase = $derived(baseValue.trim() !== '' && selectedLang !== baseLang);
 
   const hasEn = $derived(EN_LANGS.some((l) => langText(l).trim() !== ''));
@@ -166,7 +167,7 @@
     return draft[selectedLang]?.trim() ? 'draft' : 'missing';
   });
 
-  /** AI suggest source: always the EN base the user sees on LINE 2. */
+  /** AI suggest source: always the EN base the user sees on LINE 3. */
   const canSuggest = $derived(
     aiSupported && !aiBusy && selectedLang !== baseLang && baseValue.trim() !== '',
   );
@@ -303,30 +304,11 @@
   {#snippet title()}
     {$t('system.settings.translations.title')}
   {/snippet}
-  {#snippet actions()}
-    <!-- Coverage summary: covered/total + clickable chips for the langs
-         with no text anywhere (saved or pending) — click jumps the selector. -->
-    <Badge variant="outline" class="shrink-0 px-1.5 text-[10px] tabular-nums" data-testid="i18n-editor-coverage">
-      {coveredCount}/{UI_LANGS.length}
-    </Badge>
-    {#each missingLangs as l (l)}
-      <button
-        type="button"
-        class="rounded-sm transition-opacity hover:opacity-70"
-        title={UI_LANG_META[l].label}
-        aria-label={UI_LANG_META[l].label}
-        onclick={() => { selectedLang = l; }}
-        data-testid="i18n-editor-missing-{l}"
-      >
-        <span class="fi fi-{UI_LANG_META[l].flag} rounded-sm" aria-hidden="true"></span>
-      </button>
-    {/each}
-  {/snippet}
-
   <div class="space-y-3">
-    <!-- LINE 1 — the edited key as a colored dot-notation badge
+    <!-- LINE 1 — key label + the edited key as a colored dot-notation badge
          (full path is the badge text AND the title). -->
-    <div>
+    <div class="flex items-center gap-2">
+      <span class="text-xs font-medium text-muted-foreground">{$t('system.settings.translations.key')}</span>
       <Badge
         variant="outline"
         class="border-muted-foreground/30 bg-muted/50 font-mono text-xs"
@@ -339,23 +321,46 @@
       </Badge>
     </div>
 
-    <!-- LINE 2 — EN base preview (hidden while the selected row IS the base,
-         or when no EN text exists yet). -->
+    <!-- LINE 2 — coverage: covered/total ratio + the untranslated-language
+         list as clickable flag chips (click jumps the selector). -->
+    <div class="flex items-center gap-2">
+      <Badge variant="outline" class="shrink-0 px-1.5 text-[10px] tabular-nums" data-testid="i18n-editor-coverage">
+        {coveredCount}/{UI_LANGS.length}
+      </Badge>
+      {#each missingLangs as l (l)}
+        <button
+          type="button"
+          class="rounded-sm transition-opacity hover:opacity-70"
+          title={UI_LANG_META[l].label}
+          aria-label={UI_LANG_META[l].label}
+          onclick={() => { selectedLang = l; }}
+          data-testid="i18n-editor-missing-{l}"
+        >
+          <span class="fi fi-{UI_LANG_META[l].flag} rounded-sm" aria-hidden="true"></span>
+        </button>
+      {/each}
+    </div>
+
+    <!-- LINE 3 — EN base preview (hidden while the selected row IS the base,
+         or when no EN text exists yet): flag + label meta row, read-only
+         muted textarea with the copy button inside — no wrapping card. -->
     {#if showBase}
-      <div class="rounded-md border border-border bg-muted/40 p-2.5" data-testid="i18n-editor-base">
+      <div data-testid="i18n-editor-base">
         <div class="mb-1 flex items-center gap-2">
           <span class="fi fi-{UI_LANG_META[baseLang].flag} shrink-0 rounded-sm" aria-hidden="true"></span>
           <span class="text-xs font-medium text-muted-foreground">{UI_LANG_META[baseLang].label}</span>
           <Badge variant="outline" class="border-sky-500/30 bg-sky-500/10 px-1 text-[10px] text-sky-700 dark:text-sky-300">
             {$t('app.common.translations.base')}
           </Badge>
-          <CopyButton class="ml-auto" variant="ghost" size="icon" text={baseValue} data-testid="i18n-editor-base-copy" />
         </div>
-        <Textarea value={baseValue} readonly rows={2} class="resize-none pr-16 text-sm" data-testid="i18n-editor-base-text" />
+        <div class="relative">
+          <Textarea value={baseValue} readonly rows={2} class="resize-none bg-muted/40 pr-10 text-sm" data-testid="i18n-editor-base-text" />
+          <CopyButton class="absolute right-1.5 top-1.5 size-7" variant="ghost" size="icon" text={baseValue} data-testid="i18n-editor-base-copy" />
+        </div>
       </div>
     {/if}
 
-    <!-- LINE 3 — language selector (native labels + flags, browser order). -->
+    <!-- LINE 4 — language selector (native labels + flags, browser order). -->
     <ComboSelect
       class="min-w-0 flex-1"
       mode="single"
@@ -369,21 +374,21 @@
       data-testid="i18n-editor-lang"
     />
 
-    <!-- LINE 4 — selected language editor: flag + label + status badge;
+    <!-- LINE 5 — selected language editor: flag + label + status badge;
          textarea editable (input-bordered) or read-only without the
          update permission; AI + copy overlay top-right. -->
     <div>
       <div class="mb-1 flex items-center gap-2">
         <span class="fi fi-{UI_LANG_META[selectedLang].flag} shrink-0 rounded-sm" aria-hidden="true"></span>
         <span class="text-xs font-medium text-muted-foreground">
-          {UI_LANG_META[selectedLang].label}{#if selectedIsEn && !hasEn}<span class="text-destructive" title={$t('app.common.translations.enRequired')}>*</span>{/if}
+          {UI_LANG_META[selectedLang].label}{#if selectedIsEn && !hasEn}<span class="text-destructive" title={$t('app.common.translations.en_required')}>*</span>{/if}
         </span>
         <Badge variant="outline" class="{statusMeta.class} px-1.5 text-[10px]" data-testid="i18n-editor-status">
           <statusMeta.icon class="mr-0.5 size-3" />{$t(statusMeta.label)}
         </Badge>
         {#if selectedIsEn && !hasEn}
           <span class="text-[10px] text-destructive" data-testid="i18n-editor-en-required">
-            {$t('app.common.translations.enRequired')}
+            {$t('app.common.translations.en_required')}
           </span>
         {/if}
       </div>
@@ -429,22 +434,21 @@
     {#if suggestion}
       <div class="rounded-md border border-sky-500/30 bg-sky-500/5 p-2.5" data-testid="i18n-editor-suggestion">
         {#if suggestion.text}
-          <div class="mb-1 flex items-center gap-2">
-            <AiIcon size={14} />
-            <span class="fi fi-{UI_LANG_META[suggestion.lang].flag} shrink-0 rounded-sm" aria-hidden="true"></span>
-            <span class="text-xs font-medium text-muted-foreground">{UI_LANG_META[suggestion.lang].label}</span>
-            <div class="ml-auto flex items-center gap-1">
-              <Button variant="outline" size="sm" class="h-6 px-2 text-xs" onclick={acceptSuggestion} data-testid="i18n-editor-suggestion-accept">
-                {$t('app.common.translations.accept')}
-              </Button>
-              <Button variant="ghost" size="icon" class="size-6" onclick={() => (suggestion = null)} aria-label={$t('app.common.translations.reject')} data-testid="i18n-editor-suggestion-reject">
-                <X class="size-3.5" />
-              </Button>
-            </div>
-          </div>
-          <p class="text-sm">{suggestion.text}</p>
+          <p class="text-sm">
+            <span class="fi fi-{UI_LANG_META[suggestion.lang].flag} mr-1.5 rounded-sm" aria-hidden="true"></span>{suggestion.text}
+            <button
+              type="button"
+              class="ml-1.5 inline-flex translate-y-0.5 rounded p-0.5 transition-colors hover:bg-accent"
+              title={$t('app.common.translations.accept')}
+              aria-label={$t('app.common.translations.accept')}
+              onclick={acceptSuggestion}
+              data-testid="i18n-editor-suggestion-accept"
+            >
+              <GradientIcon size={14} paths={GRADIENT_ICON_PATHS.check} />
+            </button>
+          </p>
         {:else}
-          <p class="text-xs italic text-muted-foreground">{$t('app.common.translations.aiUnavailable')}</p>
+          <p class="text-xs italic text-muted-foreground">{$t('app.common.translations.ai_unavailable')}</p>
         {/if}
       </div>
     {/if}
@@ -455,10 +459,10 @@
       <div class="rounded-md border border-border" data-testid="i18n-editor-results">
         <div class="flex items-center gap-2 border-b border-border bg-muted/40 px-2.5 py-1.5">
           <AiIcon size={14} />
-          <span class="text-xs font-medium">{$t('app.common.translations.resultsTitle')}</span>
+          <span class="text-xs font-medium">{$t('app.common.translations.results_title')}</span>
           <div class="ml-auto flex items-center gap-1">
             <Button variant="outline" size="sm" class="h-6 px-2 text-xs" onclick={acceptAllResults} data-testid="i18n-editor-accept-all">
-              {$t('app.common.translations.acceptAll')}
+              {$t('app.common.translations.accept_all')}
             </Button>
             <Button variant="ghost" size="icon" class="size-6" onclick={() => (results = [])} aria-label={$t('app.common.translations.dismiss')} data-testid="i18n-editor-results-dismiss">
               <X class="size-3.5" />
@@ -475,7 +479,7 @@
                   <p class="text-sm">{r.text}</p>
                 {:else}
                   <p class="text-xs italic text-muted-foreground">
-                    {$t(r.error === 'unavailable' ? 'app.common.translations.aiUnavailable' : 'app.common.translations.aiFailed')}
+                    {$t(r.error === 'unavailable' ? 'app.common.translations.ai_unavailable' : 'app.common.translations.ai_failed')}
                   </p>
                 {/if}
               </div>
@@ -499,31 +503,29 @@
     {/if}
     {#if !aiSupported}
       <p class="text-xs italic text-muted-foreground" data-testid="i18n-editor-ai-unsupported">
-        {$t('app.common.translations.aiUnavailable')}
+        {$t('app.common.translations.ai_unavailable')}
       </p>
     {/if}
   </div>
 
   {#snippet footer()}
     <SheetPanelFooter>
-      {#snippet start()}
-        {#if aiSupported}
-          <Button
-            variant="outline"
-            onclick={() => void generateAll()}
-            disabled={!canGenerateAll}
-            data-testid="i18n-editor-generate-all"
-          >
-            {#if aiBusy}
-              <LoaderCircle class="size-4 animate-spin" />
-            {:else}
-              <AiIcon size={14} />
-            {/if}
-            {$t('app.common.translations.generateAll')}
-          </Button>
-        {/if}
-      {/snippet}
-      <Button onclick={save} disabled={!canSave} title={!canSave ? $t('app.common.translations.enRequired') : undefined} data-testid="i18n-editor-save">
+      {#if aiSupported}
+        <Button
+          variant="outline"
+          onclick={() => void generateAll()}
+          disabled={!canGenerateAll}
+          data-testid="i18n-editor-generate-all"
+        >
+          {#if aiBusy}
+            <LoaderCircle class="size-4 animate-spin" />
+          {:else}
+            <AiIcon size={14} />
+          {/if}
+          {$t('app.common.translations.generate_all')}
+        </Button>
+      {/if}
+      <Button onclick={save} disabled={!canSave} title={!canSave ? $t('app.common.translations.en_required') : undefined} data-testid="i18n-editor-save">
         {$t('app.common.save')}
       </Button>
     </SheetPanelFooter>

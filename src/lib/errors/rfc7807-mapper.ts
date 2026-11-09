@@ -16,11 +16,11 @@ export function mapRFC7807ToMessageKey(
 			// Detail format: "Account locked due to too many failed attempts. Wait X minutes."
 			const minutesMatch = error.detail?.match(/Wait (\d+) minutes/);
 			const minutes = minutesMatch ? parseInt(minutesMatch[1]) : 0;
-			return { key: 'app.auth.login.accountLocked', minutes };
+			return { key: 'app.auth.login.account_locked', minutes };
 		}
 
 		if (!error.internal_code || genericAuthCodes.includes(error.internal_code)) {
-			return { key: 'app.auth.login.invalidCredentials' };
+			return { key: 'app.auth.login.invalid_credentials' };
 		}
 
 		if (
@@ -28,17 +28,17 @@ export function mapRFC7807ToMessageKey(
 			error.internal_code === 'MFA_CHALLENGE_TOKEN_INVALID' ||
 			error.internal_code === 'MFA_CHALLENGE_TOKEN_MALFORMED'
 		) {
-			return { key: 'app.auth.login.mfa.challengeExpired' };
+			return { key: 'app.auth.login.mfa.challenge_expired' };
 		}
 
 		if (error.internal_code === 'MFA_INVALID_CODE') {
-			return { key: 'app.auth.login.mfa.invalidCode' };
+			return { key: 'app.auth.login.mfa.invalid_code' };
 		}
 	}
 
 	if (error.status === 403) {
 		if (error.internal_code === 'user_no_permission') {
-			return { key: 'app.auth.login.userNoPermission' };
+			return { key: 'app.auth.login.user_no_permission' };
 		}
 	}
 

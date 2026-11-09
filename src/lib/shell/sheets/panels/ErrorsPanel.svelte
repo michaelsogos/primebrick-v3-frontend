@@ -98,7 +98,7 @@
         {@const eventColor = impactToEventColor(imp)}
         {@const labelKey =
           imp === 'CRITICAL'
-            ? 'app.common.impact.criticalError'
+            ? 'app.common.impact.critical_error'
             : imp === 'HIGH'
               ? 'app.common.impact.error'
               : imp === 'MEDIUM'
@@ -166,7 +166,7 @@
                 onclick={() => openErrorDetails(e, eventColor)}
               >
                 <Eye class="mr-1 size-3" />
-                {$t('app.errors.viewDetails')}
+                {$t('app.errors.view_details')}
               </Button>
             {/if}
           </div>

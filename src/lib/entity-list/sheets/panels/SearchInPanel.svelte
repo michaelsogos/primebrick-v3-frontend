@@ -24,7 +24,7 @@
     <Search class="size-4" />
   {/snippet}
   {#snippet title()}
-    {$t('system.entities.list.searchIn')}
+    {$t('system.entities.list.search_in')}
   {/snippet}
   {#snippet actions()}
     <SheetHeaderAction title={$t('app.common.reset')} onclick={() => onSearchInKeysChange(null)}>
@@ -42,7 +42,7 @@
       <Checkbox checked={!searchInKeys || searchInKeys.length === 0} class={checkboxVisualOnlyClass} />
     </span>
     <span class="inline-flex size-3.5 shrink-0 items-center justify-center" aria-hidden="true"></span>
-    <span class="min-w-0 flex-1 truncate">{$t('system.entities.list.searchInAll')}</span>
+    <span class="min-w-0 flex-1 truncate">{$t('system.entities.list.search_in_all')}</span>
   </button>
 
   <div class="my-2">

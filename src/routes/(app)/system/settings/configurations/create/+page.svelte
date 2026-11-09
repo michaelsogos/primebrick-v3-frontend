@@ -149,7 +149,7 @@
 
         pushNotification({
           impact: 'NONE',
-          message: $t('system.settings.configurations.create.createSuccess'),
+          message: $t('system.settings.configurations.create.create_success'),
           scope: 'config_entry',
         });
 
@@ -181,7 +181,7 @@
 
   const { handleBeforeUnload, handleCancel } = useUnsavedChangesGuard(
     () => formGuard.hasChanges,
-    'system.settings.configurations.create.unsavedChanges',
+    'system.settings.configurations.create.unsaved_changes',
   );
 
   // TypeConfigBuilder writes auto-derived defaults (e.g. max_length=65535 for
@@ -353,7 +353,7 @@
                     <FormLabel for={props.id}>
                       {$t('system.settings.configurations.create.key')}
                       <FormLabelWithPriorityHelp
-                        text={$t('system.settings.configurations.create.keyHelp')}
+                        text={$t('system.settings.configurations.create.key_help')}
                         priority="HINT"
                       />
                     </FormLabel>
@@ -361,14 +361,14 @@
                       {...props}
                       bind:value={$form.key}
                       oninput={handleKeyInput}
-                      placeholder={$t('system.settings.configurations.create.keyPlaceholder')}
+                      placeholder={$t('system.settings.configurations.create.key_placeholder')}
                       aria-invalid={keyExistsError || props['aria-invalid'] === 'true' || props['aria-invalid'] === true}
                       data-testid="config-create-key"
                     />
                     <TranslatedFormFieldErrors />
                     {#if keyExistsError}
                       <div class="text-destructive text-xs font-medium" data-testid="key-exists-error">
-                        {$t('system.settings.configurations.create.keyExists')}
+                        {$t('system.settings.configurations.create.key_exists')}
                       </div>
                     {/if}
                   </div>
@@ -383,7 +383,7 @@
                     <FormLabel for={props.id}>
                       {$t('system.settings.configurations.create.type')}
                       <FormLabelWithPriorityHelp
-                        text={$t('system.settings.configurations.create.typeHelp')}
+                        text={$t('system.settings.configurations.create.type_help')}
                         priority="HINT"
                       />
                     </FormLabel>
@@ -395,7 +395,7 @@
                       valueField="value"
                       labelField="label"
                       iconField="icon"
-                      placeholder={$t('app.common.selectValue')}
+                      placeholder={$t('app.common.select_value')}
                       data-testid="config-create-type"
                     />
                     <TranslatedFormFieldErrors />
@@ -412,7 +412,7 @@
                       <FormLabel for={props.id}>
                         {$t('system.settings.configurations.create.value')}
                         <FormLabelWithPriorityHelp
-                          text={$t('system.settings.configurations.create.valueHelp')}
+                          text={$t('system.settings.configurations.create.value_help')}
                           priority="INFORMATION"
                         />
                       </FormLabel>
@@ -436,11 +436,11 @@
                 {#snippet children({ props })}
                   <div class="space-y-2">
                     <FormLabel for={props.id}>
-                      {$t('system.settings.configurations.create.labelKey')}
+                      {$t('system.settings.configurations.create.label_key')}
                       <FormLabelWithPriorityHelp
-                        text={$t('system.settings.configurations.create.labelKeyHelp')}
+                        text={$t('system.settings.configurations.create.label_key_help')}
                         priority="INFORMATION"
-                        title={$t('app.common.optionalTooltipTitle')}
+                        title={$t('app.common.optional_tooltip_title')}
                         labelKey="app.common.optional"
                       />
                     </FormLabel>
@@ -474,11 +474,11 @@
                 {#snippet children({ props })}
                   <div class="space-y-2">
                     <FormLabel for={props.id}>
-                      {$t('system.settings.configurations.create.descriptionKey')}
+                      {$t('system.settings.configurations.create.description_key')}
                       <FormLabelWithPriorityHelp
-                        text={$t('system.settings.configurations.create.descriptionKeyHelp')}
+                        text={$t('system.settings.configurations.create.description_key_help')}
                         priority="INFORMATION"
-                        title={$t('app.common.optionalTooltipTitle')}
+                        title={$t('app.common.optional_tooltip_title')}
                         labelKey="app.common.optional"
                       />
                     </FormLabel>
@@ -512,11 +512,11 @@
                 {#snippet children({ props })}
                   <div class="space-y-2">
                     <FormLabel for={props.id}>
-                      {$t('system.settings.configurations.create.groupKey')}
+                      {$t('system.settings.configurations.create.group_key')}
                       <FormLabelWithPriorityHelp
-                        text={$t('system.settings.configurations.create.groupKeyHelp')}
+                        text={$t('system.settings.configurations.create.group_key_help')}
                         priority="INFORMATION"
-                        title={$t('app.common.optionalTooltipTitle')}
+                        title={$t('app.common.optional_tooltip_title')}
                         labelKey="app.common.optional"
                       />
                     </FormLabel>
@@ -537,8 +537,8 @@
                         const gk = (opt as GroupKeyOption).group_key;
                         return gk ? [$t(`system.settings.config.auth.group.${gk}`)] : [];
                       }}
-                      placeholder={$t('system.settings.configurations.create.groupKeyPlaceholder')}
-                      searchPlaceholder={$t('system.settings.configurations.create.groupKeySearch')}
+                      placeholder={$t('system.settings.configurations.create.group_key_placeholder')}
+                      searchPlaceholder={$t('system.settings.configurations.create.group_key_search')}
                       display="detailed"
                       secondaryField="group_key"
                       showDescription={false}
@@ -567,7 +567,7 @@
               checked={$form.reserved}
               onCheckedChange={(checked) => { $form.reserved = checked; }}
               label={$t('system.settings.configurations.create.reserved')}
-              tooltip={$t('system.settings.configurations.create.reservedHelp')}
+              tooltip={$t('system.settings.configurations.create.reserved_help')}
               tooltipPriority="INFORMATION"
               data-testid="config-create-reserved"
             />
@@ -579,7 +579,7 @@
               <FormControl>
                 {#snippet children({ props })}
                   <div class="space-y-2">
-                    <FormLabel for={props.id}>{$t('system.settings.configurations.create.typeConfig')}</FormLabel>
+                    <FormLabel for={props.id}>{$t('system.settings.configurations.create.type_config')}</FormLabel>
                     <TypeConfigBuilder
                       type={$form.type as ConfigEntryType}
                       configKey={$form.key ?? ''}

@@ -56,7 +56,7 @@
   let entityPlural = $derived($t(`${ns}.entities.${entity}.plural`));
   let actionLabel = $derived($t(chrome?.label_key ?? 'app.common.restore'));
   let affectedCount = $derived(restoreScope === 'all' && totalCount != null ? Number(totalCount) : selectedCount);
-  let confirmKey = $derived(chrome?.confirm_key ?? 'app.common.restoreEntitiesConfirm');
+  let confirmKey = $derived(chrome?.confirm_key ?? 'app.common.restore_entities_confirm');
   let busyKey = $derived(chrome?.busy_key ?? 'app.common.restoring');
   let severity = $derived(chrome?.color ?? 'warning');
 </script>
@@ -74,13 +74,13 @@
     <div class="py-4">
       <Choicebox.Root bind:value={restoreScope} onValueChange={(v) => onRestoreScopeChange(v as 'selected' | 'all')}>
         <Choicebox.Item value="selected">
-          <Choicebox.Title>{$t('app.common.bulkScopeSelectedTitle', { count: selectedCount })}</Choicebox.Title>
-          <Choicebox.Description>{$t('app.common.bulkScopeSelectedDesc')}</Choicebox.Description>
+          <Choicebox.Title>{$t('app.common.bulk_scope_selected_title', { count: selectedCount })}</Choicebox.Title>
+          <Choicebox.Description>{$t('app.common.bulk_scope_selected_desc')}</Choicebox.Description>
           <Choicebox.Indicator />
         </Choicebox.Item>
         <Choicebox.Item value="all">
-          <Choicebox.Title>{$t('app.common.bulkScopeAllTitle', { count: Number(totalCount ?? 0n) })}</Choicebox.Title>
-          <Choicebox.Description>{$t('app.common.bulkScopeAllDesc')}</Choicebox.Description>
+          <Choicebox.Title>{$t('app.common.bulk_scope_all_title', { count: Number(totalCount ?? 0n) })}</Choicebox.Title>
+          <Choicebox.Description>{$t('app.common.bulk_scope_all_desc')}</Choicebox.Description>
           <Choicebox.Indicator />
         </Choicebox.Item>
       </Choicebox.Root>

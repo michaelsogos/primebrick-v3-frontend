@@ -412,7 +412,7 @@
           data-testid="docs-view-full"
         >
           <ExternalLink class="size-3.5" />
-          {$t('app.docs.viewFull')}
+          {$t('app.docs.view_full')}
         </a>
       {/if}
     </div>
@@ -427,7 +427,7 @@
             <span class="text-sm">{$t('app.docs.loading')}</span>
           </div>
         {:else if groupedResults && groupedResults.length === 0}
-          <p class="py-6 text-center text-sm text-muted-foreground">{$t('app.docs.noResults')}</p>
+          <p class="py-6 text-center text-sm text-muted-foreground">{$t('app.docs.no_results')}</p>
         {:else}
           <ul class="space-y-1" data-testid="docs-search-results">
             {#each groupedResults ?? [] as group (group.repo + group.path)}
@@ -459,7 +459,7 @@
         <span class="text-sm">{$t('app.docs.loading')}</span>
       </div>
     {:else if view.kind === 'missing'}
-      <div class="p-4 text-sm text-muted-foreground">{$t('app.docs.notFound')}</div>
+      <div class="p-4 text-sm text-muted-foreground">{$t('app.docs.not_found')}</div>
     {:else if view.kind === 'doc'}
       {@const doc = view.doc}
       <article class="p-4">
@@ -510,7 +510,7 @@
         {#if doc.toc.length}
           <nav class="mb-4 rounded-md border border-border bg-muted/30 p-3" data-testid="docs-toc">
             <div class="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-              {$t('app.docs.onThisPage')}
+              {$t('app.docs.on_this_page')}
             </div>
             <ul class="space-y-1">
               {#each doc.toc as item (item.id)}
@@ -532,7 +532,7 @@
         {#if doc.links.length}
           <div class="mt-6 border-t border-border pt-3" data-testid="docs-see-also">
             <div class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-              {$t('app.docs.seeAlso')}
+              {$t('app.docs.see_also')}
             </div>
             <ul class="space-y-1">
               {#each doc.links as link (link)}

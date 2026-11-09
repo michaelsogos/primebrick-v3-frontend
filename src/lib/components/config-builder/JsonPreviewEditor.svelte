@@ -90,14 +90,14 @@
       onclick={() => (previewOpen = !previewOpen)}
       data-testid="tcb-preview-toggle"
     >
-      {previewOpen ? '▼' : '▶'} {$t('system.settings.config.typeConfig.jsonPreview')}
+      {previewOpen ? '▼' : '▶'} {$t('system.settings.config.type_config.json_preview')}
     </button>
     <div class="flex items-center gap-2">
       <button
         type="button"
         class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
         onclick={() => setAdvanced(!builder.state.advancedMode)}
-        title={$t('system.settings.config.typeConfig.advancedMode')}
+        title={$t('system.settings.config.type_config.advanced_mode')}
         data-testid="tcb-advanced"
       >
         {#if builder.state.advancedMode}
@@ -112,8 +112,8 @@
         type="button"
         class="inline-flex items-center justify-center rounded-md p-1 text-muted-foreground hover:bg-accent transition-colors"
         onclick={openAiAssistant}
-        title={$t('app.smart.json.ai.brainCta')}
-        aria-label={$t('app.smart.json.ai.brainCta')}
+        title={$t('app.smart.json.ai.brain_cta')}
+        aria-label={$t('app.smart.json.ai.brain_cta')}
         data-testid="tcb-ai-assistant-cta"
       >
         <AiIcon size={16} />

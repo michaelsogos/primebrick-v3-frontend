@@ -91,14 +91,14 @@
 </script>
 
 {#if isMoney}
-  <SelectableFieldset label={$t('system.settings.config.typeConfig.moneyConfig')}>
+  <SelectableFieldset label={$t('system.settings.config.type_config.money_config')}>
     <div class="space-y-1">
       <Label for="tcb-currency">
-        {$t('system.settings.config.typeConfig.defaultCurrency')}
+        {$t('system.settings.config.type_config.default_currency')}
         <FormLabelWithPriorityHelp
-          text={$t('system.settings.config.typeConfig.defaultCurrencyHelp')}
+          text={$t('system.settings.config.type_config.default_currency_help')}
           priority="INFORMATION"
-          title={$t('system.settings.config.typeConfig.defaultCurrency')}
+          title={$t('system.settings.config.type_config.default_currency')}
           labelKey="app.common.optional"
         />
       </Label>
@@ -109,17 +109,17 @@
         options={currencyOptions}
         valueField="code"
         labelField="name"
-        placeholder={$t('system.settings.config.typeConfig.selectSource')}
+        placeholder={$t('system.settings.config.type_config.select_source')}
         data-testid="tcb-currency"
       />
     </div>
     <div class="space-y-1">
       <Label for="tcb-allowed-currencies">
-        {$t('system.settings.config.typeConfig.allowedCurrencies')}
+        {$t('system.settings.config.type_config.allowed_currencies')}
         <FormLabelWithPriorityHelp
-          text={$t('system.settings.config.typeConfig.allowedCurrenciesHelp')}
+          text={$t('system.settings.config.type_config.allowed_currencies_help')}
           priority="INFORMATION"
-          title={$t('system.settings.config.typeConfig.allowedCurrencies')}
+          title={$t('system.settings.config.type_config.allowed_currencies')}
           labelKey="app.common.optional"
         />
       </Label>
@@ -130,28 +130,28 @@
         options={currencyOptions}
         valueField="code"
         labelField="name"
-        placeholder={$t('system.settings.config.typeConfig.selectSource')}
+        placeholder={$t('system.settings.config.type_config.select_source')}
         data-testid="tcb-allowed-currencies"
       />
     </div>
   </SelectableFieldset>
 {:else if isBadge}
-  <SelectableFieldset label={$t('system.settings.config.typeConfig.badgeValues')}>
+  <SelectableFieldset label={$t('system.settings.config.type_config.badge_values')}>
     <BadgeValuesEditor {builder} {configKey} />
   </SelectableFieldset>
 {:else if isSelect}
-  <SelectableFieldset label={$t('system.settings.config.typeConfig.selectConfig')}>
+  <SelectableFieldset label={$t('system.settings.config.type_config.select_config')}>
     <SelectSourceEditor {builder} />
   </SelectableFieldset>
 {:else if isUrl}
-  <SelectableFieldset label={$t('system.settings.config.typeConfig.urlConfig')}>
+  <SelectableFieldset label={$t('system.settings.config.type_config.url_config')}>
     <div class="space-y-1">
       <Label for="tcb-allowed-protocols">
-        {$t('system.settings.config.typeConfig.allowedProtocols')}
+        {$t('system.settings.config.type_config.allowed_protocols')}
         <FormLabelWithPriorityHelp
-          text={$t('system.settings.config.typeConfig.allowedProtocolsHelp')}
+          text={$t('system.settings.config.type_config.allowed_protocols_help')}
           priority="INFORMATION"
-          title={$t('system.settings.config.typeConfig.allowedProtocols')}
+          title={$t('system.settings.config.type_config.allowed_protocols')}
           labelKey="app.common.optional"
         />
       </Label>
@@ -170,11 +170,11 @@
     </div>
     <div class="space-y-1">
       <Label for="tcb-default-protocol">
-        {$t('system.settings.config.typeConfig.defaultProtocol')}
+        {$t('system.settings.config.type_config.default_protocol')}
         <FormLabelWithPriorityHelp
-          text={$t('system.settings.config.typeConfig.defaultProtocolHelp')}
+          text={$t('system.settings.config.type_config.default_protocol_help')}
           priority="INFORMATION"
-          title={$t('system.settings.config.typeConfig.defaultProtocol')}
+          title={$t('system.settings.config.type_config.default_protocol')}
           labelKey="app.common.optional"
         />
       </Label>
@@ -193,14 +193,14 @@
     </div>
   </SelectableFieldset>
 {:else if isPhone}
-  <SelectableFieldset label={$t('system.settings.config.typeConfig.phoneConfig')}>
+  <SelectableFieldset label={$t('system.settings.config.type_config.phone_config')}>
     <div class="space-y-1">
       <Label for="tcb-country">
-        {$t('system.settings.config.typeConfig.defaultCountry')}
+        {$t('system.settings.config.type_config.default_country')}
         <FormLabelWithPriorityHelp
-          text={$t('system.settings.config.typeConfig.defaultCountryHelp')}
+          text={$t('system.settings.config.type_config.default_country_help')}
           priority="INFORMATION"
-          title={$t('system.settings.config.typeConfig.defaultCountry')}
+          title={$t('system.settings.config.type_config.default_country')}
           labelKey="app.common.optional"
         />
       </Label>
@@ -218,11 +218,11 @@
     </div>
     <div class="space-y-1">
       <Label for="tcb-allowed-countries">
-        {$t('system.settings.config.typeConfig.allowedCountries')}
+        {$t('system.settings.config.type_config.allowed_countries')}
         <FormLabelWithPriorityHelp
-          text={$t('system.settings.config.typeConfig.allowedCountriesHelp')}
+          text={$t('system.settings.config.type_config.allowed_countries_help')}
           priority="INFORMATION"
-          title={$t('system.settings.config.typeConfig.allowedCountries')}
+          title={$t('system.settings.config.type_config.allowed_countries')}
           labelKey="app.common.optional"
         />
       </Label>
@@ -234,7 +234,7 @@
         options={countryOptions}
         valueField="code"
         labelField="name"
-        placeholder={$t('system.settings.config.typeConfig.selectSource')}
+        placeholder={$t('system.settings.config.type_config.select_source')}
         data-testid="tcb-allowed-countries"
       />
     </div>

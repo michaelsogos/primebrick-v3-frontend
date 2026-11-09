@@ -63,7 +63,7 @@
             checked={allOnPageSelected}
             indeterminate={headerIndeterminate}
             onCheckedChange={onToggleAllOnPage}
-            aria-label={$t('system.entities.list.selectAll')}
+            aria-label={$t('system.entities.list.select_all')}
           />
         </div>
       </Table.Head>

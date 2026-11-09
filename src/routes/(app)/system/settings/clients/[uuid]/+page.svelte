@@ -231,7 +231,7 @@
 
   const { handleBeforeUnload, handleCancel } = useUnsavedChangesGuard(
     () => formGuard.hasChanges,
-    'system.settings.profile.unsavedChanges',
+    'system.settings.profile.unsaved_changes',
   );
 </script>
 

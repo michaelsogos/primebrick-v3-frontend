@@ -69,7 +69,7 @@
       new RegExp(pattern, flag_str);
       return null;
     } catch {
-      return $t('app.common.validation.invalidRegexPattern');
+      return $t('app.common.validation.invalid_regex_pattern');
     }
   }
 
@@ -163,8 +163,8 @@
       type="button"
       onclick={open_flags_panel}
       disabled={disabled || readonly}
-      title={$t('app.smart.regex.ai.flagsCta')}
-      aria-label={$t('app.smart.regex.ai.flagsCta')}
+      title={$t('app.smart.regex.ai.flags_cta')}
+      aria-label={$t('app.smart.regex.ai.flags_cta')}
       tabindex={-1}
       class={cn(
         inputTrailingIconColorClasses,
@@ -187,8 +187,8 @@
       type="button"
       onclick={open_ai_panel}
       disabled={disabled || readonly}
-      title={$t('app.smart.regex.ai.brainCta')}
-      aria-label={$t('app.smart.regex.ai.brainCta')}
+      title={$t('app.smart.regex.ai.brain_cta')}
+      aria-label={$t('app.smart.regex.ai.brain_cta')}
       tabindex={-1}
       class={cn(
         inputTrailingIconColorClasses,

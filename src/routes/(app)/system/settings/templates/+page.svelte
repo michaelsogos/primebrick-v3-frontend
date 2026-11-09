@@ -77,10 +77,10 @@
 
   <!-- Upload Template -->
   <div class="space-y-4 rounded-lg border p-4">
-    <h3 class="text-lg font-medium">{$t('system.settings.templates.uploadTemplate')}</h3>
+    <h3 class="text-lg font-medium">{$t('system.settings.templates.upload_template')}</h3>
     
     <div>
-      <label for="templateFile" class="text-sm font-medium leading-none">{$t('system.settings.templates.selectTemplateFile')}</label>
+      <label for="templateFile" class="text-sm font-medium leading-none">{$t('system.settings.templates.select_template_file')}</label>
       <Input
         id="templateFile"
         type="file"
@@ -96,17 +96,17 @@
         <span>{uploadedFile.name}</span>
         <Badge variant="outline">{(uploadedFile.size / 1024).toFixed(2)} KB</Badge>
       </div>
-      <Button onclick={handleUpload}>{$t('system.settings.templates.uploadButton')}</Button>
+      <Button onclick={handleUpload}>{$t('system.settings.templates.upload_button')}</Button>
     {/if}
   </div>
 
   <!-- Templates List -->
   <div class="space-y-4 rounded-lg border p-4">
     <div class="flex items-center justify-between">
-      <h3 class="text-lg font-medium">{$t('system.settings.templates.templatesList')}</h3>
+      <h3 class="text-lg font-medium">{$t('system.settings.templates.templates_list')}</h3>
       <Button variant="outline" size="sm">
         <Plus class="mr-2 size-4" />
-        {$t('system.settings.templates.createTemplate')}
+        {$t('system.settings.templates.create_template')}
       </Button>
     </div>
     

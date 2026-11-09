@@ -60,7 +60,7 @@
   const list = useEntityList<Record<string, unknown>>({
     basePath,
     storageKeyPrefix: `pb:dict:${entity}:`,
-    errorScopeKey: 'app.common.errors.scope.dictList',
+    errorScopeKey: 'app.common.errors.scope.dict_list',
     t: (k, p) => $t(k, p),
   });
 
@@ -359,11 +359,11 @@
       if (failedTranslations.length > 0) {
         pushNotification({
           impact: 'HIGH',
-          messageKey: 'app.common.translations.flushFailed',
+          messageKey: 'app.common.translations.flush_failed',
           detail: failedTranslations.map((f) => `${f.key} [${f.language}]`).join(', '),
         });
       } else {
-        pushNotification({ impact: 'NONE', messageKey: 'app.common.saveSuccess' });
+        pushNotification({ impact: 'NONE', messageKey: 'app.common.save_success' });
       }
       await list.refreshRows();
     } catch (err) {
@@ -372,7 +372,7 @@
       } else {
         pushNotification({
           impact: 'HIGH',
-          messageKey: 'app.common.saveFailed',
+          messageKey: 'app.common.save_failed',
           detail: err instanceof Error ? err.message : undefined,
         });
       }
@@ -392,14 +392,14 @@
       { action: 'delete', target_resource: entity },
     );
     if (res.ok) {
-      pushNotification({ impact: 'NONE', messageKey: 'app.common.deleteSuccess' });
+      pushNotification({ impact: 'NONE', messageKey: 'app.common.delete_success' });
       await list.refreshRows();
     } else {
       const body = await res.json().catch(() => null);
       pushNotification(
         body && typeof body === 'object' && 'type' in body
           ? (body as never)
-          : { impact: 'HIGH', messageKey: 'app.common.deleteFailed' },
+          : { impact: 'HIGH', messageKey: 'app.common.delete_failed' },
       );
     }
   }
@@ -429,14 +429,14 @@
     );
     if (res.ok) {
       selection.clearSelection();
-      pushNotification({ impact: 'NONE', messageKey: 'app.common.deleteSuccess' });
+      pushNotification({ impact: 'NONE', messageKey: 'app.common.delete_success' });
       await list.refreshRows();
     } else {
       const body = await res.json().catch(() => null);
       pushNotification(
         body && typeof body === 'object' && 'type' in body
           ? (body as never)
-          : { impact: 'HIGH', messageKey: 'app.common.deleteFailed' },
+          : { impact: 'HIGH', messageKey: 'app.common.delete_failed' },
       );
     }
   }
@@ -500,7 +500,7 @@
         {#if selectedTaintedCount > 0}
           <Button variant="warning" size="sm" onclick={revertSelected} data-testid="dict-toolbar-bulk-revert">
             <Undo2 class="size-4" />
-            {$t('app.common.bulkRevert')}
+            {$t('app.common.bulk_revert')}
             <span class="ml-1 text-xs opacity-70">({selectedTaintedCount})</span>
           </Button>
         {/if}
@@ -524,7 +524,7 @@
           value={list.search}
           oninput={(e) => list.onSearchInput((e.currentTarget as HTMLInputElement).value)}
           on_clear={() => list.onSearchInput('')}
-          placeholder={$t('system.entities.list.searchPlaceholder')}
+          placeholder={$t('system.entities.list.search_placeholder')}
           class="w-48"
           data_testid="dict-search"
         />
@@ -576,7 +576,7 @@
 
         {#if list.rows.length === 0 && drafts.length === 0}
           <div class="py-8 text-center text-sm text-muted-foreground">
-            {$t('app.common.noResults')}
+            {$t('app.common.no_results')}
           </div>
         {/if}
       </div>
@@ -598,7 +598,7 @@
       </div>
     {/snippet}
     <div class="flex items-center gap-2">
-      <span class="text-muted-foreground">{$t('system.entities.list.pageSize')}</span>
+      <span class="text-muted-foreground">{$t('system.entities.list.page_size')}</span>
       <DropdownMenu.Root>
         <DropdownMenu.Trigger>
           {#snippet child({ props })}
@@ -622,14 +622,14 @@
       <div class="mx-1 h-6 w-px divider-primary-gradient" aria-hidden="true"></div>
 
       <div class="flex items-center gap-2">
-        <ButtonGroup segmented aria-label={$t('system.entities.list.pagination.firstPage')}>
+        <ButtonGroup segmented aria-label={$t('system.entities.list.pagination.first_page')}>
           <Button
             variant="ghost"
             size="icon-sm"
             disabled={list.page <= 1}
             onclick={() => list.onPageChange(1)}
-            aria-label={$t('system.entities.list.pagination.firstPage')}
-            title={$t('system.entities.list.pagination.firstPage')}
+            aria-label={$t('system.entities.list.pagination.first_page')}
+            title={$t('system.entities.list.pagination.first_page')}
             data-testid="dict-page-first"
           >
             <ChevronsLeft class="size-4" />
@@ -639,8 +639,8 @@
             size="icon-sm"
             disabled={list.page <= 1}
             onclick={() => list.onPageChange(Math.max(1, list.page - 1))}
-            aria-label={$t('system.entities.list.pagination.previousPage')}
-            title={$t('system.entities.list.pagination.previousPage')}
+            aria-label={$t('system.entities.list.pagination.previous_page')}
+            title={$t('system.entities.list.pagination.previous_page')}
             data-testid="dict-page-prev"
           >
             <ChevronLeft class="size-4" />
@@ -650,18 +650,18 @@
           class="whitespace-nowrap px-0.5 text-center tabular-nums text-muted-foreground"
           data-testid="dict-pagination-status"
         >
-          {$t('system.entities.list.paginationStatus')
+          {$t('system.entities.list.pagination_status')
             .replace('{page}', String(list.page))
             .replace('{total}', String(totalPages))}
         </div>
-        <ButtonGroup segmented aria-label={$t('system.entities.list.pagination.nextPage')}>
+        <ButtonGroup segmented aria-label={$t('system.entities.list.pagination.next_page')}>
           <Button
             variant="ghost"
             size="icon-sm"
             disabled={list.page >= totalPages}
             onclick={() => list.onPageChange(Math.min(totalPages, list.page + 1))}
-            aria-label={$t('system.entities.list.pagination.nextPage')}
-            title={$t('system.entities.list.pagination.nextPage')}
+            aria-label={$t('system.entities.list.pagination.next_page')}
+            title={$t('system.entities.list.pagination.next_page')}
             data-testid="dict-page-next"
           >
             <ChevronRight class="size-4" />
@@ -671,8 +671,8 @@
             size="icon-sm"
             disabled={list.page >= totalPages}
             onclick={() => list.onPageChange(totalPages)}
-            aria-label={$t('system.entities.list.pagination.lastPage')}
-            title={$t('system.entities.list.pagination.lastPage')}
+            aria-label={$t('system.entities.list.pagination.last_page')}
+            title={$t('system.entities.list.pagination.last_page')}
             data-testid="dict-page-last"
           >
             <ChevronsRight class="size-4" />
@@ -688,7 +688,7 @@
       <div class="flex flex-wrap items-center gap-2">
         {#if hasChanges}
           <span class="text-xs text-primary">
-            {$t('system.settings.configurations.changesPendingFields')}
+            {$t('system.settings.configurations.changes_pending_fields')}
           </span>
           {#each taintedRowTitles.slice(0, 5) as title (title)}
             <Badge variant="outline" class="border-warning/40 bg-warning/10 text-xs font-mono text-muted-foreground">
@@ -706,12 +706,12 @@
             </Badge>
           {/if}
         {:else}
-          <span class="text-xs text-muted-foreground/60">{$t('system.settings.configurations.noChanges')}</span>
+          <span class="text-xs text-muted-foreground/60">{$t('system.settings.configurations.no_changes')}</span>
         {/if}
       </div>
       <div class="flex items-center justify-end">
         <Button onclick={() => void saveAll()} disabled={!canSave} data-testid="dict-bulk-save">
-          {saving ? $t('app.common.saving') : $t('app.common.saveChanges')}
+          {saving ? $t('app.common.saving') : $t('app.common.save_changes')}
         </Button>
       </div>
     </div>

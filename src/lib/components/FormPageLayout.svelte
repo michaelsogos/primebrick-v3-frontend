@@ -65,7 +65,7 @@
                         type="button"
                         onclick={auditBox.openVersionHistory}
                         class="inline-flex"
-                        title={$t('system.entities.versionHistory.title')}
+                        title={$t('system.entities.version_history.title')}
                       >
                         <Badge class="text-xs font-semibold border border-primary cursor-pointer hover:bg-primary/10" variant="outline">
                           v{auditData.version}

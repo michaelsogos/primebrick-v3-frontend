@@ -109,7 +109,7 @@
               onSelect={() => { void shellNav.selectModule('settings'); void goto(resolve('/system/settings/profile')); }}
             >
               <Settings class="size-4 shrink-0" />
-              <span>{$t('app.userMenu.itemSettings')}</span>
+              <span>{$t('app.user_menu.item_settings')}</span>
             </DropdownMenu.Item>
           </DropdownMenu.Group>
 
@@ -117,7 +117,7 @@
 
           <DropdownMenu.Item variant="destructive" onclick={onLogout} data-testid="sidebar-logout-button">
             <LogOut />
-            <span>{$t('app.userMenu.itemSignOut')}</span>
+            <span>{$t('app.user_menu.item_sign_out')}</span>
           </DropdownMenu.Item>
         </DropdownMenu.Content>
       </DropdownMenu.Root>

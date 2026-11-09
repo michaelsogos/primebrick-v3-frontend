@@ -6,6 +6,6 @@
 <EntityTablePage
   basePath={entityApiBase('customer')}
   storageKeyPrefix="pb:customers:list:"
-  errorScopeKey="app.common.errors.scope.customersList"
-  errorScopeKeyInit="app.common.errors.scope.customersPageInit"
+  errorScopeKey="app.common.errors.scope.customers_list"
+  errorScopeKeyInit="app.common.errors.scope.customers_page_init"
 />

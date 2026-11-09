@@ -35,7 +35,7 @@
       kind: 'menu',
       label: $t(`app.nav.roots.${current}`),
       icon: APP_ROOT_ICON,
-      menuAriaLabel: $t('app.nav.rootLevel'),
+      menuAriaLabel: $t('app.nav.root_level'),
       items: roots.map((r) => ({
         label: $t(`app.nav.roots.${r}`),
         icon: APP_ROOT_ICON,

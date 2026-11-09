@@ -88,7 +88,7 @@
           new RegExp(p, f);
           regexPatternError = null;
         } catch {
-          regexPatternError = $t('app.common.validation.invalidRegexPattern');
+          regexPatternError = $t('app.common.validation.invalid_regex_pattern');
         }
       } else {
         regexPatternError = null;
@@ -143,7 +143,7 @@
         new RegExp(pattern, regexFlags);
         regexPatternError = null;
       } catch {
-        regexPatternError = $t('app.common.validation.invalidRegexPattern');
+        regexPatternError = $t('app.common.validation.invalid_regex_pattern');
       }
     } else {
       regexPatternError = null;
@@ -166,15 +166,15 @@
   }
 </script>
 
-<SelectableFieldset label={$t('system.settings.config.typeConfig.validationRules')}>
+<SelectableFieldset label={$t('system.settings.config.type_config.validation_rules')}>
 
   <!-- Required -->
   <SwitchField
     id="tcb-required"
     checked={builder.validation?.required ?? false}
     onCheckedChange={(checked: boolean) => builder.setRequired(checked)}
-    label={$t('system.settings.config.typeConfig.required')}
-    tooltip={$t('system.settings.config.typeConfig.requiredHelp')}
+    label={$t('system.settings.config.type_config.required')}
+    tooltip={$t('system.settings.config.type_config.required_help')}
     tooltipPriority="INFORMATION"
     data-testid="tcb-required"
   />
@@ -182,11 +182,11 @@
   {#if builder.validation?.required}
     <div class="space-y-1">
       <Label for="tcb-required-error-key" class="text-xs text-muted-foreground">
-        {$t('system.settings.config.typeConfig.requiredErrorLabelKey')}
+        {$t('system.settings.config.type_config.required_error_label_key')}
         <FormLabelWithPriorityHelp
-          text={$t('app.common.optionalTooltipText')}
+          text={$t('app.common.optional_tooltip_text')}
           priority="INFORMATION"
-          title={$t('app.common.optionalTooltipTitle')}
+          title={$t('app.common.optional_tooltip_title')}
           labelKey="app.common.optional"
         />
       </Label>
@@ -216,8 +216,8 @@
       id="tcb-unsigned"
       checked={builder.validation?.unsigned === true}
       onCheckedChange={(checked: boolean) => builder.setUnsigned(checked)}
-      label={$t('system.settings.config.typeConfig.unsigned')}
-      tooltip={$t('system.settings.config.typeConfig.unsignedHelp')}
+      label={$t('system.settings.config.type_config.unsigned')}
+      tooltip={$t('system.settings.config.type_config.unsigned_help')}
       tooltipPriority="INFORMATION"
       data-testid="tcb-unsigned"
     />
@@ -228,11 +228,11 @@
   <div class="grid grid-cols-2 gap-3">
     <div class="space-y-1">
       <Label for="tcb-min">
-        {isNumericType ? $t('system.settings.config.typeConfig.minValue') : $t('system.settings.config.typeConfig.minLength')}
+        {isNumericType ? $t('system.settings.config.type_config.min_value') : $t('system.settings.config.type_config.min_length')}
         <FormLabelWithPriorityHelp
-          text={$t('system.settings.config.typeConfig.minHelp')}
+          text={$t('system.settings.config.type_config.min_help')}
           priority="INFORMATION"
-          title={isNumericType ? $t('system.settings.config.typeConfig.minValue') : $t('system.settings.config.typeConfig.minLength')}
+          title={isNumericType ? $t('system.settings.config.type_config.min_value') : $t('system.settings.config.type_config.min_length')}
           labelKey="app.common.optional"
         />
       </Label>
@@ -247,11 +247,11 @@
       />
       {#if asTrimmed(minInput) !== ''}
         <Label for="tcb-min-error-key" class="text-xs text-muted-foreground">
-          {$t('system.settings.config.typeConfig.minErrorLabelKey')}
+          {$t('system.settings.config.type_config.min_error_label_key')}
           <FormLabelWithPriorityHelp
-            text={$t('app.common.optionalTooltipText')}
+            text={$t('app.common.optional_tooltip_text')}
             priority="INFORMATION"
-            title={$t('app.common.optionalTooltipTitle')}
+            title={$t('app.common.optional_tooltip_title')}
             labelKey="app.common.optional"
           />
         </Label>
@@ -276,11 +276,11 @@
     </div>
     <div class="space-y-1">
       <Label for="tcb-max">
-        {isNumericType ? $t('system.settings.config.typeConfig.maxValue') : $t('system.settings.config.typeConfig.maxLength')}
+        {isNumericType ? $t('system.settings.config.type_config.max_value') : $t('system.settings.config.type_config.max_length')}
         <FormLabelWithPriorityHelp
-          text={$t('system.settings.config.typeConfig.maxHelp')}
+          text={$t('system.settings.config.type_config.max_help')}
           priority="INFORMATION"
-          title={isNumericType ? $t('system.settings.config.typeConfig.maxValue') : $t('system.settings.config.typeConfig.maxLength')}
+          title={isNumericType ? $t('system.settings.config.type_config.max_value') : $t('system.settings.config.type_config.max_length')}
           labelKey="app.common.optional"
         />
       </Label>
@@ -295,11 +295,11 @@
       />
       {#if asTrimmed(maxInput) !== ''}
         <Label for="tcb-max-error-key" class="text-xs text-muted-foreground">
-          {$t('system.settings.config.typeConfig.maxErrorLabelKey')}
+          {$t('system.settings.config.type_config.max_error_label_key')}
           <FormLabelWithPriorityHelp
-            text={$t('app.common.optionalTooltipText')}
+            text={$t('app.common.optional_tooltip_text')}
             priority="INFORMATION"
-            title={$t('app.common.optionalTooltipTitle')}
+            title={$t('app.common.optional_tooltip_title')}
             labelKey="app.common.optional"
           />
         </Label>
@@ -332,11 +332,11 @@
   {#if hasRegex}
     <div class="space-y-1">
       <Label for="tcb-regex">
-        {$t('system.settings.config.typeConfig.regexPattern')}
+        {$t('system.settings.config.type_config.regex_pattern')}
         <FormLabelWithPriorityHelp
-          text={$t('system.settings.config.typeConfig.regexPatternHelp')}
+          text={$t('system.settings.config.type_config.regex_pattern_help')}
           priority="HINT"
-          title={$t('system.settings.config.typeConfig.regexPattern')}
+          title={$t('system.settings.config.type_config.regex_pattern')}
           labelKey="app.common.optional"
         />
       </Label>
@@ -345,7 +345,7 @@
         bind:value={regexPattern}
         bind:flags={regexFlags}
         on_change={() => handleRegexChange()}
-        placeholder={$t('system.settings.config.typeConfig.regexPatternPlaceholder')}
+        placeholder={$t('system.settings.config.type_config.regex_pattern_placeholder')}
         class="font-mono text-xs"
         config_type={type as 'string' | 'text' | 'secret' | 'url' | 'email' | 'phone'}
         data-testid="tcb-regex"
@@ -357,11 +357,11 @@
       {/if}
       {#if (regexPattern ?? '').trim() !== ''}
         <Label for="tcb-regex-error-key" class="text-xs text-muted-foreground">
-          {$t('system.settings.config.typeConfig.regexErrorLabelKey')}
+          {$t('system.settings.config.type_config.regex_error_label_key')}
           <FormLabelWithPriorityHelp
-            text={$t('app.common.optionalTooltipText')}
+            text={$t('app.common.optional_tooltip_text')}
             priority="INFORMATION"
-            title={$t('app.common.optionalTooltipTitle')}
+            title={$t('app.common.optional_tooltip_title')}
             labelKey="app.common.optional"
           />
         </Label>

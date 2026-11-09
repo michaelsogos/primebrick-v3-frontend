@@ -79,7 +79,7 @@
       class={checkboxInteractiveClass}
       checked={rowSelected}
       onCheckedChange={() => onToggleRowSelect(rowKey)}
-      aria-label={$t('system.entities.list.selectRow')}
+      aria-label={$t('system.entities.list.select_row')}
     />
   </div>
 {/if}
@@ -105,8 +105,8 @@
               {...props}
               variant="ghost" 
               size="icon-sm" 
-              aria-label={$t('system.entities.list.rowActions')} 
-              title={$t('system.entities.list.rowActions')}
+              aria-label={$t('system.entities.list.row_actions')} 
+              title={$t('system.entities.list.row_actions')}
               onclick={(e) => {
                 e.stopPropagation();
                 onOpenRowDropdown(row);
@@ -196,7 +196,7 @@
               >
                 <div class="flex items-center gap-2">
                   <FileClock class="size-4" />
-                  <span>{$t('app.common.versionHistory')}</span>
+                  <span>{$t('app.common.version_history')}</span>
                 </div>
               </DropdownMenu.Item>
             {/if}

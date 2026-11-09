@@ -89,10 +89,10 @@
     >
       {#if toolbarMode === 'filters'}
         <ListCheck class="size-3.5" />
-        {$t('system.entities.list.bulkActions.toggleToBulk')}
+        {$t('system.entities.list.bulk_actions.toggle_to_bulk')}
       {:else}
         <Funnel class="size-3.5" />
-        {$t('system.entities.list.bulkActions.toggleToFilters')}
+        {$t('system.entities.list.bulk_actions.toggle_to_filters')}
       {/if}
     </Button>
     <div class="h-6 w-px divider-primary-gradient" aria-hidden="true"></div>
@@ -119,7 +119,7 @@
           onclick={onBulkExport}
         >
           <Download class="size-3.5" />
-          {$t('system.entities.list.bulkActions.export')}
+          {$t('system.entities.list.bulk_actions.export')}
         </Button>
       {/if}
       {#if bulkCapabilities.htmlExport}
@@ -129,7 +129,7 @@
           onclick={onHtmlExport}
         >
           <Download class="size-3.5" />
-          {$t('system.entities.list.bulkActions.exportHtml')}
+          {$t('system.entities.list.bulk_actions.export_html')}
         </Button>
       {/if}
       {#if bulkCapabilities.duplicate}
@@ -140,7 +140,7 @@
           disabled={selectedKeys.length < 2}
         >
           <Copy class="size-3.5" />
-          {$t('system.entities.list.bulkActions.duplicate')}
+          {$t('system.entities.list.bulk_actions.duplicate')}
         </Button>
       {/if}
       {#if bulkCapabilities.delete}
@@ -155,7 +155,7 @@
           {:else}
             <Trash2 class="size-3.5" />
           {/if}
-          {$t(bulkDeleteChrome?.label_key ?? 'system.entities.list.bulkActions.delete')}
+          {$t(bulkDeleteChrome?.label_key ?? 'system.entities.list.bulk_actions.delete')}
         </Button>
       {/if}
       {#if hasDeletedSelected && bulkCapabilities.restore}
@@ -173,7 +173,7 @@
               <ArrowUpFromLine class="absolute bottom-px size-2" />
             </span>
           {/if}
-          {$t(bulkRestoreChrome?.label_key ?? 'system.entities.list.bulkActions.restore')}
+          {$t(bulkRestoreChrome?.label_key ?? 'system.entities.list.bulk_actions.restore')}
         </Button>
       {/if}
       {#each bulkCustomActions as action (action.action_name)}

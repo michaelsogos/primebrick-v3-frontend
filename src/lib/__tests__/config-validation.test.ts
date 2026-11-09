@@ -345,7 +345,7 @@ describe("buildConfigValueSchema — regex with flags", () => {
     const result = schema.safeParse("ABC");
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.issues[0].message).toBe("app.common.validation.regexMismatch");
+      expect(result.error.issues[0].message).toBe("app.common.validation.regex_mismatch");
     }
   });
 
@@ -369,7 +369,7 @@ describe("buildConfigValueSchema — regex with flags", () => {
     const result = schema.safeParse("any value");
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.issues[0].message).toBe("app.common.validation.invalidRegexPattern");
+      expect(result.error.issues[0].message).toBe("app.common.validation.invalid_regex_pattern");
     }
   });
 });

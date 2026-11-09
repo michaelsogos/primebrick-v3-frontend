@@ -4,7 +4,7 @@
   import { entityRefHref, reverseRefHref, subjectDecl, subjectFieldLabel } from '$lib/entity-list/entity-links';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
   import { t } from '$lib/i18n';
-  import { formatListCellValue, toDisplayString, colorCssFromToken, extJsonStringify } from '@primebrick/ui';
+  import { formatListCellValue, toDisplayString, colorCssFromToken, extJsonStringify, FILTER_OPERATOR_KEY } from '@primebrick/ui';
   import { formatDatetimeCellDisplay } from '$lib/entity-list';
   import { Badge } from '@primebrick/ui';
   import { ScheduleSpecCell, DynamicIcon } from '@primebrick/ui';
@@ -101,10 +101,20 @@
   const NATS_SUBJECT_HREF = '/system/settings/modules';
 
   type JsonCondition = { field: string; op?: string; value?: unknown };
-  /** Trigger/filter `{field,op,value}` vocabulary → canonical
-   *  `system.entities.list.operators.*` translation keys (the same keys the
-   *  list FilterBar badges translate through — never invented glyphs). */
-  const OP_I18N_KEY: Record<string, string> = { eq: '=', neq: '!=', gt: '>', gte: '>=', lt: '<', lte: '<=', contains: 'contains', exists: 'exists' };
+  /** Trigger/filter `{field,op,value}` DSL vocabulary → canonical
+   *  `system.entities.list.operators.*` key segments (the same keys the
+   *  list FilterBar badges translate through — segments sourced from
+   *  `FILTER_OPERATOR_KEY`, never invented glyphs). */
+  const OP_I18N_KEY: Record<string, string> = {
+    eq: FILTER_OPERATOR_KEY['='],
+    neq: FILTER_OPERATOR_KEY['!='],
+    gt: FILTER_OPERATOR_KEY['>'],
+    gte: FILTER_OPERATOR_KEY['>='],
+    lt: FILTER_OPERATOR_KEY['<'],
+    lte: FILTER_OPERATOR_KEY['<='],
+    contains: FILTER_OPERATOR_KEY.contains,
+    exists: 'exists',
+  };
   const opLabel = (op?: string) => {
     const key = OP_I18N_KEY[op ?? 'eq'];
     const translated = key ? $t(`system.entities.list.operators.${key}`) : '';

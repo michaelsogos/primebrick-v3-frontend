@@ -108,7 +108,7 @@
       iconColorField="_icon_color"
       allowCreate
       defaultSearch={rowsPrefix}
-      placeholder={suggestedKey || $t('app.common.selectValue')}
+      placeholder={suggestedKey || $t('app.common.select_value')}
       searchPlaceholder={rowsPrefix}
       truncateFrom="start"
       disabled={readonly}

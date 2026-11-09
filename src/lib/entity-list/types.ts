@@ -48,6 +48,7 @@ export {
 	searchableTextColumns,
 	getOperatorsForColumnType,
 	FILTER_OPERATOR_ICON,
+	FILTER_OPERATOR_KEY,
 	STANDARD_OPS,
 	isEntityOpEnabled,
 } from '@primebrick/ui';
