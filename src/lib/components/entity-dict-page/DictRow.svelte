@@ -38,6 +38,7 @@
     entity,
     title_text,
     translation_key,
+    pending_owner,
     display_field,
     editable_columns,
     columns_map,
@@ -66,6 +67,8 @@
     title_text: string;
     /** meta.translation_key — the label cell's rows vocabulary scope. */
     translation_key: string;
+    /** Pending-queue owner — translations queued here flush with THIS page's save. */
+    pending_owner: string;
     /** meta.display_field — the row's VALUE column (label_key on dicts). */
     display_field?: string;
     editable_columns: MetaColumn[];
@@ -252,6 +255,7 @@
             value={String(values[valueColumn.key] ?? '')}
             record={values}
             {translation_key}
+            {pending_owner}
             readonly={!can_update || deleted}
             onchange={(v) => onchange(valueColumn.key, v)}
           />

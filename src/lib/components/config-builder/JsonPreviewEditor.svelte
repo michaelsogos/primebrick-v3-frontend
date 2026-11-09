@@ -12,9 +12,12 @@
   let {
     type,
     builder,
+    pending_owner,
   }: {
     type: ConfigEntryType;
     builder: ReturnType<typeof useTypeConfigBuilder>;
+    /** Pending-translation queue owner forwarded to the AI chat sheet. */
+    pending_owner: string;
   } = $props();
 
   let previewOpen = $state(true);
@@ -56,6 +59,7 @@
       config_type: type,
       config_key: () => builder.state.configKey,
       current_json: () => builder.json,
+      pending_owner,
       on_apply_json: (json: string) => {
         builder.setRawJson(json);
         // Keep the raw editor in sync when advanced mode is visible.

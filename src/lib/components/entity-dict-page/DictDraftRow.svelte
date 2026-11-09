@@ -21,6 +21,7 @@
     editable_columns,
     columns_map,
     translation_key,
+    pending_owner,
     values = $bindable(),
     errors = {},
     readonly = false,
@@ -31,6 +32,8 @@
     columns_map?: ReadonlyMap<string, MetaColumn>;
     /** meta.translation_key — the label cell's rows vocabulary scope. */
     translation_key: string;
+    /** Pending-queue owner — translations queued here flush with THIS page's save. */
+    pending_owner: string;
     values: Record<string, unknown>;
     /** Required-empty (and future rule) errors keyed by column — the
      *  save gate surfaces here, never silently. */
@@ -85,6 +88,7 @@
             value={String(values[valueColumn.key] ?? '')}
             record={values}
             {translation_key}
+            {pending_owner}
             {readonly}
             onchange={(v) => { values[valueColumn.key] = v; }}
           />

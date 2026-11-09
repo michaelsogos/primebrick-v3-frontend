@@ -68,22 +68,37 @@ export type ListFilterLinkTerm = {
 	/** Wire operator — '=' default. 'ILIKE', 'IN', 'BETWEEN', '>', … per the
 	 *  `appendListFilterParams` serializer. */
 	op?: string;
-	value: string | string[] | { start: string; end: string };
+	value:
+		| string
+		| number
+		| boolean
+		| readonly (string | number | boolean)[]
+		| { start: string; end: string };
 	/** 'AND' default — emitted explicitly so links never rely on parser defaults. */
 	connector?: 'AND' | 'OR';
 };
 
-function appendFilterTerm(params: URLSearchParams, i: number, term: ListFilterLinkTerm) {
+/**
+ * Serialize ONE wire filter term to `filters[i][field|op|value[|connector]]`
+ * bracket params — the canonical verbatim format `translateFilterConditions`
+ * consumes server-side. Use this for raw `FilterCondition[]` (arbitrary WHERE
+ * terms): scalar → `value`, array → `value[]`, BETWEEN → `value[start|end]`.
+ */
+export function appendListFilterTerm(
+	params: URLSearchParams,
+	i: number,
+	term: ListFilterLinkTerm
+) {
 	params.set(`filters[${i}][field]`, term.field);
 	params.set(`filters[${i}][op]`, term.op ?? '=');
 	const v = term.value;
-	if (Array.isArray(v)) {
-		for (const item of v) params.append(`filters[${i}][value][]`, item);
-	} else if (typeof v === 'object' && v !== null) {
+	if (typeof v === 'object' && v !== null && 'start' in v) {
 		params.set(`filters[${i}][value][start]`, v.start);
 		params.set(`filters[${i}][value][end]`, v.end);
+	} else if (Array.isArray(v)) {
+		for (const item of v) params.append(`filters[${i}][value][]`, String(item));
 	} else {
-		params.set(`filters[${i}][value]`, v);
+		params.set(`filters[${i}][value]`, String(v));
 	}
 	params.set(`filters[${i}][connector]`, term.connector ?? 'AND');
 }
@@ -105,14 +120,14 @@ export function filteredEntityListHref(
 	const list = census.find((r) => r.entity === entity && r.kind === 'list');
 	if (!list) return null;
 	const params = new URLSearchParams();
-	terms.forEach((t, i) => appendFilterTerm(params, i, t));
+	terms.forEach((t, i) => appendListFilterTerm(params, i, t));
 	return `${list.route}?${params.toString()}`;
 }
 
 /** Filtered-list URL in the `useUrlFiltersSync` contract. */
 function filteredListHref(route: string, field: string, value: string): string {
 	const params = new URLSearchParams();
-	appendFilterTerm(params, 0, { field, op: '=', value });
+	appendListFilterTerm(params, 0, { field, op: '=', value });
 	return `${route}?${params.toString()}`;
 }
 

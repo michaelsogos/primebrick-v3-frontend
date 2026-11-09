@@ -18,6 +18,7 @@
     value,
     record,
     translation_key,
+    pending_owner,
     readonly = false,
     onchange,
   }: {
@@ -26,6 +27,8 @@
     record: Record<string, unknown>;
     /** meta.translation_key — the entity's i18n table key (e.g. 'customer_type'). */
     translation_key: string;
+    /** Pending-queue owner — queued entries flush with the page that supplied it. */
+    pending_owner: string;
     readonly?: boolean;
     onchange: (value: string) => void;
   } = $props();
@@ -77,10 +80,10 @@
 
   function openTranslations() {
     if (!value) return;
-    openSheet('i18n.translationEditor', { i18n_key: value });
+    openSheet('i18n.translationEditor', { i18n_key: value, pending_owner });
   }
 
-  const pendingLangs = $derived(value ? Object.keys(getPendingTranslation(value) ?? {}) : []);
+  const pendingLangs = $derived(value ? Object.keys(getPendingTranslation(pending_owner, value) ?? {}) : []);
 
   const languagesCta = $derived([{
     icon: 'languages',

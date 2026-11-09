@@ -35,6 +35,13 @@
 
   const { notifyParentRefresh } = useSyncChannel('primebrick_config_sync', { mode: 'sender' });
 
+  /**
+   * Pending-translation queue owner — entries queued inside this page's
+   * subtree (AI key_picker chat, translation editor sheet) flush ONLY
+   * through this page's save and die with it.
+   */
+  const PENDING_TRANSLATIONS_OWNER = 'config-entry.create';
+
   // Config type options for the dropdown — `icon` is a Lucide name rendered
   // by ComboSelect's `iconField` (kept in sync with the value widget).
   const configTypeOptions: Array<{ value: string; label: string; icon: string }> = [
@@ -116,7 +123,7 @@
       if (!updateForm.valid) return;
 
       // Drained OUTSIDE the try so the catch can re-queue them on failure.
-      const translations = takePendingTranslations();
+      const translations = takePendingTranslations(PENDING_TRANSLATIONS_OWNER);
       try {
         // Flush queued translation rows into the SAME write — the BE inserts
         // them in the entity's transaction (atomic). Rows queued by the AI
@@ -153,7 +160,9 @@
         console.error('Failed to create config entry:', error);
         // Re-queue drained translations so a retry can still flush them.
         for (const row of translations) {
-          addPendingTranslation(row.key, { [row.language]: row.value });
+          addPendingTranslation(PENDING_TRANSLATIONS_OWNER, row.key, {
+            [row.language]: { value: row.value, uuid: row.uuid, version: row.version },
+          });
         }
         cancel();
       }
@@ -196,7 +205,7 @@
   // the pending queue dies with the form (zero orphan rows). The validation
   // timer cleans itself inside useForceFormValidation.
   $effect(() => () => {
-    clearPendingTranslations();
+    clearPendingTranslations(PENDING_TRANSLATIONS_OWNER);
   });
 
   const isCreatePage = $derived(true);
@@ -575,6 +584,7 @@
                       type={$form.type as ConfigEntryType}
                       configKey={$form.key ?? ''}
                       type_config={$form.type_config || null}
+                      pending_owner={PENDING_TRANSLATIONS_OWNER}
                       onTypeConfigChange={(newConfig) => $form.type_config = newConfig}
                     />
                     <TranslatedFormFieldErrors />

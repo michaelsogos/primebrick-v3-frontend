@@ -22,8 +22,18 @@ export type EntityWritePayload<E> = {
   translations?: PendingTranslationRow[];
 };
 
-/** One pending translation row piggybacked on an entity write. */
-export type PendingTranslationRow = { key: string; language: string; value: string };
+/**
+ * One pending translation row flushed through the dedicated translation
+ * gateway route. `uuid`+`version` present → update of an existing row
+ * (optimistic-concurrency CAS); absent → create.
+ */
+export type PendingTranslationRow = {
+  key: string;
+  language: string;
+  value: string;
+  uuid?: string;
+  version?: number;
+};
 
 export type ModuleInfo = {
   id: string;

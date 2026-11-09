@@ -25,7 +25,7 @@
   import { onMount } from 'svelte';
   import { SvelteMap, SvelteSet } from 'svelte/reactivity';
   import { t } from '$lib/i18n';
-  import { apiFetch, entityApiBase, createTranslation } from '$lib/api';
+  import { apiFetch, entityApiBase } from '$lib/api';
   import { useEntityList } from '$lib/composables/useEntityList.svelte';
   import { useSelection, Button, Badge, Toolbar, ButtonGroup } from '@primebrick/ui';
   import { SelectableToolbar, SelectableFieldset } from '@primebrick/ui';
@@ -39,7 +39,8 @@
   import { SearchInput } from '@primebrick/ui';
   import DictDraftRow from './DictDraftRow.svelte';
   import { pushNotification } from '$lib/errors/app-errors';
-  import { takePendingTranslations, addPendingTranslation, clearPendingTranslations } from '$lib/i18n/pending-translations.svelte';
+  import { clearPendingTranslations } from '$lib/i18n/pending-translations.svelte';
+  import { flushPendingTranslations } from '$lib/i18n/flush-pending-translations';
   import { useMfaStepUp } from '$lib/composables/useMfaStepUp.svelte';
   import MfaStepUpDialog from '$lib/components/auth/MfaStepUpDialog.svelte';
   import DictRow from './DictRow.svelte';
@@ -69,7 +70,7 @@
 
   // The pending-translation queue is session-scoped — leaving the page with
   // unsaved drafts must never persist queued labels (config-create rule).
-  $effect(() => () => clearPendingTranslations());
+  $effect(() => () => clearPendingTranslations(basePath));
 
   const stepUp = useMfaStepUp();
 
@@ -349,23 +350,21 @@
       // Pending translations → the standard translation gateway route —
       // the module is resolved PER KEY (prefix == module code: `custom.*`
       // rows land in custom.translations, never on the entity envelope).
-      // Drain+re-queue on failure: the next save re-flushes them.
-      const drained = takePendingTranslations();
-      try {
-        for (const pt of drained) {
-          await createTranslation(pt.key.split('.')[0], {
-            key: pt.key,
-            language: pt.language,
-            value: pt.value,
-          });
-        }
-      } catch (e) {
-        for (const pt of drained) addPendingTranslation(pt.key, { [pt.language]: pt.value });
-        throw e;
-      }
+      // Rows carrying {uuid,version} go through PUT (CAS); the rest POST.
+      // Failures are requeued by the helper for this owner and reported
+      // below — never silently dropped, never auto-retried.
+      const failedTranslations = await flushPendingTranslations(basePath);
       originals = structuredClone(values);
       drafts = [];
-      pushNotification({ impact: 'NONE', messageKey: 'app.common.saveSuccess' });
+      if (failedTranslations.length > 0) {
+        pushNotification({
+          impact: 'HIGH',
+          messageKey: 'app.common.translations.flushFailed',
+          detail: failedTranslations.map((f) => `${f.key} [${f.language}]`).join(', '),
+        });
+      } else {
+        pushNotification({ impact: 'NONE', messageKey: 'app.common.saveSuccess' });
+      }
       await list.refreshRows();
     } catch (err) {
       if (err && typeof err === 'object' && 'status' in err && 'type' in err) {
@@ -460,6 +459,7 @@
     entity,
     title_text: rowTitle(r),
     translation_key: translationKey,
+    pending_owner: basePath,
     display_field: displayField,
     editable_columns: editableColumns,
     columns_map: columnMap,
@@ -555,6 +555,7 @@
             editable_columns={editableColumns}
             columns_map={columnMap}
             translation_key={translationKey}
+            pending_owner={basePath}
             bind:values={d.values}
             errors={missingRequired(d.values)}
             readonly={!canCreate}

@@ -14,11 +14,15 @@
     type,
     configKey,
     type_config,
+    pending_owner,
     onTypeConfigChange,
   }: {
     type: ConfigEntryType;
     configKey: string;
     type_config: string | null;
+    /** Pending-translation queue owner — translations queued inside this
+     *  builder's subtree (AI chat, editor sheet) flush with the host page. */
+    pending_owner: string;
     onTypeConfigChange: (json: string) => void;
   } = $props();
 
@@ -80,5 +84,5 @@
 <div class="space-y-6">
   <ValidationRulesSection {type} {configKey} {builder} />
   <WidgetConfigSection {type} {configKey} {builder} />
-  <JsonPreviewEditor {type} {builder} />
+  <JsonPreviewEditor {type} {builder} {pending_owner} />
 </div>
