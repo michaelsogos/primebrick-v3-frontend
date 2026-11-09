@@ -390,7 +390,7 @@
       />
       <Button
         size="icon"
-        class="size-8 shrink-0"
+        class="size-8 shrink-0 bg-none bg-primary text-primary-foreground hover:bg-primary/90"
         disabled={!canSwap}
         title={$t('app.common.translations.swap')}
         aria-label={$t('app.common.translations.swap')}
