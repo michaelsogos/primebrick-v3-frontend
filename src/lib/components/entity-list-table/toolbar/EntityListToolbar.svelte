@@ -26,8 +26,9 @@
     refreshDisabled: boolean;
     onRefresh: () => void;
     filterableColumns: MetaColumn[];
-    filtersOpen: boolean;
-    onFiltersOpenChange: (open: boolean) => void;
+    /** Funnel CTA handler — toggle semantics owned by the sheet-sync
+     *  composable (open/close + live props; no parallel boolean state). */
+    onToggleFilters: () => void;
     onColumnSelectorClick: () => void;
     onCreateAction?: () => void;
     /** Meta-driven create CTA shape (route census `kind:"create"`) —
@@ -56,8 +57,7 @@
     refreshDisabled,
     onRefresh,
     filterableColumns,
-    filtersOpen,
-    onFiltersOpenChange,
+    onToggleFilters,
     onColumnSelectorClick,
     onCreateAction,
     create_cta,
@@ -122,7 +122,7 @@
         variant="ghost"
         size="sm"
         type="button"
-        onclick={() => onFiltersOpenChange(!filtersOpen)}
+        onclick={onToggleFilters}
         aria-label={$t('system.entities.list.filters')}
         title={$t('system.entities.list.filters')}
       >

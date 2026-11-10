@@ -258,7 +258,6 @@
     presetSelections={list.presetSelections}
     onPresetChange={list.onPresetChange}
     sparklineData={list.sparklineData}
-    bind:filtersOpen={() => list.filtersOpen, (v) => list.setFiltersOpen(v)}
     onRefresh={() => void list.refreshRows()}
     {cell}
     {metaLoadingView}

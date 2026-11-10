@@ -143,7 +143,6 @@ export type EntityListTableProps<TRow extends Record<string, unknown>> = {
    *  override the generic "New" label in the toolbar button. */
   create_cta?: { label_key?: string; icon?: string };
   onEditAction?: (row: TRow) => void;
-  filtersOpen?: boolean;
   filterValues?: Record<string, unknown>;
   onFilterValuesChange?: (values: Record<string, unknown>) => void;
   onResetFilters?: () => void;

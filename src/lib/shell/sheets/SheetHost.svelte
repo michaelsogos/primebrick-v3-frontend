@@ -17,6 +17,7 @@
   import SearchInPanel from '$lib/entity-list/sheets/panels/SearchInPanel.svelte';
   import ColumnsPanel from '$lib/entity-list/sheets/panels/ColumnsPanel.svelte';
   import FiltersPanel from '$lib/entity-list/sheets/panels/FiltersPanel.svelte';
+  import DatetimeIanaPanel from '$lib/entity-list/sheets/panels/DatetimeIanaPanel.svelte';
   import VersionHistoryPanel from '$lib/entity-list/sheets/panels/VersionHistoryPanel.svelte';
   import JsonViewerPanel from '$lib/entity-list/sheets/panels/JsonViewerPanel.svelte';
   import CurrencySelectPanel from '$lib/shell/sheets/panels/CurrencySelectPanel.svelte';
@@ -45,6 +46,7 @@
     'entity.searchIn': SearchInPanel,
     'entity.columns': ColumnsPanel,
     'entity.filters': FiltersPanel,
+    'entity.datetimeIana': DatetimeIanaPanel,
     'entity.versionHistory': VersionHistoryPanel,
     'entity.jsonViewer': JsonViewerPanel,
     'config.currencySelect': CurrencySelectPanel,

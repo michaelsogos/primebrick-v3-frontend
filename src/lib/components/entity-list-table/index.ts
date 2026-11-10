@@ -1,5 +1,9 @@
 export { default as EntityListTable } from './EntityListTable.svelte';
 
+// Footer sub-components — shared by archetype pages (dict consumes these directly)
+export { default as PaginationControls } from './components/PaginationControls.svelte';
+export { default as RangeLabel } from './components/RangeLabel.svelte';
+
 // Toolbar sub-components
 export * from './toolbar';
 

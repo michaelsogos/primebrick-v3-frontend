@@ -1,14 +1,9 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
-  import { Button } from '@primebrick/ui';
-  import { ButtonGroup, Toolbar, KeyboardHints, Tooltip } from '@primebrick/ui';
-  import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-  import { dropdownMenuSelectedItemClass } from '$lib/components/ui/dropdown-menu/dropdown-menu-item-selected';
+  import { Toolbar, KeyboardHints, Tooltip } from '@primebrick/ui';
   import { SelectionCounter } from '../toolbar';
-  import { ChevronsLeft } from '@primebrick/ui/vendor/lucide'
-  import { ChevronLeft } from '@primebrick/ui/vendor/lucide'
-  import { ChevronRight } from '@primebrick/ui/vendor/lucide'
-  import { ChevronsRight } from '@primebrick/ui/vendor/lucide';
+  import PaginationControls from './PaginationControls.svelte';
+  import RangeLabel from './RangeLabel.svelte';
   import { Keyboard } from '@primebrick/ui/vendor/lucide';
 
   let {
@@ -66,13 +61,7 @@
   {#snippet left()}
   <!-- Left side: Row range + Selection Counter -->
   <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
-    <div class="text-muted-foreground">
-      {#if footerRangeTotal === 0}
-        0
-      {:else}
-        {footerRangeStart}-{footerRangeEnd} / {footerRangeTotal}
-      {/if}
-    </div>
+    <RangeLabel start={footerRangeStart} end={footerRangeEnd} total={footerRangeTotal} />
     {#if rowSelectionEnabled && selectionCount > 0}
       <SelectionCounter
         selectionCount={selectionCount}
@@ -128,98 +117,19 @@
   </Tooltip.Root>
   {/snippet}
 
-  <!-- Right side: Page size + Pagination controls -->
-  <div class="flex items-center gap-2">
-    <span class="text-muted-foreground">{$t('system.entities.list.page_size')}</span>
-    <DropdownMenu.Root>
-      <DropdownMenu.Trigger>
-        {#snippet child({ props })}
-          <Button variant="ghost" size="sm" {...props}>
-            {pageSize}
-          </Button>
-        {/snippet}
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Content align="start">
-        {#each pageSizeOptions as opt (opt)}
-          <DropdownMenu.Item
-            class={dropdownMenuSelectedItemClass(opt === pageSize)}
-            onSelect={() => {
-              onPageSizeChange(opt);
-            }}
-          >
-            {opt}
-          </DropdownMenu.Item>
-        {/each}
-      </DropdownMenu.Content>
-    </DropdownMenu.Root>
-
-    <div class="mx-1 h-6 w-px divider-primary-gradient" aria-hidden="true"></div>
-
-    <div class="flex items-center gap-2">
-      <ButtonGroup segmented aria-label={$t('system.entities.list.pagination.first_page')}>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          disabled={footerPage <= 1}
-          onclick={() => {
-            if (footerUsesClientPaging) clientSelectedPage = 1;
-            else onPageChange(1);
-          }}
-          aria-label={$t('system.entities.list.pagination.first_page')}
-          title={$t('system.entities.list.pagination.first_page')}
-        >
-          <ChevronsLeft class="size-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          disabled={footerPage <= 1}
-          onclick={() => {
-            if (footerUsesClientPaging) clientSelectedPage = Math.max(1, clientSelectedPage - 1);
-            else onPageChange(Math.max(1, page - 1));
-          }}
-          aria-label={$t('system.entities.list.pagination.previous_page')}
-          title={$t('system.entities.list.pagination.previous_page')}
-        >
-          <ChevronLeft class="size-4" />
-        </Button>
-      </ButtonGroup>
-      <div
-        class="whitespace-nowrap px-0.5 text-center tabular-nums text-muted-foreground"
-        data-testid="elt-pagination-status"
-      >
-        {$t('system.entities.list.pagination_status')
-          .replace('{page}', String(footerPage))
-          .replace('{total}', String(footerTotalPages))}
-      </div>
-      <ButtonGroup segmented aria-label={$t('system.entities.list.pagination.next_page')}>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          disabled={footerPage >= footerTotalPages}
-          onclick={() => {
-            if (footerUsesClientPaging) clientSelectedPage = Math.min(footerTotalPages, clientSelectedPage + 1);
-            else onPageChange(Math.min(totalPages, page + 1));
-          }}
-          aria-label={$t('system.entities.list.pagination.next_page')}
-          title={$t('system.entities.list.pagination.next_page')}
-        >
-          <ChevronRight class="size-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          disabled={footerPage >= footerTotalPages}
-          onclick={() => {
-            if (footerUsesClientPaging) clientSelectedPage = footerTotalPages;
-            else onPageChange(totalPages);
-          }}
-          aria-label={$t('system.entities.list.pagination.last_page')}
-          title={$t('system.entities.list.pagination.last_page')}
-        >
-          <ChevronsRight class="size-4" />
-        </Button>
-      </ButtonGroup>
-    </div>
-  </div>
+  <!-- Right side: the shared pager cluster — `onPageChange` resolves the
+       client-vs-server route once (selected-rows client paging vs server
+       paging), the control itself stays branch-free. -->
+  <PaginationControls
+    page={footerPage}
+    totalPages={footerTotalPages}
+    pageSize={pageSize}
+    pageSizeOptions={pageSizeOptions}
+    onPageChange={(p) => {
+      if (footerUsesClientPaging) clientSelectedPage = p;
+      else onPageChange(p);
+    }}
+    onPageSizeChange={onPageSizeChange}
+    test_id_prefix="elt"
+  />
 </Toolbar>

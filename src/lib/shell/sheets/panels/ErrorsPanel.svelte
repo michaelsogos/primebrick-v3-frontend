@@ -157,7 +157,7 @@
           {/if}
 
           <div class="mt-2 flex items-center justify-between gap-2">
-            <EventCard.Time>{formatUiDateTime(e.createdAt, $uiLang)}</EventCard.Time>
+            <EventCard.Time class="mt-0">{formatUiDateTime(e.createdAt, $uiLang)}</EventCard.Time>
             {#if hasExtraFields(e)}
               <Button
                 variant="ghost"

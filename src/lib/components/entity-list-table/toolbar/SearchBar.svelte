@@ -10,7 +10,8 @@
     searchInKeys,
     searchableColumns,
     onSearchInKeysChange,
-    toggleSearchKey
+    toggleSearchKey,
+    data_testid
   }: {
     search: string;
     onSearchInput: (value: string) => void;
@@ -18,6 +19,7 @@
     searchableColumns: MetaColumn[];
     onSearchInKeysChange: (keys: string[] | null) => void;
     toggleSearchKey: (key: string) => void;
+    data_testid?: string;
   } = $props();
 
   const searchScopeLabel = $derived(() => {
@@ -33,12 +35,14 @@
 
 <SearchInput
   highlight={true}
+  data_testid={data_testid}
   value={search}
   oninput={(e) => onSearchInput((e.currentTarget as HTMLInputElement).value)}
   on_clear={() => onSearchInput('')}
   placeholder={$t('system.entities.list.search_placeholder')}
   trailing_button={{
     label: searchScopeLabel(),
+    'data-testid': data_testid ? `${data_testid}-scope` : undefined,
     onclick: () =>
       openSheet('entity.searchIn', {
         searchInKeys,

@@ -17,13 +17,20 @@ export class ApiListError extends Error {
   readonly code: string;
   readonly internalCode?: string;
   readonly instance?: string;
+  readonly detail?: string;
+  readonly severity?: string;
+  /** Structured RFC 7807 `extra` payload (native — feeds the detail viewer). */
+  readonly extra?: Record<string, unknown>;
 
-  constructor(code: string, status: number, internalCode?: string, instance?: string) {
+  constructor(code: string, status: number, details: Partial<ApiErrorDetails> = {}) {
     super(code);
     this.code = code;
     this.status = status;
-    this.internalCode = internalCode;
-    this.instance = instance;
+    this.internalCode = details.internalCode ?? undefined;
+    this.instance = details.instance ?? undefined;
+    this.detail = details.detail ?? undefined;
+    this.severity = details.severity ?? undefined;
+    this.extra = details.extra ?? undefined;
   }
 }
 
@@ -32,6 +39,9 @@ export interface ApiErrorDetails {
   internalCode: string | null;
   instance: string | null;
   status: number | null;
+  detail: string | null;
+  severity: string | null;
+  extra: Record<string, unknown> | null;
 }
 
 /** Parse the response body for RFC 7807 / legacy `error` fields (best-effort). */
@@ -43,15 +53,24 @@ export async function readApiErrorDetails(res: Response): Promise<ApiErrorDetail
       internal_code?: unknown;
       instance?: unknown;
       status?: unknown;
+      detail?: unknown;
+      severity?: unknown;
+      extra?: unknown;
     };
     const code =
       typeof data?.error === 'string' ? data.error : typeof data?.title === 'string' ? data.title : null;
     const internalCode = typeof data?.internal_code === 'string' ? data.internal_code : null;
     const instance = typeof data?.instance === 'string' ? data.instance : null;
     const status = typeof data?.status === 'number' ? data.status : res.status;
-    return { code, internalCode, instance, status };
+    const detail = typeof data?.detail === 'string' ? data.detail : null;
+    const severity = typeof data?.severity === 'string' ? data.severity : null;
+    const extra =
+      typeof data?.extra === 'object' && data.extra !== null && !Array.isArray(data.extra)
+        ? (data.extra as Record<string, unknown>)
+        : null;
+    return { code, internalCode, instance, status, detail, severity, extra };
   } catch {
-    return { code: null, internalCode: null, instance: null, status: res.status };
+    return { code: null, internalCode: null, instance: null, status: res.status, detail: null, severity: null, extra: null };
   }
 }
 

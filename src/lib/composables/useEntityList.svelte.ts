@@ -53,6 +53,7 @@ import {
   isBackendGatewayUnreachable,
   backendOfflineTags,
   defaultSearchGate,
+  nextSearchScopeKeys,
   resolvePresetSelection,
   resolvePresetConditions,
   serviceApiBase
@@ -139,7 +140,6 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
     filterValues: {} as Record<string, unknown>,
     advancedFilters: [] as AdvancedFilter[],
     globalConnector: 'AND' as 'AND' | 'OR',
-    filtersOpen: false,
 
     visibleKeys: [] as string[],
     selectedKeys: [] as string[],
@@ -425,12 +425,7 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
     const res = await apiFetchWithTimeout(`${opts.basePath}/list?${qs.toString()}`, { signal: controller.signal }, 30_000);
     if (!res.ok) {
       const apiDetails = await readApiErrorDetails(res);
-      throw new ApiListError(
-        apiDetails.code ?? 'LIST_FAILED',
-        res.status,
-        apiDetails.internalCode ?? undefined,
-        apiDetails.instance ?? undefined
-      );
+      throw new ApiListError(apiDetails.code ?? 'LIST_FAILED', res.status, apiDetails);
     }
     const data = extJsonParse<ListResponse<TRow>>(await res.text());
     _state.rows = data.rows;
@@ -511,7 +506,14 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
       messageKey: isDbDown ? 'app.common.db_unavailable' : 'app.common.load_failed',
       scopeKey,
       tags,
-      toast: false
+      toast: false,
+      ...(e instanceof ApiListError
+        ? {
+            ...(e.detail ? { detail: e.detail } : {}),
+            ...(e.severity ? { severity: e.severity } : {}),
+            ...(e.extra ? { extra: e.extra } : {})
+          }
+        : {})
     });
   }
 
@@ -675,9 +677,6 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
     // get globalConnector() {
     //   return _state.globalConnector;
     // },
-    get filtersOpen() {
-      return _state.filtersOpen;
-    },
     get visibleKeys() {
       return _state.visibleKeys;
     },
@@ -767,6 +766,15 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
         void refreshRows({ clampPage: true });
       }
     },
+    /** Toggle one column in/out of the `search_in` scope — shared
+     *  semantics via `nextSearchScopeKeys` (null = all fields). */
+    toggleSearchKey(key: string) {
+      _state.searchInKeys = nextSearchScopeKeys(_state.searchInKeys, key);
+      if (_state.appliedSearch.trim()) {
+        _state.page = 1;
+        void refreshRows({ clampPage: true });
+      }
+    },
     onSortChange(key: string | null, dir: 'asc' | 'desc') {
       _state.sortKey = key;
       _state.sortDir = dir;
@@ -797,7 +805,6 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
       _state.filterValues = {};
       _state.advancedFilters = [];
       _state.globalConnector = 'AND';
-      _state.filtersOpen = false;
       _state.page = 1;
       void refreshRows({ clampPage: true });
     },
@@ -815,13 +822,9 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
       _state.page = 1;
       void refreshRows({ clampPage: true });
     },
-    setFiltersOpen(open: boolean) {
-      _state.filtersOpen = open;
-    },
-    // toggleFilters — superseded by setFiltersOpen; never called.
-    // toggleFilters() {
-    //   _state.filtersOpen = !_state.filtersOpen;
-    // },
+    // filtersOpen/setFiltersOpen removed — the filters-sheet pressed state
+    // is derived from the sheet lifecycle in useEntitySheetSync.filtersOpen;
+    // no parallel boolean store exists here by design.
     // setRows — external-enrichment hook superseded by the `onRowsLoaded`
     // option; never called.
     // setRows(rows: TRow[]) {

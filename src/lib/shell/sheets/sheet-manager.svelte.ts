@@ -19,6 +19,7 @@ export const SHEET_PANEL_IDS = [
   'entity.searchIn',
   'entity.columns',
   'entity.filters',
+  'entity.datetimeIana',
   'entity.versionHistory',
   'entity.jsonViewer',
   'config.currencySelect',
@@ -65,7 +66,15 @@ export type SheetPanelPropsMap = {
     onReorderKeys?: (group: 'sticky' | 'data' | 'auditing', keys: string[]) => void;
     onResetColumnVisibility: () => void;
   };
+  'entity.datetimeIana': {
+    datetimeIanaColumns: import('$lib/entity-list/types').MetaColumn[];
+    modeByKey: Record<string, 'browser' | 'record'>;
+    onToggle: (col: import('$lib/entity-list/types').MetaColumn) => void;
+    disabled?: boolean;
+  };
   'entity.filters': {
+    /** Entity name — FiltersPanel resolves audit-actor options for audited columns. */
+    entity?: string;
     filterableColumns?: import('$lib/entity-list/types').MetaColumn[];
     filterValues?: Record<string, unknown>;
     onFilterValuesChange?: (values: Record<string, unknown>) => void;

@@ -92,7 +92,6 @@
     onCreateAction,
     create_cta,
     onEditAction,
-    filtersOpen = $bindable(false),
     filterValues = {},
     onFilterValuesChange,
     onResetFilters,
@@ -249,8 +248,10 @@
     onResetFilters: () => onResetFilters,
     advancedFilters: () => advancedFilters ?? null,
     onAdvancedFiltersChange: () => onAdvancedFiltersChange,
-    filtersOpen: () => filtersOpen,
-    setFiltersOpen: (open) => { filtersOpen = open; },
+    datetimeIanaToggleColumns: () => datetimeIanaToggleColumns,
+    datetimeIanaModeByKey: () => datetimeIanaModeByKey,
+    toggleDatetimeIana: () => toggleDatetimeIana,
+    datetimeIanaDisabled: () => rowsLoading
   });
   const toggleSearchKey = sheetPanels.toggleSearchKey;
   const toggleColumnKey = sheetPanels.toggleColumnKey;
@@ -636,6 +637,43 @@
   const selectionPastParticipleKey = $derived(
     selectionCount === 1 ? 'system.entities.list.selected_singular' : 'system.entities.list.selected_plural'
   );
+
+  /** Card/card_list lower-bar zones (select-all | sort builder | IANA CTA) —
+   *  table view keeps its own thead chrome and passes none. */
+  const isSpecialView = $derived(viewMode !== 'table');
+  const cardSelectAllZone = $derived(
+    isSpecialView && rowSelectionEnabled
+      ? {
+          checked: allOnPageSelected,
+          indeterminate: headerIndeterminate,
+          onToggle: toggleAllOnPage,
+          test_id: 'entity-list-card-select-all'
+        }
+      : undefined
+  );
+  const cardSortZone = $derived(
+    isSpecialView && sortableColumns.length > 0
+      ? {
+          allColumns,
+          sortableColumns,
+          sortKey: effectiveSortKey,
+          sortDir,
+          onSortChange,
+          test_id: 'entity-list-card-sort'
+        }
+      : undefined
+  );
+  const cardIanaZone = $derived(
+    isSpecialView && datetimeIanaToggleColumns.length > 0
+      ? {
+          columns: datetimeIanaToggleColumns,
+          modeByKey: datetimeIanaModeByKey,
+          onToggle: toggleDatetimeIana,
+          disabled: rowsLoading,
+          test_id: 'entity-list-iana'
+        }
+      : undefined
+  );
 </script>
 
 <svelte:window onkeydown={keyboardNav.handleGlobalKeyDown} />
@@ -660,8 +698,7 @@
     refreshDisabled={refreshDisabled}
     onRefresh={onRefresh}
     filterableColumns={filterableColumns}
-    filtersOpen={filtersOpen}
-    onFiltersOpenChange={(open) => { filtersOpen = open; }}
+    onToggleFilters={sheetPanels.toggleFiltersSheet}
     filterPresets={filterPresets}
     presetSelections={presetSelections}
     onPresetChange={onPresetChange}
@@ -694,6 +731,9 @@
     onBulkCustomAction={(a) => bulkActions.handleBulkCustomAction(a)}
     bulkDeleteChrome={bulkDeleteChrome}
     bulkRestoreChrome={bulkRestoreChrome}
+    selectAll={cardSelectAllZone}
+    sort={cardSortZone}
+    ianaToggle={cardIanaZone}
   />
 
   <EntityListTableContent
@@ -730,12 +770,8 @@
     allOnPageSelected={allOnPageSelected}
     headerIndeterminate={headerIndeterminate}
     toggleAllOnPage={toggleAllOnPage}
-    allColumns={allColumns}
     effectiveSortKey={effectiveSortKey}
     sortDir={sortDir}
-    onSortChange={onSortChange}
-    sortableColumns={sortableColumns}
-    datetimeIanaToggleColumns={datetimeIanaToggleColumns}
     toggleDatetimeIana={toggleDatetimeIana}
     onEntityRowClick={onEntityCardClick}
     onToggleRowSelect={toggleRowSelect}

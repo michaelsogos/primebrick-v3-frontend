@@ -5,7 +5,15 @@
    * update ARE the same surface).
    *
    * Anatomy (the ConfigList port onto served meta):
-   *   - sticky toolbar: select-all + bulk CTAs | search + add-row CTA
+   *   - sticky toolbar, level 1: scoped search left (the canonical ELT
+   *     SearchBar + `entity.searchIn` sheet) | CTAs right in the ELT
+   *     order — deletion-view group (soft-delete entities) │divider│
+   *     filters funnel + refresh │divider│ add-row CTA
+   *   - sticky toolbar, level 2: the shared ELT SELECT ALL | FILTER | BULK
+   *     bar (BulkActionsToolbar — select-all leading zone, filters↔bulk
+   *     toggle, FilterBar, bulk CTAs; the dict-local revert rides the
+   *     `bulkExtraActions` slot since it is a page-state op, not an
+   *     `entity_op` route)
    *   - rows: DictRow — title + badges + audit meta left, one
    *     FormFieldDispatcher per editable column right (depends_on/uom/
    *     remote options resolved by the canonical control resolver)
@@ -27,16 +35,16 @@
   import { t } from '$lib/i18n';
   import { apiFetch, entityApiBase } from '$lib/api';
   import { useEntityList } from '$lib/composables/useEntityList.svelte';
-  import { useSelection, Button, Badge, Toolbar, ButtonGroup } from '@primebrick/ui';
-  import { SelectableToolbar, SelectableFieldset } from '@primebrick/ui';
-  import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-  import { dropdownMenuSelectedItemClass } from '$lib/components/ui/dropdown-menu/dropdown-menu-item-selected';
-  import { Plus, Trash2, Undo2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, LoaderCircle } from '@primebrick/ui/vendor/lucide';
+  import { useSelection, Button, Badge, Toolbar, RefreshButton } from '@primebrick/ui';
+  import { SelectableFieldset, DeletionFilterToggle } from '@primebrick/ui';
+  import { LoadingBar } from '$lib/components/ui/loading-bar';
+  import { SearchBar, BulkActionsToolbar, PaginationControls, RangeLabel, useToolbarMode } from '$lib/components/entity-list-table';
+  import { isColumnFilterable, searchableTextColumns, useEntitySheetSync } from '$lib/entity-list';
+  import { Plus, Undo2, LoaderCircle, Funnel } from '@primebrick/ui/vendor/lucide';
   import { type MetaColumn, type EntityMeta } from '$lib/entity-list/types';
   import { isEntityOpAllowed } from '$lib/permissions.svelte';
   import { extJsonStringify } from '$lib/api-ext';
   import FormFieldDispatcher from '$lib/entity-form/FormFieldDispatcher.svelte';
-  import { SearchInput } from '@primebrick/ui';
   import DictDraftRow from './DictDraftRow.svelte';
   import { pushNotification } from '$lib/errors/app-errors';
   import { clearPendingTranslations } from '$lib/i18n/pending-translations.svelte';
@@ -118,6 +126,24 @@
    */
   const translationKey = $derived(meta?.translation_key ?? entity);
 
+  // ─── Toolbar contract — same derivations ELT owns for its two-level
+  //     bar: searchable/filterable column sets and the soft-delete flag
+  //     (audited `deleted_at`/`deleted_by` presence drives the view group). ──
+  const allColumns = $derived(meta?.columns ?? []);
+  const searchableColumns = $derived(searchableTextColumns(allColumns));
+  const filterableColumns = $derived(allColumns.filter((c) => isColumnFilterable(c)));
+  const hasSoftDelete = $derived(
+    allColumns.some((c) => c.audited === true && (c.key === 'deleted_at' || c.key === 'deleted_by')),
+  );
+
+  // Entities without soft-delete columns must never send `deleted_records`
+  // or show the view group — same guard ELT applies.
+  $effect(() => {
+    if (!hasSoftDelete && list.deletionFilterMode !== 'non_deleted') {
+      list.onDeletionFilterModeChange('non_deleted');
+    }
+  });
+
   const canCreate = $derived(isEntityOpAllowed(meta?.actions, 'create.single'));
   const canUpdate = $derived(isEntityOpAllowed(meta?.actions, 'update.single'));
   const canDelete = $derived(isEntityOpAllowed(meta?.actions, 'delete.single'));
@@ -164,7 +190,7 @@
         next[String(r[uid])] = v;
       }
       values = next;
-      originals = structuredClone(next);
+      originals = $state.snapshot(next);
       lastRowsKey = key;
     }
   });
@@ -229,7 +255,7 @@
   function revertRow(id: string) {
     const orig = originals[id];
     if (!orig) return;
-    values = { ...values, [id]: structuredClone(orig) };
+    values = { ...values, [id]: $state.snapshot(orig) };
   }
 
   /** Bulk revert = the SELECTED tainted rows only (the toolbar badge
@@ -299,6 +325,55 @@
   const selectedRows = $derived(
     displayRows.filter((r) => selection.isSelected(String(r[uid]))),
   );
+  const selectedKeys = $derived([...selection.state.selected_ids]);
+  const hasDeletedSelected = $derived(
+    selectedRows.some((r) => r['deleted_at'] !== null && r['deleted_at'] !== undefined),
+  );
+  const allSelectedDeleted = $derived(
+    selectedRows.length > 0 &&
+      selectedRows.every((r) => r['deleted_at'] !== null && r['deleted_at'] !== undefined),
+  );
+
+  /** Filters↔bulk mode of the shared lower bar — same auto-switch
+   *  behaviour ELT owns (selection → bulk, applied filters → filters). */
+  const toolbarMode = useToolbarMode({
+    selectedKeys: () => selectedKeys,
+    filterValues: () => list.filterValues,
+    advancedFilters: () => list.advancedFilters,
+  });
+
+  // ─── Sheets — the shared sync contract (same panels ELT owns:
+  //  `entity.searchIn` via SearchBar, `entity.filters` via the funnel).
+  //  filtersOpen/toggle are the derived pair — no parallel boolean. ──────
+  const sheetSync = useEntitySheetSync({
+    panels: {
+      'entity.searchIn': () => ({
+        searchInKeys: list.searchInKeys,
+        searchableColumns,
+        onSearchInKeysChange: list.onSearchInKeysChange,
+        toggleSearchKey: list.toggleSearchKey,
+      }),
+      'entity.filters': () => ({
+        entity,
+        filterableColumns,
+        filterValues: list.filterValues ?? {},
+        onFilterValuesChange: list.onFilterValuesChange,
+        onResetFilters: list.onResetFilters,
+        advancedFilters: list.advancedFilters ?? [],
+        onAdvancedFiltersChange: list.onAdvancedFiltersChange,
+      }),
+    },
+  });
+
+  /** Standard bulk CTAs the dict supports — export/duplicate have no dict
+   *  route; delete/restore follow the entity_op gates. */
+  const bulkCapabilities = $derived({
+    export: false,
+    htmlExport: false,
+    duplicate: false,
+    delete: canBulkDelete,
+    restore: canRestore,
+  });
 
   /** Tainted row titles for the footer anatomy (ConfigList's field badges,
    *  keyed on the row's human identity instead). */
@@ -336,7 +411,7 @@
           }),
         });
         if (!res.ok) throw await res.json().catch(() => new Error(`update failed (${res.status})`));
-        originals = { ...originals, [id]: structuredClone(values[id]) };
+        originals = { ...originals, [id]: $state.snapshot(values[id]) };
       }
       for (const d of drafts) {
         const res = await apiFetch(basePath, {
@@ -354,7 +429,7 @@
       // Failures are requeued by the helper for this owner and reported
       // below — never silently dropped, never auto-retried.
       const failedTranslations = await flushPendingTranslations(basePath);
-      originals = structuredClone(values);
+      originals = $state.snapshot(values);
       drafts = [];
       if (failedTranslations.length > 0) {
         pushNotification({
@@ -404,12 +479,29 @@
     }
   }
 
-  async function restoreRow(r: Record<string, unknown>) {
+  async function restoreOne(r: Record<string, unknown>): Promise<boolean> {
     const id = String(r[uid]);
     const res = await apiFetch(`${basePath}/${encodeURIComponent(id)}/restore?version=${r['version']}`, {
       method: 'POST',
     });
-    if (res.ok) await list.refreshRows();
+    return res.ok;
+  }
+
+  async function restoreRow(r: Record<string, unknown>) {
+    if (await restoreOne(r)) await list.refreshRows();
+  }
+
+  /** Bulk restore = the single-row restore envelope per selected deleted
+   *  row (the entity-router exposes no bulk restore), then one refresh —
+   *  same progressive-commit convention as `saveAll`. */
+  async function bulkRestore() {
+    for (const r of selectedRows.filter(
+      (r) => r['deleted_at'] !== null && r['deleted_at'] !== undefined,
+    )) {
+      await restoreOne(r);
+    }
+    selection.clearSelection();
+    await list.refreshRows();
   }
 
   async function bulkDelete() {
@@ -487,47 +579,60 @@
 </script>
 
 <div class="flex h-full min-h-0 flex-col" data-testid="entity-dict-page" data-entity={entity}>
-  <!-- Sticky toolbar: select-all + bulk CTAs | search + add-row -->
-  <div class="shrink-0 border-b bg-background/90 px-4 py-2 backdrop-blur-sm supports-backdrop-filter:bg-background/70">
-    <div class="flex flex-wrap items-center justify-between gap-3">
-      <SelectableToolbar
-        all_selected={allSelected}
-        some_selected={someSelected}
-        selected_count={selection.selected_count}
-        on_toggle_select_all={(c) => selection.toggleSelectAll(selectableUids, c)}
-        test_id="dict-toolbar"
-      >
-        {#if selectedTaintedCount > 0}
-          <Button variant="warning" size="sm" onclick={revertSelected} data-testid="dict-toolbar-bulk-revert">
-            <Undo2 class="size-4" />
-            {$t('app.common.bulk_revert')}
-            <span class="ml-1 text-xs opacity-70">({selectedTaintedCount})</span>
-          </Button>
-        {/if}
-        {#if canBulkDelete}
-          <Button
-            variant="destructive"
-            size="sm"
-            onclick={() => void bulkDelete()}
-            disabled={selectedRows.length === 0}
-            data-testid="dict-toolbar-bulk-delete"
-          >
-            <Trash2 class="size-4" />
-            {$t('app.common.delete')}
-            <span class="ml-1 text-xs opacity-70">({selectedRows.length})</span>
-          </Button>
-        {/if}
-      </SelectableToolbar>
+  <!-- Sticky toolbar, level 1: scoped search left | CTAs right (same
+       contract as ELT's EntityListToolbar — the select-all moved down to
+       the shared lower bar's leading zone).
+       Level 2 is the shared ELT FILTER | BULK ACTIONS bar below — it owns
+       the bottom border, so this wrapper stays borderless. -->
+  <div class="shrink-0 bg-background/90 backdrop-blur-sm supports-backdrop-filter:bg-background/70">
+    <div class="flex flex-wrap items-center justify-between gap-3 px-4 py-2">
+      <div class="flex min-w-0 flex-1 items-center gap-2">
+        <div class="min-w-0 flex-1 basis-0 sm:min-w-[200px] sm:max-w-[520px]">
+          <SearchBar
+            search={list.search}
+            onSearchInput={list.onSearchInput}
+            searchInKeys={list.searchInKeys}
+            searchableColumns={searchableColumns}
+            onSearchInKeysChange={list.onSearchInKeysChange}
+            toggleSearchKey={list.toggleSearchKey}
+            data_testid="dict-search"
+          />
+        </div>
+      </div>
 
-      <div class="flex items-center gap-2">
-        <SearchInput
-          value={list.search}
-          oninput={(e) => list.onSearchInput((e.currentTarget as HTMLInputElement).value)}
-          on_clear={() => list.onSearchInput('')}
-          placeholder={$t('system.entities.list.search_placeholder')}
-          class="w-48"
-          data_testid="dict-search"
+      <!-- Right cluster — the ELT divider contract: a gradient divider
+           AFTER every button group (the deletion view group here), single
+           CTAs (filters, refresh) flow free, divider before the primary
+           New CTA. -->
+      <div class="flex items-center justify-end gap-2">
+        {#if hasSoftDelete}
+          <DeletionFilterToggle
+            deletionFilterMode={list.deletionFilterMode}
+            onDeletionFilterModeChange={list.onDeletionFilterModeChange}
+            test_id="dict-deletion-filter"
+          />
+          <div class="h-6 w-px divider-primary-gradient" aria-hidden="true"></div>
+        {/if}
+        {#if filterableColumns.length > 0}
+          <Button
+            variant="ghost"
+            size="sm"
+            type="button"
+            onclick={sheetSync.toggleFiltersSheet}
+            aria-label={$t('system.entities.list.filters')}
+            title={$t('system.entities.list.filters')}
+            data-testid="dict-filters"
+          >
+            <Funnel class="size-4" />
+            <span class="hidden lg:inline">{$t('system.entities.list.filters')}</span>
+          </Button>
+        {/if}
+        <RefreshButton
+          onclick={() => void list.refreshRows()}
+          loading={list.rowsLoading}
+          testid="dict-refresh"
         />
+        <div class="h-6 w-px divider-primary-gradient" aria-hidden="true"></div>
         {#if canCreate}
           <Button variant="default" size="sm" onclick={handleAddRow} data-testid="dict-toolbar-add">
             <Plus class="size-4" />
@@ -535,6 +640,58 @@
           </Button>
         {/if}
       </div>
+    </div>
+
+    <!-- Level 2 — the shared ELT lower bar. Leading zones: select-all
+         only. NO `sort` here on purpose: dict ordering is semantic — the
+         `order_field` canonical order is what the chevron reorder and the
+         persisted sequence mean; a user sort would corrupt that meaning
+         (and confuse move semantics). Do not wire a SortBuilder onto dict
+         pages — sorting belongs to ELT's card/table views only. -->
+    <BulkActionsToolbar
+      toolbarMode={toolbarMode.state.toolbarMode}
+      hasAppliedFilters={toolbarMode.hasAppliedFilters}
+      filterValues={list.filterValues}
+      advancedFilters={list.advancedFilters}
+      selectedKeys={selectedKeys}
+      hasDeletedSelected={hasDeletedSelected}
+      allSelectedDeleted={allSelectedDeleted}
+      filterableColumns={filterableColumns}
+      onResetFilters={list.onResetFilters}
+      onFilterValuesChange={list.onFilterValuesChange}
+      onAdvancedFiltersChange={list.onAdvancedFiltersChange}
+      onToggleToolbarMode={toolbarMode.toggle}
+      onBulkExport={() => {}}
+      onHtmlExport={() => {}}
+      onBulkDuplicate={() => {}}
+      onBulkDelete={() => void bulkDelete()}
+      onBulkRestore={() => void bulkRestore()}
+      bulkCapabilities={bulkCapabilities}
+      selectAll={{
+        checked: allSelected,
+        indeterminate: someSelected,
+        onToggle: () => selection.toggleSelectAll(selectableUids, !allSelected),
+        test_id: 'dict-toolbar-select-all'
+      }}
+    >
+      {#snippet bulkExtraActions()}
+        {#if selectedTaintedCount > 0}
+          <Button variant="warning" size="xs" onclick={revertSelected} data-testid="dict-toolbar-bulk-revert">
+            <Undo2 class="size-3.5" />
+            {$t('app.common.bulk_revert')}
+            <span class="ml-1 text-xs opacity-70">({selectedTaintedCount})</span>
+          </Button>
+        {/if}
+      {/snippet}
+    </BulkActionsToolbar>
+
+    <!-- Activity strip — fixed-height track right under the toolbar so
+         load start/stop never shifts the rows (dict has no table chrome
+         to host ELT's in-body LoadingBar). -->
+    <div class="h-0.5 w-full overflow-hidden" aria-hidden="true">
+      {#if list.rowsLoading}
+        <LoadingBar size="xs" />
+      {/if}
     </div>
   </div>
 
@@ -584,102 +741,22 @@
   </div>
 
   <!-- Pager strip — the canonical TableFooter anatomy at the BOTTOM:
-       range left | page-size dropdown + segmented first/prev/next/last +
-       "Page x of y" right. Dict-scoped: no SelectionCounter (bulk CTAs
-       live in the header toolbar), no keyboard legend (no bound keys). -->
+       range left | shared PaginationControls right. Dict-scoped: no
+       SelectionCounter (bulk CTAs live in the header toolbar), no
+       keyboard legend (no bound keys). -->
   <Toolbar card={false} class="gap-3 rounded-t-none border-t text-xs">
     {#snippet left()}
-      <div class="text-muted-foreground" data-testid="dict-range">
-        {#if Number(list.total) === 0}
-          0
-        {:else}
-          {rangeStart}-{rangeEnd} / {list.total}
-        {/if}
-      </div>
+      <RangeLabel start={rangeStart} end={rangeEnd} total={Number(list.total)} test_id="dict-range" />
     {/snippet}
-    <div class="flex items-center gap-2">
-      <span class="text-muted-foreground">{$t('system.entities.list.page_size')}</span>
-      <DropdownMenu.Root>
-        <DropdownMenu.Trigger>
-          {#snippet child({ props })}
-            <Button variant="ghost" size="sm" {...props} data-testid="dict-page-size">
-              {list.pageSize}
-            </Button>
-          {/snippet}
-        </DropdownMenu.Trigger>
-        <DropdownMenu.Content align="start">
-          {#each pageSizeOptions as opt (opt)}
-            <DropdownMenu.Item
-              class={dropdownMenuSelectedItemClass(opt === list.pageSize)}
-              onSelect={() => list.onPageSizeChange(opt)}
-            >
-              {opt}
-            </DropdownMenu.Item>
-          {/each}
-        </DropdownMenu.Content>
-      </DropdownMenu.Root>
-
-      <div class="mx-1 h-6 w-px divider-primary-gradient" aria-hidden="true"></div>
-
-      <div class="flex items-center gap-2">
-        <ButtonGroup segmented aria-label={$t('system.entities.list.pagination.first_page')}>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            disabled={list.page <= 1}
-            onclick={() => list.onPageChange(1)}
-            aria-label={$t('system.entities.list.pagination.first_page')}
-            title={$t('system.entities.list.pagination.first_page')}
-            data-testid="dict-page-first"
-          >
-            <ChevronsLeft class="size-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            disabled={list.page <= 1}
-            onclick={() => list.onPageChange(Math.max(1, list.page - 1))}
-            aria-label={$t('system.entities.list.pagination.previous_page')}
-            title={$t('system.entities.list.pagination.previous_page')}
-            data-testid="dict-page-prev"
-          >
-            <ChevronLeft class="size-4" />
-          </Button>
-        </ButtonGroup>
-        <div
-          class="whitespace-nowrap px-0.5 text-center tabular-nums text-muted-foreground"
-          data-testid="dict-pagination-status"
-        >
-          {$t('system.entities.list.pagination_status')
-            .replace('{page}', String(list.page))
-            .replace('{total}', String(totalPages))}
-        </div>
-        <ButtonGroup segmented aria-label={$t('system.entities.list.pagination.next_page')}>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            disabled={list.page >= totalPages}
-            onclick={() => list.onPageChange(Math.min(totalPages, list.page + 1))}
-            aria-label={$t('system.entities.list.pagination.next_page')}
-            title={$t('system.entities.list.pagination.next_page')}
-            data-testid="dict-page-next"
-          >
-            <ChevronRight class="size-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            disabled={list.page >= totalPages}
-            onclick={() => list.onPageChange(totalPages)}
-            aria-label={$t('system.entities.list.pagination.last_page')}
-            title={$t('system.entities.list.pagination.last_page')}
-            data-testid="dict-page-last"
-          >
-            <ChevronsRight class="size-4" />
-          </Button>
-        </ButtonGroup>
-      </div>
-    </div>
+    <PaginationControls
+      page={list.page}
+      totalPages={totalPages}
+      pageSize={list.pageSize}
+      pageSizeOptions={pageSizeOptions}
+      onPageChange={list.onPageChange}
+      onPageSizeChange={list.onPageSizeChange}
+      test_id_prefix="dict"
+    />
   </Toolbar>
 
   <!-- Footer: taint explanation left, atomic save right -->

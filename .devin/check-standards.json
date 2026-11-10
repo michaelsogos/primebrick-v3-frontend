@@ -63,6 +63,12 @@
         "lib/shell/sheets/panels/"
       ]
     },
+    "panel-raw-input": {
+      "appliesTo": [
+        "lib/entity-list/sheets/panels/",
+        "lib/shell/sheets/panels/"
+      ]
+    },
     "panel-footer-chrome": {
       "appliesTo": [
         "lib/entity-list/sheets/panels/",
@@ -73,6 +79,12 @@
       ]
     },
     "panel-toolbar-tools": {
+      "appliesTo": [
+        "lib/entity-list/sheets/panels/",
+        "lib/shell/sheets/panels/"
+      ]
+    },
+    "panel-chrome-class": {
       "appliesTo": [
         "lib/entity-list/sheets/panels/",
         "lib/shell/sheets/panels/"
