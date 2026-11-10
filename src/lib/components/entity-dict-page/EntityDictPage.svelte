@@ -139,9 +139,10 @@
   );
 
   // Entities without soft-delete columns must never send `deleted_records`
-  // or show the view group — same guard ELT applies.
+  // or show the view group — same guard ELT applies. It must wait for meta:
+  // firing while columns are empty clobbers the restored sessionStorage mode.
   $effect(() => {
-    if (!hasSoftDelete && list.deletionFilterMode !== 'non_deleted') {
+    if (allColumns.length > 0 && !hasSoftDelete && list.deletionFilterMode !== 'non_deleted') {
       list.onDeletionFilterModeChange('non_deleted');
     }
   });

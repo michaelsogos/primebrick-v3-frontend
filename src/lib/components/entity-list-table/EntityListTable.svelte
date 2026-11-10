@@ -221,9 +221,11 @@
 
   // When the entity has no soft-delete columns, force the deletion filter to
   // 'non_deleted' so the BE never receives a deleted_records param and the
-  // toggle button group is hidden (see EntityListToolbar).
+  // toggle button group is hidden (see EntityListToolbar). The guard must wait
+  // for columns to arrive: firing while meta is still loading clobbers the
+  // composable's restored sessionStorage selection.
   $effect(() => {
-    if (!hasSoftDelete && deletionFilterMode !== 'non_deleted') {
+    if (allColumns.length > 0 && !hasSoftDelete && deletionFilterMode !== 'non_deleted') {
       deletionFilterComposable.setDeletionFilterMode('non_deleted');
     }
   });

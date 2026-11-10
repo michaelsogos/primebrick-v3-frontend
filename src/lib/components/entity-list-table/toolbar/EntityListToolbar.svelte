@@ -92,6 +92,7 @@
       <DeletionFilterToggle
         deletionFilterMode={deletionFilterMode}
         onDeletionFilterModeChange={onDeletionFilterModeChange}
+        test_id="entity-deletion-filter"
       />
       <div class="h-6 w-px divider-primary-gradient" aria-hidden="true"></div>
     {/if}
