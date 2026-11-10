@@ -351,7 +351,7 @@
     {/snippet}
     {#snippet actions()}
       <SheetHeaderAction
-        title={$t(`${i18n_ns}.newSession`)}
+        title={$t(`${i18n_ns}.new_session`)}
         onclick={() => { void ai?.clearConversation(); }}
         disabled={!ai || ai.state.messages.length === 0}
         testid="{testid_prefix}-new-session"
@@ -365,7 +365,7 @@
         {#if modelId === null}
           <AlertCircle class="size-8 text-destructive ai-icon-shake" />
           <p class="text-sm text-destructive px-4">
-            {$t(`${i18n_ns}.modelNotConfigured`)}
+            {$t(`${i18n_ns}.model_not_configured`)}
           </p>
         {:else}
           <LoaderCircle class="size-6 animate-spin text-muted-foreground" />
@@ -381,7 +381,7 @@
           <div class="flex flex-col items-center justify-center gap-2 py-8 text-center">
             <AiIcon size={32} no_animation class="ai-icon-pulse" />
             <p class="text-sm text-muted-foreground px-4">
-              {$t(`${i18n_ns}.webgpuRequired`)}
+              {$t(`${i18n_ns}.webgpu_required`)}
             </p>
           </div>
         {:else if ai.state.is_loading_model}
@@ -389,9 +389,9 @@
             <BrainCircuit class="size-8 text-primary ai-icon-pulse" />
             <p class="text-sm text-muted-foreground" data-testid="{testid_prefix}-loading">
               {#if ai.state.load_phase === 'vram'}
-                {$t(`${i18n_ns}.loadingVram`)} ({(ai.state.vram_elapsed_ms / 1000).toFixed(1)}s)
+                {$t(`${i18n_ns}.loading_vram`)} ({(ai.state.vram_elapsed_ms / 1000).toFixed(1)}s)
               {:else}
-                {$t(`${i18n_ns}.loadingModel`, { progress: ai.state.load_progress })}
+                {$t(`${i18n_ns}.loading_model`, { progress: ai.state.load_progress })}
               {/if}
             </p>
             {#if ai.state.load_phase === 'vram'}
@@ -457,14 +457,14 @@
               data-testid="{testid_prefix}-cancel-load"
             >
               <CircleStop class="size-3.5" />
-              {$t(`${i18n_ns}.cancelLoad`)}
+              {$t(`${i18n_ns}.cancel_load`)}
             </Button>
           </div>
         {:else if ai.state.is_ready}
           <div class="flex flex-col items-center justify-center gap-2 py-8 text-center">
             <AiIcon size={32} class="ai-icon-bounce" />
             <p class="text-sm font-medium text-foreground">
-              {$t(`${i18n_ns}.modelReady`)}
+              {$t(`${i18n_ns}.model_ready`)}
             </p>
             <p class="text-xs text-muted-foreground px-4">
               {$t(`${i18n_ns}.welcome`)}

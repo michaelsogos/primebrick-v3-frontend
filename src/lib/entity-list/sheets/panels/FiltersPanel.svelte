@@ -448,7 +448,7 @@
             onclick={() => (tabValue = mode as 'standard' | 'advanced')}
           >
             <DynamicIcon name={icon} size={14} class="shrink-0" />
-            {$t(`system.entities.list.${mode}Filters`)}
+            {$t(`system.entities.list.${mode}_filters`)}
           </Button>
         {/each}
       </ButtonGroup>

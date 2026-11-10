@@ -95,16 +95,16 @@
           onclick={() => handleSortClick(col)}
         >
           <div use:stickyColumnsState.stickyRef={{ key: col.key, isHead: true }}>
-            <span class="inline-flex items-center gap-1">
+            <span class="inline-flex items-center gap-1 {sortKey === col.key ? 'text-primary font-semibold' : ''}">
               {#if col.icon}<DynamicIcon name={col.icon} size={14} class="shrink-0 opacity-70" />{/if}
               {$t(col.label_key)}
               {#if isColumnSortable(col)}
                 {#if sortKey !== col.key}
                   <ArrowUpDown class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-60'} />
                 {:else if sortDir === 'asc'}
-                  <ArrowUp class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-80'} />
+                  <ArrowUp class={rowsLoading ? 'size-3 opacity-30' : 'size-3'} />
                 {:else}
-                  <ArrowDown class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-80'} />
+                  <ArrowDown class={rowsLoading ? 'size-3 opacity-30' : 'size-3'} />
                 {/if}
               {/if}
             </span>
@@ -129,16 +129,16 @@
         >
           {#if col.datetime_iana_toggle}
             <div class="flex w-full min-w-0 items-center justify-between gap-1">
-              <span class="inline-flex min-w-0 items-center gap-1">
+              <span class="inline-flex min-w-0 items-center gap-1 {sortKey === col.key ? 'text-primary font-semibold' : ''}">
                 {#if col.icon}<DynamicIcon name={col.icon} size={14} class="shrink-0 opacity-70" />{/if}
                 {$t(col.label_key)}
                 {#if isColumnSortable(col)}
                   {#if sortKey !== col.key}
                     <ArrowUpDown class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-60'} />
                   {:else if sortDir === 'asc'}
-                    <ArrowUp class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-80'} />
+                    <ArrowUp class={rowsLoading ? 'size-3 opacity-30' : 'size-3'} />
                   {:else}
-                    <ArrowDown class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-80'} />
+                    <ArrowDown class={rowsLoading ? 'size-3 opacity-30' : 'size-3'} />
                   {/if}
                 {/if}
               </span>
@@ -165,16 +165,16 @@
               </button>
             </div>
           {:else}
-            <span class="inline-flex items-center gap-1">
+            <span class="inline-flex items-center gap-1 {sortKey === col.key ? 'text-primary font-semibold' : ''}">
               {#if col.icon}<DynamicIcon name={col.icon} size={14} class="shrink-0 opacity-70" />{/if}
               {$t(col.label_key)}
               {#if isColumnSortable(col)}
                 {#if sortKey !== col.key}
                   <ArrowUpDown class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-60'} />
                 {:else if sortDir === 'asc'}
-                  <ArrowUp class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-80'} />
+                  <ArrowUp class={rowsLoading ? 'size-3 opacity-30' : 'size-3'} />
                 {:else}
-                  <ArrowDown class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-80'} />
+                  <ArrowDown class={rowsLoading ? 'size-3 opacity-30' : 'size-3'} />
                 {/if}
               {/if}
             </span>

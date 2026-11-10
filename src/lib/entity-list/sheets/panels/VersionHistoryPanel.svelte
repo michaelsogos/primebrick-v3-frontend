@@ -244,8 +244,8 @@
     for (const [field, change] of Object.entries(delta)) {
       if (field === 'version') continue; // Skip version field
 
-      let fieldLabel = $t(`system.entities.versionHistory.field.${field}`);
-      if (fieldLabel === `system.entities.versionHistory.field.${field}`) {
+      let fieldLabel = $t(`system.entities.version_history.field.${field}`);
+      if (fieldLabel === `system.entities.version_history.field.${field}`) {
         // Fallback to entity-specific fields translation if versionHistory field doesn't exist
         fieldLabel = $t(`${entities_ns}.entities.${i18nEntity}.fields.${field}`) || field;
       }
