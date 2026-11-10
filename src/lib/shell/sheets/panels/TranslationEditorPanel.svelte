@@ -12,9 +12,11 @@
    *   - at least one EN value (en-GB|en-US) is mandatory — Save is gated;
    *   - the EN base preview shows while editing another language (never for
    *     the EN row itself — the textarea already IS that text);
-   *   - AI (Browser Translator API, tier-0) suggests single-language text
-   *     or fills every uncovered language — every AI output is reviewed
-   *     per language (accept / accept-all), never auto-committed.
+   *   - AI suggests single-language text or fills every uncovered
+   *     language — EASY = browser Translator API (tier-0); POWERED =
+   *     instruct-SLM POC on the shared text-generation worker — every AI
+   *     output is reviewed per language (accept / accept-all), never
+   *     auto-committed.
    */
   import { onMount } from 'svelte';
   import { get } from 'svelte/store';
@@ -34,10 +36,10 @@
     toMtLang,
     translateBrowser,
   } from '$lib/ai/browser-translator';
+  import { useAiAssistant } from '$lib/components/ui/smart-ai/use-ai-assistant.svelte';
   import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
-  import { SheetPanelLayout, SheetPanelFooter, Button, Badge, ComboSelect, Textarea, AiIcon, AiTypingDots, CopyButton } from '@primebrick/ui';
-  import { GradientIcon, GRADIENT_ICON_PATHS } from '$lib/components/ui/gradient-icon';
-  import { Languages, LoaderCircle, Check, CircleCheck, Clock, CircleHelp, TriangleAlert, ArrowLeftRight, X, Eraser } from '@primebrick/ui/vendor/lucide';
+  import { SheetPanelLayout, SheetPanelFooter, Button, ButtonGroup, Badge, ComboSelect, TextInput, Textarea, AiIcon, AiTypingDots, CopyButton, PrimeField, inputTrailingIconColorClasses } from '@primebrick/ui';
+  import { Languages, LoaderCircle, Check, CircleCheck, Clock, CircleHelp, TriangleAlert, ArrowUpDown, X, Eraser, Cpu, CpuAi, ThumbsUp } from '@primebrick/ui/vendor/lucide';
 
   let { i18n_key, pending_owner }: { i18n_key: string; pending_owner: string } = $props();
 
@@ -88,7 +90,53 @@
 
   let aiBusy = $state(false);
   let aiStep = $state('');
-  let aiSupported = browserTranslatorSupported();
+  /** Engine switch (sheet header, one for ALL rows): off = the EASY track
+   *  (browser Translator API); on = the POWERED POC — an instruct SLM on
+   *  the shared text-generation worker so the prompt can carry the
+   *  CONTEXT the seq2seq MT could not (key segments, meaning hint).
+   *  Model: granite-4.0-micro (q4f16) — third candidate after the
+   *  ai-translation-powered.spec evidence: Qwen3-0.6B failed quality
+   *  (~50% on terse labels), Qwen3.5-2B hit the qwen3_5-arch WebGPU
+   *  CPU-fallback (~25-30s/call, DB evidence); granite swept 0.6-1.6s
+   *  per turn on prior WebGPU tests and is proven is_compatible on
+   *  this stack. Generation params ride the 'translation' cerebellum
+   *  tuning (ai_cerebellum row → effective_params) — not constants. */
+  const POWERED_MODEL_ID = 'onnx-community/granite-4.0-micro-ONNX-web';
+  const LANG_NAME: Record<UiLang, string> = {
+    'en-GB': 'British English',
+    'en-US': 'American English',
+    'it-IT': 'Italian',
+    'fr-FR': 'French',
+    'es-ES': 'Spanish',
+    'de-DE': 'German',
+    'pt-PT': 'European Portuguese',
+  };
+  let powered = $state(false);
+  /** Free-form MEANING hint the user can hand the powered model — rides
+   *  the system prompt next to the automatic key/entity/facet context. */
+  let meaning = $state('');
+  const poweredAssistant = useAiAssistant(POWERED_MODEL_ID, {
+    build_system_prompt: () => poweredSystemPrompt(),
+  }, { assistant_key: 'translation' });
+  /** One-off generation params resolved from the 'translation' cerebellum
+   *  tuning (assistant_key → ai_cerebellum row → effective_params): the
+   *  row is the single source of this pair's generation contract. */
+  const poweredParams = $derived.by(() => {
+    const ep = poweredAssistant.effective_params;
+    return { max_new_tokens: ep.max_tokens, temperature: ep.temperature, top_p: ep.top_p, repetition_penalty: ep.repetition_penalty };
+  });
+  const poweredStatus = $derived<'idle' | 'loading' | 'ready' | 'error'>(
+    poweredAssistant.state.error
+      ? 'error'
+      : poweredAssistant.state.is_ready
+        ? 'ready'
+        : poweredAssistant.state.is_loading_model
+          ? 'loading'
+          : 'idle',
+  );
+  const aiSupported = $derived(
+    powered ? poweredAssistant.state.error !== 'webgpu_required' : browserTranslatorSupported(),
+  );
   /** Per-language AI suggestions pending review (one per update lang). */
   let suggestions = $state<Partial<Record<UiLang, { text: string }>>>({});
   /** Generate-all results pending review — one row per attempted language. */
@@ -130,6 +178,12 @@
   }
 
   onMount(() => {
+    // POWERED prefetch — the instruct model warms in the background while
+    // the user is still in easy mode, so the first powered suggest is
+    // instant. Transformers.js own Cache API holds the files across opens
+    // (the SW prefetch layer was retired in favor of it) — first open
+    // downloads ~0.6GB, later opens only rebuild the ONNX session.
+    void poweredAssistant.init().catch(() => { /* best-effort warm — suggest retries */ });
     const pending = getPendingTranslation(pending_owner, i18n_key) ?? {};
     draft = Object.fromEntries(Object.entries(pending).map(([lang, e]) => [lang, e.value]));
     // Fetch EVERY language up front — the coverage counter and the missing
@@ -141,6 +195,7 @@
       if (!hasEn) updateLangs = ['en-GB'];
       previewLang = EN_LANGS.find((l) => langText(l).trim() !== '') ?? 'en-GB';
     });
+    return () => { void poweredAssistant.dispose(); };
   });
 
   const langOptions = orderLangEntriesByBrowser(
@@ -184,29 +239,101 @@
     return draft[l]?.trim() ? 'draft' : 'missing';
   };
 
-  /** AI suggest source: always the EN preview (combobox 1). */
-  const suggestible = (l: UiLang) =>
-    aiSupported && !aiBusy && l !== previewLang && previewValue.trim() !== '';
+  /** AI suggest source: always the preview language (combobox 1). The
+   *  button MOUNTS on every non-source row — an empty preview or a busy
+   *  op only greys it (`disabled`), never unmounts it. */
+  const suggestible = (l: UiLang) => aiSupported && l !== previewLang;
+  const canSuggest = (l: UiLang) =>
+    suggestible(l) && !aiBusy && previewValue.trim() !== '';
   const canGenerateAll = $derived(
     aiSupported && !aiBusy && previewValue.trim() !== '' && missingLangs.length > 0,
   );
 
   const canSave = $derived(hasEn);
 
+  /**
+   * POWERED prompt — the COMPACT shape the node probe proved on
+   * Qwen3.5-2B (a verbose rules/context block broke the 0.6B and is
+   * dead weight for the 2B): the system line carries only the contract,
+   * the user message carries the instruction + the context the seq2seq
+   * MT could never see — key segments + the free-form MEANING hint.
+   */
+  function poweredSystemPrompt(): string {
+    return 'You are a professional translator for a business admin console UI. Reply with ONLY the translated UI label — no quotes, explanations, or alternatives.';
+  }
+
+  function poweredUserPrompt(target: UiLang, src: string): string {
+    const isEntity = keySegments[1] === 'entities';
+    const hint = meaning.trim();
+    // Probe-validated on granite-4.0-micro (probe-granite-meaning, 8/8):
+    // when a meaning is given the task MUST be reframed — "this label is
+    // ambiguous, write the target label for its intended meaning" is the
+    // only shape where the model follows the hint; every "translate the
+    // label + meaning as side-context" shape anchors on the literal
+    // label (or worse, translates the prompt itself).
+    if (hint) {
+      return [
+        `The UI label "${src}" is ambiguous. Its intended meaning is: ${hint}.`,
+        `Context key: ${i18n_key}${isEntity && keySegments[2] ? ` — entity ${keySegments[2]}${keySegments[3] ? `, ${keySegments[3]} facet` : ''}` : ''}`,
+        `Write the ${LANG_NAME[target]} UI label for that meaning. Reply with ONLY the label.`,
+      ].join('\n');
+    }
+    const context: string[] = [`Key: ${i18n_key}`];
+    if (isEntity && keySegments[2]) {
+      context.push(`entity ${keySegments[2]}${keySegments[3] ? `, ${keySegments[3]} facet` : ''}`);
+    }
+    return [
+      `Translate the UI label from ${LANG_NAME[previewLang]} to ${LANG_NAME[target]}.`,
+      context.join(' · '),
+      `Label: ${src}`,
+    ].join('\n');
+  }
+
+  /** Instruct models may echo quotes around their answer — strip them. */
+  function cleanPoweredOutput(raw: string): string {
+    return raw.trim().replace(/^["'«»“”‘’]+|["'«»“”‘’]+$/g, '').trim();
+  }
+
+  /**
+   * Await the powered model's readiness (init may still be mid-download
+   * from the onMount prefetch) — the pair label + load progress ride the
+   * aiStep tail meanwhile. False when the engine can never run.
+   */
+  async function poweredReady(pair: string): Promise<boolean> {
+    if (poweredAssistant.state.is_ready) return true;
+    if (poweredAssistant.state.error) return false;
+    await poweredAssistant.init().catch(() => {});
+    while (poweredAssistant.state.is_loading_model) {
+      aiStep = `${pair} · model ${poweredAssistant.state.load_progress}%`;
+      await new Promise((r) => setTimeout(r, 250));
+    }
+    return poweredAssistant.state.is_ready;
+  }
+
   async function suggestLang(l: UiLang) {
     const src = previewValue.trim();
-    if (!suggestible(l) || !src) return;
+    if (aiBusy || !suggestible(l) || !src) return;
     aiBusy = true;
     try {
-      const availability = await browserPairAvailability(previewLang, l);
-      if (availability === 'unavailable') {
-        suggestions[l] = { text: '' };
-        return;
+      if (powered) {
+        const pair = `${toMtLang(previewLang)} → ${toMtLang(l)}`;
+        if (!(await poweredReady(pair))) {
+          suggestions[l] = { text: '' };
+          return;
+        }
+        const out = await poweredAssistant.generateOneOff(poweredSystemPrompt(), poweredUserPrompt(l, src), poweredParams);
+        suggestions[l] = { text: cleanPoweredOutput(out) };
+      } else {
+        const availability = await browserPairAvailability(previewLang, l);
+        if (availability === 'unavailable') {
+          suggestions[l] = { text: '' };
+          return;
+        }
+        const out = await translateBrowser(src, previewLang, l, (f) => {
+          aiStep = `${toMtLang(previewLang)} → ${toMtLang(l)} · ${Math.min(100, Math.round(f * 100))}%`;
+        });
+        suggestions[l] = { text: out.trim() };
       }
-      const out = await translateBrowser(src, previewLang, l, (f) => {
-        aiStep = `${toMtLang(previewLang)} → ${toMtLang(l)} · ${Math.min(100, Math.round(f * 100))}%`;
-      });
-      suggestions[l] = { text: out.trim() };
     } catch {
       suggestions[l] = { text: '' };
     } finally {
@@ -229,6 +356,20 @@
         step += 1;
         const pair = `${toMtLang(previewLang)} → ${toMtLang(lang)} (${step}/${missing.length})`;
         aiStep = pair;
+        if (powered) {
+          if (!(await poweredReady(pair))) {
+            results.push({ lang, error: 'failed' });
+            continue;
+          }
+          try {
+            const out = await poweredAssistant.generateOneOff(poweredSystemPrompt(), poweredUserPrompt(lang, src), poweredParams);
+            const text = cleanPoweredOutput(out);
+            results.push(text ? { lang, text } : { lang, error: 'failed' });
+          } catch {
+            results.push({ lang, error: 'failed' });
+          }
+          continue;
+        }
         const availability = await browserPairAvailability(previewLang, lang);
         if (availability === 'unavailable') {
           results.push({ lang, error: 'unavailable' });
@@ -324,6 +465,56 @@
   {#snippet title()}
     {$t('system.settings.translations.title')}
   {/snippet}
+  {#snippet actions()}
+    <!-- Easy⇄Powered engine segmented toggle — ONE for the whole sheet
+         (canonical ButtonGroup segmented + aria-pressed, the ViewModeToggle
+         anatomy). Easy = browser Translator API; Powered = the POC
+         instruct SLM (Qwen3-0.6B, context-capable). Disabled while any AI
+         op is in flight so the engine never swaps mid-generation; the
+         trailing dot mirrors the powered model status while powered. -->
+    <div class="flex items-center gap-1.5">
+      <ButtonGroup segmented data-testid="i18n-editor-engine-toggle">
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          type="button"
+          class={!powered ? 'bg-foreground/10 text-foreground shadow-xs' : ''}
+          aria-pressed={!powered}
+          disabled={aiBusy}
+          title={$t('app.common.translations.easy_hint')}
+          onclick={() => { powered = false; }}
+          data-testid="i18n-editor-engine-easy"
+        >
+          <Cpu class="size-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          type="button"
+          class={powered ? 'bg-foreground/10 text-foreground shadow-xs' : ''}
+          aria-pressed={powered}
+          aria-label={$t('app.common.translations.powered')}
+          disabled={aiBusy}
+          title={$t('app.common.translations.powered_hint')}
+          onclick={() => { powered = true; }}
+          data-testid="i18n-editor-engine-powered"
+        >
+          <CpuAi class="size-4" />
+        </Button>
+      </ButtonGroup>
+      {#if powered && poweredStatus !== 'idle'}
+        <span
+          class="size-2 rounded-full {poweredStatus === 'ready' ? 'bg-emerald-500' : poweredStatus === 'loading' ? 'animate-pulse bg-sky-500' : 'bg-destructive'}"
+          title={poweredStatus === 'ready'
+            ? `Powered ready (${POWERED_MODEL_ID})`
+            : poweredStatus === 'error'
+              ? (poweredAssistant.state.error ?? 'error')
+              : `${poweredStatus} · ${poweredAssistant.state.load_phase}`}
+          data-testid="i18n-editor-powered-status"
+        ></span>
+      {/if}
+    </div>
+  {/snippet}
   <div class="space-y-3">
     <!-- LINE 1 — key label + the edited key as a colored dot-notation badge
          (full path is the badge text AND the title). -->
@@ -360,6 +551,26 @@
           <span class="fi fi-{UI_LANG_META[l].flag} rounded-sm" aria-hidden="true"></span>
         </button>
       {/each}
+      <!-- Generate-all-missing mini CTA — lives HERE next to the missing
+           flags it fills; hidden when nothing is missing (no flags, no
+           context) or when no AI engine can run. -->
+      {#if aiSupported && missingLangs.length > 0}
+        <Button
+          variant="ghost"
+          size="sm"
+          class="h-6 shrink-0 px-2 text-xs"
+          onclick={() => void generateAll()}
+          disabled={!canGenerateAll}
+          data-testid="i18n-editor-generate-all"
+        >
+          {#if aiBusy}
+            <LoaderCircle class="size-3.5 animate-spin" />
+          {:else}
+            <AiIcon size={14} />
+          {/if}
+          {$t('app.common.translations.generate_all')}
+        </Button>
+      {/if}
       <Badge
         variant="outline"
         class="ml-auto shrink-0 px-1.5 text-[10px] tabular-nums {coveredCount === UI_LANGS.length ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300' : 'border-destructive/30 bg-destructive/10 text-destructive'}"
@@ -370,13 +581,14 @@
       </Badge>
     </div>
 
-    <!-- LINE 3 — two comboboxes: which language feeds the preview
-         (single), and the update languages being edited (multi, 1..n).
-         The swap CTA between them exchanges the two selections — primary
-         when the update side holds exactly one language, greyed else. -->
-    <div class="flex items-center gap-2">
+    <!-- LINE 3 — the two pickers STACKED full-width (preview source on
+         top, update multi below — no labels on comboboxes); the swap CTA
+         rides the right column spanning BOTH rows (row-span-2,
+         vertically centered) — it exchanges preview ↔ update, enabled
+         only while the update side holds exactly one language. -->
+    <div class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 gap-y-2.5">
       <ComboSelect
-        class="min-w-0 flex-1"
+        class="min-w-0 w-full"
         mode="single"
         value={previewLang}
         onChange={(v) => { previewLang = (Array.isArray(v) ? v[0] : v) as UiLang; }}
@@ -391,17 +603,17 @@
       <Button
         variant="ghost"
         size="icon"
-        class="size-8 shrink-0"
+        class="row-span-2 size-8 shrink-0 self-center"
         disabled={!canSwap}
         title={$t('app.common.translations.swap')}
         aria-label={$t('app.common.translations.swap')}
         onclick={swapLangs}
         data-testid="i18n-editor-swap"
       >
-        <ArrowLeftRight class="size-4 text-primary" />
+        <ArrowUpDown class="size-4 text-primary" />
       </Button>
       <ComboSelect
-        class="min-w-0 flex-1"
+        class="min-w-0 w-full"
         mode="multi"
         bind:value={updateLangs}
         options={langOptions}
@@ -414,91 +626,135 @@
       />
     </div>
 
-    <!-- LINE 4 — the preview picked in combobox 1: a plain DISABLED
-         surface (gray box, muted text, not-a-field). Text starts at
-         char 0 of line 1; copy + flag ride a right-float AFTER the text,
-         docking at the right edge of its last line (a new line only
-         when the flow itself requires it). -->
+    <!-- LINE 4 — "Traduzione di esempio": the preview picked in combobox 1
+         rendered as a DISABLED field under PrimeField — same label
+         anatomy as the editable fields; copy + flag ride the in-box
+         chrome top-right, like the translate areas. -->
     {#if showPreview}
-      <div
-        class="rounded-lg border bg-muted/50 px-2.5 py-2 text-sm text-muted-foreground cursor-not-allowed"
-        data-testid="i18n-editor-base"
-      >
-        <span class="whitespace-pre-wrap" data-testid="i18n-editor-base-text">{previewValue}</span>
-        <span class="float-right ml-1 inline-flex translate-y-0.5 items-center gap-0.5" data-testid="i18n-editor-base-icons">
-          <CopyButton variant="ghost" size="icon" class="size-7" text={previewValue} data-testid="i18n-editor-base-copy" />
-          <span class="fi fi-{UI_LANG_META[previewLang].flag} shrink-0 rounded-sm" aria-hidden="true"></span>
-        </span>
-      </div>
+      <PrimeField id="i18n-editor-preview" label={$t('app.common.translations.preview_label')}>
+        {#snippet control({ id })}
+          <div class="relative">
+            <Textarea
+              {id}
+              value={previewValue}
+              disabled
+              rows={2}
+              data-testid="i18n-editor-base"
+            />
+            <div class="absolute right-1.5 top-1.5 flex items-center gap-0.5" data-testid="i18n-editor-base-icons">
+              <CopyButton variant="ghost" size="icon" class="size-7" text={previewValue} data-testid="i18n-editor-base-copy" />
+              <span class="fi fi-{UI_LANG_META[previewLang].flag} shrink-0 rounded-sm" aria-hidden="true"></span>
+            </div>
+          </div>
+        {/snippet}
+      </PrimeField>
     {/if}
 
-    <!-- LINE 5+ — one editor per update language: the chrome lives INSIDE
-         the box — status icon left-top, AI suggest + eraser + copy + flag
-         right-top; the text starts on the line below. No-permission rows
-         degrade to disabled. -->
-    {#each updateLangs as l (l)}
+    <!-- LINE 4.5 — POWERED context: the free-form MEANING hint the user
+         can hand the instruct model; it rides the system prompt next to
+         the automatic key/entity/facet context. Powered-only — the easy
+         browser API has no context channel at all. -->
+    {#if powered}
+      <PrimeField
+        id="i18n-editor-meaning-field"
+        label={$t('app.common.translations.meaning_label')}
+      >
+        {#snippet control({ id })}
+          <TextInput
+            {id}
+            bind:value={meaning}
+            disabled={aiBusy}
+            placeholder={$t('app.common.translations.meaning_hint')}
+            clearLabel={$t('app.common.clear')}
+            data-testid="i18n-editor-meaning"
+          />
+        {/snippet}
+      </PrimeField>
+    {/if}
+
+    <!-- LINE 5 — "Traduzioni nelle lingue selezionate" caption, ONCE over
+         the translate text areas (one editor per update language): the
+         chrome lives INSIDE the box — status icon left-top, AI suggest +
+         eraser + copy + flag right-top; the text starts on the line
+         below. No-permission rows degrade to disabled. -->
+    <!-- LINE 5 — "Traduzioni nelle lingue selezionate" rides the FIRST
+         row's PrimeField label (the group caption is the form label);
+         later rows are label-less — the flag inside the box identifies
+         the language. `*` + help mark the group-level EN requirement. -->
+    {#each updateLangs as l, i (l)}
       {@const meta = statusBadge[statusOf(l)]}
       {@const editable = editableOf(l)}
       <div class="space-y-1.5" data-testid="i18n-editor-row-{l}">
-        <div class="relative">
-          <Textarea
-            bind:ref={valueRefs[l]}
-            bind:value={
-              () => draft[l] ?? rowOf(l)?.value ?? '',
-              (v) => { draft[l] = v; }
-            }
-            disabled={!editable}
-            rows={3}
-            placeholder={$t('system.settings.translations.value')}
-            class="pt-9"
-            aria-label={UI_LANG_META[l].label}
-            data-testid="i18n-editor-value-{l}"
-          />
-          <div class="absolute left-2 top-1.5 flex items-center gap-1">
-            <Badge variant="outline" class="{meta.class} px-1.5 text-[10px]" data-testid="i18n-editor-status-{l}">
-              <meta.icon class="mr-0.5 size-3" />{$t(meta.label)}
-            </Badge>
-            {#if isEn(l) && !hasEn}
-              <span class="text-[10px] text-destructive" title={$t('app.common.translations.en_required')} data-testid="i18n-editor-en-required-{l}">*</span>
-            {/if}
-          </div>
-          <div class="absolute right-1.5 top-1.5 flex items-center gap-0.5">
-            {#if suggestible(l)}
-              <button
-                type="button"
-                class="rounded p-1 transition-colors hover:bg-accent disabled:opacity-50"
-                title={$t('app.common.translations.suggest')}
-                aria-label={$t('app.common.translations.suggest')}
-                onclick={() => void suggestLang(l)}
-                disabled={aiBusy}
-                data-testid="i18n-editor-ai-suggest-{l}"
-              >
-                <AiIcon size={14} />
-              </button>
-            {/if}
-            {#if editable}
-              <button
-                type="button"
-                class="rounded p-1 transition-colors hover:bg-accent disabled:opacity-50"
-                title={$t('app.common.clear')}
-                aria-label={$t('app.common.clear')}
-                onclick={() => { draft[l] = ''; valueRefs[l]?.focus(); }}
-                disabled={langText(l).trim() === ''}
-                data-testid="i18n-editor-clear-{l}"
-              >
-                <Eraser class="size-3.5" />
-              </button>
-            {/if}
-            <CopyButton
-              variant="ghost"
-              size="icon"
-              class="size-7"
-              text={langText(l)}
-              data-testid="i18n-editor-copy-{l}"
-            />
-            <span class="fi fi-{UI_LANG_META[l].flag} shrink-0 rounded-sm" aria-hidden="true"></span>
-          </div>
-        </div>
+        <PrimeField
+          id="i18n-editor-field-{l}"
+          label={i === 0 ? $t('app.common.translations.update_label') : undefined}
+          required={i === 0 && !hasEn}
+          help={i === 0 && !hasEn
+            ? { text: $t('app.common.translations.en_required'), priority: 'WARNING' }
+            : undefined}
+          data-testid={i === 0 ? 'i18n-editor-update-caption' : undefined}
+        >
+          {#snippet control({ id })}
+            <div class="relative">
+              <Textarea
+                {id}
+                bind:ref={valueRefs[l]}
+                bind:value={
+                  () => draft[l] ?? rowOf(l)?.value ?? '',
+                  (v) => { draft[l] = v; }
+                }
+                disabled={!editable}
+                rows={3}
+                placeholder={$t('system.settings.translations.value')}
+                class="pt-9"
+                data-testid="i18n-editor-value-{l}"
+              />
+              <div class="absolute left-2 top-1.5 flex items-center gap-1">
+                <Badge variant="outline" class="{meta.class} px-1.5 text-[10px]" data-testid="i18n-editor-status-{l}">
+                  <meta.icon class="mr-0.5 size-3" />{$t(meta.label)}
+                </Badge>
+              </div>
+              <div class="absolute right-1.5 top-1.5 flex items-center gap-0.5">
+                {#if suggestible(l)}
+                  <button
+                    type="button"
+                    class={inputTrailingIconColorClasses}
+                    tabindex={-1}
+                    title={$t('app.common.translations.suggest')}
+                    aria-label={$t('app.common.translations.suggest')}
+                    onclick={() => void suggestLang(l)}
+                    disabled={!canSuggest(l)}
+                    data-testid="i18n-editor-ai-suggest-{l}"
+                  >
+                    <AiIcon size={16} />
+                  </button>
+                {/if}
+                {#if editable}
+                  <button
+                    type="button"
+                    class={inputTrailingIconColorClasses}
+                    tabindex={-1}
+                    title={$t('app.common.clear')}
+                    aria-label={$t('app.common.clear')}
+                    onclick={() => { draft[l] = ''; valueRefs[l]?.focus(); }}
+                    disabled={langText(l).trim() === ''}
+                    data-testid="i18n-editor-clear-{l}"
+                  >
+                    <Eraser class="size-4" />
+                  </button>
+                {/if}
+                <CopyButton
+                  variant="ghost"
+                  size="icon"
+                  class="size-7"
+                  text={langText(l)}
+                  data-testid="i18n-editor-copy-{l}"
+                />
+                <span class="fi fi-{UI_LANG_META[l].flag} shrink-0 rounded-sm" aria-hidden="true"></span>
+              </div>
+            </div>
+          {/snippet}
+        </PrimeField>
 
         <!-- AI suggestion preview for THIS language — a disabled surface;
              the text flows from char 0 and the flag + gradient-check apply
@@ -511,16 +767,17 @@
           >
             {#if suggestions[l]!.text}
               {suggestions[l]!.text}
-              <span class="float-right ml-1 inline-flex translate-y-0.5 items-center gap-0.5" data-testid="i18n-editor-suggestion-icons-{l}">
+              <span class="float-right ml-1 inline-flex h-[1lh] items-center gap-0.5" data-testid="i18n-editor-suggestion-icons-{l}">
                 <button
                   type="button"
-                  class="rounded p-1 transition-colors hover:bg-accent"
+                  class={inputTrailingIconColorClasses}
+                  tabindex={-1}
                   title={$t('app.common.translations.accept')}
                   aria-label={$t('app.common.translations.accept')}
                   onclick={() => acceptSuggestion(l)}
                   data-testid="i18n-editor-suggestion-accept-{l}"
                 >
-                  <GradientIcon size={14} paths={GRADIENT_ICON_PATHS.check} />
+                  <ThumbsUp class="size-4" />
                 </button>
                 <span class="fi fi-{UI_LANG_META[l].flag} shrink-0 rounded-sm" aria-hidden="true"></span>
               </span>
@@ -537,7 +794,7 @@
     {#if results.length > 0}
       <div class="rounded-md border border-border" data-testid="i18n-editor-results">
         <div class="flex items-center gap-2 border-b border-border bg-muted/40 px-2.5 py-1.5">
-          <AiIcon size={14} />
+          <AiIcon size={16} />
           <span class="text-xs font-medium">{$t('app.common.translations.results_title')}</span>
           <div class="ml-auto flex items-center gap-1">
             <Button variant="outline" size="sm" class="h-6 px-2 text-xs" onclick={acceptAllResults} disabled={aiBusy} data-testid="i18n-editor-accept-all">
@@ -583,7 +840,7 @@
          render directly — no "here you go" line. -->
     {#if aiBusy}
       <div class="flex items-center gap-2" data-testid="i18n-editor-ai-busy">
-        <AiIcon size={14} />
+        <AiIcon size={16} />
         <span class="text-xs text-muted-foreground" data-testid="i18n-editor-ai-status">
           {$t('app.common.translations.generating')}
         </span>
@@ -602,21 +859,6 @@
 
   {#snippet footer()}
     <SheetPanelFooter>
-      {#if aiSupported}
-        <Button
-          variant="outline"
-          onclick={() => void generateAll()}
-          disabled={!canGenerateAll}
-          data-testid="i18n-editor-generate-all"
-        >
-          {#if aiBusy}
-            <LoaderCircle class="size-4 animate-spin" />
-          {:else}
-            <AiIcon size={14} />
-          {/if}
-          {$t('app.common.translations.generate_all')}
-        </Button>
-      {/if}
       <Button onclick={save} disabled={!canSave} title={!canSave ? $t('app.common.translations.en_required') : undefined} data-testid="i18n-editor-save">
         {$t('app.common.save')}
       </Button>
