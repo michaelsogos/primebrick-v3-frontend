@@ -73,13 +73,32 @@
     t: (k, p) => $t(k, p),
   });
 
+  const skSelectedKeys = `pb:dict:${entity}:selectedKeys`;
   onMount(() => {
+    try {
+      const raw = sessionStorage.getItem(skSelectedKeys);
+      const parsed = raw ? (JSON.parse(raw) as unknown) : null;
+      if (Array.isArray(parsed)) {
+        const ids = parsed.filter((k): k is string => typeof k === 'string');
+        if (ids.length) selection.toggleSelectAll(ids, true);
+      }
+    } catch {
+      // ignore bad storage payloads
+    }
     void list.init();
   });
 
   // The pending-translation queue is session-scoped — leaving the page with
   // unsaved drafts must never persist queued labels (config-create rule).
   $effect(() => () => clearPendingTranslations(basePath));
+
+  $effect(() => {
+    try {
+      sessionStorage.setItem(skSelectedKeys, JSON.stringify([...selection.state.selected_ids]));
+    } catch {
+      // ignore quota / blocked storage
+    }
+  });
 
   const stepUp = useMfaStepUp();
 

@@ -185,6 +185,7 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
   const skAdvancedFilters = `${skColumnOrder}:advancedFilters`;
   const skFilterPresets = `${opts.storageKeyPrefix}filterPresets`;
   const skDeletionFilter = `${opts.storageKeyPrefix}deletionFilter`;
+  const skSelectedKeys = `${opts.storageKeyPrefix}selectedKeys`;
 
   // ── persistence (canonical medium + legacy read fallback) ────────────
 
@@ -280,6 +281,13 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
       if (df === 'non_deleted' || df === 'deleted' || df === 'all') {
         _state.deletionFilterMode = df;
       }
+      const sel = storageGet(skSelectedKeys);
+      if (sel) {
+        const parsed = JSON.parse(sel) as unknown;
+        if (Array.isArray(parsed)) {
+          _state.selectedKeys = parsed.filter((k): k is string => typeof k === 'string');
+        }
+      }
       // URL filters WIN over persisted state — `filteredListHref` deep
       // links (ref_count / reverse_ref navigation) must land applied,
       // before the first loadRows ships them.
@@ -303,6 +311,7 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
     storageSet(skAdvancedFilters, JSON.stringify(_state.advancedFilters));
     storageSet(skFilterPresets, JSON.stringify(_state.presetSelections));
     storageSet(skDeletionFilter, _state.deletionFilterMode);
+    storageSet(skSelectedKeys, JSON.stringify(_state.selectedKeys));
   }
 
   // Persist UI state changes (write-only; gated on meta so restoration-time
@@ -317,6 +326,7 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
     void _state.advancedFilters;
     void _state.presetSelections;
     void _state.deletionFilterMode;
+    void _state.selectedKeys;
     persistState();
   });
 
