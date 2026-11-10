@@ -78,3 +78,23 @@ test.describe("filters sheet i18n", () => {
     await expect(page.locator("text=UUID").first()).toBeVisible();
   });
 });
+
+test.describe("version history field labels", () => {
+  test("dict row history resolves entity-owning-ns labels, not system.*", async ({ page }) => {
+    await loginAsTestAdmin(page);
+    await page.goto("/crm/settings/customer_types");
+
+    // Open the first row's version history via its v-badge.
+    const badge = page.locator('button', { hasText: /^v\d+$/ }).first();
+    await badge.waitFor({ state: "visible" });
+    await badge.click();
+
+    // customer_type is crm-owned — field labels resolve via
+    // `crm.entities.customer_type.fields.*`. The entities_ns default
+    // ("system") previously produced raw `system.entities.customer_type.*`
+    // keys in the delta view.
+    const sheet = page.getByRole("dialog").first();
+    await expect(sheet).toBeVisible();
+    await expect(sheet.locator("text=/system\\.entities\\.customer_type\\./")).toHaveCount(0);
+  });
+});

@@ -38,6 +38,7 @@
     entity,
     title_text,
     translation_key,
+    entities_ns,
     pending_owner,
     display_field,
     editable_columns,
@@ -67,6 +68,8 @@
     title_text: string;
     /** meta.translation_key — the label cell's rows vocabulary scope. */
     translation_key: string;
+    /** meta.entities_ns — forwarded to the version-history sheet. */
+    entities_ns?: string;
     /** Pending-queue owner — translations queued here flush with THIS page's save. */
     pending_owner: string;
     /** meta.display_field — the row's VALUE column (label_key on dicts). */
@@ -166,7 +169,7 @@
   );
 
   function openVersionHistory() {
-    openSheet('entity.versionHistory', { entity, rowUuid: row_uid });
+    openSheet('entity.versionHistory', { entity, entities_ns, rowUuid: row_uid });
   }
 </script>
 

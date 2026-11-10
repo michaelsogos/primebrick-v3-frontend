@@ -42,6 +42,7 @@
   import { isColumnFilterable, searchableTextColumns, useEntitySheetSync } from '$lib/entity-list';
   import { Plus, Undo2, LoaderCircle, Funnel } from '@primebrick/ui/vendor/lucide';
   import { type MetaColumn, type EntityMeta } from '$lib/entity-list/types';
+  import { entitiesNs } from '$lib/utils/entity-meta';
   import { isEntityOpAllowed } from '$lib/permissions.svelte';
   import { extJsonStringify } from '$lib/api-ext';
   import FormFieldDispatcher from '$lib/entity-form/FormFieldDispatcher.svelte';
@@ -125,6 +126,7 @@
    * the standard pending-translations store, flushed on save.
    */
   const translationKey = $derived(meta?.translation_key ?? entity);
+  const entities_ns = $derived(entitiesNs(meta));
 
   // ─── Toolbar contract — same derivations ELT owns for its two-level
   //     bar: searchable/filterable column sets and the soft-delete flag
@@ -551,6 +553,7 @@
     entity,
     title_text: rowTitle(r),
     translation_key: translationKey,
+    entities_ns,
     pending_owner: basePath,
     display_field: displayField,
     editable_columns: editableColumns,
