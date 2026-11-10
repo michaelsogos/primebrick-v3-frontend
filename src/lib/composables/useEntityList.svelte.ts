@@ -186,6 +186,10 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
   const skFilterPresets = `${opts.storageKeyPrefix}filterPresets`;
   const skDeletionFilter = `${opts.storageKeyPrefix}deletionFilter`;
   const skSelectedKeys = `${opts.storageKeyPrefix}selectedKeys`;
+  const skPage = `${opts.storageKeyPrefix}page`;
+  const skPageSize = `${opts.storageKeyPrefix}pageSize`;
+  const skGlobalConnector = `${opts.storageKeyPrefix}globalConnector`;
+  const skSearch = `${opts.storageKeyPrefix}search`;
 
   // ── persistence (canonical medium + legacy read fallback) ────────────
 
@@ -218,6 +222,7 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
 
   let stateRestored = false;
   let sortRestored = false;
+  let pageSizeRestored = false;
 
   function restorePersistentState() {
     if (stateRestored) return;
@@ -288,6 +293,26 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
           _state.selectedKeys = parsed.filter((k): k is string => typeof k === 'string');
         }
       }
+      const pg = storageGet(skPage);
+      if (pg) {
+        const n = Number(JSON.parse(pg));
+        if (Number.isInteger(n) && n >= 1) _state.page = n;
+      }
+      const psz = storageGet(skPageSize);
+      if (psz) {
+        const n = Number(JSON.parse(psz));
+        if (Number.isInteger(n) && n >= 1) {
+          _state.pageSize = n;
+          pageSizeRestored = true;
+        }
+      }
+      const gc = storageGet(skGlobalConnector);
+      if (gc === 'AND' || gc === 'OR') _state.globalConnector = gc;
+      const srch = storageGet(skSearch);
+      if (typeof srch === 'string' && srch.length) {
+        _state.search = srch;
+        _state.appliedSearch = srch;
+      }
       // URL filters WIN over persisted state — `filteredListHref` deep
       // links (ref_count / reverse_ref navigation) must land applied,
       // before the first loadRows ships them.
@@ -295,7 +320,10 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
       if (url.hasUrlFilters) {
         _state.filterValues = { ..._state.filterValues, ...url.filterValues };
         if (url.advancedFilters.length) _state.advancedFilters = [..._state.advancedFilters, ...url.advancedFilters];
-        if (url.search) _state.search = url.search;
+        if (url.search) {
+          _state.search = url.search;
+          _state.appliedSearch = url.search;
+        }
         if (url.searchIn.length) _state.searchInKeys = url.searchIn;
       }
     } catch {
@@ -312,6 +340,10 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
     storageSet(skFilterPresets, JSON.stringify(_state.presetSelections));
     storageSet(skDeletionFilter, _state.deletionFilterMode);
     storageSet(skSelectedKeys, JSON.stringify(_state.selectedKeys));
+    storageSet(skPage, JSON.stringify(_state.page));
+    storageSet(skPageSize, JSON.stringify(_state.pageSize));
+    storageSet(skGlobalConnector, _state.globalConnector);
+    storageSet(skSearch, _state.appliedSearch);
   }
 
   // Persist UI state changes (write-only; gated on meta so restoration-time
@@ -327,6 +359,10 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
     void _state.presetSelections;
     void _state.deletionFilterMode;
     void _state.selectedKeys;
+    void _state.page;
+    void _state.pageSize;
+    void _state.globalConnector;
+    void _state.appliedSearch;
     persistState();
   });
 
@@ -350,7 +386,9 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
       _state.sortKey = defSort?.key ?? null;
       _state.sortDir = defSort?.dir ?? 'asc';
     }
-    _state.pageSize = _state.meta?.table?.default_page_size ?? _state.pageSize;
+    if (!pageSizeRestored) {
+      _state.pageSize = _state.meta?.table?.default_page_size ?? _state.pageSize;
+    }
     ensureVisibleKeys();
   }
 

@@ -104,3 +104,59 @@ test.describe("row selection persistence", () => {
     await expect(page.locator('[data-state="checked"]')).toHaveCount(0);
   });
 });
+
+test.describe("pagination + search persistence", () => {
+  test("ELT: page and page size survive reload", async ({ page }) => {
+    await loginAsTestAdmin(page);
+    await page.goto("/crm/customers");
+
+    const next = page.getByTestId("elt-page-next");
+    const status = page.getByTestId("elt-pagination-status");
+    const sizeBtn = page.getByTestId("elt-page-size");
+    await next.waitFor({ state: "visible" });
+
+    // page size 50 first (changing size resets to page 1), then page 2
+    await sizeBtn.click();
+    await page.getByRole("menuitem", { name: "50", exact: true }).click();
+    await expect(sizeBtn).toHaveText("50");
+    await next.click();
+    const statusText = (await status.textContent()) ?? "";
+    expect(statusText).toContain("2");
+
+    await page.reload();
+    await status.waitFor({ state: "visible" });
+    await expect(page.getByTestId("elt-pagination-status")).toHaveText(statusText);
+    await expect(page.getByTestId("elt-page-size")).toHaveText("50");
+  });
+
+  test("ELT: committed search survives reload", async ({ page }) => {
+    await loginAsTestAdmin(page);
+    await page.goto("/crm/customers");
+
+    const search = page.getByTestId("entity-search").locator("input");
+    await search.waitFor({ state: "visible" });
+    // Synthetic keyEvent paths don't reliably reach the Svelte oninput on
+    // this overlay input (text-transparent + highlight underlay), so drive
+    // the native input contract directly and retry until the handler lands
+    // it — same chain a real keystroke takes: SearchInput.oninput →
+    // onSearchInput → debounce → appliedSearch → /list?search=.
+    await search.click();
+    await expect
+      .poll(async () => {
+        await search.evaluate((el: HTMLInputElement) => {
+          el.value = "admin-seed";
+          el.dispatchEvent(new Event("input", { bubbles: true }));
+        });
+        return page.evaluate(() => sessionStorage.getItem("pb:customers:list:search"));
+      }, { timeout: 10_000 })
+      .toBe("admin-seed");
+    // appliedSearch is debounced — wait until the store write lands
+    await expect
+      .poll(async () => page.evaluate(() => sessionStorage.getItem("pb:customers:list:search")), { timeout: 5000 })
+      .toBe("admin-seed");
+
+    await page.reload();
+    await search.waitFor({ state: "visible" });
+    await expect(search).toHaveValue("admin-seed");
+  });
+});
