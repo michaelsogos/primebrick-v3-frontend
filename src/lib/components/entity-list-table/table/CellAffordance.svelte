@@ -56,7 +56,7 @@
       rel="noopener noreferrer"
       title={icon_title}
       aria-label={icon_title}
-      class="shrink-0 text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100"
+      class="shrink-0 text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100 group-hover/entity-row:opacity-100"
       onclick={(e) => e.stopPropagation()}
     >
       {@render icon()}
@@ -66,7 +66,7 @@
       type="button"
       title={icon_title}
       aria-label={icon_title}
-      class="shrink-0 cursor-pointer text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100"
+      class="shrink-0 cursor-pointer text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100 group-hover/entity-row:opacity-100"
       onclick={(e) => { e.stopPropagation(); oniconclick(); }}
     >
       {@render icon()}

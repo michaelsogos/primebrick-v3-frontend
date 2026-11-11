@@ -10,27 +10,30 @@
    *     identifies the target row through its `/list` filter →
    *     `rows[0][uid]` → same canonical GET.
    *
-   * Layout: census `page_props.form` when a form-bearing route exists,
-   * else the fallback — every served `meta.columns` in declared order —
-   * both rendered through `FormFieldDispatcher` (the EntityFormSurface
-   * machinery lands in the next turn; readonly = every field disabled).
+   * Layout: the target entity's census `page_props.form` placements
+   * (order + col/row/row_span grid) when a form-bearing route exists,
+   * else the fallback — every served `meta.columns` in declared order.
    *
-   * In-sheet links are `_blank`-only by contract: the header CTA opens
-   * the target `/list` filtered to this row in a new tab.
+   * Field rendering: `TableCell` — the canonical metadata-driven VALUE
+   * renderer. This is a READ-ONLY display surface: no form widgets, no
+   * dispatcher. Ref fields render the same link anatomy as the list
+   * (text → a further `entity.record` sheet = drill-through; icon →
+   * `_blank` filtered list), so nested references navigate the same panel.
+   *
+   * In-sheet links are `_blank`-only by contract.
    */
   import { onMount } from 'svelte';
-  import { SvelteMap } from 'svelte/reactivity';
   import { t } from '$lib/i18n';
   import { apiFetch, entityApiBase, routesCensusFromModules } from '$lib/api';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
   import { fetchEntityMeta } from '$lib/entity-list';
   import { filteredEntityListHref } from '$lib/entity-list/entity-links';
-  import { SheetPanelLayout, toDisplayString, SwitchField } from '@primebrick/ui';
-  import SheetHeaderAction from '$lib/shell/sheets/SheetHeaderAction.svelte';
-  import FormFieldDispatcher from '$lib/entity-form/FormFieldDispatcher.svelte';
+  import { SheetPanelLayout, toDisplayString } from '@primebrick/ui';
+  import EntityRecordSheetBody from './EntityRecordSheetBody.svelte';
   import { ExternalLink, IdCard } from '@primebrick/ui/vendor/lucide';
   import { LoadingBar } from '$lib/components/ui/loading-bar';
   import type { MetaColumn, EntityMeta } from '$lib/entity-list/types';
+  import type { FormFieldPlacement } from '@primebrick/ui';
 
   let {
     entity,
@@ -51,18 +54,39 @@
   const basePath = entityApiBase(entity);
   const routeCensus = $derived(routesCensusFromModules(shellNav.modules));
 
+  /** The entity's declared form layout — first form-bearing route in the
+   *  census (detail preferred over create). Absent → fallback columns. */
+  const formFields = $derived.by<FormFieldPlacement[] | undefined>(() => {
+    const routes = routeCensus.filter(
+      (r) => r.entity === entity && r.page_props?.form?.fields?.length,
+    );
+    const detail = routes.find((r) => r.kind === 'detail') ?? routes[0];
+    return detail?.page_props?.form?.fields;
+  });
+  /** Two-column grid only when the declared layout actually uses col 2. */
+  const formTwoCol = $derived((formFields ?? []).some((p) => (p.col ?? 1) > 1));
+
   let meta = $state<EntityMeta | null>(null);
   let record = $state<Record<string, unknown> | null>(null);
   let loading = $state(true);
   let notFound = $state(false);
   let failed = $state(false);
 
-  /** The record's fields in declared order — fallback layout. */
-  const columns = $derived((meta?.columns ?? []).filter((c) => !c.hidden));
   const columnsMap = $derived.by<ReadonlyMap<string, MetaColumn>>(() => {
-    const m = new SvelteMap<string, MetaColumn>();
+    const m = new Map<string, MetaColumn>();
     for (const c of meta?.columns ?? []) m.set(c.key, c);
     return m;
+  });
+  /** Form layout entries resolved to their column (drift-safe: a
+   *  placement key absent from served meta is dropped, never invented). */
+  const formPlacements = $derived.by(() => {
+    if (!formFields) return [] as { col: MetaColumn; p: FormFieldPlacement }[];
+    const out: { col: MetaColumn; p: FormFieldPlacement }[] = [];
+    for (const p of formFields) {
+      const col = columnsMap.get(p.key);
+      if (col && !col.hidden) out.push({ col, p });
+    }
+    return out;
   });
   const titleText = $derived.by(() => {
     if (!meta) return entity;
@@ -147,6 +171,7 @@
         class="inline-flex items-center gap-1 text-muted-foreground transition-colors hover:text-foreground"
         title={$t('app.common.open_in_new_tab')}
         aria-label={$t('app.common.open_in_new_tab')}
+        data-testid="entity-record-sheet-list-cta"
       >
         <ExternalLink class="size-4" />
       </a>
@@ -160,31 +185,13 @@
       <p class="text-sm text-muted-foreground">{$t('app.common.not_found')}</p>
     {:else if failed || !record}
       <p class="text-sm text-muted-foreground">{$t('app.common.load_error')}</p>
-    {:else}
-      <div class="grid grid-cols-1 gap-3">
-        {#each columns as col (col.key)}
-          {#if col.type === 'boolean' || col.pg_type === 'boolean'}
-            <!-- Same split as EntityFormPage: booleans never reach the
-                 dispatcher — SwitchField is the canonical anatomy. -->
-            <SwitchField
-              label={$t(col.label_key)}
-              checked={record?.[col.key] === true}
-              disabled
-            />
-          {:else}
-            <div class="flex flex-col gap-1">
-              <span class="text-xs font-medium text-muted-foreground">{$t(col.label_key)}</span>
-              <FormFieldDispatcher
-                column={col}
-                bind:value={() => record?.[col.key], () => {}}
-                record={record ?? {}}
-                columns={columnsMap}
-                readonly
-              />
-            </div>
-          {/if}
-        {/each}
-      </div>
+    {:else if record && meta}
+      <EntityRecordSheetBody
+        {meta}
+        {record}
+        {formPlacements}
+        {formTwoCol}
+      />
     {/if}
   </div>
 </SheetPanelLayout>

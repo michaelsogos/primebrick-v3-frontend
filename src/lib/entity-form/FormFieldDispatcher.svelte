@@ -244,8 +244,11 @@
 	function resolveFilterControl(): string {
 		if (column.type === 'boolean' || column.pg_type === 'boolean') return 'boolean_tristate';
 		if (column.type === 'badge') return 'badge_multi';
-		if (column.type === 'ref' && column.ref?.entity) return 'entity_ref';
+		// Authored `options_source` wins over the structural type — an
+		// audit actor column declared type:"ref" still filters through the
+		// entity's own audit-writers vocabulary, never a paged entity combo.
 		if (column.options_source === 'audit.actors') return 'actor_multi';
+		if (column.type === 'ref' && column.ref?.entity) return 'entity_ref';
 		if (column.type === 'ref_count') return 'number';
 		if (
 			column.type === 'date' ||
