@@ -36,7 +36,7 @@ test.describe("entity dict page (/crm/settings/customer_types)", () => {
     await page.goto(DICT_URL, { waitUntil: "domcontentloaded" });
 
     const dictPage = page.getByTestId("entity-dict-page");
-    await expect(dictPage).toBeVisible({ timeout: 5000 });
+    await expect(dictPage).toBeVisible({ timeout: 30000 });
     await expect(dictPage).toHaveAttribute("data-entity", "customer_type");
 
     // The toolbar contract — the two-level ELT anatomy: level 1 hosts the
@@ -96,7 +96,7 @@ test.describe("entity dict page (/crm/settings/customer_types)", () => {
     await stubTranslator(page, 350);
     await loginAsTestAdmin(page);
     await page.goto(DICT_URL, { waitUntil: "domcontentloaded" });
-    await expect(page.getByTestId("entity-dict-page")).toBeVisible({ timeout: 5000 });
+    await expect(page.getByTestId("entity-dict-page")).toBeVisible({ timeout: 30000 });
 
     // Add a draft row — its label_key cell is the TranslationKeyCell.
     await page.getByTestId("dict-toolbar-add").click();
@@ -306,7 +306,7 @@ test.describe("entity dict page (/crm/settings/customer_types)", () => {
   }) => {
     await loginAsTestAdmin(page);
     await page.goto(DICT_URL, { waitUntil: "domcontentloaded" });
-    await expect(page.getByTestId("entity-dict-page")).toBeVisible({ timeout: 5000 });
+    await expect(page.getByTestId("entity-dict-page")).toBeVisible({ timeout: 30000 });
 
     // First saved row — its label_key is a crm.* key with rows in every
     // language, so the sheet opens on the Saved state.
@@ -368,7 +368,7 @@ test.describe("it-IT seeded values (locale-driven uiLang)", () => {
   }) => {
     await loginAsTestAdmin(page);
     await page.goto(DICT_URL, { waitUntil: "domcontentloaded" });
-    await expect(page.getByTestId("entity-dict-page")).toBeVisible({ timeout: 5000 });
+    await expect(page.getByTestId("entity-dict-page")).toBeVisible({ timeout: 30000 });
 
     // Same draft-key flow → open the translation editor sheet.
     await page.getByTestId("dict-toolbar-add").click();

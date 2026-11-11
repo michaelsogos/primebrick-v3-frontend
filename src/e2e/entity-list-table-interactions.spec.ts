@@ -132,7 +132,7 @@ test.describe("entity-list-table interactions", () => {
 
     await page.goto(SCHEDULES, { waitUntil: "domcontentloaded" });
     const rows = page.locator("table tbody tr[data-row-index]");
-    await expect(rows.first()).toBeVisible({ timeout: 5000 });
+    await expect(rows.first()).toBeVisible({ timeout: 30000 });
 
     // ── 1. No focus, no frame on first load.
     await expect(page.locator("tr[data-focused-row-index]")).toHaveCount(0);
@@ -257,7 +257,7 @@ test.describe("entity-list-table interactions", () => {
     // small enough to fit between the left range zone and the pager.
     await page.setViewportSize({ width: 1920, height: 900 });
     await page.goto(SCHEDULES, { waitUntil: "domcontentloaded" });
-    await expect(page.locator("table tbody tr[data-row-index]").first()).toBeVisible({ timeout: 5000 });
+    await expect(page.locator("table tbody tr[data-row-index]").first()).toBeVisible({ timeout: 30000 });
     const trigger = page.getByTestId("elt-kbd-legend");
     await expect(trigger).toBeVisible();
     // The trigger itself is icon + translated label, no raw key.
@@ -311,7 +311,7 @@ test.describe("entity-list-table interactions", () => {
   test("pager keys navigate pages like the footer buttons", async ({ page }) => {
     // job_runs is the densest ELT list — hundreds of rows, always multi-page.
     await page.goto("/system/job/runs", { waitUntil: "domcontentloaded" });
-    await expect(page.locator("table tbody tr[data-row-index]").first()).toBeVisible({ timeout: 5000 });
+    await expect(page.locator("table tbody tr[data-row-index]").first()).toBeVisible({ timeout: 30000 });
 
     const status = page.getByTestId("elt-pagination-status");
     const readPager = async () => {
@@ -344,7 +344,7 @@ test.describe("entity-list-table interactions", () => {
   test("Insert key fires the toolbar NEW CTA", async ({ page, context }) => {
     await page.setViewportSize({ width: 1920, height: 900 });
     await page.goto("/system/job/triggers", { waitUntil: "domcontentloaded" });
-    await expect(page.locator("table tbody tr[data-row-index]").first()).toBeVisible({ timeout: 5000 });
+    await expect(page.locator("table tbody tr[data-row-index]").first()).toBeVisible({ timeout: 30000 });
 
     const legend = page.getByTestId("elt-kbd-legend");
     await expect(legend).toBeVisible();

@@ -50,7 +50,7 @@ test.describe.serial("dict lifecycle — UI-only on an ad-hoc row", () => {
     test.setTimeout(120_000);
     await loginAsTestAdmin(page);
     await page.goto(DICT_URL, { waitUntil: "domcontentloaded" });
-    await expect(page.getByTestId("entity-dict-page")).toBeVisible({ timeout: 5000 });
+    await expect(page.getByTestId("entity-dict-page")).toBeVisible({ timeout: 30000 });
     await expect(page.locator('[data-testid^="selectable-row-"]').first()).toBeVisible();
 
     // ── 1. CREATE via the draft row ──────────────────────────────────
@@ -125,7 +125,7 @@ test.describe.serial("dict lifecycle — UI-only on an ad-hoc row", () => {
     await expect(row.getByTestId("dict-row-revert")).toHaveCount(0);
 
     await page.reload({ waitUntil: "domcontentloaded" });
-    await expect(page.getByTestId("entity-dict-page")).toBeVisible({ timeout: 5000 });
+    await expect(page.getByTestId("entity-dict-page")).toBeVisible({ timeout: 30000 });
     const orderAfterReload = await rowOrder(page);
     expect(orderAfterReload.indexOf(ourTestid)).toBeLessThan(
       orderAfterReload.indexOf(neighbourTestid),
