@@ -29,7 +29,7 @@
   import { fetchEntityMeta } from '$lib/entity-list';
   import { filteredEntityListHref } from '$lib/entity-list/entity-links';
   import { SheetPanelLayout, toDisplayString } from '@primebrick/ui';
-  import EntityRecordSheetBody from './EntityRecordSheetBody.svelte';
+  import EntityRecordSheetBody from '../EntityRecordSheetBody.svelte';
   import { ExternalLink, IdCard } from '@primebrick/ui/vendor/lucide';
   import { LoadingBar } from '$lib/components/ui/loading-bar';
   import type { MetaColumn, EntityMeta } from '$lib/entity-list/types';
