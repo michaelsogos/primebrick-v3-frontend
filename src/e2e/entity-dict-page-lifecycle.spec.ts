@@ -126,6 +126,9 @@ test.describe.serial("dict lifecycle — UI-only on an ad-hoc row", () => {
 
     await page.reload({ waitUntil: "domcontentloaded" });
     await expect(page.getByTestId("entity-dict-page")).toBeVisible({ timeout: 30000 });
+    // After a reload the page shell mounts before the row list — waiting on
+    // the page alone lets rowOrder read an empty DOM under load.
+    await expect(page.locator('[data-testid^="selectable-row-"]').first()).toBeVisible({ timeout: 30000 });
     const orderAfterReload = await rowOrder(page);
     expect(orderAfterReload.indexOf(ourTestid)).toBeLessThan(
       orderAfterReload.indexOf(neighbourTestid),
