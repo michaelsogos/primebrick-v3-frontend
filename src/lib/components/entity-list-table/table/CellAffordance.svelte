@@ -39,7 +39,7 @@
   } = $props();
 </script>
 
-<span class="inline-flex max-w-full items-center gap-1">
+<span class="flex w-full min-w-0 items-center gap-1">
   <button
     type="button"
     data-testid={test_id ? `${test_id}-text` : undefined}
@@ -56,7 +56,7 @@
       rel="noopener noreferrer"
       title={icon_title}
       aria-label={icon_title}
-      class="shrink-0 text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100 group-hover/entity-row:opacity-100"
+      class="ml-auto shrink-0 text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100 group-hover/entity-row:opacity-100"
       onclick={(e) => e.stopPropagation()}
     >
       {@render icon()}
@@ -66,7 +66,7 @@
       type="button"
       title={icon_title}
       aria-label={icon_title}
-      class="shrink-0 cursor-pointer text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100 group-hover/entity-row:opacity-100"
+      class="ml-auto shrink-0 cursor-pointer text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100 group-hover/entity-row:opacity-100"
       onclick={(e) => { e.stopPropagation(); oniconclick(); }}
     >
       {@render icon()}

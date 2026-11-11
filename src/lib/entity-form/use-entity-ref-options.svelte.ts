@@ -42,6 +42,8 @@ import type {
 import type { DeepReadonly } from '@primebrick/ui';
 import { SvelteURLSearchParams } from 'svelte/reactivity';
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export type EntityRefOption = {
 	value: string;
 	label: string;
@@ -227,14 +229,24 @@ export function useEntityRefOptions(
 		const missing = values.filter(
 			(v) => !_state.options.some((o) => o.value === v),
 		);
-		if (missing.length === 0) return;
 		const uidKey = valueField ?? meta.uid;
+		// A stored value that can never match the target column's physical
+		// type is unresolvable by contract (e.g. the raw actor string
+		// "system" on a uuid ref) — it must not enter the IN filter: the
+		// wire would 500 on a pg cast. It stays raw — the same fallback the
+		// list cell already shows.
+		const uidCol = meta.columns?.find((c) => c.key === uidKey);
+		const shaped =
+			uidCol?.pg_type === 'uuid'
+				? missing.filter((v) => UUID_RE.test(v))
+				: missing;
+		if (shaped.length === 0) return;
 		const qs = new SvelteURLSearchParams();
 		qs.set('page', '1');
-		qs.set('page_size', String(Math.max(missing.length, 1)));
+		qs.set('page_size', String(Math.max(shaped.length, 1)));
 		qs.set('filters[0][field]', uidKey);
 		qs.set('filters[0][op]', 'IN');
-		for (const v of missing) qs.append('filters[0][value][]', v);
+		for (const v of shaped) qs.append('filters[0][value][]', v);
 		qs.set('filters[0][connector]', 'AND');
 		const mySeq = seq;
 		void apiFetchWithTimeout(`${metaBasePath}/list?${qs.toString()}`, undefined, 15_000)

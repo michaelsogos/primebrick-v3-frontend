@@ -1,17 +1,21 @@
 <script lang="ts">
   /**
-   * EntityRecordSheetBody — the loaded record surface. Lives in its own
-   * component so the TableCell-facing contexts (`meta.uid`, `entities_ns`,
-   * audit columns) are set at init — `setContext` cannot run after the
-   * async meta fetch inside the parent.
+   * EntityRecordSheetBody — the loaded record surface: the entity's FORM
+   * rendered read-only, so the pencil toggle can later flip the same
+   * widgets to edit mode.
+   *
+   * Field anatomy mirrors EntityFormPage: booleans render via
+   * `SwitchField` (they never reach the dispatcher); every other column
+   * resolves its form control through `FormFieldDispatcher` with
+   * `readonly` — same widget the form uses, never a display-only cell.
+   *
+   * Layout: `page_props.form` placements (order + col/row/row_span grid)
+   * when the entity declares a form-bearing route; else the fallback —
+   * every served `meta.columns` in declared order, single column.
    */
   import { t } from '$lib/i18n';
-  import TableCell from '$lib/components/entity-list-table/table/TableCell.svelte';
-  import {
-    setAuditColumnsContext,
-    setEntitiesNsContext,
-    setMetaUidContext,
-  } from '$lib/components/entity-list-table/context';
+  import { SwitchField } from '@primebrick/ui';
+  import FormFieldDispatcher from '$lib/entity-form/FormFieldDispatcher.svelte';
   import type { MetaColumn, EntityMeta } from '$lib/entity-list/types';
   import type { FormFieldPlacement } from '@primebrick/ui';
 
@@ -29,17 +33,12 @@
     formTwoCol: boolean;
   } = $props();
 
-  // Contexts must be set at init (setContext cannot run later); the body
-  // mounts only after meta+record loaded, so these prop reads are
-  // genuinely static — the snapshot is the contract.
-  // svelte-ignore state_referenced_locally
-  setMetaUidContext(meta.uid ?? 'uuid');
-  // svelte-ignore state_referenced_locally
-  setEntitiesNsContext(meta.entities_ns ?? 'system');
-  // svelte-ignore state_referenced_locally
-  setAuditColumnsContext(meta.columns.filter((c) => c.audited));
-
   const columns = $derived((meta?.columns ?? []).filter((c) => !c.hidden));
+  const columnsMap = $derived.by<ReadonlyMap<string, MetaColumn>>(() => {
+    const m = new Map<string, MetaColumn>();
+    for (const c of meta?.columns ?? []) m.set(c.key, c);
+    return m;
+  });
 
   function placementStyle(p: FormFieldPlacement): string {
     const parts: string[] = [];
@@ -51,22 +50,37 @@
   }
 </script>
 
+{#snippet field(col: MetaColumn, style?: string)}
+  {#if col.type === 'boolean' || col.pg_type === 'boolean'}
+    <!-- Same split as EntityFormPage: booleans never reach the
+         dispatcher — SwitchField is the canonical anatomy. -->
+    <div style={style}>
+      <SwitchField label={$t(col.label_key)} checked={record?.[col.key] === true} disabled />
+    </div>
+  {:else}
+    <div class="flex min-w-0 flex-col gap-1" style={style}>
+      <span class="text-xs font-medium text-muted-foreground">{$t(col.label_key)}</span>
+      <FormFieldDispatcher
+        column={col}
+        bind:value={() => record?.[col.key], () => {}}
+        record={record ?? {}}
+        columns={columnsMap}
+        readonly
+      />
+    </div>
+  {/if}
+{/snippet}
+
 {#if formPlacements.length}
   <div class="grid gap-4 {formTwoCol ? 'grid-cols-2' : 'grid-cols-1'}">
     {#each formPlacements as { col, p } (col.key)}
-      <div class="flex min-w-0 flex-col gap-1" style={placementStyle(p)}>
-        <span class="text-xs font-medium text-muted-foreground">{$t(col.label_key)}</span>
-        <TableCell row={record} column={col} datetimeIanaModeByKey={{}} />
-      </div>
+      {@render field(col, placementStyle(p))}
     {/each}
   </div>
 {:else}
   <div class="grid grid-cols-1 gap-3">
     {#each columns as col (col.key)}
-      <div class="flex min-w-0 flex-col gap-1">
-        <span class="text-xs font-medium text-muted-foreground">{$t(col.label_key)}</span>
-        <TableCell row={record} column={col} datetimeIanaModeByKey={{}} />
-      </div>
+      {@render field(col)}
     {/each}
   </div>
 {/if}

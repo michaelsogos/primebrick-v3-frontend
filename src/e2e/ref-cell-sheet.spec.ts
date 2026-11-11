@@ -130,9 +130,14 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
     await expect(sheet).toBeVisible({ timeout: 15000 });
     await expect(sheet).toContainText(name, { timeout: 15000 });
     await expect(sheet).not.toContainText("Record not found");
-    // Display surface contract: values render through TableCell — no
-    // editable controls must exist anywhere in the record sheet.
-    await expect(sheet.locator("input, textarea, select, [contenteditable]")).toHaveCount(0);
+    // FORM-READONLY contract: the record renders as the entity's form
+    // widgets — every control present but readonly/disabled (the pencil
+    // toggle will later flip them to edit).
+    const editable = sheet.locator(
+      "input:not([readonly]):not([disabled]), textarea:not([readonly]):not([disabled]), select:not([disabled])",
+    );
+    await expect(editable).toHaveCount(0);
+    await expect(sheet.locator("input, textarea").first()).toBeVisible();
   });
 
   test("unresolved actor — raw value text, sheet shows honest not-found state", async ({
