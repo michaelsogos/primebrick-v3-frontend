@@ -224,6 +224,7 @@
               onclick={openVersionHistory}
               class="inline-flex"
               title={$t('system.entities.version_history.title')}
+              aria-label={$t('system.entities.version_history.title')}
             >
               <Badge class="cursor-pointer border border-primary text-xs font-semibold hover:bg-primary/10" variant="outline">
                 v{version}
@@ -287,6 +288,7 @@
         disabled={reorder_first || deleted}
         onclick={onmoveup}
         title={$t('app.common.move_up')}
+        aria-label={$t('app.common.move_up')}
         data-testid="dict-row-move-up"
       >
         <ChevronUp class="size-4" />
@@ -297,6 +299,7 @@
         disabled={reorder_last || deleted}
         onclick={onmovedown}
         title={$t('app.common.move_down')}
+        aria-label={$t('app.common.move_down')}
         data-testid="dict-row-move-down"
       >
         <ChevronDown class="size-4" />
@@ -308,6 +311,7 @@
         size="icon-sm"
         onclick={onrevert}
         title={$t('app.common.revert_changes')}
+        aria-label={$t('app.common.revert_changes')}
         data-testid="dict-row-revert"
       >
         <Undo2 class="size-4 text-warning" />
@@ -320,6 +324,7 @@
           size="icon-sm"
           onclick={onrestore}
           title={$t('app.common.restore')}
+          aria-label={$t('app.common.restore')}
           data-testid="dict-row-restore"
         >
           <RotateCcw class="size-4" />
@@ -331,6 +336,7 @@
         size="icon-sm"
         onclick={ondelete}
         title={$t('app.common.delete')}
+        aria-label={$t('app.common.delete')}
         data-testid="dict-row-delete"
       >
         <Trash2 class="size-4 text-destructive" />
