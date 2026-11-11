@@ -351,7 +351,7 @@
   "app.common.translations.easy_hint": "Browser Translator API (built-in)",
   "app.common.translations.en_required": "At least one English translation is required",
   "app.common.translations.flush_failed": "Some translations could not be saved — they will be retried on the next save",
-  "app.common.translations.generate_all": "Generate all missing",
+  "app.common.translations.generate_all": "All missing",
   "app.common.translations.generating": "Generating…",
   "app.common.translations.meaning_hint": "Meaning hint (optional)",
   "app.common.translations.meaning_label": "Provide a meaning",

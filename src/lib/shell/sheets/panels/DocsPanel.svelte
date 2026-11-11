@@ -29,7 +29,7 @@
   import { renderDoc, hydrateMermaid, resolveDocTarget, type DocsTocItem } from '$lib/shell/docs/docs-render';
   import { fetchDocsIndex, fetchDoc, searchDocs, type DocsIndexRepo, type DocsIndexEntry, type DocsSearchHit } from '$lib/api';
   import { cn } from '$lib/utils';
-  import { BookOpen } from '@primebrick/ui/vendor/lucide';
+  import { BookOpenText } from '@primebrick/ui/vendor/lucide';
   import { LibraryBig } from '@primebrick/ui/vendor/lucide';
   import { ChevronUp } from '@primebrick/ui/vendor/lucide';
   import { ChevronDown } from '@primebrick/ui/vendor/lucide';
@@ -358,7 +358,7 @@
 
 <SheetPanelLayout contentClass="p-0">
   {#snippet icon()}
-    <BookOpen class="size-4" />
+    <BookOpenText class="size-4" />
   {/snippet}
   {#snippet title()}
     {$t('app.docs.title')}

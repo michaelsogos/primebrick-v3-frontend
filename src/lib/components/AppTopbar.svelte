@@ -11,7 +11,7 @@
   import { Bell } from '@primebrick/ui/vendor/lucide'
   import { Globe } from '@primebrick/ui/vendor/lucide'
   import { TriangleAlert } from '@primebrick/ui/vendor/lucide'
-  import { BookOpen } from '@primebrick/ui/vendor/lucide'
+  import { BookOpenText } from '@primebrick/ui/vendor/lucide'
   import { AiIcon } from '@primebrick/ui';
   import { GradientIcon, GRADIENT_ICON_PATHS } from '$lib/components/ui/gradient-icon';
   import { appErrors } from '$lib/errors/app-errors';
@@ -162,7 +162,7 @@
         data-testid="app-topbar-docs-cta"
         onclick={() => openSheet('shell.docs', {}, { modal: false })}
       >
-        <BookOpen class="size-4" />
+        <BookOpenText class="size-4" />
       </Button>
 
       <ThemeToggle />
