@@ -22,6 +22,7 @@ export const SHEET_PANEL_IDS = [
   'entity.datetimeIana',
   'entity.versionHistory',
   'entity.jsonViewer',
+  'entity.record',
   'config.currencySelect',
   'config.protocolSelect',
   'config.phonePrefixSelect',
@@ -96,6 +97,14 @@ export type SheetPanelPropsMap = {
   'entity.jsonViewer': {
     /** The cell's parsed JSON value (null-prototype safe — read-only). */
     value: unknown;
+  };
+  'entity.record': {
+    /** Target entity API name (from `column.ref.entity`). */
+    entity: string;
+    /** The cell's raw value — the target uid for uuid refs. */
+    value: unknown;
+    /** The column's ref contract — drives business-key resolution. */
+    ref?: import('$lib/entity-list/types').MetaColumn['ref'];
   };
   'config.currencySelect': {
     currentCurrency: string;

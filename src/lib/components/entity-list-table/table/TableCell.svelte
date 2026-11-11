@@ -1,7 +1,9 @@
 <script lang="ts" generics="TRow extends Record<string, unknown>">
   import { resolve } from '$app/paths';
   import { routesCensusFromModules } from '$lib/api';
-  import { entityRefHref, reverseRefHref, subjectDecl, subjectFieldLabel } from '$lib/entity-list/entity-links';
+  import { entityRefHref, reverseRefHref, subjectDecl, subjectFieldLabel, filteredEntityListHref } from '$lib/entity-list/entity-links';
+  import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
+  import CellAffordance from './CellAffordance.svelte';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
   import { t } from '$lib/i18n';
   import { formatListCellValue, toDisplayString, colorCssFromToken, extJsonStringify, FILTER_OPERATOR_KEY } from '@primebrick/ui';
@@ -14,6 +16,7 @@
   import { uiLang } from '$lib/i18n/store.svelte';
   import { CircleCheck } from '@primebrick/ui/vendor/lucide'
   import { CircleX } from '@primebrick/ui/vendor/lucide';
+  import { ExternalLink } from '@primebrick/ui/vendor/lucide';
   import JsonCellViewer from './JsonCellViewer.svelte';
   import { Tooltip } from '@primebrick/ui';
   import { getAuditFieldValue } from '../utils/cell-formatting';
@@ -235,21 +238,43 @@
     <JsonCellViewer {value} />
   {/if}
 {:else if column.type === 'ref' && column.ref && value}
-  {@const href = entityRefHref(routeCensus, column.ref, toDisplayString(value))}
-  {#if href}
-    <a
-      href={resolve(href as '/')}
-      target="_blank"
-      rel="noopener noreferrer"
-      class={['inline-flex max-w-full items-center gap-1', CELL_LINK_CLASS]}
-    >
-      <Badge variant="outline" class="gap-1 shadow-none">
-        {#if column.icon}<DynamicIcon name={column.icon} size={12} class="shrink-0" style={iconStyle} />{/if}
-        <span class="truncate font-mono text-[11px]">{toDisplayString(displayValue)}</span>
-      </Badge>
-    </a>
+  {#if column.ref.presentation === 'badge'}
+    <!-- Opt-in legacy anatomy — badge pill as a single `_blank` link. -->
+    {@const href = entityRefHref(routeCensus, column.ref, toDisplayString(value))}
+    {#if href}
+      <a
+        href={resolve(href as '/')}
+        target="_blank"
+        rel="noopener noreferrer"
+        class={['inline-flex max-w-full items-center gap-1', CELL_LINK_CLASS]}
+      >
+        <Badge variant="outline" class="gap-1 shadow-none">
+          {#if column.icon}<DynamicIcon name={column.icon} size={12} class="shrink-0" style={iconStyle} />{/if}
+          <span class="truncate font-mono text-[11px]">{toDisplayString(displayValue)}</span>
+        </Badge>
+      </a>
+    {:else}
+      <span class="min-w-0 truncate font-mono text-[11px]">{toDisplayString(displayValue)}</span>
+    {/if}
+  {:else if column.ref.route === 'none'}
+    <span class="min-w-0 truncate">{toDisplayString(displayValue)}</span>
   {:else}
-    <span class="min-w-0 truncate font-mono text-[11px]">{toDisplayString(displayValue)}</span>
+    <!-- Default "link" anatomy: medium text (underline on hover) opens
+         the record sheet; trailing ExternalLink → filtered /list _blank. -->
+    {@const iconHref = filteredEntityListHref(routeCensus, column.ref.entity, [
+      { field: column.ref.filter_field ?? metaUid, op: '=', value: toDisplayString(value) },
+    ])}
+    <CellAffordance
+      text={toDisplayString(displayValue)}
+      ontextclick={() =>
+        openSheet('entity.record', { entity: column.ref!.entity, value, ref: column.ref })}
+      href={iconHref ?? undefined}
+      icon_title={$t('app.common.open_in_new_tab')}
+    >
+      {#snippet icon()}
+        <ExternalLink class="size-3.5" />
+      {/snippet}
+    </CellAffordance>
   {/if}
 {:else if column.type === 'ref_count' && column.reverse_ref}
   {@const href = reverseRefHref(routeCensus, column.reverse_ref, metaUid, row)}

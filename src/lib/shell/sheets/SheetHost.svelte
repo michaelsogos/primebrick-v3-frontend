@@ -20,6 +20,7 @@
   import DatetimeIanaPanel from '$lib/entity-list/sheets/panels/DatetimeIanaPanel.svelte';
   import VersionHistoryPanel from '$lib/entity-list/sheets/panels/VersionHistoryPanel.svelte';
   import JsonViewerPanel from '$lib/entity-list/sheets/panels/JsonViewerPanel.svelte';
+  import EntityRecordSheet from '$lib/entity-list/sheets/panels/EntityRecordSheet.svelte';
   import CurrencySelectPanel from '$lib/shell/sheets/panels/CurrencySelectPanel.svelte';
   import ProtocolSelectPanel from '$lib/shell/sheets/panels/ProtocolSelectPanel.svelte';
   import PhonePrefixSelectPanel from '$lib/shell/sheets/panels/PhonePrefixSelectPanel.svelte';
@@ -49,6 +50,7 @@
     'entity.datetimeIana': DatetimeIanaPanel,
     'entity.versionHistory': VersionHistoryPanel,
     'entity.jsonViewer': JsonViewerPanel,
+    'entity.record': EntityRecordSheet,
     'config.currencySelect': CurrencySelectPanel,
     'config.protocolSelect': ProtocolSelectPanel,
     'config.phonePrefixSelect': PhonePrefixSelectPanel,

@@ -300,6 +300,8 @@
   "app.common.next": "Next",
   "app.common.no_changes": "No unsaved changes",
   "app.common.no_results": "No results found.",
+  "app.common.not_found": "Record not found.",
+  "app.common.open_in_new_tab": "Open in a new tab",
   "app.common.optional": "(optional)",
   "app.common.optional_tooltip_text": "Leave this empty to use the suggested value; type your own to override it.",
   "app.common.optional_tooltip_title": "Suggested value",
