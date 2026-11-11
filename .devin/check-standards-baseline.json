@@ -1,0 +1,159 @@
+{
+  "violations": [
+    {
+      "file": "lib/entity-list/sheets/panels/VersionHistoryPanel.svelte",
+      "rule": "panel-chrome-class",
+      "text": "<Button"
+    },
+    {
+      "file": "lib/entity-list/sheets/panels/VersionHistoryPanel.svelte",
+      "rule": "panel-chrome-class",
+      "text": "<Badge"
+    },
+    {
+      "file": "lib/entity-list/sheets/panels/VersionHistoryPanel.svelte",
+      "rule": "panel-chrome-class",
+      "text": "<Badge"
+    },
+    {
+      "file": "lib/shell/sheets/panels/AiChatPanel.svelte",
+      "rule": "panel-chrome-class",
+      "text": "<Button size=\"sm\" variant=\"default\" class=\"h-7 text-xs\" onclick={handleConfirmToolCall}>"
+    },
+    {
+      "file": "lib/shell/sheets/panels/AiChatPanel.svelte",
+      "rule": "panel-chrome-class",
+      "text": "<Button size=\"sm\" variant=\"ghost\" class=\"h-7 text-xs\" onclick={handleDismissToolCall}>"
+    },
+    {
+      "file": "lib/shell/sheets/panels/AiChatPanel.svelte",
+      "rule": "panel-chrome-class",
+      "text": "<Textarea"
+    },
+    {
+      "file": "lib/shell/sheets/panels/BadgeValuePanel.svelte",
+      "rule": "panel-chrome-class",
+      "text": "<TextInput"
+    },
+    {
+      "file": "lib/shell/sheets/panels/BadgeValuePanel.svelte",
+      "rule": "panel-chrome-class",
+      "text": "<Badge"
+    },
+    {
+      "file": "lib/shell/sheets/panels/DocsPanel.svelte",
+      "rule": "panel-raw-input",
+      "text": "<Input"
+    },
+    {
+      "file": "lib/shell/sheets/panels/DocsPanel.svelte",
+      "rule": "panel-chrome-class",
+      "text": "<Input"
+    },
+    {
+      "file": "lib/shell/sheets/panels/ErrorsPanel.svelte",
+      "rule": "panel-chrome-class",
+      "text": "<Badge"
+    },
+    {
+      "file": "lib/shell/sheets/panels/ErrorsPanel.svelte",
+      "rule": "panel-chrome-class",
+      "text": "<Badge"
+    },
+    {
+      "file": "lib/shell/sheets/panels/ErrorsPanel.svelte",
+      "rule": "panel-chrome-class",
+      "text": "<Button"
+    },
+    {
+      "file": "lib/shell/sheets/panels/TranslationEditorPanel.svelte",
+      "rule": "panel-chrome-class",
+      "text": "<Badge"
+    },
+    {
+      "file": "lib/shell/sheets/panels/TranslationEditorPanel.svelte",
+      "rule": "panel-chrome-class",
+      "text": "<Button"
+    },
+    {
+      "file": "lib/shell/sheets/panels/TranslationEditorPanel.svelte",
+      "rule": "panel-chrome-class",
+      "text": "<Badge"
+    },
+    {
+      "file": "lib/shell/sheets/panels/TranslationEditorPanel.svelte",
+      "rule": "panel-chrome-class",
+      "text": "<Textarea"
+    },
+    {
+      "file": "lib/shell/sheets/panels/TranslationEditorPanel.svelte",
+      "rule": "panel-chrome-class",
+      "text": "<Badge variant=\"outline\" class=\"{meta.class} px-1.5 text-[10px]\" data-testid=\"i18n-editor-status-{l}\">"
+    },
+    {
+      "file": "lib/shell/sheets/panels/TranslationEditorPanel.svelte",
+      "rule": "panel-chrome-class",
+      "text": "<Button variant=\"outline\" size=\"sm\" class=\"h-6 px-2 text-xs\" onclick={acceptAllResults} disabled={aiBusy} data-testid=\"i18n-editor-accept-all\">"
+    },
+    {
+      "file": "lib/shell/sheets/panels/TranslationEditorPanel.svelte",
+      "rule": "panel-chrome-class",
+      "text": "<Badge variant=\"outline\" class=\"border-sky-500/30 bg-sky-500/10 px-1.5 text-[10px] text-sky-700 dark:text-sky-300\">"
+    },
+    {
+      "file": "lib/shell/sheets/panels/TranslationEditorPanel.svelte",
+      "rule": "panel-chrome-class",
+      "text": "<Button variant=\"outline\" size=\"sm\" class=\"h-6 shrink-0 px-2 text-xs\" onclick={() => acceptResult(r.lang)} data-testid=\"i18n-editor-accept-{r.lang}\">"
+    },
+    {
+      "file": "lib/shell/sheets/panels/VersionsPanel.svelte",
+      "rule": "panel-chrome-class",
+      "text": "<Badge variant=\"outline\" class=\"font-mono text-[11px] font-medium tabular-nums\">"
+    },
+    {
+      "file": "lib/shell/sheets/panels/VersionsPanel.svelte",
+      "rule": "panel-chrome-class",
+      "text": "<Badge variant=\"outline\" class=\"font-mono text-[11px] font-medium tabular-nums\">"
+    },
+    {
+      "file": "lib/shell/sheets/panels/VersionsPanel.svelte",
+      "rule": "panel-chrome-class",
+      "text": "<Badge variant=\"outline\" class=\"gap-1 border-sky-500/25 bg-sky-500/10 text-sky-700 dark:text-sky-300 font-mono text-[11px] font-medium\">"
+    },
+    {
+      "file": "lib/shell/sheets/panels/VersionsPanel.svelte",
+      "rule": "panel-chrome-class",
+      "text": "<Badge variant=\"outline\" class=\"font-mono text-[11px] font-medium tabular-nums\">"
+    },
+    {
+      "file": "lib/shell/sheets/panels/VersionsPanel.svelte",
+      "rule": "panel-chrome-class",
+      "text": "<Badge variant=\"outline\" class=\"font-mono text-[11px] font-medium tabular-nums\">"
+    },
+    {
+      "file": "lib/shell/sheets/panels/VersionsPanel.svelte",
+      "rule": "panel-chrome-class",
+      "text": "<Badge variant=\"outline\" class=\"font-mono text-[11px] font-medium tabular-nums\">"
+    },
+    {
+      "file": "lib/shell/sheets/panels/VersionsPanel.svelte",
+      "rule": "panel-chrome-class",
+      "text": "<Badge variant=\"outline\" class=\"font-mono text-[11px] font-medium\" title={$t('app.health.ai_llm')}>"
+    },
+    {
+      "file": "lib/shell/sheets/panels/VersionsPanel.svelte",
+      "rule": "panel-chrome-class",
+      "text": "<Badge variant=\"outline\" class=\"font-mono text-[11px] font-medium tabular-nums\">"
+    },
+    {
+      "file": "lib/shell/sheets/panels/VersionsPanel.svelte",
+      "rule": "panel-chrome-class",
+      "text": "<Badge variant=\"outline\" class=\"text-[11px] font-medium\">"
+    },
+    {
+      "file": "lib/shell/sheets/panels/VersionsPanel.svelte",
+      "rule": "panel-chrome-class",
+      "text": "<Badge variant=\"outline\" class=\"font-mono text-[11px] font-medium tabular-nums\">"
+    }
+  ]
+}
