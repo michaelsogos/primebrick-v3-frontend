@@ -21,18 +21,15 @@
 	import { zod4 } from 'sveltekit-superforms/adapters';
 	import {
 		FormField,
-		FormLabel,
 		FormControl,
 		TranslatedFormFieldErrors,
-		FormLabelWithPriorityHelp,
 		Button,
 		DynamicIcon,
-		SwitchField,
 	} from '@primebrick/ui';
 	import FormPageLayout from '$lib/components/FormPageLayout.svelte';
 	import ServiceUnavailableView from '$lib/components/ServiceUnavailableView.svelte';
 	import { serviceCodeOf, useServiceAvailability } from '$lib/composables/use-service-availability.svelte';
-	import FormFieldDispatcher from './FormFieldDispatcher.svelte';
+	import EntityFormField from './EntityFormField.svelte';
 	import { buildEntityFormSchema } from './build-entity-form-schema';
 	import { fetchEntityMeta } from '$lib/entity-list/meta-cache';
 	import { entityApiBase, apiFetch, type CensusRoute, type ModuleInfo } from '$lib/api';
@@ -46,7 +43,6 @@
 	import { useCollaborativeForm } from '$lib/collaboration/useCollaborativeForm.svelte';
 	import { useFormDraft } from '$lib/entity-form/use-form-draft.svelte';
 	import { useCensusSubjectOptions } from './use-census-subject-options.svelte';
-	import FieldEditingBadge from '$lib/components/collaboration/FieldEditingBadge.svelte';
 	import { userProfileState } from '$lib/user-profile-store.svelte';
 	import { buildAuditData } from '$lib/utils/audit-data';
 	import type { MetaColumn } from '@primebrick/ui';
@@ -572,71 +568,29 @@
 							<FormField form={formObj!} name={placement.key}>
 								<FormControl>
 									{#snippet children({ props })}
-										{#if col.type === 'boolean' || col.pg_type === 'boolean'}
-											<!-- Boolean = SwitchField anatomy (control-first,
-											     label beside) — the ONLY sanctioned labelled
-											     switch. The label-above anatomy is for
-											     scalar controls. -->
-											<div class="space-y-2">
-												<div class="flex items-center gap-2 pb-1 pt-6">
-													<SwitchField
-														label={$t(col.label_key)}
-														tooltip={col.tooltip && col.show_form_tooltip !== false
-															? $t(col.tooltip)
-															: undefined}
-														tooltipTitle={col.tooltip_title
-															? $t(col.tooltip_title)
-															: undefined}
-														tooltipPriority={col.tooltip_priority}
-														disabled={placement.readonly || collab.isConflicted(placement.key)}
-														bind:checked={$form[placement.key] as boolean}
-														{...props}
-													/>
-													<FieldEditingBadge
-														names={collab.fieldEditorNames(placement.key)}
-													/>
-												</div>
-												<TranslatedFormFieldErrors />
-											</div>
-										{:else}
 										<div class="space-y-2">
-											<div class="flex items-center justify-between gap-2">
-												<FormLabel for={props.id}>
-													{#if col.icon}
-														<DynamicIcon name={col.icon} size={14} class="inline-block" />
-													{/if}
-													{$t(col.label_key)}
-													{#if col.tooltip && col.show_form_tooltip !== false}
-														<FormLabelWithPriorityHelp
-															text={$t(col.tooltip)}
-															title={col.tooltip_title ? $t(col.tooltip_title) : undefined}
-															priority={col.tooltip_priority}
-														/>
-													{/if}
-												</FormLabel>
-												<FieldEditingBadge names={collab.fieldEditorNames(placement.key)} />
-											</div>
-											<FormFieldDispatcher
+											<EntityFormField
 												column={col}
 												{placement}
+												columns={columnMap}
+												controlProps={props}
+												inForm
+												editingNames={collab.fieldEditorNames(placement.key)}
 												emitsOptions={census.emitsOptions}
 												callablesOptions={census.callablesOptions}
 												{targetCallable}
 												{sourceEmit}
-												columns={columnMap}
-												controlProps={props}
 												disabledBadgeValues={triggerShape &&
 												col.key === 'execution_context' &&
 												!($form['event_subject'] as string)?.length
 													? ['user']
 													: undefined}
-												readonly={placement.readonly || collab.isConflicted(placement.key)}
+												readonly={collab.isConflicted(placement.key)}
 												bind:value={$form[placement.key]}
 												bind:record={$form}
 											/>
 											<TranslatedFormFieldErrors />
 										</div>
-										{/if}
 									{/snippet}
 								</FormControl>
 							</FormField>

@@ -9,7 +9,9 @@ import { loginAsTestAdmin } from "./helpers/admin-login";
  * Contract under test (product, not implementation):
  *   - the cell is medium-weight TEXT (underline on hover only) — NOT a badge
  *   - TEXT click opens the `entity.record` sheet — the record rendered
- *     through the canonical TableCell value renderer (no form widgets)
+ *     through the SHARED form builder (EntityFormField + dispatcher):
+ *     every control is the canonical form widget, readonly/disabled —
+ *     `type:"color"` proves it via the ColorSelector, not a text input
  *   - a trailing ExternalLink CTA is revealed on row/card hover — computed
  *     opacity asserted, not just DOM presence — and opens the target's
  *     census-resolved `/list` pre-filtered in a NEW TAB
@@ -138,6 +140,35 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
     );
     await expect(editable).toHaveCount(0);
     await expect(sheet.locator("input, textarea").first()).toBeVisible();
+  });
+
+  test("sheet uses the shared form builder — avatar_color renders the ColorSelector, not a text input", async ({
+    page,
+  }) => {
+    const i = resolvedIndex();
+    test.skip(i < 0, "no row with a resolved actor on this page");
+    await page.getByTestId("ref-cell-created_by-text").nth(i).click();
+
+    const sheet = page.getByTestId("entity-record-sheet");
+    await expect(sheet).toBeVisible({ timeout: 15000 });
+    await expect(sheet).not.toContainText("Record not found", { timeout: 15000 });
+
+    // user_profile.avatar_color is type:"color" — the canonical widget
+    // is ColorSelector (popover trigger with a color swatch), and the
+    // field id comes from our controlProps wiring. A plain text input
+    // here would mean the sheet fell back to generic rendering.
+    const trigger = sheet.locator("button#record-sheet-field-avatar_color");
+    await expect(trigger).toBeVisible({ timeout: 15000 });
+    await expect(trigger).toBeDisabled();
+    await expect(trigger.locator("div.rounded-full")).toBeVisible();
+    // The trigger's swatch paints the record's hex (or the fallback) —
+    // inline background-color is the marker of the real color widget.
+    await expect(trigger.locator("div.rounded-full")).toHaveAttribute(
+      "style",
+      /background-color/,
+    );
+    // And crucially: no text input stole the avatar_color field.
+    await expect(sheet.locator("input#record-sheet-field-avatar_color")).toHaveCount(0);
   });
 
   test("unresolved actor — raw value text, sheet shows honest not-found state", async ({

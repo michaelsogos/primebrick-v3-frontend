@@ -17,36 +17,49 @@
     value = $bindable(),
     labelKey,
     placeholderKey,
+    placeholder,
     fallbackColor = "#000000",
     triggerId,
+    disabled = false,
   }: {
     value: string | undefined;
-    labelKey: string;
+    /** Absent → the caller renders the field label itself (form/field
+     *  anatomy owns the label row); present → the selector paints its
+     *  own label like the standalone picker pages. */
+    labelKey?: string;
     placeholderKey?: string;
+    /** Already-resolved hint text — form surfaces translate the
+     *  placement's `placeholder_key` upstream and pass the string. */
+    placeholder?: string;
     fallbackColor?: string;
     triggerId?: string;
+    /** Readonly surfaces: the trigger stays visible (swatch + hex) but
+     *  the popover cannot open — the field is display-only. */
+    disabled?: boolean;
   } = $props();
 </script>
 
 <!-- Color Picker -->
 <div>
-  <label
-    for={triggerId}
-    class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-  >
-    {$t(labelKey)}
-  </label>
+  {#if labelKey}
+    <label
+      for={triggerId}
+      class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+    >
+      {$t(labelKey)}
+    </label>
+  {/if}
   <div class="mt-2">
     <Popover.Root>
       <Popover.Trigger>
         {#snippet child({ props })}
-          <Button {...props} variant="outline" id={triggerId}>
+          <Button {...props} variant="outline" id={triggerId} {disabled}>
             <div class="flex items-center gap-4">
               <div
                 class="w-5 h-5 rounded-full border shadow-sm"
                 style="background-color: {value || fallbackColor};"
               ></div>
-              {value || (placeholderKey ? $t(placeholderKey) : value)}
+              {value || placeholder || (placeholderKey ? $t(placeholderKey) : value)}
             </div>
           </Button>
         {/snippet}

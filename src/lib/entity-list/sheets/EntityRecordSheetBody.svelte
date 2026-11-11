@@ -4,18 +4,19 @@
    * rendered read-only, so the pencil toggle can later flip the same
    * widgets to edit mode.
    *
-   * Field anatomy mirrors EntityFormPage: booleans render via
-   * `SwitchField` (they never reach the dispatcher); every other column
-   * resolves its form control through `FormFieldDispatcher` with
-   * `readonly` — same widget the form uses, never a display-only cell.
+   * The per-field anatomy is `EntityFormField` — the SAME component
+   * `EntityFormPage` mounts inside its FormField/FormControl wrappers.
+   * No widget switch is re-implemented here: boolean → SwitchField,
+   * `type:"color"` → ColorSelector, `type:"ref"` → entity combo, etc.
+   * all resolve through the shared dispatcher.
    *
    * Layout: `page_props.form` placements (order + col/row/row_span grid)
    * when the entity declares a form-bearing route; else the fallback —
    * every served `meta.columns` in declared order, single column.
    */
-  import { t } from '$lib/i18n';
-  import { SwitchField } from '@primebrick/ui';
-  import FormFieldDispatcher from '$lib/entity-form/FormFieldDispatcher.svelte';
+  import EntityFormField from '$lib/entity-form/EntityFormField.svelte';
+  import { useCensusSubjectOptions } from '$lib/entity-form/use-census-subject-options.svelte';
+  import { shellNav } from '$lib/shell/modules-shell.svelte';
   import type { MetaColumn, EntityMeta } from '$lib/entity-list/types';
   import type { FormFieldPlacement } from '@primebrick/ui';
 
@@ -34,10 +35,22 @@
   } = $props();
 
   const columns = $derived((meta?.columns ?? []).filter((c) => !c.hidden));
+
+  /** Same census vocabulary the form page feeds the dispatcher —
+   *  `census.emits`/`census.callables` columns get their options here
+   *  too, never a second mapping. */
+  const census = useCensusSubjectOptions(() => shellNav.modules);
   const columnsMap = $derived.by<ReadonlyMap<string, MetaColumn>>(() => {
     const m = new Map<string, MetaColumn>();
     for (const c of meta?.columns ?? []) m.set(c.key, c);
     return m;
+  });
+
+  /** Readonly sheet — fields never write back; the dispatcher still
+   *  needs bindable value/record refs for its internal prop passing. */
+  let draft = $state<Record<string, unknown>>({});
+  $effect(() => {
+    draft = { ...record };
   });
 
   function placementStyle(p: FormFieldPlacement): string {
@@ -50,31 +63,26 @@
   }
 </script>
 
-{#snippet field(col: MetaColumn, style?: string)}
-  {#if col.type === 'boolean' || col.pg_type === 'boolean'}
-    <!-- Same split as EntityFormPage: booleans never reach the
-         dispatcher — SwitchField is the canonical anatomy. -->
-    <div style={style}>
-      <SwitchField label={$t(col.label_key)} checked={record?.[col.key] === true} disabled />
-    </div>
-  {:else}
-    <div class="flex min-w-0 flex-col gap-1" style={style}>
-      <span class="text-xs font-medium text-muted-foreground">{$t(col.label_key)}</span>
-      <FormFieldDispatcher
-        column={col}
-        bind:value={() => record?.[col.key], () => {}}
-        record={record ?? {}}
-        columns={columnsMap}
-        readonly
-      />
-    </div>
-  {/if}
+{#snippet field(col: MetaColumn, p?: FormFieldPlacement)}
+  <div class="space-y-2" style={p ? placementStyle(p) : undefined}>
+    <EntityFormField
+      column={col}
+      placement={p}
+      columns={columnsMap}
+      controlProps={{ id: `record-sheet-field-${col.key}` }}
+      emitsOptions={census.emitsOptions}
+      callablesOptions={census.callablesOptions}
+      readonly
+      bind:value={draft[col.key]}
+      record={draft}
+    />
+  </div>
 {/snippet}
 
 {#if formPlacements.length}
   <div class="grid gap-4 {formTwoCol ? 'grid-cols-2' : 'grid-cols-1'}">
     {#each formPlacements as { col, p } (col.key)}
-      {@render field(col, placementStyle(p))}
+      {@render field(col, p)}
     {/each}
   </div>
 {:else}

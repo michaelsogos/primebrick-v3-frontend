@@ -44,6 +44,7 @@
 	import { EmailInput } from '$lib/components/ui/email-input';
 	import { UrlInput } from '$lib/components/ui/url-input';
 	import { PhoneInput } from '$lib/components/ui/phone-input';
+	import { ColorSelector } from '$lib/components/ui/color-selector';
 	import { t } from '$lib/i18n';
 	import { UI_LANGS } from '$lib/i18n/languages';
 	import { apiFetch } from '$lib/api';
@@ -193,6 +194,7 @@
 		'url',
 		'phone',
 		'entity_ref',
+		'color',
 		'text',
 	]);
 
@@ -291,6 +293,7 @@
 		if (format === 'email') return 'email';
 		if (format === 'url') return 'url';
 		if (format === 'phone') return 'phone';
+		if (format === 'color_hex' || column.type === 'color') return 'color';
 		if (column.type === 'badge') return 'badge';
 		return 'text';
 	}
@@ -721,6 +724,17 @@
 		{placeholder}
 		disabled={effectiveReadonly}
 		{...controlProps}
+	/>
+{:else if control === 'color'}
+	<!-- `type:"color"`/`format:"color_hex"` — the canonical picker.
+	     The label row belongs to the field anatomy (form/field surface),
+	     so the selector mounts label-less; the value is a `#RRGGBB`
+	     hex string, disabled in readonly surfaces. -->
+	<ColorSelector
+		bind:value={stringValue.value}
+		{placeholder}
+		disabled={effectiveReadonly}
+		triggerId={controlProps?.id as string | undefined}
 	/>
 {:else if control === 'boolean_tristate'}
 	<ButtonGroup segmented class="w-full" {...controlProps}>
