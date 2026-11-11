@@ -15,7 +15,8 @@
  * Never the dev bootstrap `admin` user — it is a human first-login identity,
  * not test data.
  */
-import { randomBytes, randomUUID } from "crypto";
+import { randomBytes } from "crypto";
+import { e2eUuidV7 } from "./uuid";
 import { Socket } from "net";
 import { getPool } from "./db";
 
@@ -232,8 +233,8 @@ async function createE2eAdminLikeActor(
   // 1. Drop leftovers from a previous crashed run (Casdoor + profile + MFA).
   await deleteCasdoorUser(cfg, name);
   await pool.query(
-    `DELETE FROM public.user_mfa_factors WHERE user_profile_id IN
-       (SELECT id FROM public.user_profiles WHERE idp_username = $1)`,
+    `DELETE FROM public.user_mfa_factors WHERE user_profile_uuid IN
+       (SELECT uuid FROM public.user_profiles WHERE idp_username = $1)`,
     [name],
   );
   await pool.query(`DELETE FROM public.user_profiles WHERE idp_username = $1`, [name]);
@@ -280,7 +281,7 @@ async function createE2eAdminLikeActor(
   await linkCasdoorUserToRole(cfg, `${cfg.org}/${name}`);
 
   // 5. Mirror into public.user_profiles (is_admin → admin bypass).
-  const uuid = randomUUID();
+  const uuid = e2eUuidV7();
   const now = new Date();
   await pool.query(
     `INSERT INTO public.user_profiles
@@ -349,8 +350,8 @@ async function destroyAdminLikeActor(name: string): Promise<void> {
   }
 
   await pool.query(
-    `DELETE FROM public.user_mfa_factors WHERE user_profile_id IN
-       (SELECT id FROM public.user_profiles WHERE idp_username = $1)`,
+    `DELETE FROM public.user_mfa_factors WHERE user_profile_uuid IN
+       (SELECT uuid FROM public.user_profiles WHERE idp_username = $1)`,
     [name],
   );
   await pool.query(`DELETE FROM public.user_profiles WHERE idp_username = $1`, [name]);
@@ -390,8 +391,8 @@ export async function createE2eUserActor(): Promise<{ username: string; password
   // 1. Drop leftovers from a previous crashed run.
   await deleteCasdoorUser(cfg, USER_ACTOR_NAME);
   await pool.query(
-    `DELETE FROM public.user_mfa_factors WHERE user_profile_id IN
-       (SELECT id FROM public.user_profiles WHERE idp_username = $1)`,
+    `DELETE FROM public.user_mfa_factors WHERE user_profile_uuid IN
+       (SELECT uuid FROM public.user_profiles WHERE idp_username = $1)`,
     [USER_ACTOR_NAME],
   );
   await pool.query(`DELETE FROM public.user_profiles WHERE idp_username = $1`, [USER_ACTOR_NAME]);
@@ -451,7 +452,7 @@ export async function createE2eUserActor(): Promise<{ username: string; password
   await updateNamedRoleUsers(cfg, USER_ROLE, role, [`${cfg.org}/${USER_ACTOR_NAME}`]);
 
   // 5. Mirror into public.user_profiles — is_admin=false.
-  const uuid = randomUUID();
+  const uuid = e2eUuidV7();
   const now = new Date();
   await pool.query(
     `INSERT INTO public.user_profiles
@@ -474,7 +475,7 @@ export async function createE2eUserActor(): Promise<{ username: string; password
      (uuid, idp_role, idp_org, permissions, is_admin,
       created_at, created_by, updated_at, updated_by, version)
      VALUES ($1,$2,$3,$4::json,false,$5,'e2e-setup',$5,'e2e-setup',1)`,
-    [randomUUID(), USER_ROLE, cfg.org, JSON.stringify(USER_ROLE_PERMISSIONS), now],
+    [e2eUuidV7(), USER_ROLE, cfg.org, JSON.stringify(USER_ROLE_PERMISSIONS), now],
   );
   await invalidateRoleMappingsCache();
 
@@ -502,8 +503,8 @@ export async function destroyE2eUserActor(): Promise<void> {
   await pool.query(`DELETE FROM public.role_mappings WHERE idp_role = $1`, [USER_ROLE]);
   await invalidateRoleMappingsCache();
   await pool.query(
-    `DELETE FROM public.user_mfa_factors WHERE user_profile_id IN
-       (SELECT id FROM public.user_profiles WHERE idp_username = $1)`,
+    `DELETE FROM public.user_mfa_factors WHERE user_profile_uuid IN
+       (SELECT uuid FROM public.user_profiles WHERE idp_username = $1)`,
     [USER_ACTOR_NAME],
   );
   await pool.query(`DELETE FROM public.user_profiles WHERE idp_username = $1`, [USER_ACTOR_NAME]);

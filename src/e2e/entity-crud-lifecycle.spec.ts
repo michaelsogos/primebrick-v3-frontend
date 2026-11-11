@@ -21,6 +21,7 @@
 import { test, expect } from "@playwright/test";
 import { loginAsTestAdmin } from "./helpers/admin-login";
 import { getPool } from "./helpers/db";
+import { e2eUuidV7 } from "./helpers/uuid";
 
 const BASE = "/api/v1/entities";
 // customer is crm-service-owned — reachable only through the /svc/<service>
@@ -162,7 +163,7 @@ test.describe("entity CRUD over the wire", () => {
   test("role_mapping: hard-delete contract without touching any row", async ({ page }) => {
     await loginAsTestAdmin(page);
     const api = page.request;
-    const rand = crypto.randomUUID();
+    const rand = e2eUuidV7();
 
     // soft DELETE route does not exist → 404 for any uuid
     const soft = await api.delete(`${BASE}/role_mapping/${rand}?version=1`);

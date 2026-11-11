@@ -276,14 +276,17 @@ test.describe("/system/job/* pages (module-owned)", () => {
     await popup.close();
   });
 
-  test("job_run version history endpoint works — audit tables exist", async ({
+  test("job_run has NO audit endpoint — the run row IS the audit trail", async ({
     page,
   }) => {
     await page.goto("/system/job/runs", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
 
-    // The regression was `relation "job.job_runs_audit" does not exist` —
-    // the endpoint must answer 200 (empty page is fine, the table exists).
+    // Contract: entities-route.ts declares job_run `auditable: false` —
+    // run rows are written by services and are themselves the audit
+    // trail, so `GET /:uuid/audit` is intentionally not registered.
+    // The historical regression (`relation "job.job_runs_audit" does not
+    // exist` → 500) can no longer surface here; assert a clean 404.
     const result = await page.evaluate(async () => {
       const list = await fetch(
         "/svc/job/api/v1/entities/job_run/list?page=1&page_size=1",
@@ -297,7 +300,7 @@ test.describe("/system/job/* pages (module-owned)", () => {
       );
       return { status: res.status, body: await res.text() };
     });
-    expect(result.status).toBe(200);
+    expect(result.status).toBe(404);
     expect(result.body).not.toContain("does not exist");
   });
 
