@@ -20,6 +20,7 @@
     icon,
     icon_title,
     oniconclick,
+    test_id,
   }: {
     /** The cell's display string (already resolved — `*_name` wins upstream). */
     text: string;
@@ -33,12 +34,15 @@
     icon_title?: string;
     /** Trailing CTA as action — sheet-openers ride this (json viewer). */
     oniconclick?: () => void;
+    /** E2E anchor — `data-testid="{test_id}-text"` / `-ext`. */
+    test_id?: string;
   } = $props();
 </script>
 
 <span class="inline-flex max-w-full items-center gap-1">
   <button
     type="button"
+    data-testid={test_id ? `${test_id}-text` : undefined}
     class="min-w-0 cursor-pointer truncate text-left font-medium text-foreground hover:underline"
     onclick={ontextclick}
   >
@@ -46,6 +50,7 @@
   </button>
   {#if href}
     <a
+      data-testid={test_id ? `${test_id}-ext` : undefined}
       href={resolve(href as '/')}
       target="_blank"
       rel="noopener noreferrer"

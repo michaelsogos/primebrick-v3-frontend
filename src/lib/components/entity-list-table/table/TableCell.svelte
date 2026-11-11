@@ -270,6 +270,7 @@
         openSheet('entity.record', { entity: column.ref!.entity, value, ref: column.ref })}
       href={iconHref ?? undefined}
       icon_title={$t('app.common.open_in_new_tab')}
+      test_id={`ref-cell-${column.key}`}
     >
       {#snippet icon()}
         <ExternalLink class="size-3.5" />

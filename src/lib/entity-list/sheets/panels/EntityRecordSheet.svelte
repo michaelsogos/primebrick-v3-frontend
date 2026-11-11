@@ -25,7 +25,7 @@
   import { shellNav } from '$lib/shell/modules-shell.svelte';
   import { fetchEntityMeta } from '$lib/entity-list';
   import { filteredEntityListHref } from '$lib/entity-list/entity-links';
-  import { SheetPanelLayout, toDisplayString } from '@primebrick/ui';
+  import { SheetPanelLayout, toDisplayString, SwitchField } from '@primebrick/ui';
   import SheetHeaderAction from '$lib/shell/sheets/SheetHeaderAction.svelte';
   import FormFieldDispatcher from '$lib/entity-form/FormFieldDispatcher.svelte';
   import { ExternalLink, IdCard } from '@primebrick/ui/vendor/lucide';
@@ -153,7 +153,7 @@
     {/if}
   {/snippet}
 
-  <div class="h-full overflow-auto p-4">
+  <div class="h-full overflow-auto p-4" data-testid="entity-record-sheet">
     {#if loading}
       <LoadingBar />
     {:else if notFound}
@@ -163,16 +163,26 @@
     {:else}
       <div class="grid grid-cols-1 gap-3">
         {#each columns as col (col.key)}
-          <div class="flex flex-col gap-1">
-            <span class="text-xs font-medium text-muted-foreground">{$t(col.label_key)}</span>
-            <FormFieldDispatcher
-              column={col}
-              bind:value={() => record?.[col.key], () => {}}
-              record={record ?? {}}
-              columns={columnsMap}
-              readonly
+          {#if col.type === 'boolean' || col.pg_type === 'boolean'}
+            <!-- Same split as EntityFormPage: booleans never reach the
+                 dispatcher — SwitchField is the canonical anatomy. -->
+            <SwitchField
+              label={$t(col.label_key)}
+              checked={record?.[col.key] === true}
+              disabled
             />
-          </div>
+          {:else}
+            <div class="flex flex-col gap-1">
+              <span class="text-xs font-medium text-muted-foreground">{$t(col.label_key)}</span>
+              <FormFieldDispatcher
+                column={col}
+                bind:value={() => record?.[col.key], () => {}}
+                record={record ?? {}}
+                columns={columnsMap}
+                readonly
+              />
+            </div>
+          {/if}
         {/each}
       </div>
     {/if}
