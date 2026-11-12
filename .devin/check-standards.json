@@ -121,6 +121,12 @@
         "lib/entity-list/sheets/panels/",
         "lib/shell/sheets/panels/"
       ]
+    },
+    "panel-footer-cta": {
+      "appliesTo": [
+        "lib/entity-list/sheets/panels/",
+        "lib/shell/sheets/panels/"
+      ]
     }
   },
   "i18n_namespaces": [
