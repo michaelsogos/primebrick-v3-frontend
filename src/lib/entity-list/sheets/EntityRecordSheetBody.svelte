@@ -30,8 +30,7 @@
   import { useCensusSubjectOptions } from '$lib/entity-form/use-census-subject-options.svelte';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
   import { t } from '$lib/i18n';
-  import { Badge, Separator } from '@primebrick/ui';
-  import { Copy, Check } from '@primebrick/ui/vendor/lucide';
+  import { Separator, Label, TextInput } from '@primebrick/ui';
   import type { MetaColumn, EntityMeta } from '$lib/entity-list/types';
   import type { FormFieldPlacement } from '@primebrick/ui';
 
@@ -94,19 +93,8 @@
     }),
   );
 
-  /** uid copy affordance — the badge's inner right icon. Transient check
-   *  swap confirms the copy without a toast (field-level, low-impact). */
-  let uidCopied = $state(false);
-  async function copyUid() {
-    if (uidValue === undefined || uidValue === null) return;
-    try {
-      await navigator.clipboard.writeText(String(uidValue));
-      uidCopied = true;
-      setTimeout(() => (uidCopied = false), 1500);
-    } catch {
-      /* clipboard denied — silent, the badge still shows the value */
-    }
-  }
+  /** uid copy affordance — TextInput readonly ships the inner-right copy
+   *  button by construction (same chrome as every readonly field below). */
 
   /** Same census vocabulary the form page feeds the dispatcher —
    *  `census.emits`/`census.callables` columns get their options here
@@ -154,32 +142,15 @@
 
 <div class="flex h-full flex-col gap-4">
   {#if uidValue !== undefined && uidValue !== null}
-    <div class="flex items-center gap-2">
-      <span class="text-xs font-medium text-muted-foreground">
-        {$t('system.common.fields.uuid')}
-      </span>
-      <Badge
-        variant="outline"
-        class="w-fit max-w-full truncate font-mono text-xs text-muted-foreground"
+    <div class="flex flex-col gap-1.5">
+      <Label for="record-sheet-uid">{$t('system.common.fields.uuid')}</Label>
+      <TextInput
+        id="record-sheet-uid"
+        readonly
+        value={String(uidValue)}
         title={String(uidValue)}
         data-testid="entity-record-sheet-uid-badge"
-      >
-        {uidValue}
-        <button
-          type="button"
-          class="ml-1 inline-flex shrink-0 items-center text-muted-foreground transition-colors hover:text-foreground"
-          title={$t('app.common.copy')}
-          aria-label={$t('app.common.copy')}
-          onclick={copyUid}
-          data-testid="entity-record-sheet-uid-copy"
-        >
-          {#if uidCopied}
-            <Check class="size-3" />
-          {:else}
-            <Copy class="size-3" />
-          {/if}
-        </button>
-      </Badge>
+      />
     </div>
   {/if}
 
