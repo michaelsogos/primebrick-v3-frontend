@@ -45,6 +45,7 @@
 	import { UrlInput } from '$lib/components/ui/url-input';
 	import { PhoneInput } from '$lib/components/ui/phone-input';
 	import { ColorSelector } from '$lib/components/ui/color-selector';
+	import { MetaAvatar } from '$lib/components/ui/avatar-preview';
 	import { t } from '$lib/i18n';
 	import { UI_LANGS } from '$lib/i18n/languages';
 	import { apiFetch } from '$lib/api';
@@ -201,6 +202,7 @@
 		'color',
 		'date',
 		'text',
+		'avatar',
 	]);
 
 	/** Filter-surface map — the DIFFERENCES from form (everything else is
@@ -269,6 +271,9 @@
 			column.options_source === 'census.callables'
 		)
 			return 'subject_combo_multi';
+		// Avatar columns filter as contains-text on the stored initials —
+		// the preview renderer is a form/list surface, never a filter control.
+		if (column.type === 'avatar') return 'text';
 		const resolved = deriveControl();
 		if (resolved === 'subject_combo' || resolved === 'json' || resolved === 'payload_map' || resolved === 'schedule_spec')
 			return 'text';
@@ -287,6 +292,9 @@
 		// `roles` array still renders the roles multi-combo, never the JSON
 		// editor (same precedence `resolveFilterControl` already declares).
 		if (column.options_source === 'system.roles') return 'role_multi';
+		// `type:"avatar"` — preview renderer, not an input (initials from the
+		// column value, color from the `avatar.color_field` sibling).
+		if (column.type === 'avatar') return 'avatar';
 		if (format === 'schedule_spec') return 'schedule_spec';
 		if (format === 'json' || column.pg_type === 'jsonb' || column.pg_type === 'json') return 'json';
 		if (format === 'nats_subject') {
@@ -669,6 +677,15 @@
 		{placeholder}
 		disabled={effectiveReadonly}
 		{...controlProps}
+	/>
+{:else if control === 'avatar'}
+	<!-- `type:"avatar"` — preview renderer, never an input. Initials from
+	     the column value, color live from the `avatar.color_field` sibling
+	     in `record` (editing avatar_color re-renders the preview, same as
+	     the /profile page composite). -->
+	<MetaAvatar
+		initials={stringValue.value || undefined}
+		color={column.avatar?.color_field ? (record?.[column.avatar.color_field] as string | undefined) : undefined}
 	/>
 {:else if control === 'payload_map'}
 	<PayloadMapEditor

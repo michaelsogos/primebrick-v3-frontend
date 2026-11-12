@@ -22,6 +22,7 @@
   import { getAuditFieldValue } from '../utils/cell-formatting';
   import { getAuditColumnsContext, getMetaUidContext } from '../context';
   import { SparklineBars } from '@primebrick/ui';
+  import { MetaAvatar } from '$lib/components/ui/avatar-preview';
 
   let {
     row,
@@ -316,6 +317,18 @@
     </div>
   {:else}
     <span class="min-w-0 truncate">{parts.text}</span>
+  {/if}
+{:else if column.type === 'avatar'}
+  <!-- `type:"avatar"` — initials from the column's own value, color from
+       the sibling `avatar.color_field` (same pattern as `uom.field`). -->
+  {#if value !== undefined && value !== null && value !== ''}
+    <MetaAvatar
+      initials={toDisplayString(value)}
+      color={column.avatar?.color_field ? (row[column.avatar.color_field] as string | undefined) : undefined}
+      size="sm"
+    />
+  {:else}
+    <span class="min-w-0 truncate">-</span>
   {/if}
 {:else}
   <span class="min-w-0 truncate">{displayValue !== value ? toDisplayString(displayValue) : getAuditFieldValue(row, column, $uiLang, formatListCellValue, getAuditColumnsContext())}</span>
