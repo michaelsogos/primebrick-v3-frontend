@@ -16,9 +16,9 @@
       onChange?: (value: string) => void;
       /** Errors array (i18n keys in `key|jsonParams` format) — renders below input. */
       errors?: string[];
-      /** Readonly mode — shows copy button instead of clear. */
+      /** Readonly/disabled mode — shows copy button instead of clear. */
       readonly?: boolean;
-      /** Disabled mode. */
+      /** Disabled mode — keeps the copy affordance (value stays copyable). */
       disabled?: boolean;
     }
   >;
@@ -38,9 +38,9 @@
 
   let mode = $derived(disabled ? "disabled" : readonly ? "readonly" : "editable");
   // Clear CTA is always rendered in editable mode (disabled while empty);
-  // readonly shows copy only when there is a value to copy.
+  // readonly/disabled shows copy only when there is a value to copy.
   let showTrailing = $derived(
-    mode === "editable" || (mode === "readonly" && (value ?? "").length > 0)
+    mode === "editable" || (value ?? "").length > 0
   );
   let clearDisabled = $derived((value ?? "").length === 0);
   let hasError = $derived(errors.length > 0);
@@ -109,7 +109,7 @@
   />
 
   {#if showTrailing}
-    {#if mode === "readonly"}
+    {#if mode !== "editable"}
       <button
         type="button"
         onclick={handleCopy}
