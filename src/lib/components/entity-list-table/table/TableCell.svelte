@@ -20,7 +20,7 @@
   import JsonCellViewer from './JsonCellViewer.svelte';
   import { Tooltip } from '@primebrick/ui';
   import { getAuditFieldValue } from '../utils/cell-formatting';
-  import { getAuditColumnsContext, getMetaUidContext } from '../context';
+  import { getAuditColumnsContext, getMetaUidContext, getEntitiesNsContext, getTableEntityContext } from '../context';
   import { SparklineBars } from '@primebrick/ui';
   import { MetaAvatar } from '$lib/components/ui/avatar-preview';
 
@@ -64,6 +64,11 @@
    *  real declared routes (FE-owned URLs, never hardcoded in meta). */
   const routeCensus = $derived(routesCensusFromModules(shellNav.modules));
   const metaUid = getMetaUidContext();
+  /** Table-entity + namespace contexts — resolved once at init (context is
+   *  stable for the cell's lifetime); the `version` branch opens
+   *  `entity.versionHistory` with the same payload row actions build. */
+  const entityCtx = getTableEntityContext();
+  const cellEntitiesNs = getEntitiesNsContext();
   /** `column.color` is a TailwindColorToken (canonical: `colorCssFromToken`
    *  → inline style) — meta strings are invisible to the FE content scan,
    *  so class-based colors silently dead-render. Same mechanism as the
@@ -145,6 +150,37 @@
 
 {#if cellSnippet}
   {@render cellSnippet({ row, column })}
+{:else if column.key === 'version' && value !== undefined && value !== null}
+  <!-- The `version` column is a badge-affordance by construction — the
+       canonical version-history badge drilling into the stacked sheet,
+       same anatomy + payload as the sheet footer / row menu action. -->
+  {#if entityCtx}
+    <button
+      type="button"
+      class="inline-flex"
+      title={$t('system.entities.version_history.title')}
+      onclick={(e) => {
+        e.stopPropagation();
+        openSheet('entity.versionHistory', {
+          entity: entityCtx.entity,
+          translationKey: entityCtx.translationKey,
+          entities_ns: cellEntitiesNs,
+          rowUuid: String(row[entityCtx.uid]),
+          columns: entityCtx.columns,
+        });
+      }}
+      data-testid="version-cell-badge"
+    >
+      <Badge
+        variant="outline"
+        class="text-xs font-semibold border border-primary cursor-pointer hover:bg-primary/10"
+      >
+        v{toDisplayString(value)}
+      </Badge>
+    </button>
+  {:else}
+    <span class="min-w-0 truncate">{toDisplayString(value)}</span>
+  {/if}
 {:else if column.type === 'boolean'}
   <div class="flex w-full justify-center">
     {#if value === true}

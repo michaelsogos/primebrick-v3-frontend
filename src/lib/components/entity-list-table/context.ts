@@ -51,3 +51,28 @@ export function setMetaUidContext(uid: string) {
 export function getMetaUidContext(): string {
   return getContext(META_UID_KEY) ?? 'uuid';
 }
+
+const TABLE_ENTITY_KEY = Symbol('tableEntity');
+
+export type TableEntityContext = {
+  /** Entity API name — e.g. `user_profile`, `customer`. */
+  entity: string;
+  /** i18n translation_key for entity names (defaults to `entity`). */
+  translationKey: string;
+  /** The uid column key — the row-identity field. */
+  uid: string;
+  /** Full resolved meta columns — needed by sheet-level drifts
+   *  (version history renders its diff from these). */
+  columns: MetaColumn[];
+};
+
+/** Set the table's entity context — cell-level drifts (the `version`
+ *  column's version-history badge) open sheets with exactly the payload
+ *  `useRowActions.loadVersionHistory` builds: same entity, same columns. */
+export function setTableEntityContext(ctx: TableEntityContext) {
+  setContext(TABLE_ENTITY_KEY, ctx);
+}
+
+export function getTableEntityContext(): TableEntityContext | undefined {
+  return getContext(TABLE_ENTITY_KEY);
+}
