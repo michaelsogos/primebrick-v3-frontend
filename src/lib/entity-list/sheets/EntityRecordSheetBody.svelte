@@ -158,7 +158,9 @@
 
 <div class="flex h-full flex-col gap-4">
   {#if uidValue !== undefined && uidValue !== null}
-    <div class="flex items-center gap-2">
+    <!-- Same field anatomy as EntityFormField — label row, then the
+         "control" slot below it (here the uid badge, never a widget). -->
+    <div class="space-y-2">
       <Label for="record-sheet-uid-badge">{$t('system.common.fields.uuid')}</Label>
       <Badge
         id="record-sheet-uid-badge"
