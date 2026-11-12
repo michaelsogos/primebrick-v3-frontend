@@ -15,6 +15,13 @@
    "I didn't start it".
 3. **Never duplicate, never migrate**: no second server on the same port,
    no "just use a different port". If the port is taken, resolve the owner.
+4. **The stack must survive the turn**: BE, FE, job-handler and CRM stay
+   running across agent turns — a service started inside an agent shell
+   dies with the session, so services MUST be started **detached** via
+   `primebrick-workspace/scripts/dev-stack.ps1` (idempotent, skips ports
+   already listening, logs to `primebrick-workspace/temp/logs/`). If a
+   turn finds a service down, restart it detached — never leave the only
+   copy of the stack inside an ephemeral shell.
 
 ## Default ports
 
@@ -22,7 +29,12 @@
 |---------|------|---------------|
 | This repo (Frontend) | 5173 | `pnpm run dev` |
 | Backend | 3001 | `pnpm run dev` in `primebrick-be-v3` |
-| Microservices | 3003–3007 | `bun --hot src/index.ts` in each `primebrick-us-v3/<service>` |
+| job-handler | 3006 | `pnpm run dev` in `primebrick-us-v3/job-handler` |
+| crm | 3007 | `pnpm run dev` in `primebrick-us-v3/crm` |
+| (other microservices) | 3003–3005 | `bun --hot src/index.ts` in each `primebrick-us-v3/<service>` |
+
+**One-shot detached start** (idempotent — skips ports already listening):
+`powershell -ExecutionPolicy Bypass -File primebrick-workspace/scripts/dev-stack.ps1`
 
 ## Procedure — before starting or touching a server
 
