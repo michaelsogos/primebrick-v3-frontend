@@ -4,7 +4,10 @@
    *
    * Layout contract (declared-form and fallback alike):
    *   - `meta.uid` column → identity BADGE pinned at the very top — it is
-   *     the record's public identity, never an editable field;
+   *     the record's public identity, never an editable field. Anatomy:
+   *     `secondary` pill + `file-key` icon (amber-500 accent — the
+   *     canonical uuid glyph, same vocabulary as the payload-map format
+   *     icons) + mono value + inner copy CTA;
    *   - business columns → `EntityFormField` — the SAME per-field anatomy
    *     `EntityFormPage` mounts (boolean→SwitchField, `type:"color"`→
    *     ColorSelector, `type:"ref"`→entity combo…), readonly here so the
@@ -30,7 +33,7 @@
   import { useCensusSubjectOptions } from '$lib/entity-form/use-census-subject-options.svelte';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
   import { t } from '$lib/i18n';
-  import { Badge, Separator, Label } from '@primebrick/ui';
+  import { Badge, Separator, Label, DynamicIcon, colorCssFromToken } from '@primebrick/ui';
   import { Copy, Check } from '@primebrick/ui/vendor/lucide';
   import { orderedColumns } from '$lib/entity-list/types';
   import type { MetaColumn, EntityMeta } from '$lib/entity-list/types';
@@ -164,11 +167,12 @@
       <Label for="record-sheet-uid-badge">{$t('system.common.fields.uuid')}</Label>
       <Badge
         id="record-sheet-uid-badge"
-        variant="outline"
-        class="w-fit max-w-full truncate font-mono text-xs text-muted-foreground"
+        variant="secondary"
+        class="w-fit max-w-full gap-1 truncate font-mono text-xs shadow-none"
         title={String(uidValue)}
         data-testid="entity-record-sheet-uid-badge"
       >
+        <DynamicIcon name="file-key" size={12} class="shrink-0" style="color:{colorCssFromToken('amber-500')}" />
         {uidValue}
         <button
           type="button"

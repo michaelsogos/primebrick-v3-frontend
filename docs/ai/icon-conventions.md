@@ -48,6 +48,10 @@
    the icon; the chrome owns the glyph size. Excluded: decorative glyphs
    inside trigger content (e.g. `size-3` carets in prefix selector CTAs)
    and leading icons.
+11. **UUID surfaces = `file-key`** — `format:"uuid"` fields and the
+   record-sheet uid badge carry the `file-key` glyph (amber accent where a
+   color is declared). `fingerprint`/`fingerprint-pattern` belong to the
+   passkey/WebAuthn domain only and are banned on entity-uuid surfaces.
 
 ## Deep dive
 

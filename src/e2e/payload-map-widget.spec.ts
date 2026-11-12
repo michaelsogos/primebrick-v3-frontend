@@ -137,7 +137,7 @@ test.describe("payload-map widget", () => {
     // disabled but still carrying honest type icons:
     //   changed_at  → date-time → calendar-clock
     //   changed_by  → uuid + x_semantic:"actor.uuid" → user-cog (actor)
-    //   email/uuid  → mail / fingerprint
+    //   email/uuid  → mail / file-key
     const eyeToggle = popup.getByTestId("payload-map-path-templateCode-toggle-disabled");
     await expect(eyeToggle).toBeVisible();
     await eyeToggle.click();
@@ -145,7 +145,7 @@ test.describe("payload-map widget", () => {
       col1.locator('[data-propnv-path="$.customer.email"]').locator("svg.lucide-mail"),
     ).toBeVisible();
     await expect(
-      col1.locator('[data-propnv-path="$.customer.uuid"]').locator("svg.lucide-fingerprint-pattern"),
+      col1.locator('[data-propnv-path="$.customer.uuid"]').locator("svg.lucide-file-key"),
     ).toBeVisible();
     await expect(
       col0.locator('[data-propnv-path="$.change"]').locator("svg.lucide-braces"),
