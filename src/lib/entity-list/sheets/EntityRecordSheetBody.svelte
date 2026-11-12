@@ -168,24 +168,24 @@
       <Badge
         id="record-sheet-uid-badge"
         variant="secondary"
-        class="w-fit max-w-full gap-1.5 truncate font-mono shadow-none [&>svg]:size-3.5"
+        class="h-9 w-full max-w-full justify-start gap-2 truncate rounded-md px-3 font-mono shadow-none [&>svg]:size-4"
         title={String(uidValue)}
         data-testid="entity-record-sheet-uid-badge"
       >
-        <DynamicIcon name="file-key" size={14} class="shrink-0" style="color:{colorCssFromToken('amber-500')}" />
-        {uidValue}
+        <DynamicIcon name="file-key" size={16} class="shrink-0" style="color:{colorCssFromToken('amber-500')}" />
+        <span class="truncate">{uidValue}</span>
         <button
           type="button"
-          class="ml-1 inline-flex shrink-0 items-center text-muted-foreground transition-colors hover:text-foreground"
+          class="ml-auto inline-flex shrink-0 items-center text-muted-foreground transition-colors hover:text-foreground"
           title={$t('app.common.copy')}
           aria-label={$t('app.common.copy')}
           onclick={copyUid}
           data-testid="entity-record-sheet-uid-copy"
         >
           {#if uidCopied}
-            <Check class="size-3.5" />
+            <Check class="size-4" />
           {:else}
-            <Copy class="size-3.5" />
+            <Copy class="size-4" />
           {/if}
         </button>
       </Badge>
