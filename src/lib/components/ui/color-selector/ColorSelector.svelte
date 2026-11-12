@@ -13,6 +13,7 @@
   import { Button } from '@primebrick/ui';
   import * as ColorPicker from "$lib/components/ui/color-picker";
   import { Popover, CopyButton, inputTrailingIconButtonClasses } from '@primebrick/ui';
+  import { Eraser } from '@primebrick/ui/vendor/lucide';
 
   let {
     value = $bindable(),
@@ -39,10 +40,15 @@
     disabled?: boolean;
   } = $props();
 
-  // Same copy-CTA contract as the text inputs (input-anatomy.mdx): in
-  // display-only mode the trailing edge shows copy instead of the picker
-  // affordance — only when there is a value to copy.
-  let showCopy = $derived(disabled && (value ?? "").length > 0);
+  // Same trailing-CTA contract as the text inputs (input-anatomy.mdx):
+  // editable → eraser clear (always rendered, disabled while empty);
+  // display-only → copy, only when there is a value to copy.
+  let showTrailing = $derived(!disabled || (value ?? "").length > 0);
+  let clearDisabled = $derived((value ?? "").length === 0);
+
+  function handleClear() {
+    value = undefined;
+  }
 </script>
 
 <!-- Color Picker -->
@@ -60,7 +66,7 @@
       <div class="relative">
         <Popover.Trigger>
           {#snippet child({ props })}
-            <Button {...props} variant="outline" id={triggerId} {disabled} class={cn("w-full justify-start disabled:border-disabled disabled:hover:brightness-100 disabled:opacity-100", showCopy && "pr-9")}>
+            <Button {...props} variant="outline" id={triggerId} {disabled} class={cn("w-full justify-start disabled:border-disabled disabled:hover:brightness-100 disabled:opacity-100", showTrailing && "pr-9")}>
               <div class="flex w-full items-center gap-4">
                 <div
                   class="w-5 h-5 rounded-full border shadow-sm"
@@ -71,16 +77,31 @@
             </Button>
           {/snippet}
         </Popover.Trigger>
-        {#if showCopy}
-          <CopyButton
-            text={value ?? ""}
-            variant="ghost"
-            size="icon"
-            class={inputTrailingIconButtonClasses}
-            aria-label={$t('app.common.copy')}
-            title={$t('app.common.copy')}
-            data-testid="color-selector-copy"
-          />
+        {#if showTrailing}
+          {#if disabled}
+            <CopyButton
+              text={value ?? ""}
+              variant="ghost"
+              size="icon"
+              class={inputTrailingIconButtonClasses}
+              aria-label={$t('app.common.copy')}
+              title={$t('app.common.copy')}
+              data-testid="color-selector-copy"
+            />
+          {:else}
+            <button
+              type="button"
+              onclick={handleClear}
+              tabindex={-1}
+              disabled={clearDisabled}
+              class={inputTrailingIconButtonClasses}
+              aria-label={$t('app.common.clear')}
+              title={$t('app.common.clear')}
+              data-testid="color-selector-clear"
+            >
+              <Eraser class="size-4" />
+            </button>
+          {/if}
         {/if}
       </div>
       <Popover.Content class="z-[100] w-auto p-0">
