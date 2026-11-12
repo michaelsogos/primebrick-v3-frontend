@@ -209,7 +209,6 @@
   {#if auditColumns.length}
     <Separator />
     <section
-      class="rounded-md bg-muted/50 px-3 py-2"
       aria-label={$t('system.common.sections.audit')}
       data-testid="entity-record-sheet-audit-section"
     >
