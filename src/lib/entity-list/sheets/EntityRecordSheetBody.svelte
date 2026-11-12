@@ -168,11 +168,11 @@
       <Badge
         id="record-sheet-uid-badge"
         variant="secondary"
-        class="w-fit max-w-full gap-1 truncate font-mono text-xs shadow-none"
+        class="w-fit max-w-full gap-1.5 truncate font-mono text-sm shadow-none [&>svg]:size-3.5"
         title={String(uidValue)}
         data-testid="entity-record-sheet-uid-badge"
       >
-        <DynamicIcon name="file-key" size={12} class="shrink-0" style="color:{colorCssFromToken('amber-500')}" />
+        <DynamicIcon name="file-key" size={14} class="shrink-0" style="color:{colorCssFromToken('amber-500')}" />
         {uidValue}
         <button
           type="button"
@@ -183,9 +183,9 @@
           data-testid="entity-record-sheet-uid-copy"
         >
           {#if uidCopied}
-            <Check class="size-3" />
+            <Check class="size-3.5" />
           {:else}
-            <Copy class="size-3" />
+            <Copy class="size-3.5" />
           {/if}
         </button>
       </Badge>
