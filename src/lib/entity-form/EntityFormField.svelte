@@ -11,6 +11,12 @@
 	 * `inForm` selects the label primitive: formsnap `FormLabel` wires
 	 * aria/fs-error styling but requires the FormField context; outside
 	 * a superform the plain `Label` renders the same look.
+	 *
+	 * Audit columns (`column.audited`) are rejected BY CONSTRUCTION: audit
+	 * facts are immutable server-owned data — they render as read values
+	 * (audit section → `TableCell`), never as form widgets. A placement
+	 * or fallback that routes one here is a contract violation and fails
+	 * fast instead of silently drawing a dead control.
 	 */
 	import { t } from '$lib/i18n';
 	import {
@@ -33,6 +39,7 @@
 		value = $bindable(),
 		record = $bindable(),
 		readonly = false,
+		mode = 'update',
 		controlProps,
 		inForm = false,
 		editingNames,
@@ -50,6 +57,10 @@
 		value?: unknown;
 		record?: Record<string, unknown>;
 		readonly?: boolean;
+		/** Lifecycle mode — `immutable` columns are editable ONLY on
+		 *  `kind:"create"`; every update/detail surface renders them disabled.
+		 *  Fallback surfaces (record sheet) are always 'update'. */
+		mode?: 'create' | 'update';
 		/** FormControl `props` (id + aria wiring) when inside a superform;
 		 *  callers outside one pass `{ id }` so the label `for` still works. */
 		controlProps?: Record<string, unknown>;
@@ -64,7 +75,27 @@
 		disabledBadgeValues?: string[];
 	} = $props();
 
+	// Construction guard — `column` is mount-stable (keyed per col.key in
+	// every caller); the audited contract is checked once, at init.
+	// svelte-ignore state_referenced_locally
+	if (column.audited) {
+		throw new Error(
+			`EntityFormField: audited column "${column.key}" cannot render as a form field — audit values are read-only by contract`,
+		);
+	}
+
 	const labelFor = $derived(controlProps?.id as string | undefined);
+
+/** Effective read-only state — placement readonly, surface readonly,
+ *  `kind:"calculated"` server projections (never writable by construction),
+ *  or the `immutable` lifecycle: the field was set at creation
+ *  (user-supplied or derived) and is frozen for the record's life. */
+const fieldReadonly = $derived(
+	readonly ||
+		placement?.readonly === true ||
+		column.kind === 'calculated' ||
+		(column.immutable === true && mode !== 'create'),
+);
 
 	/** SwitchField binds a strict `boolean`; the field value is the
 	 *  record's `unknown` (undefined on columns the row never populated).
@@ -92,7 +123,7 @@
 				: undefined}
 			tooltipTitle={column.tooltip_title ? $t(column.tooltip_title) : undefined}
 			tooltipPriority={column.tooltip_priority}
-			disabled={readonly || placement?.readonly}
+			disabled={fieldReadonly}
 			bind:checked={boolValue.value}
 			{...controlProps}
 		/>
@@ -145,7 +176,7 @@
 		{columns}
 		{controlProps}
 		{disabledBadgeValues}
-		readonly={readonly || placement?.readonly}
+		readonly={fieldReadonly}
 		bind:value
 		bind:record
 	/>

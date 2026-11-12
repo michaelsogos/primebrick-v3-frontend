@@ -217,6 +217,9 @@
 					const entity: Record<string, unknown> = {};
 					for (const placement of formDecl!.fields) {
 						const col = columnMap.get(placement.key) as MetaColumn | undefined;
+						// `immutable` lifecycle — create-set, frozen for the record's
+						// life: never crosses the update write boundary.
+						if (isDetail && col?.immutable === true) continue;
 						let v = (updateForm.data as Record<string, unknown>)[placement.key];
 						if (v === '' || v === undefined) {
 							if (col?.nullable) entity[placement.key] = null;
@@ -586,6 +589,7 @@
 													? ['user']
 													: undefined}
 												readonly={collab.isConflicted(placement.key)}
+											mode={isDetail ? 'update' : 'create'}
 												bind:value={$form[placement.key]}
 												bind:record={$form}
 											/>

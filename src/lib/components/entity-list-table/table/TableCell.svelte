@@ -267,7 +267,7 @@
     <CellAffordance
       text={toDisplayString(displayValue)}
       ontextclick={() =>
-        openSheet('entity.record', { entity: column.ref!.entity, value, ref: column.ref })}
+        openSheet('entity.record', { entity: column.ref!.entity, value, ref: column.ref }, { stack: true })}
       href={iconHref ?? undefined}
       icon_title={$t('app.common.open_in_new_tab')}
       test_id={`ref-cell-${column.key}`}

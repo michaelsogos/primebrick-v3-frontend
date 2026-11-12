@@ -45,12 +45,8 @@
     Pencil,
     X as XIcon,
   } from '@primebrick/ui/vendor/lucide';
-  import {
-    CalendarDate,
-    CalendarDateTime,
-    parseDate,
-    parseDateTime,
-  } from '@internationalized/date';
+  import { calendarDateToUtcIso, isoToCalendarDate } from '$lib/entity-form/date-wire';
+  import { CalendarDate, CalendarDateTime } from '@internationalized/date';
   import type {
     MetaColumn,
     AdvancedFilter,
@@ -150,72 +146,6 @@
     }
     tempFilterValues = initial;
   });
-
-  // ISO string → CalendarDate/CalendarDateTime (draft restore for the
-  // date_dropper filter control).
-  function isoToCalendarDate(
-    isoString: string | null | undefined,
-    type: 'date' | 'datetime' = 'date',
-    timezone: string = 'UTC',
-  ): CalendarDate | CalendarDateTime | null {
-    if (!isoString) return null;
-    try {
-      if (type === 'datetime') {
-        if (isoString.endsWith('Z')) {
-          const date = new Date(isoString);
-          const formatter = new Intl.DateTimeFormat('en-US', {
-            timeZone: timezone,
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            hour12: false,
-          });
-          const parts = formatter.formatToParts(date);
-          const get = (p: string) => parseInt(parts.find((x) => x.type === p)?.value || '0', 10);
-          let hour = get('hour');
-          if (hour === 24) hour = 0;
-          return new CalendarDateTime(
-            get('year'),
-            get('month'),
-            get('day'),
-            hour,
-            get('minute'),
-            get('second'),
-          );
-        }
-        return parseDateTime(isoString);
-      }
-      return parseDate(isoString);
-    } catch {
-      return null;
-    }
-  }
-
-  // CalendarDate/CalendarDateTime → wire value: `date` keeps the plain
-  // date string; `datetime` converts through the picker's timezone to a
-  // UTC ISO instant.
-  function calendarDateToUtcIso(
-    date: CalendarDate | CalendarDateTime | null,
-    timezone: string,
-  ): string | null {
-    if (!date) return null;
-    if (date instanceof CalendarDate) return date.toString();
-    const utcBase = new Date(
-      Date.UTC(date.year, date.month - 1, date.day, date.hour, date.minute, date.second),
-    );
-    const utcDate = new Date(utcBase.getTime() - getTimezoneOffset(timezone) * 60 * 1000);
-    return utcDate.toISOString();
-  }
-
-  function getTimezoneOffset(timezone: string): number {
-    const date = new Date();
-    const utcDate = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));
-    const tzDate = new Date(date.toLocaleString('en-US', { timeZone: timezone }));
-    return (tzDate.getTime() - utcDate.getTime()) / (1000 * 60);
-  }
 
   function applyFilters() {
     const next = { ...tempFilterValues };

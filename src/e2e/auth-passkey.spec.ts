@@ -137,9 +137,8 @@ test.describe.serial("Suite B — User creation + passkey enrollment + passkey l
     await roleOption.click();
     await adminPage.getByTestId("admin-user-create-form").click();
 
-    // Ensure the user is active (Casdoor isForbidden otherwise) and the
-    // invitation email is sent.
-    await adminPage.getByTestId("admin-user-create-is-active-checkbox").check();
+    // New users are active by construction (no is_active flag — suspension
+    // is a post-create admin action). Only the invitation email is needed.
     await adminPage.getByTestId("admin-user-create-send-invitation-toggle").check();
 
     // Submit.

@@ -7,9 +7,9 @@
     idp_code: string;
     display_name: string | null;
     email: string | null;
-    is_active: boolean | null;
-    is_admin: boolean | null;
-    is_verified: boolean | null;
+    suspended: boolean | null;
+    idp_is_admin: boolean | null;
+    idp_is_verified: boolean | null;
     created_at: string;
     updated_at: string;
     version: number;

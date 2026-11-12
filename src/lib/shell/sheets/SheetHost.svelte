@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Sheet } from "@primebrick/ui";
   import {
+    closeSecondarySheet,
     closeSheet,
     sheetState,
     shouldSuppressSheetDialogClose,
@@ -76,6 +77,24 @@
   const remoteDecl = $derived(Panel ? null : panelId ? resolveRemoteSheetDecl(panelId) : null);
   const panelProps = $derived((sheetState.props ?? {}) as Record<string, unknown>);
 
+  /** Two-sheet stack — the left (secondary) pane resolves through the
+   *  same host-registry → remote-decl dispatch as the right one. */
+  const secondaryId = $derived(sheetState.secondary?.panelId ?? null);
+  const SecondaryPanel = $derived(
+    secondaryId && secondaryId in registry ? registry[secondaryId as SheetPanelId] : null
+  );
+  const secondaryRemoteDecl = $derived(
+    SecondaryPanel ? null : secondaryId ? resolveRemoteSheetDecl(secondaryId) : null
+  );
+  const secondaryProps = $derived((sheetState.secondary?.props ?? {}) as Record<string, unknown>);
+
+  /** Which pane the last pointer interaction happened in — set on
+   *  pointerdown capture (fires before the pane's Sheet.Close click and
+   *  before the dialog close request), consumed by onSheetOpenChange.
+   *  It routes the close to the interacted pane instead of always
+   *  popping the right one: X in the left pane closes the left pane. */
+  let closeTargetSecondary = $state(false);
+
   /**
    * Controlled dialog: keep `open` in sync with `sheetState.open`.
    * Ignore a spurious `false` right after `openSheet()` (see `shouldSuppressSheetDialogClose`).
@@ -86,13 +105,42 @@
       return;
     }
     if (shouldSuppressSheetDialogClose()) return;
+    if (sheetState.secondary && closeTargetSecondary) {
+      closeTargetSecondary = false;
+      closeSecondarySheet();
+      return;
+    }
     closeSheet();
   }
 </script>
 
 <Sheet.Root open={sheetState.open} onOpenChange={onSheetOpenChange}>
-  <Sheet.Content showClose={false} side={sheetState.side} class={cn(sheetState.contentClass, sheetState.expanded && "w-1/2 sm:max-w-none", "shadow-[4px_0_24px_-4px_rgba(0,0,0,0.3)]")} modal={sheetState.modal}>
-    {#if Panel}
+  <Sheet.Content showClose={false} side={sheetState.side} class={cn(sheetState.contentClass, sheetState.secondary && "sm:max-w-3xl", sheetState.expanded && "w-1/2 sm:max-w-none", "shadow-[4px_0_24px_-4px_rgba(0,0,0,0.3)]")} modal={sheetState.modal}>
+    {#if sheetState.secondary && !sheetState.expanded}
+      <!-- svelte-ignore a11y_no_static_element_interactions — pointerdown
+           capture only records WHICH pane was last touched so the dialog
+           close can route to it; it is not itself an interaction. -->
+      <div class="flex h-full min-h-0" onpointerdowncapture={() => (closeTargetSecondary = false)}>
+        <div
+          class="min-w-0 flex-1 border-r border-border"
+          onpointerdowncapture={() => (closeTargetSecondary = true)}
+          data-testid="sheet-secondary-pane"
+        >
+          {#if SecondaryPanel}
+            <SecondaryPanel {...secondaryProps} modal={sheetState.modal} />
+          {:else if secondaryRemoteDecl}
+            <RemoteSheetMount decl={secondaryRemoteDecl} props={secondaryProps} />
+          {/if}
+        </div>
+        <div class="min-w-0 flex-1" data-testid="sheet-primary-pane">
+          {#if Panel}
+            <Panel {...panelProps} modal={sheetState.modal} />
+          {:else if remoteDecl}
+            <RemoteSheetMount decl={remoteDecl} props={panelProps} />
+          {/if}
+        </div>
+      </div>
+    {:else if Panel}
       <Panel {...panelProps} modal={sheetState.modal} />
     {:else if remoteDecl}
       <RemoteSheetMount decl={remoteDecl} props={panelProps} />

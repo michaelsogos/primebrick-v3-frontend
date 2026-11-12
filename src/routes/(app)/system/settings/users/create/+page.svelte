@@ -145,10 +145,9 @@
       .default(getInitialAvatarColor()),
     idp_org: z.string()
       .min(1, { message: 'app.common.validation.org_required' }),
-    is_active: z.boolean().default(false),
-    is_admin: z.boolean().default(false),
-    is_verified: z.boolean().default(false),
-    email_verified: z.boolean().default(false),
+    idp_is_admin: z.boolean().default(false),
+    idp_is_verified: z.boolean().default(false),
+    idp_email_verified: z.boolean().default(false),
   }).superRefine((data, ctx) => {
     // Password is required when send_invitation is false
     if (!data.send_invitation && !data.password) {
@@ -183,10 +182,9 @@
           roles: updateForm.data.roles || [],
           avatar_color: updateForm.data.avatar_color || undefined,
           idp_org: updateForm.data.idp_org || undefined,
-          is_active: updateForm.data.is_active,
-          is_admin: updateForm.data.is_admin,
-          is_verified: updateForm.data.is_verified,
-          email_verified: updateForm.data.email_verified,
+          idp_is_admin: updateForm.data.idp_is_admin,
+          idp_is_verified: updateForm.data.idp_is_verified,
+          idp_email_verified: updateForm.data.idp_email_verified,
         };
 
         const response = await apiFetch('/api/v1/auth/users', {
@@ -573,18 +571,18 @@
               </FormControl>
             </FormField>
 
-            <FormField form={superFormObj} name="is_admin">
+            <FormField form={superFormObj} name="idp_is_admin">
               <FormControl>
                 {#snippet children({ props })}
                   <div class="flex items-center space-x-2">
-                    <Checkbox {...props} bind:checked={$form.is_admin} id="is_admin" />
-                    <label for="is_admin" class="inline-flex items-center gap-1 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                    <Checkbox {...props} bind:checked={$form.idp_is_admin} id="idp_is_admin" />
+                    <label for="idp_is_admin" class="inline-flex items-center gap-1 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                       {$t('system.settings.users.create.idp_admin')}
-                      {#if getColMeta('is_admin')?.tooltip && getColMeta('is_admin')?.show_form_tooltip !== false}
+                      {#if getColMeta('idp_is_admin')?.tooltip && getColMeta('idp_is_admin')?.show_form_tooltip !== false}
                         <FormLabelWithPriorityHelp
-                          text={$t(getColMeta('is_admin')!.tooltip!)}
-                          priority={getColMeta('is_admin')?.tooltip_priority}
-                          title={getColMeta('is_admin')?.tooltip_title ? $t(getColMeta('is_admin')!.tooltip_title!) : undefined}
+                          text={$t(getColMeta('idp_is_admin')!.tooltip!)}
+                          priority={getColMeta('idp_is_admin')?.tooltip_priority}
+                          title={getColMeta('idp_is_admin')?.tooltip_title ? $t(getColMeta('idp_is_admin')!.tooltip_title!) : undefined}
                         />
                       {/if}
                     </label>
@@ -593,38 +591,18 @@
               </FormControl>
             </FormField>
 
-            <FormField form={superFormObj} name="is_active">
+            <FormField form={superFormObj} name="idp_is_verified">
               <FormControl>
                 {#snippet children({ props })}
                   <div class="flex items-center space-x-2">
-                    <Checkbox {...props} bind:checked={$form.is_active} id="is_active" data-testid="admin-user-create-is-active-checkbox" />
-                    <label for="is_active" class="inline-flex items-center gap-1 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                      {$t('system.settings.users.create.idp_active')}
-                      {#if getColMeta('is_active')?.tooltip && getColMeta('is_active')?.show_form_tooltip !== false}
-                        <FormLabelWithPriorityHelp
-                          text={$t(getColMeta('is_active')!.tooltip!)}
-                          priority={getColMeta('is_active')?.tooltip_priority}
-                          title={getColMeta('is_active')?.tooltip_title ? $t(getColMeta('is_active')!.tooltip_title!) : undefined}
-                        />
-                      {/if}
-                    </label>
-                  </div>
-                {/snippet}
-              </FormControl>
-            </FormField>
-
-            <FormField form={superFormObj} name="is_verified">
-              <FormControl>
-                {#snippet children({ props })}
-                  <div class="flex items-center space-x-2">
-                    <Checkbox {...props} bind:checked={$form.is_verified} id="is_verified" />
-                    <label for="is_verified" class="inline-flex items-center gap-1 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                    <Checkbox {...props} bind:checked={$form.idp_is_verified} id="idp_is_verified" />
+                    <label for="idp_is_verified" class="inline-flex items-center gap-1 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                       {$t('system.settings.users.create.idp_verified')}
-                      {#if getColMeta('is_verified')?.tooltip && getColMeta('is_verified')?.show_form_tooltip !== false}
+                      {#if getColMeta('idp_is_verified')?.tooltip && getColMeta('idp_is_verified')?.show_form_tooltip !== false}
                         <FormLabelWithPriorityHelp
-                          text={$t(getColMeta('is_verified')!.tooltip!)}
-                          priority={getColMeta('is_verified')?.tooltip_priority}
-                          title={getColMeta('is_verified')?.tooltip_title ? $t(getColMeta('is_verified')!.tooltip_title!) : undefined}
+                          text={$t(getColMeta('idp_is_verified')!.tooltip!)}
+                          priority={getColMeta('idp_is_verified')?.tooltip_priority}
+                          title={getColMeta('idp_is_verified')?.tooltip_title ? $t(getColMeta('idp_is_verified')!.tooltip_title!) : undefined}
                         />
                       {/if}
                     </label>
@@ -633,18 +611,18 @@
               </FormControl>
             </FormField>
 
-            <FormField form={superFormObj} name="email_verified">
+            <FormField form={superFormObj} name="idp_email_verified">
               <FormControl>
                 {#snippet children({ props })}
                   <div class="flex items-center space-x-2">
-                    <Checkbox {...props} bind:checked={$form.email_verified} id="email_verified" />
-                    <label for="email_verified" class="inline-flex items-center gap-1 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                    <Checkbox {...props} bind:checked={$form.idp_email_verified} id="idp_email_verified" />
+                    <label for="idp_email_verified" class="inline-flex items-center gap-1 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                       {$t('system.settings.users.create.idp_email_verified')}
-                      {#if getColMeta('email_verified')?.tooltip && getColMeta('email_verified')?.show_form_tooltip !== false}
+                      {#if getColMeta('idp_email_verified')?.tooltip && getColMeta('idp_email_verified')?.show_form_tooltip !== false}
                         <FormLabelWithPriorityHelp
-                          text={$t(getColMeta('email_verified')!.tooltip!)}
-                          priority={getColMeta('email_verified')?.tooltip_priority}
-                          title={getColMeta('email_verified')?.tooltip_title ? $t(getColMeta('email_verified')!.tooltip_title!) : undefined}
+                          text={$t(getColMeta('idp_email_verified')!.tooltip!)}
+                          priority={getColMeta('idp_email_verified')?.tooltip_priority}
+                          title={getColMeta('idp_email_verified')?.tooltip_title ? $t(getColMeta('idp_email_verified')!.tooltip_title!) : undefined}
                         />
                       {/if}
                     </label>

@@ -49,8 +49,8 @@
   let inputClass = $derived(
     cn(
       showTrailing && "pr-9",
-      mode === "readonly" && "border-readonly-gradient",
-      mode === "disabled" && "border-readonly-gradient",
+      mode === "readonly" && "border-readonly",
+      mode === "disabled" && "border-disabled",
       "border-primary-gradient hover:brightness-105 focus-within:ring-2 focus-within:ring-ring/50 rounded-md transition-all duration-200",
       className,
     ),

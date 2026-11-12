@@ -352,10 +352,13 @@
     visibleKeys: () => visibleKeys
   });
 
-  // Scroll preservation
+  // Scroll preservation — sessionStorage-keyed like viewMode/deletionFilter
+  // so the horizontal position survives a full page reload too.
   useScrollPreservation({
     tableRef: () => tableRef,
-    rowsLoading: () => rowsLoading
+    rowsLoading: () => rowsLoading,
+    storageKey: () =>
+      columnOrderStorageKey ? `${columnOrderStorageKey}:scrollLeft` : `pb.entityList:${uid}:scrollLeft`
   });
 
   // Row range selection

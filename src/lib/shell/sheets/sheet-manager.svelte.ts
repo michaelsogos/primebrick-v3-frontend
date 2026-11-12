@@ -45,6 +45,14 @@ export type SheetOpenOptions = {
   keepMountedState?: boolean;
   /** When false, the sheet will not have a modal overlay (defaults true). */
   modal?: boolean;
+  /**
+   * Two-sheet stack (max 2 panes): when a sheet is already open, the
+   * current panel slides to the LEFT slot and the new one takes the
+   * right slot. Used by drill-down chrome (record → version history,
+   * ref-cell drill-through). A stacked `closeSheet` pops the right pane
+   * and the left one slides back — non-stacked opens clear the stack.
+   */
+  stack?: boolean;
 };
 
 export type SheetPanelPropsMap = {
@@ -187,11 +195,27 @@ export function shouldSuppressSheetDialogClose(): boolean {
   return suppressDialogCloseFromHost;
 }
 
+/** A sheet pane slot — the right pane is `panelId/props`, the left
+ *  (secondary) is only populated through `stack` opens. */
+export type SheetSlot = {
+  /** Host registry key OR remote `<module>.<name>` decl key. */
+  panelId: string;
+  props: Record<string, unknown> | null;
+  /** Chrome captured at stack time — restored when the pane slides
+   *  back to the right slot. */
+  side: SheetSide;
+  contentClass: string;
+  modal: boolean;
+};
+
 type SheetState = {
   open: boolean;
   /** Host registry key OR remote `<module>.<name>` decl key. */
   panelId: string | null;
   props: Record<string, unknown> | null;
+  /** Left pane of the two-sheet stack — present only after a `stack`
+   *  open while another sheet was showing. */
+  secondary: SheetSlot | null;
   side: SheetSide;
   contentClass: string;
   keepMountedState: boolean;
@@ -203,6 +227,7 @@ export const sheetState = $state<SheetState>({
   open: false,
   panelId: null,
   props: null,
+  secondary: null,
   side: 'right',
   contentClass: 'p-0',
   keepMountedState: false,
@@ -248,6 +273,18 @@ export function openSheet(
     });
     return;
   }
+  // Two-sheet stack: the open panel slides left; the new one takes the
+  // right slot. A non-stacked open always clears the left pane.
+  sheetState.secondary =
+    options?.stack && sheetState.open && sheetState.panelId
+      ? {
+          panelId: sheetState.panelId,
+          props: sheetState.props,
+          side: sheetState.side,
+          contentClass: sheetState.contentClass,
+          modal: sheetState.modal
+        }
+      : null;
   // Declared chrome defaults — the caller's options always win.
   const defaults = remoteDecl?.default_options;
   sheetState.panelId = panelId;
@@ -287,6 +324,17 @@ export function replaceSheet(
 }
 
 export function closeSheet() {
+  // Stacked close pops the right pane — the left pane slides back to the
+  // right slot and the sheet stays open.
+  if (sheetState.secondary) {
+    sheetState.panelId = sheetState.secondary.panelId;
+    sheetState.props = sheetState.secondary.props;
+    sheetState.side = sheetState.secondary.side;
+    sheetState.contentClass = sheetState.secondary.contentClass;
+    sheetState.modal = sheetState.secondary.modal;
+    sheetState.secondary = null;
+    return;
+  }
   sheetState.open = false;
   sheetState.expanded = false;
   if (sheetState.keepMountedState) return;
@@ -296,6 +344,12 @@ export function closeSheet() {
     sheetState.panelId = null;
     sheetState.props = null;
   });
+}
+
+/** Close only the LEFT (secondary) pane — the right pane keeps its
+ *  slot. Used by the secondary pane's own close affordance. */
+export function closeSecondarySheet() {
+  sheetState.secondary = null;
 }
 
 /**

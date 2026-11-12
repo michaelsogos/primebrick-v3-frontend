@@ -117,8 +117,8 @@ test.describe("elt filters widget parity", () => {
     await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 30_000 });
     await openFiltersSheet(page);
 
-    // is_active ("Enable") — the boolean tri-state group.
-    const { control } = await labeledControl(page, /\benable\b/i);
+    // auth_method_enforcer_dismissed — the boolean tri-state group.
+    const { control } = await labeledControl(page, /\bauth method enforcer\b/i);
     // Tri-state group — the combobox/text input would both be wrong here.
     await expect(control.getByRole("button", { name: "Any" })).toBeVisible();
     await control.getByRole("button", { name: "Yes" }).click();
@@ -229,11 +229,11 @@ test.describe("elt filters widget parity", () => {
     await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 30_000 });
     await openFiltersSheet(page);
 
-    // is_active ("Enable"): no tooltip metadata → NO help control
+    // auth_method_enforcer_dismissed: no tooltip metadata → NO help control
     // (ghost-icon regression).
-    const bare = await labeledControl(page, /\benable\b/i);
+    const bare = await labeledControl(page, /\bauth method enforcer\b/i);
     await expect(bare.label.getByLabel("Help")).toHaveCount(0);
-    // is_admin ("Admin"): tooltip + show_list_tooltip → help renders.
+    // idp_is_admin ("Admin"): tooltip + show_list_tooltip → help renders.
     const hinted = await labeledControl(page, /\badmin\b/i);
     await expect(hinted.label.getByLabel("Help")).toHaveCount(1);
   });

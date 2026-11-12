@@ -7,7 +7,7 @@
  *   1. drop any leftover actor with the same name (previous crashed run)
  *   2. create the user in Casdoor via the machine client credentials
  *   3. assign the `administrators` role, enable + verify it
- *   4. insert the matching `public.user_profiles` row (is_admin)
+ *   4. insert the matching `public.user_profiles` row (idp_is_admin)
  *   5. publish credentials via process.env so `helpers/admin-login.ts` can
  *      authenticate
  *   6. globalTeardown deletes the user (Casdoor + DB + MFA rows)
@@ -44,7 +44,7 @@ const COLLAB_ACTOR_DISPLAY = "E2E Collab Admin";
 const COLLAB_ACTOR_EMAIL = `${COLLAB_ACTOR_NAME}@e2e.local`;
 
 // Non-admin actor for access-axis E2E — a dedicated role carries only the
-// `access.*` + entity grants the suite needs; `is_admin=false` both in
+// `access.*` + entity grants the suite needs; `idp_is_admin=false` both in
 // Casdoor and user_profiles so nothing is implicitly inherited.
 const USER_ACTOR_NAME = process.env.E2E_USER_ACTOR_NAME ?? "e2e_test_user";
 const USER_ACTOR_DISPLAY = "E2E Test User";
@@ -217,7 +217,7 @@ async function invalidateRoleMappingsCache(): Promise<void> {
  */
 /**
  * Mint an admin-capable ephemeral actor (Casdoor `administrators` role +
- * user_profiles is_admin). Parameterized on identity/env so the same flow
+ * user_profiles idp_is_admin). Parameterized on identity/env so the same flow
  * serves the shared admin actor and the MFA-suite twin.
  */
 async function createE2eAdminLikeActor(
@@ -280,16 +280,16 @@ async function createE2eAdminLikeActor(
   // the body `roles` field alone is ignored.
   await linkCasdoorUserToRole(cfg, `${cfg.org}/${name}`);
 
-  // 5. Mirror into public.user_profiles (is_admin → admin bypass).
+  // 5. Mirror into public.user_profiles (idp_is_admin → admin bypass).
   const uuid = e2eUuidV7();
   const now = new Date();
   await pool.query(
     `INSERT INTO public.user_profiles
      (uuid, idp_code, email, display_name, idp_org, idp_username, avatar_color, avatar_initials,
-      is_active, is_admin, is_verified, email_verified, issuer, roles, last_synced_at,
+      idp_is_admin, idp_is_verified, idp_email_verified, idp_issuer, roles, last_synced_at,
       created_at, created_by, updated_at, updated_by, version,
       auth_method_enforcer_dismissed)
-     VALUES ($1,$2,$3,$4,$5,$6,'#4f46e5','TA',true,true,true,true,$7,$8,$9,$9,'e2e-setup',$9,'e2e-setup',1,true)`,
+     VALUES ($1,$2,$3,$4,$5,$6,'#4f46e5','TA',true,true,true,$7,$8,$9,$9,'e2e-setup',$9,'e2e-setup',1,true)`,
     [uuid, casdoorUser.id, email, display, cfg.org, name, cfg.endpoint,
      JSON.stringify([ADMIN_ROLE]), now],
   );
@@ -377,7 +377,7 @@ export function destroyE2eCollabActor(): Promise<void> {
  *   - a `role_mappings` row carrying USER_ROLE_PERMISSIONS (access.axis +
  *     entity grants) — written raw, then the Redis cache key is busted so
  *     the BE re-reads the mapping immediately;
- *   - `is_admin=false` everywhere: this actor must NOT inherit
+ *   - `idp_is_admin=false` everywhere: this actor must NOT inherit
  *     `access.system` — it only sees what `e2e_user` explicitly grants.
  *
  * Publishes `E2E_USER_USERNAME` / `E2E_USER_PASSWORD` for
@@ -451,16 +451,16 @@ export async function createE2eUserActor(): Promise<{ username: string; password
   if (!role) throw new Error(`[E2E] Casdoor role ${USER_ROLE} missing after add-role`);
   await updateNamedRoleUsers(cfg, USER_ROLE, role, [`${cfg.org}/${USER_ACTOR_NAME}`]);
 
-  // 5. Mirror into public.user_profiles — is_admin=false.
+  // 5. Mirror into public.user_profiles — idp_is_admin=false.
   const uuid = e2eUuidV7();
   const now = new Date();
   await pool.query(
     `INSERT INTO public.user_profiles
      (uuid, idp_code, email, display_name, idp_org, idp_username, avatar_color, avatar_initials,
-      is_active, is_admin, is_verified, email_verified, issuer, roles, last_synced_at,
+      idp_is_admin, idp_is_verified, idp_email_verified, idp_issuer, roles, last_synced_at,
       created_at, created_by, updated_at, updated_by, version,
       auth_method_enforcer_dismissed)
-     VALUES ($1,$2,$3,$4,$5,$6,'#0ea5e9','TU',true,false,true,true,$7,$8,$9,$9,'e2e-setup',$9,'e2e-setup',1,true)`,
+     VALUES ($1,$2,$3,$4,$5,$6,'#0ea5e9','TU',false,true,true,$7,$8,$9,$9,'e2e-setup',$9,'e2e-setup',1,true)`,
     [uuid, casdoorUser.id, USER_ACTOR_EMAIL, USER_ACTOR_DISPLAY, cfg.org, USER_ACTOR_NAME, cfg.endpoint,
      JSON.stringify([USER_ROLE]), now],
   );

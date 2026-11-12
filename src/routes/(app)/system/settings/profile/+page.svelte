@@ -43,11 +43,12 @@
     email: z.string().email({ message: 'app.common.validation.invalid_email' }),
     avatar_color: z.string().min(1, { message: 'app.common.validation.required' }),
     avatar_initials: z.string().min(1, { message: 'app.common.validation.required' }),
-    is_admin: z.boolean().optional(),
-    is_verified: z.boolean().optional(),
-    email_verified: z.boolean().optional(),
-    issuer: z.string().optional(),
+    idp_is_admin: z.boolean().optional(),
+    idp_is_verified: z.boolean().optional(),
+    idp_email_verified: z.boolean().optional(),
+    idp_issuer: z.string().optional(),
     roles: z.array(z.string()).optional().default([]),
+    auth_method_enforcer_dismissed: z.boolean().optional(),
   });
 
   // Superforms in SPA mode
@@ -63,8 +64,8 @@
       try {
         // Only the editable fields go to PATCH — immutable IDP/role fields
         // are never sent (allowlist, not exclusion).
-        const { display_name, email, avatar_color, avatar_initials } = updateForm.data;
-        const requestData = { display_name, email, avatar_color, avatar_initials };
+        const { display_name, email, avatar_color, avatar_initials, auth_method_enforcer_dismissed } = updateForm.data;
+        const requestData = { display_name, email, avatar_color, avatar_initials, auth_method_enforcer_dismissed };
         const response = await apiFetch("/api/v1/auth/me", {
           method: "PATCH",
           headers: {
@@ -93,19 +94,21 @@
           $form.avatar_color = data.profile.avatar_color || $form.avatar_color;
           $form.avatar_initials =
             data.profile.avatar_initials || $form.avatar_initials;
-          $form.is_admin =
-            data.profile.is_admin !== undefined
-              ? data.profile.is_admin
-              : $form.is_admin;
-          $form.is_verified =
-            data.profile.is_verified !== undefined
-              ? data.profile.is_verified
-              : $form.is_verified;
-          $form.email_verified =
-            data.profile.email_verified !== undefined
-              ? data.profile.email_verified
-              : $form.email_verified;
-          $form.issuer = data.profile.issuer || $form.issuer;
+          $form.idp_is_admin =
+            data.profile.idp_is_admin !== undefined
+              ? data.profile.idp_is_admin
+              : $form.idp_is_admin;
+          $form.idp_is_verified =
+            data.profile.idp_is_verified !== undefined
+              ? data.profile.idp_is_verified
+              : $form.idp_is_verified;
+          $form.idp_email_verified =
+            data.profile.idp_email_verified !== undefined
+              ? data.profile.idp_email_verified
+              : $form.idp_email_verified;
+          $form.idp_issuer = data.profile.idp_issuer || $form.idp_issuer;
+          $form.auth_method_enforcer_dismissed =
+            data.profile.auth_method_enforcer_dismissed === true;
 
           // Update store (automatically refreshes AppSidebar)
           userProfileStore.set({
@@ -117,10 +120,11 @@
             email: data.profile.email,
             avatar_color: data.profile.avatar_color,
             avatar_initials: data.profile.avatar_initials,
-            is_admin: data.profile.is_admin,
-            is_verified: data.profile.is_verified,
-            email_verified: data.profile.email_verified,
-            issuer: data.profile.issuer,
+            idp_is_admin: data.profile.idp_is_admin,
+            idp_is_verified: data.profile.idp_is_verified,
+            idp_email_verified: data.profile.idp_email_verified,
+            idp_issuer: data.profile.idp_issuer,
+            auth_method_enforcer_dismissed: data.profile.auth_method_enforcer_dismissed,
             roles: data.profile.roles ?? [],
             // Audit fields
             created_at: data.profile.created_at,
@@ -207,11 +211,12 @@
         email: profile.email || "",
         avatar_color: profile.avatar_color || avatarChromePaletteToHex(paletteIndex),
         avatar_initials: profile.avatar_initials || calculatedInitials,
-        is_admin: profile.is_admin !== undefined ? profile.is_admin : false,
-        is_verified: profile.is_verified,
-        email_verified: profile.email_verified,
-        issuer: profile.issuer || "",
-        roles: profile.roles ?? []
+        idp_is_admin: profile.idp_is_admin === true,
+        idp_is_verified: profile.idp_is_verified,
+        idp_email_verified: profile.idp_email_verified,
+        idp_issuer: profile.idp_issuer || "",
+        roles: profile.roles ?? [],
+        auth_method_enforcer_dismissed: profile.auth_method_enforcer_dismissed === true
       }
     });
   }
@@ -234,10 +239,12 @@
             email: data.profile.email,
             avatar_color: data.profile.avatar_color,
             avatar_initials: data.profile.avatar_initials,
-            is_admin: data.profile.is_admin,
-            is_verified: data.profile.is_verified,
-            email_verified: data.profile.email_verified,
-            issuer: data.profile.issuer,
+            is_admin: data.is_admin === true,
+            idp_is_admin: data.profile.idp_is_admin,
+            idp_is_verified: data.profile.idp_is_verified,
+            idp_email_verified: data.profile.idp_email_verified,
+            idp_issuer: data.profile.idp_issuer,
+            auth_method_enforcer_dismissed: data.profile.auth_method_enforcer_dismissed,
             roles: data.profile.roles ?? [],
             // Audit fields
             created_at: data.profile.created_at,
@@ -433,14 +440,14 @@
                 </FormControl>
               </FormField>
 
-              <FormField form={superFormObj} name="issuer">
+              <FormField form={superFormObj} name="idp_issuer">
                 <FormControl>
                   {#snippet children({ props })}
                     <div class="space-y-2">
                       <FormLabel for={props.id}>{$t("system.settings.profile.idp_issuer")}</FormLabel>
                       <TextInput
                         type="text"
-                        bind:value={$form.issuer}
+                        bind:value={$form.idp_issuer}
                         readonly
                         class="mt-2"
                         {...props}
@@ -451,18 +458,18 @@
                 </FormControl>
               </FormField>
 
-              <FormField form={superFormObj} name="is_admin">
+              <FormField form={superFormObj} name="idp_is_admin">
                 <FormControl>
                   {#snippet children({ props })}
                     <div class="flex items-center space-x-2">
-                      <Checkbox {...props} checked={$form.is_admin === true} disabled id={props.id} />
+                      <Checkbox {...props} checked={$form.idp_is_admin === true} disabled id={props.id} />
                       <label for={props.id} class="inline-flex items-center gap-1 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                         {$t("system.settings.profile.idp_admin")}
-                        {#if getColMeta('is_admin')?.tooltip && getColMeta('is_admin')?.show_form_tooltip !== false}
+                        {#if getColMeta('idp_is_admin')?.tooltip && getColMeta('idp_is_admin')?.show_form_tooltip !== false}
                           <FormLabelWithPriorityHelp
-                            text={$t(getColMeta('is_admin')!.tooltip!)}
-                            priority={getColMeta('is_admin')?.tooltip_priority}
-                            title={getColMeta('is_admin')?.tooltip_title ? $t(getColMeta('is_admin')!.tooltip_title!) : undefined}
+                            text={$t(getColMeta('idp_is_admin')!.tooltip!)}
+                            priority={getColMeta('idp_is_admin')?.tooltip_priority}
+                            title={getColMeta('idp_is_admin')?.tooltip_title ? $t(getColMeta('idp_is_admin')!.tooltip_title!) : undefined}
                           />
                         {/if}
                       </label>
@@ -471,18 +478,18 @@
                 </FormControl>
               </FormField>
 
-              <FormField form={superFormObj} name="is_verified">
+              <FormField form={superFormObj} name="idp_is_verified">
                 <FormControl>
                   {#snippet children({ props })}
                     <div class="flex items-center space-x-2">
-                      <Checkbox {...props} checked={$form.is_verified === true} disabled id={props.id} />
+                      <Checkbox {...props} checked={$form.idp_is_verified === true} disabled id={props.id} />
                       <label for={props.id} class="inline-flex items-center gap-1 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                         {$t("system.settings.profile.idp_verified")}
-                        {#if getColMeta('is_verified')?.tooltip && getColMeta('is_verified')?.show_form_tooltip !== false}
+                        {#if getColMeta('idp_is_verified')?.tooltip && getColMeta('idp_is_verified')?.show_form_tooltip !== false}
                           <FormLabelWithPriorityHelp
-                            text={$t(getColMeta('is_verified')!.tooltip!)}
-                            priority={getColMeta('is_verified')?.tooltip_priority}
-                            title={getColMeta('is_verified')?.tooltip_title ? $t(getColMeta('is_verified')!.tooltip_title!) : undefined}
+                            text={$t(getColMeta('idp_is_verified')!.tooltip!)}
+                            priority={getColMeta('idp_is_verified')?.tooltip_priority}
+                            title={getColMeta('idp_is_verified')?.tooltip_title ? $t(getColMeta('idp_is_verified')!.tooltip_title!) : undefined}
                           />
                         {/if}
                       </label>
@@ -491,18 +498,39 @@
                 </FormControl>
               </FormField>
 
-              <FormField form={superFormObj} name="email_verified">
+              <FormField form={superFormObj} name="idp_email_verified">
                 <FormControl>
                   {#snippet children({ props })}
                     <div class="flex items-center space-x-2">
-                      <Checkbox {...props} checked={$form.email_verified === true} disabled id={props.id} />
+                      <Checkbox {...props} checked={$form.idp_email_verified === true} disabled id={props.id} />
                       <label for={props.id} class="inline-flex items-center gap-1 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                         {$t("system.settings.profile.idp_email_verified")}
-                        {#if getColMeta('email_verified')?.tooltip && getColMeta('email_verified')?.show_form_tooltip !== false}
+                        {#if getColMeta('idp_email_verified')?.tooltip && getColMeta('idp_email_verified')?.show_form_tooltip !== false}
                           <FormLabelWithPriorityHelp
-                            text={$t(getColMeta('email_verified')!.tooltip!)}
-                            priority={getColMeta('email_verified')?.tooltip_priority}
-                            title={getColMeta('email_verified')?.tooltip_title ? $t(getColMeta('email_verified')!.tooltip_title!) : undefined}
+                            text={$t(getColMeta('idp_email_verified')!.tooltip!)}
+                            priority={getColMeta('idp_email_verified')?.tooltip_priority}
+                            title={getColMeta('idp_email_verified')?.tooltip_title ? $t(getColMeta('idp_email_verified')!.tooltip_title!) : undefined}
+                          />
+                        {/if}
+                      </label>
+                    </div>
+                  {/snippet}
+                </FormControl>
+              </FormField>
+
+              <!-- Editable: user may re-arm the auth-method enforcer on their own profile. -->
+              <FormField form={superFormObj} name="auth_method_enforcer_dismissed">
+                <FormControl>
+                  {#snippet children({ props })}
+                    <div class="flex items-center space-x-2">
+                      <Checkbox {...props} bind:checked={$form.auth_method_enforcer_dismissed} id={props.id} />
+                      <label for={props.id} class="inline-flex items-center gap-1 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                        {$t("system.entities.user_profile.fields.auth_method_enforcer_dismissed")}
+                        {#if getColMeta('auth_method_enforcer_dismissed')?.tooltip && getColMeta('auth_method_enforcer_dismissed')?.show_form_tooltip !== false}
+                          <FormLabelWithPriorityHelp
+                            text={$t(getColMeta('auth_method_enforcer_dismissed')!.tooltip!)}
+                            priority={getColMeta('auth_method_enforcer_dismissed')?.tooltip_priority}
+                            title={getColMeta('auth_method_enforcer_dismissed')?.tooltip_title ? $t(getColMeta('auth_method_enforcer_dismissed')!.tooltip_title!) : undefined}
                           />
                         {/if}
                       </label>

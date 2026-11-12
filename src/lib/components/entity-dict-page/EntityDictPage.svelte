@@ -133,6 +133,11 @@
     ),
   );
 
+  /** Update-mode editable set — `immutable` columns are create-set and
+   *  frozen afterwards: they stay editable on the DRAFT (create) row but
+   *  drop out of existing-row editing. */
+  const updateEditableColumns = $derived(editableColumns.filter((c) => c.immutable !== true));
+
   const orderField = $derived(
     dictFacet?.order_field ?? (columnMap.has('sort') ? 'sort' : undefined),
   );
@@ -576,7 +581,7 @@
     entities_ns,
     pending_owner: basePath,
     display_field: displayField,
-    editable_columns: editableColumns,
+    editable_columns: updateEditableColumns,
     columns_map: columnMap,
     values: values[String(r[uid])] ?? {},
     errors: invalidRowUids.has(String(r[uid]))

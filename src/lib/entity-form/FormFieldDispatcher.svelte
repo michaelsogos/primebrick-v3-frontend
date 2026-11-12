@@ -51,6 +51,7 @@
 	import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
 	import { useEntityRefOptions } from './use-entity-ref-options.svelte';
 	import { useAuditActorOptions } from './use-audit-actor-options.svelte';
+	import { useActiveRoles } from '$lib/composables/useActiveRoles.svelte';
 	import { usePivotRow } from './use-pivot-row.svelte';
 	import {
 		depControlFormat,
@@ -61,6 +62,8 @@
 	} from './depends-on';
 	import { ruleJsonCompletions } from './rule-schema-completions';
 	import { CircleCheck, CircleX } from '@primebrick/ui/vendor/lucide';
+	import { getResolvedIanaTimeZone } from '@primebrick/ui';
+	import { calendarDateToUtcIso, isoToCalendarDate } from './date-wire';
 	import type { CalendarDate, CalendarDateTime } from '@internationalized/date';
 
 	interface Props {
@@ -186,6 +189,7 @@
 		'schedule_spec',
 		'json',
 		'subject_combo',
+		'role_multi',
 		'payload_map',
 		'badge',
 		'textarea',
@@ -195,6 +199,7 @@
 		'phone',
 		'entity_ref',
 		'color',
+		'date',
 		'text',
 	]);
 
@@ -278,6 +283,10 @@
 	 *  (a `value_kind:"phone"` dict row renders PhoneInput). */
 	function deriveControl(formatOverride?: string): string {
 		const format = formatOverride ?? column.format;
+		// Authored `options_source` wins over the structural type — a jsonb
+		// `roles` array still renders the roles multi-combo, never the JSON
+		// editor (same precedence `resolveFilterControl` already declares).
+		if (column.options_source === 'system.roles') return 'role_multi';
 		if (format === 'schedule_spec') return 'schedule_spec';
 		if (format === 'json' || column.pg_type === 'jsonb' || column.pg_type === 'json') return 'json';
 		if (format === 'nats_subject') {
@@ -294,6 +303,14 @@
 		if (format === 'url') return 'url';
 		if (format === 'phone') return 'phone';
 		if (format === 'color_hex' || column.type === 'color') return 'color';
+		if (
+			column.type === 'date' ||
+			column.type === 'datetime' ||
+			format === 'date' ||
+			format === 'datetime' ||
+			format === 'time'
+		)
+			return 'date';
 		if (column.type === 'badge') return 'badge';
 		return 'text';
 	}
@@ -382,13 +399,42 @@
 			value = v.length ? v : undefined;
 		},
 	};
-	/** Filter `date` control — the panel owns ISO conversion at apply time;
-	 *  the dispatcher passes the CalendarDate/CalendarDateTime through. */
+	/** `date` control value bridge. Filter surface: the panel owns ISO
+	 *  conversion at apply time — the CalendarDate passes through. Form
+	 *  surface: the record carries the WIRE string (`date` = YYYY-MM-DD,
+	 *  `datetime` = timestamptz UTC ISO) — `date-wire` converts through
+	 *  the picker's timezone, same semantics the filter panel owns. */
+	const dateWireType = $derived<'date' | 'datetime' | 'time'>(
+		column.format === 'time'
+			? 'time'
+			: column.type === 'datetime' || column.format === 'datetime'
+				? 'datetime'
+				: 'date',
+	);
+	/** Conversion zone: a `datetime_iana_toggle` binds the display/edit
+	 *  zone to the RECORD's own IANA field (authored contract); else the
+	 *  picker's bound timezone, else the browser's. */
+	const dateWireTz = $derived.by(() => {
+		const recField = column.datetime_iana_toggle?.record_iana_field;
+		const recTz = recField ? (record?.[recField] as string | undefined) : undefined;
+		return recTz ?? timezone ?? getResolvedIanaTimeZone() ?? 'UTC';
+	});
 	const dateValue = {
 		get value(): CalendarDate | CalendarDateTime | null {
+			if (surface === 'form') {
+				return isoToCalendarDate(
+					typeof value === 'string' ? value : null,
+					dateWireType,
+					dateWireTz,
+				);
+			}
 			return (value as CalendarDate | CalendarDateTime | null) ?? null;
 		},
 		set value(v: CalendarDate | CalendarDateTime | null) {
+			if (surface === 'form') {
+				value = v === null ? undefined : calendarDateToUtcIso(v, dateWireTz, dateWireType);
+				return;
+			}
 			value = v;
 		},
 	};
@@ -447,6 +493,14 @@
 	 *  the combo is truthful here). `filterEntity` is required; without it
 	 *  the delegate stays empty rather than fetching the wrong service. */
 	const auditActors = useAuditActorOptions(() => filterEntity);
+
+	/** `options_source:"system.roles"` — the shared `/system/roles/active`
+	 *  vocabulary (same feed the custom user pages feed their ComboSelect).
+	 *  Lazy-gated: only a column actually authored `system.roles` fires the
+	 *  fetch, never every dispatcher instance. */
+	const systemRoles = useActiveRoles({
+		enabled: () => column.options_source === 'system.roles',
+	});
 
 	// Restore display labels for `entity_ref` selections that pre-date the
 	// loaded option pages (draft state, URL-restored filters, edit-form
@@ -604,6 +658,18 @@
 			— {$t('app.widgets.payload_map.permissions_warn.tail')}
 		</p>
 	{/if}
+{:else if control === 'role_multi'}
+	<ComboSelect
+		mode="multi"
+		bind:value={arrayValue.value}
+		options={systemRoles.state.roles as { idp_role: string; label_key?: string; permissions?: string[]; is_admin?: boolean }[]}
+		valueField="idp_role"
+		labelField="label_key"
+		isLabelTranslated={true}
+		{placeholder}
+		disabled={effectiveReadonly}
+		{...controlProps}
+	/>
 {:else if control === 'payload_map'}
 	<PayloadMapEditor
 		bind:value={stringValue.value}
@@ -658,6 +724,7 @@
 		bind:timezone
 		{placeholder}
 		includeTime={column.type === 'datetime' || column.format === 'datetime'}
+		timeOnly={column.format === 'time'}
 		disabled={effectiveReadonly}
 		{...controlProps}
 	/>

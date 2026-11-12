@@ -333,7 +333,13 @@ export function useRowActions<TRow extends Record<string, unknown>>(
   async function runEndpointAction(action: RowCustomAction, row: TRow): Promise<boolean> {
     const ep = findActionEndpoint(getActions?.(), action.action_name);
     if (!ep) return false;
-    const url = serviceApiPrefix(entityFn()) + fillActionPath(ep.path, row, uidFn());
+    // Optimistic-lock convention: endpoints that gate on `requireVersionQuery`
+    // (suspend/reactivate/restore-style writes) get the caller-observed
+    // version exactly like delete/restore do. Endpoints that ignore query
+    // params are unaffected.
+    const versionQs =
+      typeof row.version === 'number' ? `?version=${row.version}` : '';
+    const url = serviceApiPrefix(entityFn()) + fillActionPath(ep.path, row, uidFn()) + versionQs;
     const body = action.row_key
       ? JSON.stringify({ [action.row_key]: row[action.row_key] })
       : undefined;

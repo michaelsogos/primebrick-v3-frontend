@@ -62,6 +62,8 @@
       .regex(/^#[0-9A-Fa-f]{6}$/, { message: 'app.common.validation.invalid_format' })
       .optional()
       .or(z.literal('')),
+    idp_is_admin: z.boolean().default(false),
+    auth_method_enforcer_dismissed: z.boolean().default(false),
   });
 
   let user = $state<{
@@ -74,11 +76,13 @@
     avatar_color?: string;
     avatar_initials?: string;
     roles?: string[];
-    is_active?: boolean;
-    is_admin?: boolean;
-    is_verified?: boolean;
-    email_verified?: boolean;
-    issuer?: string;
+    idp_is_admin?: boolean;
+    idp_is_verified?: boolean;
+    idp_email_verified?: boolean;
+    idp_issuer?: string;
+    suspended_at?: string;
+    suspended_by?: string;
+    auth_method_enforcer_dismissed?: boolean;
     version: number;
     created_at?: string;
     created_by?: string;
@@ -132,6 +136,8 @@
           avatar_color: updateForm.data.avatar_color || undefined,
           avatar_initials: initials,
           roles: updateForm.data.roles || [],
+          idp_is_admin: updateForm.data.idp_is_admin,
+          auth_method_enforcer_dismissed: updateForm.data.auth_method_enforcer_dismissed,
           version: user.version,
         };
         const response = await apiFetch(`/api/v1/auth/users/${uuid}`, {
@@ -189,6 +195,8 @@
           email: data.email || '',
           avatar_color: data.avatar_color || '',
           roles: data.roles || [],
+          idp_is_admin: data.idp_is_admin === true,
+          auth_method_enforcer_dismissed: data.auth_method_enforcer_dismissed === true,
         },
       });
     } catch (error) {
@@ -372,54 +380,75 @@
               </div>
 
               <div class="space-y-2">
-                <label for="issuer" class="text-sm font-medium">{$t('system.settings.users.update.issuer')}</label>
-                <TextInput id="issuer" value={user?.issuer} readonly />
+                <label for="idp-issuer" class="text-sm font-medium">{$t('system.settings.users.update.issuer')}</label>
+                <TextInput id="idp-issuer" value={user?.idp_issuer} readonly />
               </div>
 
-              <!-- Readonly checkboxes -->
+              <!-- Casdoor-console admin flag — admin-editable (immutable contract
+                   does NOT apply: decided by privileged users on user_profiles). -->
+              <FormField form={superFormObj} name="idp_is_admin">
+                <FormControl>
+                  {#snippet children({ props })}
+                    <div class="flex items-center space-x-2">
+                      <Checkbox {...props} bind:checked={$form.idp_is_admin} id="idp_is_admin" />
+                      <label for="idp_is_admin" class="inline-flex items-center gap-1 text-sm font-medium">{$t('system.settings.users.update.is_admin')}
+                        {#if getColMeta('idp_is_admin')?.tooltip && getColMeta('idp_is_admin')?.show_form_tooltip !== false}
+                          <FormLabelWithPriorityHelp
+                            text={$t(getColMeta('idp_is_admin')!.tooltip!)}
+                            priority={getColMeta('idp_is_admin')?.tooltip_priority}
+                            title={getColMeta('idp_is_admin')?.tooltip_title ? $t(getColMeta('idp_is_admin')!.tooltip_title!) : undefined}
+                          />
+                        {/if}
+                      </label>
+                    </div>
+                  {/snippet}
+                </FormControl>
+              </FormField>
+
               <div class="flex items-center space-x-2">
-                <Checkbox checked={user?.is_admin === true} disabled id="is-admin" />
-                <label for="is-admin" class="inline-flex items-center gap-1 text-sm font-medium">{$t('system.settings.users.update.is_admin')}
-                  {#if getColMeta('is_admin')?.tooltip && getColMeta('is_admin')?.show_form_tooltip !== false}
+                <Checkbox checked={user?.idp_is_verified === true} disabled id="idp-is-verified" />
+                <label for="idp-is-verified" class="inline-flex items-center gap-1 text-sm font-medium">{$t('system.settings.users.update.is_verified')}
+                  {#if getColMeta('idp_is_verified')?.tooltip && getColMeta('idp_is_verified')?.show_form_tooltip !== false}
                     <FormLabelWithPriorityHelp
-                      text={$t(getColMeta('is_admin')!.tooltip!)}
-                      priority={getColMeta('is_admin')?.tooltip_priority}
-                      title={getColMeta('is_admin')?.tooltip_title ? $t(getColMeta('is_admin')!.tooltip_title!) : undefined}
+                      text={$t(getColMeta('idp_is_verified')!.tooltip!)}
+                      priority={getColMeta('idp_is_verified')?.tooltip_priority}
+                      title={getColMeta('idp_is_verified')?.tooltip_title ? $t(getColMeta('idp_is_verified')!.tooltip_title!) : undefined}
                     />
                   {/if}
                 </label>
               </div>
 
               <div class="flex items-center space-x-2">
-                <Checkbox checked={user?.is_active === true} disabled id="is-active" />
-                <label for="is-active" class="text-sm font-medium">{$t('system.settings.users.update.is_active')}</label>
-              </div>
-
-              <div class="flex items-center space-x-2">
-                <Checkbox checked={user?.is_verified === true} disabled id="is-verified" />
-                <label for="is-verified" class="inline-flex items-center gap-1 text-sm font-medium">{$t('system.settings.users.update.is_verified')}
-                  {#if getColMeta('is_verified')?.tooltip && getColMeta('is_verified')?.show_form_tooltip !== false}
+                <Checkbox checked={user?.idp_email_verified === true} disabled id="idp-email-verified" />
+                <label for="idp-email-verified" class="inline-flex items-center gap-1 text-sm font-medium">{$t('system.settings.users.update.email_verified')}
+                  {#if getColMeta('idp_email_verified')?.tooltip && getColMeta('idp_email_verified')?.show_form_tooltip !== false}
                     <FormLabelWithPriorityHelp
-                      text={$t(getColMeta('is_verified')!.tooltip!)}
-                      priority={getColMeta('is_verified')?.tooltip_priority}
-                      title={getColMeta('is_verified')?.tooltip_title ? $t(getColMeta('is_verified')!.tooltip_title!) : undefined}
+                      text={$t(getColMeta('idp_email_verified')!.tooltip!)}
+                      priority={getColMeta('idp_email_verified')?.tooltip_priority}
+                      title={getColMeta('idp_email_verified')?.tooltip_title ? $t(getColMeta('idp_email_verified')!.tooltip_title!) : undefined}
                     />
                   {/if}
                 </label>
               </div>
 
-              <div class="flex items-center space-x-2">
-                <Checkbox checked={user?.email_verified === true} disabled id="email-verified" />
-                <label for="email-verified" class="inline-flex items-center gap-1 text-sm font-medium">{$t('system.settings.users.update.email_verified')}
-                  {#if getColMeta('email_verified')?.tooltip && getColMeta('email_verified')?.show_form_tooltip !== false}
-                    <FormLabelWithPriorityHelp
-                      text={$t(getColMeta('email_verified')!.tooltip!)}
-                      priority={getColMeta('email_verified')?.tooltip_priority}
-                      title={getColMeta('email_verified')?.tooltip_title ? $t(getColMeta('email_verified')!.tooltip_title!) : undefined}
-                    />
-                  {/if}
-                </label>
-              </div>
+              <!-- Auth-method enforcer — admin can re-arm it on legacy users. -->
+              <FormField form={superFormObj} name="auth_method_enforcer_dismissed">
+                <FormControl>
+                  {#snippet children({ props })}
+                    <div class="flex items-center space-x-2">
+                      <Checkbox {...props} bind:checked={$form.auth_method_enforcer_dismissed} id="auth_method_enforcer_dismissed" />
+                      <label for="auth_method_enforcer_dismissed" class="text-sm font-medium">{$t('system.settings.users.update.auth_method_enforcer_dismissed')}</label>
+                    </div>
+                  {/snippet}
+                </FormControl>
+              </FormField>
+
+              {#if user?.suspended_at}
+                <div class="flex items-center space-x-2">
+                  <Checkbox checked disabled id="suspended" />
+                  <label for="suspended" class="text-sm font-medium">{$t('system.entities.user_profile.fields.suspended')}</label>
+                </div>
+              {/if}
             </div>
           </div>
         </form>

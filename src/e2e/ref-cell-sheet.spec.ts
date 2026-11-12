@@ -19,6 +19,11 @@ import { loginAsTestAdmin } from "./helpers/admin-login";
  *     the sheet shows the honest not-found state
  *   - null refs have NO affordances
  *   - table and card views share the renderer
+ *   - sheet chrome: uid is a BADGE on top, `column.audited` fields sit in
+ *     a bottom audit section (divider + TableCell value formatting — no
+ *     form widgets by construction), `version` is a footer badge that
+ *     opens `entity.versionHistory` STACKED (record slides left, history
+ *     right; closing history slides the record back)
  *   - every test fails on any pageerror or 5xx entity API response
  *
  * Surface: /crm/customers — real entity list. Row/actor resolution is
@@ -142,6 +147,76 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
     await expect(sheet.locator("input, textarea").first()).toBeVisible();
   });
 
+  test("sheet chrome — uid badge top, audit section bottom, labels resolved (no raw keys)", async ({
+    page,
+  }) => {
+    const i = resolvedIndex();
+    test.skip(i < 0, "no row with a resolved actor on this page");
+    await page.getByTestId("ref-cell-created_by-text").nth(i).click();
+
+    const sheet = page.getByTestId("entity-record-sheet");
+    await expect(sheet).toBeVisible({ timeout: 15000 });
+    await expect(sheet).not.toContainText("Record not found", { timeout: 15000 });
+
+    // uid → badge at the very top of the record surface (mono text, the
+    // uuid itself), never a form field.
+    const badge = page.getByTestId("entity-record-sheet-uid-badge");
+    await expect(badge).toBeVisible();
+    await expect(badge).toHaveAttribute("title", UUID_RE);
+    await expect(sheet.locator("input#record-sheet-field-uuid")).toHaveCount(0);
+
+    // No raw i18n keys anywhere — every label resolved through the dict.
+    await expect(sheet).not.toContainText(/system\.entities\./);
+    await expect(sheet).not.toContainText(/\.fields\./);
+    // The newly-declared internal flags render with translated labels.
+    await expect(sheet).toContainText("Onboarding Completed");
+    await expect(sheet).toContainText("Auth Method Enforcer Dismissed");
+
+    // Audit section: last block, divider above, labels translated,
+    // values rendered as TableCell formatting — ZERO form controls by
+    // construction (EntityFormField throws on audited columns).
+    const audit = sheet.getByTestId("entity-record-sheet-audit-section");
+    await expect(audit).toBeVisible();
+    await expect(audit).toContainText("Created");
+    await expect(
+      audit.locator("input, textarea, select, [role='switch'], [role='combobox']"),
+    ).toHaveCount(0);
+    // It is the LAST section — nothing meaningful follows it.
+    await expect(audit.locator("xpath=following-sibling::*[not(self::script)]")).toHaveCount(0);
+  });
+
+  test("version badge opens entity.versionHistory stacked — record slides left, close restores it", async ({
+    page,
+  }) => {
+    const i = resolvedIndex();
+    test.skip(i < 0, "no row with a resolved actor on this page");
+    await page.getByTestId("ref-cell-created_by-text").nth(i).click();
+
+    const sheet = page.getByTestId("entity-record-sheet");
+    await expect(sheet).toBeVisible({ timeout: 15000 });
+    await expect(sheet).not.toContainText("Record not found", { timeout: 15000 });
+
+    const badge = page.getByTestId("entity-record-sheet-version-badge");
+    await expect(badge).toBeVisible();
+    await badge.click();
+
+    // Two panes: the record sheet slides left, version history takes the
+    // right slot.
+    const secondary = page.getByTestId("sheet-secondary-pane");
+    const primary = page.getByTestId("sheet-primary-pane");
+    await expect(secondary).toBeVisible({ timeout: 15000 });
+    await expect(primary).toBeVisible();
+    await expect(secondary.getByTestId("entity-record-sheet")).toBeVisible();
+    await expect(primary.getByTestId("entity-record-sheet")).toHaveCount(0);
+
+    // Closing the right pane restores the record sheet to a single pane —
+    // the stack pops, nothing is lost. Escape is the canonical close path
+    // (Sheet.Close → dialog onOpenChange(false) → pop).
+    await page.keyboard.press("Escape");
+    await expect(secondary).toHaveCount(0, { timeout: 15000 });
+    await expect(page.getByTestId("entity-record-sheet")).toBeVisible();
+  });
+
   test("sheet uses the shared form builder — avatar_color renders the ColorSelector, not a text input", async ({
     page,
   }) => {
@@ -214,6 +289,121 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
     await newTab.waitForLoadState("domcontentloaded");
     expect(newTab.url()).toContain("filters%5B0%5D%5Bfield%5D=uuid");
     await newTab.close();
+  });
+
+  test("pencil CTA is meta.actions-gated — toggles the same widgets into edit mode", async ({
+    page,
+  }) => {
+    const i = resolvedIndex();
+    test.skip(i < 0, "no row with a resolved actor on this page");
+    await page.getByTestId("ref-cell-created_by-text").nth(i).click();
+
+    const sheet = page.getByTestId("entity-record-sheet");
+    await expect(sheet).toBeVisible({ timeout: 15000 });
+    await expect(sheet).not.toContainText("Record not found", { timeout: 15000 });
+
+    // The pencil exists iff meta.actions allows update.single — the e2e
+    // admin holds all permissions, so it MUST be here.
+    const pencil = page.getByTestId("entity-record-sheet-edit-toggle");
+    await expect(pencil).toBeVisible();
+    await expect(pencil).toHaveAttribute("aria-pressed", "false");
+
+    // Readonly baseline: text controls carry the readonly attribute.
+    const avatarField = sheet.locator("#record-sheet-field-display_name");
+    await expect(avatarField).toBeVisible();
+    await expect(avatarField).not.toBeEditable();
+
+    await pencil.click();
+    await expect(pencil).toHaveAttribute("aria-pressed", "true");
+    // SAME widgets, now editable — nothing swapped, nothing duplicated.
+    await expect(avatarField).toBeEditable();
+    const save = page.getByTestId("entity-record-sheet-save");
+    const cancel = page.getByTestId("entity-record-sheet-cancel");
+    await expect(save).toBeVisible();
+    await expect(cancel).toBeVisible();
+
+    // Cancel discards the draft and returns to readonly.
+    const original = await avatarField.inputValue();
+    await avatarField.fill("E2E-DIRTY");
+    await cancel.click();
+    await expect(avatarField).not.toBeEditable();
+    await expect(avatarField).toHaveValue(original);
+    await expect(save).toHaveCount(0);
+  });
+
+  test("pencil save dispatches PUT to the declared endpoint with entity+version envelope", async ({
+    page,
+  }) => {
+    const i = resolvedIndex();
+    test.skip(i < 0, "no row with a resolved actor on this page");
+    await page.getByTestId("ref-cell-created_by-text").nth(i).click();
+
+    const sheet = page.getByTestId("entity-record-sheet");
+    await expect(sheet).toBeVisible({ timeout: 15000 });
+    await expect(sheet).not.toContainText("Record not found", { timeout: 15000 });
+
+    const putBodies: { url: string; body: { entity?: Record<string, unknown> } }[] = [];
+    page.on("request", (req) => {
+      if (req.method() === "PUT") {
+        try {
+          putBodies.push({ url: req.url(), body: req.postDataJSON() });
+        } catch {
+          putBodies.push({ url: req.url(), body: {} });
+        }
+      }
+    });
+
+    const pencil = page.getByTestId("entity-record-sheet-edit-toggle");
+    await expect(pencil).toBeVisible();
+    await pencil.click();
+
+    const field = sheet.locator("#record-sheet-field-display_name");
+    const original = await field.inputValue();
+    await field.fill("E2E");
+    await page.getByTestId("entity-record-sheet-save").click();
+
+    // Canonical write contract: PUT to the update.single endpoint carrying
+    // { entity: { ...surface fields, version } } — uid/audit never cross.
+    await expect.poll(() => putBodies.length, { timeout: 15000 }).toBe(1);
+    const sent = putBodies[0];
+    expect(sent.url).toContain("/api/v1/");
+    expect(sent.body.entity).toBeTruthy();
+    expect(sent.body.entity!.display_name).toBe("E2E");
+    expect(sent.body.entity!.version).not.toBeUndefined();
+    expect(sent.body.entity!.uuid).toBeUndefined();
+    expect(sent.body.entity!.created_by).toBeUndefined();
+
+    // After save the sheet re-GETs and returns to readonly.
+    await expect(field).not.toBeEditable({ timeout: 15000 });
+    await expect(page.getByTestId("entity-record-sheet-save")).toHaveCount(0);
+
+    // Restore the original value — leave dev data as found.
+    await pencil.click();
+    await expect(field).toBeEditable();
+    await field.fill(original);
+    await page.getByTestId("entity-record-sheet-save").click();
+    await expect.poll(() => putBodies.length, { timeout: 15000 }).toBe(2);
+    await expect(field).not.toBeEditable({ timeout: 15000 });
+  });
+
+  test("sheet header icon is the authored entity icon (users), not a placeholder", async ({
+    page,
+  }) => {
+    const i = resolvedIndex();
+    test.skip(i < 0, "no row with a resolved actor on this page");
+    await page.getByTestId("ref-cell-created_by-text").nth(i).click();
+
+    const sheet = page.getByTestId("entity-record-sheet");
+    await expect(sheet).toBeVisible({ timeout: 15000 });
+    await expect(sheet).not.toContainText("Record not found", { timeout: 15000 });
+
+    // user_profile's list route leaf declares icon "users" — the sheet
+    // must render THAT, never the generic fallback.
+    // user_profile's list route leaf declares icon "users" — the sheet
+    // must render THAT, never the generic fallback.
+    const host = page.getByRole("dialog");
+    await expect(host.locator("[data-icon-name='users']")).toBeVisible();
+    await expect(host.locator("[data-icon-name='id-card']")).toHaveCount(0);
   });
 
   test("null ref (deleted_by) renders no affordances", async ({ page }) => {

@@ -49,12 +49,12 @@
       {$t(labelKey)}
     </label>
   {/if}
-  <div class="mt-2">
+  <div class={labelKey ? "mt-2" : undefined}>
     <Popover.Root>
       <Popover.Trigger>
         {#snippet child({ props })}
-          <Button {...props} variant="outline" id={triggerId} {disabled}>
-            <div class="flex items-center gap-4">
+          <Button {...props} variant="outline" id={triggerId} {disabled} class="w-full justify-start">
+            <div class="flex w-full items-center gap-4">
               <div
                 class="w-5 h-5 rounded-full border shadow-sm"
                 style="background-color: {value || fallbackColor};"
