@@ -32,6 +32,7 @@
     config_type,
     config_key = '',
     current_json = '',
+    pending_owner,
     on_apply_json,
   }: {
     /** The config row's type — scopes topics and the prompt to applicable config. */
@@ -42,6 +43,9 @@
     /** Current type_config JSON — string or live getter (getter survives
      *  applies: the builder mutates while the sheet stays open). */
     current_json?: string | (() => string);
+    /** Pending-translation queue owner — accepted previews flush with the
+     *  host page's save, never standalone. */
+    pending_owner: string;
     /** Called with the COMPACT json when the user applies a candidate. */
     on_apply_json: (json: string) => void;
   } = $props();
@@ -157,7 +161,11 @@
    */
   function handleAcceptTranslations(path: string, key: string, translations: Record<string, string>) {
     if (!created) return;
-    addPendingTranslation(key, translations);
+    addPendingTranslation(
+      pending_owner,
+      key,
+      Object.fromEntries(Object.entries(translations).map(([lang, value]) => [lang, { value }])),
+    );
     proposeKeyMerge(path, key);
   }
 

@@ -22,21 +22,33 @@ export interface ActiveRole {
   is_admin?: boolean;
 }
 
-export function useActiveRoles() {
-  const _state = $state({ roles: [] as ActiveRole[], loading: true });
+export function useActiveRoles(options?: {
+  /** Lazy gate — the fetch fires only once the getter first reports true
+   *  (dispatcher instances for non-roles columns never hit the endpoint).
+   *  Default: always enabled (the pages' original fetch-on-mount). */
+  enabled?: () => boolean;
+}) {
+  const _state = $state({ roles: [] as ActiveRole[], loading: false });
+  const enabled = options?.enabled ?? (() => true);
 
-  onMount(async () => {
-    try {
-      const res = await apiFetch("/api/v1/system/roles/active");
-      if (res.ok) {
-        const data = await res.json();
-        _state.roles = (data.roles ?? []) as ActiveRole[];
+  let fetched = false;
+  $effect(() => {
+    if (!enabled() || fetched) return;
+    fetched = true;
+    _state.loading = true;
+    void (async () => {
+      try {
+        const res = await apiFetch("/api/v1/system/roles/active");
+        if (res.ok) {
+          const data = await res.json();
+          _state.roles = (data.roles ?? []) as ActiveRole[];
+        }
+      } catch (e) {
+        console.error("Failed to load roles", e);
+      } finally {
+        _state.loading = false;
       }
-    } catch (e) {
-      console.error("Failed to load roles", e);
-    } finally {
-      _state.loading = false;
-    }
+    })();
   });
 
   const roleNames = $derived(_state.roles.map((r) => r.idp_role));

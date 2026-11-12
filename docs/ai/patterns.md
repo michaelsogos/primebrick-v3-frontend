@@ -6,7 +6,11 @@
 
 In-app routes under the shell should **fill the main content area** (full width, no `mx-auto` / `max-w-*` unless a specific form needs it).
 
-Use **`AppPageScaffold`** from `$lib/components/AppPageScaffold.svelte`: outer padding `p-2 sm:p-3`, column `gap-4`, `min-h-0` so flex children (tables, cards) can use remaining height. Put breadcrumb + `h1` (and optional toolbar) in `{#snippet header()}`; put the main block (e.g. entity list table) as default children.
+**The page wrapper is ambient — `AppShell` owns it.** Every `(app)` route renders inside `AppPageScaffold` (outer gap `p-2 sm:p-3`, the rounded bordered content box, `min-h-0` flex column) that the shell mounts once, below `PageHeader`. Pages — host archetypes (`EntityTablePage`, dict, forms) and remote `mountPage` chunks alike — render **content only**:
+
+- **Never self-wrap**: no outer `p-*` padding, no `rounded-md border` box — that surface already exists around the page (a second one shows as double borders; the `page-scaffold-ownership` check-standards rule rejects `<AppPageScaffold` outside the shell).
+- **Keep `min-h-0` discipline**: the page root is a flex child of the scaffold column — `h-full`/`min-h-0`/`overflow-auto` belong on the page's inner blocks, never on a new outer box.
+- `chrome:"remote"` on a route decl suppresses the `PageHeader` only — the body scaffold is unconditional; remote chunks must neither know about nor draw it.
 
 ## UI architecture (Shadcn-Svelte™)
 
@@ -83,7 +87,7 @@ edit/create page, etc.). Two layouts are allowed:
 
 2. **Mixed content (UN PO' FORM + UN PO' ALTRO)** — the page mixes a form with
    other content (in-card lists, info boxes, multiple cards).
-   - Use `AppPageScaffold` (NOT `FormPageLayout`) — no single footer primary.
+   - The ambient `AppPageScaffold` owns the frame (NOT `FormPageLayout`) — no single footer primary.
    - **No primary button in the page footer.**
    - Each card that needs an action puts its own **DEFAULT primary button
      in `CardFooter`** (`variant="default"`, default `tone="primary"`).
@@ -281,6 +285,44 @@ table/cards/cards-list.
   through `RemotePageMount` instead — `system/job/job-schedules/create`
   and `system/job/rules/create` are the standing examples.
 - Rule of record: `.devin/rules/entity-list-pages.md`.
+
+#### List-item audit line (canonical anatomy + keys)
+
+The LINE-3 audit of a list item is a **sentence**, not field labels —
+`ConfigListRow` is the reference:
+
+```
+v{N}  Last updated {when} by {who}
+       ^text-primary  ^italic muted  ^text-primary  ^italic muted
+```
+
+- Keys: `app.common.lastUpdatedPrefix` (`"Last updated"`) +
+  `app.common.lastUpdatedByMid` (`"by"`) — moved out of
+  `system.settings.configurations.*` (they are audit vocabulary, not
+  settings-page vocabulary).
+- Connectors render `text-primary`; values render
+  `italic text-muted-foreground`.
+- `who` only ever rides with `when` — `{#if updatedAt && updatedByName}`
+  sentence, `{:else if updatedAt}` date-only; never a lone "by".
+- Never `system.common.fields.updated_at`/`updated_by` pairs — those are
+  FIELD labels; the audit line is not a form.
+
+#### Dict-row optional data (icon / desc / tooltip) — wire contract
+
+Row optionals are **row data**, never meta — the meta only *detects*
+columns via `columns_map`; the list wire already carries physical fields.
+
+| Attr | Source |
+|---|---|
+| `icon` | physical `icon` column (raw lucide name, per-entity opt-in) |
+| `desc` | derived `<label_key>.description` — seeded composition convention; explicit `description`/`description_key` column wins (non-keyed dicts) |
+| `tooltip` | derived `<label_key>.tooltip`; explicit `tooltip`/`tooltip_key` column wins |
+
+Presence = the derived key resolves (`$t(k) !== k`). **Absent data →
+absent element** — no invented fallback icon/desc/tooltip (lint:
+`icon-no-fallback`). The desc never feeds the tooltip icon — it already
+owns LINE 2. Derivation uses the live `values[display_field]`, so
+re-pointing `label_key` to `custom.*` keeps derived keys inside `custom.*`.
 
 Reusable abstractions should be **app components** composing primitives,
 not forks of primitives.

@@ -21,6 +21,7 @@
 import { test, expect } from "@playwright/test";
 import { loginAsTestAdmin } from "./helpers/admin-login";
 import { getPool } from "./helpers/db";
+import { e2eUuidV7 } from "./helpers/uuid";
 
 const BASE = "/api/v1/entities";
 // customer is crm-service-owned — reachable only through the /svc/<service>
@@ -59,7 +60,7 @@ test.describe("entity CRUD over the wire", () => {
 
     // ── create → 201 + entity (version present) ──────────────────────────
     const createRes = await api.post(`${CRM_BASE}/customer`, {
-      data: { entity: { code: CUSTOMER_CODE, first_name: "E2E Lifecycle", status: "ACTIVE" } },
+      data: { entity: { code: CUSTOMER_CODE, display_name: "E2E Lifecycle", status: "ACTIVE" } },
     });
     expect(createRes.status()).toBe(201);
     const created = await createRes.json();
@@ -90,7 +91,7 @@ test.describe("entity CRUD over the wire", () => {
 
     // ── update → 200 entity, version bumped ──────────────────────────────
     const putRes = await api.put(`${CRM_BASE}/customer/${uuid}`, {
-      data: { entity: { first_name: "E2E Lifecycle Updated", version } },
+      data: { entity: { display_name: "E2E Lifecycle Updated", version } },
     });
     expect(putRes.status()).toBe(200);
     const updated = await putRes.json();
@@ -162,7 +163,7 @@ test.describe("entity CRUD over the wire", () => {
   test("role_mapping: hard-delete contract without touching any row", async ({ page }) => {
     await loginAsTestAdmin(page);
     const api = page.request;
-    const rand = crypto.randomUUID();
+    const rand = e2eUuidV7();
 
     // soft DELETE route does not exist → 404 for any uuid
     const soft = await api.delete(`${BASE}/role_mapping/${rand}?version=1`);
@@ -212,7 +213,7 @@ test.describe("entity CRUD over the wire", () => {
     expect(res.headers()["content-type"]).toContain("text/csv");
     expect(res.headers()["content-disposition"]).toMatch(/attachment; filename="customer-export-.*\.csv"/);
     const csv = await res.text();
-    // the template ships 3 column cells (uuid/code/first_name) — the header
+    // the template ships 3 column cells (uuid/code/display_name) — the header
     // row is the line whose labels come from `system.entities.customer.fields.*`
     // via the translations service.
     const headerLine = csv.split("\n").find((l) => l.includes("UUID"));

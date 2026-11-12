@@ -88,4 +88,26 @@ describe('sheet-manager engine', () => {
     await Promise.resolve();
     expect(sheetState.panelId).toBeNull();
   });
+
+  it('stack: a second stack open keeps the ORIGINAL left pane — re-clicking the badge never loses the record slot', () => {
+    openSheet('entity.record', { entity: 'user_profile', value: 'u1' });
+    openSheet('entity.versionHistory', { entity: 'user_profile', rowUuid: 'u1' }, { stack: true });
+    expect(sheetState.secondary?.panelId).toBe('entity.record');
+    expect(sheetState.panelId).toBe('entity.versionHistory');
+    // The bug: re-opening stacked used to swap the CURRENT right pane
+    // (versionHistory) into the left slot — the record was lost.
+    openSheet('entity.versionHistory', { entity: 'user_profile', rowUuid: 'u1' }, { stack: true });
+    expect(sheetState.secondary?.panelId).toBe('entity.record');
+    expect(sheetState.panelId).toBe('entity.versionHistory');
+  });
+
+  it('stack: closeSheet pops the right pane and restores the left', () => {
+    openSheet('entity.record', { entity: 'user_profile', value: 'u1' });
+    openSheet('entity.versionHistory', { entity: 'user_profile', rowUuid: 'u1' }, { stack: true });
+    closeSheet();
+    expect(sheetState.open).toBe(true);
+    expect(sheetState.secondary).toBeNull();
+    expect(sheetState.panelId).toBe('entity.record');
+    sheetState.secondary = null;
+  });
 });

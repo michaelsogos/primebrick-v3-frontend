@@ -5,19 +5,10 @@
   import { CircleX } from '@primebrick/ui/vendor/lucide'
   import { Hourglass } from '@primebrick/ui/vendor/lucide'
   import { TriangleAlert } from '@primebrick/ui/vendor/lucide';
-  import { Checkbox, checkboxInteractiveClass } from '@primebrick/ui';
-  import { Button } from '@primebrick/ui';
-  import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-  import { dropdownMenuSelectedItemClass } from '$lib/components/ui/dropdown-menu/dropdown-menu-item-selected';
-  import { Switch } from '@primebrick/ui';
   import { cn } from '$lib/utils.js';
   import CardItem from './CardItem.svelte';
-  import type { MetaColumn, RowCustomAction, SortDir } from '$lib/entity-list/types';
+  import type { MetaColumn, RowCustomAction } from '$lib/entity-list/types';
   import type { EntityRowActions } from '../types';
-  import { ArrowUpNarrowWide } from '@primebrick/ui/vendor/lucide'
-  import { ArrowDownWideNarrow } from '@primebrick/ui/vendor/lucide'
-  import { Globe } from '@primebrick/ui/vendor/lucide'
-  import { MapPin } from '@primebrick/ui/vendor/lucide';
 
   let {
     viewMode,
@@ -46,16 +37,6 @@
     showSelectedOnly,
     selectionCount,
     orderedSelectedRows,
-    allOnPageSelected,
-    headerIndeterminate,
-    toggleAllOnPage,
-    allColumns,
-    effectiveSortKey,
-    sortDir,
-    onSortChange,
-    sortableColumns,
-    datetimeIanaToggleColumns,
-    toggleDatetimeIana,
     onEntityRowClick,
     onToggleRowSelect,
     onOpenRowDropdown,
@@ -95,16 +76,6 @@
     showSelectedOnly: boolean;
     selectionCount: number;
     orderedSelectedRows: TRow[];
-    allOnPageSelected: boolean;
-    headerIndeterminate: boolean;
-    toggleAllOnPage: () => void;
-    allColumns: MetaColumn[];
-    effectiveSortKey: string | null;
-    sortDir: SortDir;
-    onSortChange: (key: string | null, dir: SortDir) => void;
-    sortableColumns: MetaColumn[];
-    datetimeIanaToggleColumns: MetaColumn[];
-    toggleDatetimeIana: (col: MetaColumn) => void;
     onEntityRowClick: (key: string, e: MouseEvent) => void;
     onToggleRowSelect: (key: string) => void;
     onOpenRowDropdown: (row: TRow) => void;
@@ -175,118 +146,14 @@
         </div>
         <div class="text-sm font-medium text-muted-foreground">
           {#if showSelectedOnly && selectionCount > 0 && orderedSelectedRows.length === 0}
-            {$t('system.entities.list.selectedRowsNotLoadedHint')}
+            {$t('system.entities.list.selected_rows_not_loaded_hint')}
           {:else}
-            {$t('system.entities.list.noSelectedRowsInView')}
+            {$t('system.entities.list.no_selected_rows_in_view')}
           {/if}
         </div>
       </div>
     </div>
   {:else}
-    <div
-      class="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3 border-b bg-background/90 px-3 py-2 backdrop-blur-sm supports-backdrop-filter:bg-background/70"
-    >
-      <div class="flex flex-wrap items-center gap-2">
-        {#if rowSelectionEnabled}
-          <Checkbox
-            id="select-all-card-header"
-            class={checkboxInteractiveClass}
-            checked={allOnPageSelected}
-            indeterminate={headerIndeterminate}
-            onCheckedChange={() => toggleAllOnPage()}
-            aria-label={$t('system.entities.list.selectAll')}
-          />
-          <span class="text-xs font-medium text-muted-foreground">
-            {allOnPageSelected ? $t('system.entities.list.deselectAll') : $t('system.entities.list.selectAll')}
-          </span>
-        {/if}
-
-        <div class="mx-1 h-6 w-px divider-primary-gradient" aria-hidden="true"></div>
-
-        <span class="text-xs font-medium text-muted-foreground">{$t('system.entities.list.sortBy')}</span>
-        <DropdownMenu.Root>
-          <DropdownMenu.Trigger>
-            {#snippet child({ props })}
-              <Button variant="ghost" size="xs" {...props} class="max-w-[220px] truncate">
-                {$t(allColumns.find((c) => c.key === effectiveSortKey)?.label_key ?? '')}
-              </Button>
-            {/snippet}
-          </DropdownMenu.Trigger>
-          <DropdownMenu.Content align="start">
-            {#each sortableColumns as col (col.key)}
-              <DropdownMenu.Item
-                class={dropdownMenuSelectedItemClass(effectiveSortKey === col.key)}
-                onSelect={() => onSortChange(col.key, effectiveSortKey === col.key ? sortDir : 'asc')}
-              >
-                {$t(col.label_key)}
-              </DropdownMenu.Item>
-            {/each}
-          </DropdownMenu.Content>
-        </DropdownMenu.Root>
-
-        <span class="ml-1 text-xs font-medium text-muted-foreground">{$t('system.entities.list.inOrder')}</span>
-        <DropdownMenu.Root>
-          <DropdownMenu.Trigger>
-            {#snippet child({ props })}
-              <Button variant="ghost" size="xs" {...props} disabled={!effectiveSortKey}>
-                {#if sortDir === 'asc'}
-                  <ArrowUpNarrowWide class="size-4" />
-                {:else}
-                  <ArrowDownWideNarrow class="size-4" />
-                {/if}
-              </Button>
-            {/snippet}
-          </DropdownMenu.Trigger>
-          <DropdownMenu.Content align="start">
-            <DropdownMenu.Item
-              class={dropdownMenuSelectedItemClass(sortDir === 'asc')}
-              onSelect={() => effectiveSortKey && onSortChange(effectiveSortKey, 'asc')}
-            >
-              <span class="inline-flex items-center gap-2">
-                <ArrowUpNarrowWide class="size-4" />
-                {$t('system.entities.list.ascending')}
-              </span>
-            </DropdownMenu.Item>
-            <DropdownMenu.Item
-              class={dropdownMenuSelectedItemClass(sortDir === 'desc')}
-              onSelect={() => effectiveSortKey && onSortChange(effectiveSortKey, 'desc')}
-            >
-              <span class="inline-flex items-center gap-2">
-                <ArrowDownWideNarrow class="size-4" />
-                {$t('system.entities.list.descending')}
-              </span>
-            </DropdownMenu.Item>
-          </DropdownMenu.Content>
-        </DropdownMenu.Root>
-
-        {#each datetimeIanaToggleColumns as col (col.key)}
-          <div class="mx-1 h-6 w-px divider-primary-gradient" aria-hidden="true"></div>
-          <div class="flex items-center gap-2">
-            <span class="text-xs font-medium text-muted-foreground">{$t(col.label_key)}</span>
-            <Switch
-              checked={(datetimeIanaModeByKey[col.key] ?? 'browser') === 'record'}
-              disabled={rowsLoading}
-              aria-label={(datetimeIanaModeByKey[col.key] ?? 'browser') === 'browser'
-                ? $t('system.entities.list.datetimeIana.hintBrowser')
-                : $t('system.entities.list.datetimeIana.hintRecord')}
-              title={(datetimeIanaModeByKey[col.key] ?? 'browser') === 'browser'
-                ? $t('system.entities.list.datetimeIana.hintBrowser')
-                : $t('system.entities.list.datetimeIana.hintRecord')}
-              onCheckedChange={() => toggleDatetimeIana(col)}
-            >
-              {#snippet thumbIcons({ checked })}
-                {#if checked}
-                  <MapPin class="size-3.5 opacity-95" />
-                {:else}
-                  <Globe class="size-3.5 opacity-95" />
-                {/if}
-              {/snippet}
-            </Switch>
-          </div>
-        {/each}
-      </div>
-    </div>
-
     <div class="p-3">
       <div
         class={cn(

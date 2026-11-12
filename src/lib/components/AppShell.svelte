@@ -6,6 +6,7 @@
   import AppSidebar from '$lib/components/AppSidebar.svelte';
   import AppServerBanner from '$lib/components/AppServerBanner.svelte';
   import PageHeader from '$lib/components/page-header/PageHeader.svelte';
+  import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
   import { Toaster } from '$lib/components/ui/sonner';
   import SheetHost from '$lib/shell/sheets/SheetHost.svelte';
   import * as Sidebar from '$lib/components/ui/sidebar';
@@ -30,17 +31,17 @@
 
     const onUnhandledRejection = (e: PromiseRejectionEvent) => {
       const reason = e.reason;
-      const fallback = $t('app.errors.unhandledRejectionFallback');
+      const fallback = $t('app.errors.unhandled_rejection_fallback');
       const msg = reason instanceof Error ? reason.message : String(reason ?? fallback);
-      pushNotification({ impact: 'HIGH', message: msg, scope: $t('app.errors.unhandledRejection') });
+      pushNotification({ impact: 'HIGH', message: msg, scope: $t('app.errors.unhandled_rejection') });
     };
     const onWindowError = (e: ErrorEvent) => {
-      const fallback = $t('app.errors.unhandledErrorFallback');
+      const fallback = $t('app.errors.unhandled_error_fallback');
       const msg = e.error instanceof Error ? e.error.message : e.message;
       pushNotification({
         impact: 'HIGH',
         message: msg || fallback,
-        scope: $t('app.errors.unhandledError')
+        scope: $t('app.errors.unhandled_error')
       });
     };
     window.addEventListener('unhandledrejection', onUnhandledRejection);
@@ -104,8 +105,11 @@
            honored inside PageHeader itself. -->
       <PageHeader />
 
+      <!-- MANDATORY body chrome — every (app) page inherits the bordered
+           rounded container (outer gap + content box). Pages and remote
+           chunks NEVER draw it themselves: they render INSIDE it. -->
       <div class="relative z-0 min-h-0 min-w-0 flex-1 overflow-auto">
-        {@render children()}
+        <AppPageScaffold>{@render children()}</AppPageScaffold>
       </div>
     </Sidebar.Inset>
   </Sidebar.Provider>

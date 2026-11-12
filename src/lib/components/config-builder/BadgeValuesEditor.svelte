@@ -123,7 +123,7 @@
   </Sortable.Root>
 
   {#if rows.length === 0}
-    <p class="text-xs text-muted-foreground">{$t('system.settings.config.typeConfig.noBadgeValues')}</p>
+    <p class="text-xs text-muted-foreground">{$t('system.settings.config.type_config.no_badge_values')}</p>
   {/if}
 
   <!-- ── Add CTA — opens the right sheet in add mode ── -->
@@ -136,6 +136,6 @@
     data-testid="tcb-badge-open-add"
   >
     <Plus class="h-4 w-4" />
-    {$t('system.settings.config.typeConfig.addValue')}
+    {$t('system.settings.config.type_config.add_value')}
   </Button>
 </div>

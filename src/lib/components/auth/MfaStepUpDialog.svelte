@@ -61,7 +61,7 @@
       });
       if (!resp.ok) {
         const err = await resp.json();
-        error = err.detail || $t('app.auth.mfaStepUp.stepUpInitiateError');
+        error = err.detail || $t('app.auth.mfa_step_up.step_up_initiate_error');
         return;
       }
       const data = await resp.json();
@@ -70,7 +70,7 @@
       factorId = availableFactors[0]?.factor_id ?? '';
     } catch (e) {
       console.error('[MfaStepUp] Initiate failed:', e);
-      error = $t('app.auth.mfa.connectionError');
+      error = $t('app.auth.mfa.connection_error');
     } finally {
       loading = false;
     }
@@ -78,7 +78,7 @@
 
   async function verify() {
     if (otp.code.length !== 6) {
-      error = $t('app.auth.mfa.codeRequired');
+      error = $t('app.auth.mfa.code_required');
       return;
     }
     verifying = true;
@@ -95,14 +95,14 @@
       });
       if (!resp.ok) {
         const err = await resp.json();
-        error = err.detail || $t('app.auth.mfa.invalidCode');
+        error = err.detail || $t('app.auth.mfa.invalid_code');
         otp.reset();
         return;
       }
       const data = await resp.json();
       pushNotification({
         impact: 'NONE',
-        message: $t('app.auth.mfaStepUp.stepUpAuthorized'),
+        message: $t('app.auth.mfa_step_up.step_up_authorized'),
         scope: 'auth',
       });
       // Clear before the dialog close re-render: a complete OTP left bound
@@ -113,7 +113,7 @@
       open = false;
     } catch (e) {
       console.error('[MfaStepUp] Verify failed:', e);
-      error = $t('app.auth.mfa.connectionError');
+      error = $t('app.auth.mfa.connection_error');
     } finally {
       verifying = false;
     }
@@ -129,10 +129,10 @@
   <Dialog.Header>
       <Dialog.Title class="flex items-center gap-2">
         <ShieldCheck class="size-5 text-primary" />
-        {$t('app.auth.mfaStepUp.stepUpTitle')}
+        {$t('app.auth.mfa_step_up.step_up_title')}
       </Dialog.Title>
       <Dialog.Description>
-        {$t('app.auth.mfaStepUp.stepUpDescription')}
+        {$t('app.auth.mfa_step_up.step_up_description')}
       </Dialog.Description>
     </Dialog.Header>
 
@@ -152,19 +152,19 @@
         <div class="flex items-center gap-2 text-sm text-muted-foreground">
           <KeyRound class="size-4" />
           <span>
-            {$t('app.auth.mfaStepUp.stepUpAction')}: <strong>{action}</strong> → <strong>{target_resource}</strong>
+            {$t('app.auth.mfa_step_up.step_up_action')}: <strong>{action}</strong> → <strong>{target_resource}</strong>
           </span>
         </div>
 
         {#if availableFactors.length > 1}
           <div class="space-y-2">
-            <Label for="mfa-stepup-factor">{$t('app.auth.mfaStepUp.selectFactor')}</Label>
+            <Label for="mfa-stepup-factor">{$t('app.auth.mfa_step_up.select_factor')}</Label>
             <ComboSelect
               mode="single"
               bind:value={factorId}
               options={availableFactors.map((f) => ({
                 value: f.factor_id,
-                label: `${f.label || $t('app.auth.mfa.defaultLabel')} (${f.factor_type})`,
+                label: `${f.label || $t('app.auth.mfa.default_label')} (${f.factor_type})`,
               }))}
               valueField="value"
               labelField="label"
@@ -175,7 +175,7 @@
         {/if}
 
         <div class="space-y-2">
-          <Label for="mfa-stepup-code">{$t('app.auth.mfa.verifyCode')}</Label>
+          <Label for="mfa-stepup-code">{$t('app.auth.mfa.verify_code')}</Label>
           <OtpInput
             id="mfa-stepup-code"
             data-testid="mfa-stepup-code-input"
@@ -193,7 +193,7 @@
           {#if verifying}
             <Spinner class="size-4 mr-2" />
           {/if}
-          {$t('app.auth.mfaStepUp.verifyAndAuthorize')}
+          {$t('app.auth.mfa_step_up.verify_and_authorize')}
         </Button>
       </div>
     {/if}

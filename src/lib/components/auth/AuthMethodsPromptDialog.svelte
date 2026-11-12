@@ -117,10 +117,10 @@
   <Dialog.Header>
     <Dialog.Title class="flex items-center gap-2">
       <ShieldCheck class="size-5 text-primary" />
-      {$t('app.auth.authMethodEnforcer.title')}
+      {$t('app.auth.auth_method_enforcer.title')}
     </Dialog.Title>
     <Dialog.Description>
-      {$t('app.auth.authMethodEnforcer.description')}
+      {$t('app.auth.auth_method_enforcer.description')}
     </Dialog.Description>
   </Dialog.Header>
 
@@ -135,10 +135,10 @@
           <Choicebox.Item value="passkey">
             <Choicebox.Title class="flex items-center gap-2">
               <Fingerprint class="size-4 text-primary" />
-              {$t('app.auth.authMethodEnforcer.methodPasskey')}
+              {$t('app.auth.auth_method_enforcer.method_passkey')}
             </Choicebox.Title>
             <Choicebox.Description>
-              {$t('app.auth.authMethodEnforcer.methodPasskeyDesc')}
+              {$t('app.auth.auth_method_enforcer.method_passkey_desc')}
             </Choicebox.Description>
           </Choicebox.Item>
         {/if}
@@ -146,10 +146,10 @@
           <Choicebox.Item value="mfa">
             <Choicebox.Title class="flex items-center gap-2">
               <Smartphone class="size-4 text-primary" />
-              {$t('app.auth.authMethodEnforcer.methodMfa')}
+              {$t('app.auth.auth_method_enforcer.method_mfa')}
             </Choicebox.Title>
             <Choicebox.Description>
-              {$t('app.auth.authMethodEnforcer.methodMfaDesc')}
+              {$t('app.auth.auth_method_enforcer.method_mfa_desc')}
             </Choicebox.Description>
           </Choicebox.Item>
         {/if}
@@ -162,7 +162,7 @@
           class="text-xs text-muted-foreground hover:text-foreground underline"
           onclick={() => (selectedMethod = null)}
         >
-          ← {$t('app.auth.authMethodEnforcer.backToMethods')}
+          ← {$t('app.auth.auth_method_enforcer.back_to_methods')}
         </button>
         <PasskeyEnrollmentSection oncomplete={handleEnrollmentComplete} />
       </div>
@@ -174,7 +174,7 @@
           class="text-xs text-muted-foreground hover:text-foreground underline"
           onclick={() => (selectedMethod = null)}
         >
-          ← {$t('app.auth.authMethodEnforcer.backToMethods')}
+          ← {$t('app.auth.auth_method_enforcer.back_to_methods')}
         </button>
         <MfaEnrollmentSection oncomplete={handleEnrollmentComplete} />
       </div>
@@ -190,7 +190,7 @@
           class="data-[state=unchecked]:border-primary-gradient-popover mt-0.5"
         />
         <label for="dont_ask_again" class="text-sm font-medium leading-snug text-muted-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-          {$t('app.auth.authMethodEnforcer.dontAskAgain')}
+          {$t('app.auth.auth_method_enforcer.dont_ask_again')}
         </label>
       </div>
     {/if}
@@ -205,7 +205,7 @@
         onclick={dismissPrompt}
         disabled={dismissing}
       >
-        {$t('app.auth.authMethodEnforcer.dismissButton')}
+        {$t('app.auth.auth_method_enforcer.dismiss_button')}
       </Button>
     </Dialog.Footer>
   {/if}

@@ -36,10 +36,14 @@
   import { setAuditColumnsContext, setEntitiesNsContext, setMetaUidContext } from './context';
   import { setEntitiesNsContext as uiSetEntitiesNsContext } from '@primebrick/ui';
   import { claimDocsContext } from '$lib/shell/docs/docs-context.svelte';
+  import { shellNav } from '$lib/shell/modules-shell.svelte';
+  import { loadModuleTranslations } from '$lib/i18n/use-module-translations.svelte';
+  import { uiLang } from '$lib/i18n/store.svelte';
+  import { get } from 'svelte/store';
   import { useMfaStepUp } from '$lib/composables/useMfaStepUp.svelte';
   import MfaStepUpDialog from '$lib/components/auth/MfaStepUpDialog.svelte';
 
-  import type { EntityListTableProps } from './types';
+  import type { EntityListTableProps, ActionChrome } from './types';
 
   let {
     uid,
@@ -88,7 +92,6 @@
     onCreateAction,
     create_cta,
     onEditAction,
-    filtersOpen = $bindable(false),
     filterValues = {},
     onFilterValuesChange,
     onResetFilters,
@@ -136,6 +139,22 @@
   // Docs context: every entity list claims it so the docs panel resolves the
   // entity's user-guide doc. Cleanup releases it on unmount / entity change.
   $effect(() => claimDocsContext({ entity, mode: 'list' }));
+
+  // Census-module dictionaries — `nats_subject`/ref cells resolve subject
+  // `label_key`s (`crm.events.*` lives in the `crm` dict, not the current
+  // route's). The SAME loading the create-form combobox does
+  // (EntityFormPage:185) — single source of truth, zero drift.
+  const censusModuleIds = $derived(
+    new Set(
+      shellNav.modules
+        .filter((m) => (m.callables?.callables?.length ?? 0) > 0 || (m.events?.emits?.length ?? 0) > 0)
+        .map((m) => m.id),
+    ),
+  );
+  $effect(() => {
+    const lang = get(uiLang);
+    for (const code of censusModuleIds) void loadModuleTranslations(code, lang, { bestEffort: true });
+  });
 
   // Translation key for dynamic i18n keys (dialogs, version history).
   // Falls back to `entity` when not explicitly provided.
@@ -202,9 +221,11 @@
 
   // When the entity has no soft-delete columns, force the deletion filter to
   // 'non_deleted' so the BE never receives a deleted_records param and the
-  // toggle button group is hidden (see EntityListToolbar).
+  // toggle button group is hidden (see EntityListToolbar). The guard must wait
+  // for columns to arrive: firing while meta is still loading clobbers the
+  // composable's restored sessionStorage selection.
   $effect(() => {
-    if (!hasSoftDelete && deletionFilterMode !== 'non_deleted') {
+    if (allColumns.length > 0 && !hasSoftDelete && deletionFilterMode !== 'non_deleted') {
       deletionFilterComposable.setDeletionFilterMode('non_deleted');
     }
   });
@@ -218,6 +239,7 @@
     onSearchInKeysChange: () => onSearchInKeysChange,
     onVisibleKeysChange: () => onVisibleKeysChange,
     onResetColumnVisibility: () => onResetColumnVisibility,
+    entity: () => entity,
     filterableColumns: () => filterableColumns,
     searchableColumns: () => searchableColumns,
     nonAuditingColumns: () => nonAuditingColumns,
@@ -228,8 +250,10 @@
     onResetFilters: () => onResetFilters,
     advancedFilters: () => advancedFilters ?? null,
     onAdvancedFiltersChange: () => onAdvancedFiltersChange,
-    filtersOpen: () => filtersOpen,
-    setFiltersOpen: (open) => { filtersOpen = open; },
+    datetimeIanaToggleColumns: () => datetimeIanaToggleColumns,
+    datetimeIanaModeByKey: () => datetimeIanaModeByKey,
+    toggleDatetimeIana: () => toggleDatetimeIana,
+    datetimeIanaDisabled: () => rowsLoading
   });
   const toggleSearchKey = sheetPanels.toggleSearchKey;
   const toggleColumnKey = sheetPanels.toggleColumnKey;
@@ -328,10 +352,13 @@
     visibleKeys: () => visibleKeys
   });
 
-  // Scroll preservation
+  // Scroll preservation — sessionStorage-keyed like viewMode/deletionFilter
+  // so the horizontal position survives a full page reload too.
   useScrollPreservation({
     tableRef: () => tableRef,
-    rowsLoading: () => rowsLoading
+    rowsLoading: () => rowsLoading,
+    storageKey: () =>
+      columnOrderStorageKey ? `${columnOrderStorageKey}:scrollLeft` : `pb.entityList:${uid}:scrollLeft`
   });
 
   // Row range selection
@@ -386,6 +413,12 @@
     entity: () => entity,
     selectedKeys: () => selectedKeys,
     actions: () => entityActions,
+    uid: () => uid,
+    columns: () => columns,
+    search: () => search,
+    searchInKeys: () => searchInKeys,
+    filterValues: () => filterValues,
+    advancedFilters: () => advancedFilters,
     rowByKey: (key) => (rows as TRow[] | undefined)?.find((r) => rowKey(r) === key),
     mfaStepUp: () => stepUp,
     onSelectionChange: (keys) => {
@@ -436,6 +469,15 @@
    * contract — an op is visible iff it is enabled AND the user satisfies its
    * declared requirement. Custom CTAs come from `meta.table.row_custom_actions`.
    */
+  /** CTA chrome from `meta.actions[op]` — label/icon/color overrides
+   *  (e.g. soft-delete-as-disable → "Deactivate"). `undefined` when the op
+   *  carries no override → standard chrome applies. */
+  function opChrome(op: string): ActionChrome | undefined {
+    const action = entityActions?.find((a) => a.op === op);
+    if (!action?.label_key && !action?.icon && !action?.color && !action?.confirm_key && !action?.busy_key) return undefined;
+    return { label_key: action.label_key, icon: action.icon, color: action.color, confirm_key: action.confirm_key, busy_key: action.busy_key };
+  }
+
   const effectiveRowActions = $derived(({
     edit: opAllowed('update.single'),
     duplicate: opAllowed('duplicate.bulk'),
@@ -443,7 +485,10 @@
     delete: opAllowed('delete.single') || opAllowed('purge.single'),
     restore: opAllowed('restore.single'),
     versionHistory: opAllowed('read.audit'),
-    custom_actions: entityCustomActions?.filter((a) => hasRequiredPermission(a.required_permission))
+    custom_actions: entityCustomActions?.filter((a) => hasRequiredPermission(a.required_permission)),
+    edit_chrome: opChrome('update.single'),
+    delete_chrome: opChrome('delete.single'),
+    restore_chrome: opChrome('restore.single')
   }));
 
   /** Bulk-bar custom CTAs — declared permission gate (endpoint dispatch
@@ -482,6 +527,11 @@
     delete: opAllowed('delete.bulk'),
     restore: opAllowed('restore.bulk')
   });
+
+  /** Bulk-CTA chrome overrides (`delete.bulk`/`restore.bulk`) — same
+   *  contract as the row chrome: icon+label+color travel together. */
+  const bulkDeleteChrome = $derived(opChrome('delete.bulk'));
+  const bulkRestoreChrome = $derived(opChrome('restore.bulk'));
 
   const rowActionsComposable = useRowActions<TRow>({
     entity: () => entity,
@@ -542,14 +592,14 @@
     dropdownMenuRow: () => dropdownMenuRow,
     previewDropdownOpen: () => previewDropdownOpen,
     closeRowDropdown,
-    page: () => page,
-    pageSize: () => pageSize,
-    totalPages: () => totalPages,
-    onPageChange: () => onPageChange,
+    currentPage: () => footerPage,
+    pageCount: () => footerTotalPages,
+    goToPage: (p: number) => {
+      if (footerUsesClientPaging) clientSelectedPage = p;
+      else onPageChange(p);
+    },
+    createAction: () => effectiveOnCreateAction,
     openRowDropdown,
-    footerUsesClientPaging: () => footerUsesClientPaging,
-    clientSelectedPage: () => clientSelectedPage,
-    setClientSelectedPage: (p: number) => { clientSelectedPage = p; },
     toggleRowSelect,
     tableRef: () => tableRef
   });
@@ -586,11 +636,48 @@
   const { handleEditRow, handlePreviewRow, onEntityCardClick } = clickHandlers;
 
   const loadingText = $derived(loadingMessage ?? $t('app.common.loading'));
-  const emptyText = $derived(noRecordsMessage ?? $t('system.entities.list.noRecords'));
+  const emptyText = $derived(noRecordsMessage ?? $t('system.entities.list.no_records'));
 
   const selectionCount = $derived(selectedKeys.length);
   const selectionPastParticipleKey = $derived(
-    selectionCount === 1 ? 'system.entities.list.selectedSingular' : 'system.entities.list.selectedPlural'
+    selectionCount === 1 ? 'system.entities.list.selected_singular' : 'system.entities.list.selected_plural'
+  );
+
+  /** Card/card_list lower-bar zones (select-all | sort builder | IANA CTA) —
+   *  table view keeps its own thead chrome and passes none. */
+  const isSpecialView = $derived(viewMode !== 'table');
+  const cardSelectAllZone = $derived(
+    isSpecialView && rowSelectionEnabled
+      ? {
+          checked: allOnPageSelected,
+          indeterminate: headerIndeterminate,
+          onToggle: toggleAllOnPage,
+          test_id: 'entity-list-card-select-all'
+        }
+      : undefined
+  );
+  const cardSortZone = $derived(
+    isSpecialView && sortableColumns.length > 0
+      ? {
+          allColumns,
+          sortableColumns,
+          sortKey: effectiveSortKey,
+          sortDir,
+          onSortChange,
+          test_id: 'entity-list-card-sort'
+        }
+      : undefined
+  );
+  const cardIanaZone = $derived(
+    isSpecialView && datetimeIanaToggleColumns.length > 0
+      ? {
+          columns: datetimeIanaToggleColumns,
+          modeByKey: datetimeIanaModeByKey,
+          onToggle: toggleDatetimeIana,
+          disabled: rowsLoading,
+          test_id: 'entity-list-iana'
+        }
+      : undefined
   );
 </script>
 
@@ -616,8 +703,7 @@
     refreshDisabled={refreshDisabled}
     onRefresh={onRefresh}
     filterableColumns={filterableColumns}
-    filtersOpen={filtersOpen}
-    onFiltersOpenChange={(open) => { filtersOpen = open; }}
+    onToggleFilters={sheetPanels.toggleFiltersSheet}
     filterPresets={filterPresets}
     presetSelections={presetSelections}
     onPresetChange={onPresetChange}
@@ -648,6 +734,11 @@
     bulkCapabilities={bulkCapabilities}
     bulkCustomActions={effectiveBulkCustomActions}
     onBulkCustomAction={(a) => bulkActions.handleBulkCustomAction(a)}
+    bulkDeleteChrome={bulkDeleteChrome}
+    bulkRestoreChrome={bulkRestoreChrome}
+    selectAll={cardSelectAllZone}
+    sort={cardSortZone}
+    ianaToggle={cardIanaZone}
   />
 
   <EntityListTableContent
@@ -684,12 +775,8 @@
     allOnPageSelected={allOnPageSelected}
     headerIndeterminate={headerIndeterminate}
     toggleAllOnPage={toggleAllOnPage}
-    allColumns={allColumns}
     effectiveSortKey={effectiveSortKey}
     sortDir={sortDir}
-    onSortChange={onSortChange}
-    sortableColumns={sortableColumns}
-    datetimeIanaToggleColumns={datetimeIanaToggleColumns}
     toggleDatetimeIana={toggleDatetimeIana}
     onEntityRowClick={onEntityCardClick}
     onToggleRowSelect={toggleRowSelect}
@@ -698,7 +785,7 @@
     onEditRow={handleEditRow}
     rowActionsComposable={rowActionsComposable}
     onPreviewRow={handlePreviewRow}
-    tableRef={tableRef}
+    bind:tableRef
     tableDensityClass={tableDensityClass}
     stickyColumnsState={stickyColumnsState}
     rowChromeH={rowChromeH}
@@ -745,6 +832,7 @@
     totalPages={totalPages}
     onPageChange={onPageChange}
     onPageSizeChange={onPageSizeChange}
+    create_label_key={effectiveOnCreateAction ? (create_cta?.label_key ?? 'system.entities.list.new') : undefined}
   />
   </div>
 
@@ -758,6 +846,10 @@
     {entity}
     entities_ns={entities_ns}
     translationKey={effectiveTranslationKey}
+    deleteChrome={opChrome('delete.single')}
+    restoreChrome={opChrome('restore.single')}
+    {bulkDeleteChrome}
+    {bulkRestoreChrome}
   />
 
   <!-- Step-up MFA — row/bulk endpoint actions with a declared mfa spec on

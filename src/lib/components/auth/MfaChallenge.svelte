@@ -74,7 +74,7 @@
 
   async function handleVerify() {
     if (otp.code.length !== 6) {
-      errorMsg = $t('app.auth.login.mfa.codeRequired');
+      errorMsg = $t('app.auth.login.mfa.code_required');
       return;
     }
     submitting = true;
@@ -102,7 +102,7 @@
         if (mappedError) {
           errorMsg = $t(mappedError.key);
         } else {
-          errorMsg = errorData.detail || $t('app.auth.login.mfa.invalidCode');
+          errorMsg = errorData.detail || $t('app.auth.login.mfa.invalid_code');
         }
         otp.reset();
         return;
@@ -119,7 +119,7 @@
       onsuccess?.(data);
     } catch (error) {
       console.error('[MFA Verify Error]', error);
-      errorMsg = $t('app.auth.login.mfa.connectionError');
+      errorMsg = $t('app.auth.login.mfa.connection_error');
     } finally {
       submitting = false;
     }
@@ -134,7 +134,7 @@
     </div>
 
     {#if factor?.label}
-      <p class="text-xs text-muted-foreground">{$t('app.auth.login.mfa.factorLabel')}: {factor.label}</p>
+      <p class="text-xs text-muted-foreground">{$t('app.auth.login.mfa.factor_label')}: {factor.label}</p>
     {/if}
 
     <div class="space-y-2">

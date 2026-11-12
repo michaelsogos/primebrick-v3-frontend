@@ -24,7 +24,6 @@
 		menuSoftRowBorderBase,
 		menuSoftRowHighlightData,
 		menuSoftSubTriggerOpenData,
-		"[&_svg:not([class*='text-'])]:text-muted-foreground",
 		className
 	)}
 	{...restProps}

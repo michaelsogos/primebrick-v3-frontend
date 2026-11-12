@@ -244,8 +244,8 @@ describe("localizeTopics — same i18n keys as the builder form", () => {
   it("localizes titles from the form key map", () => {
     const topics = buildSchemaTopics(typeConfigJsonSchema as never);
     const dict: Record<string, string> = {
-      "system.settings.config.typeConfig.validationRules": "Regole di validazione",
-      "system.settings.config.typeConfig.required": "Obbligatorio",
+      "system.settings.config.type_config.validation_rules": "Regole di validazione",
+      "system.settings.config.type_config.required": "Obbligatorio",
     };
     const loc = localizeTopics(topics, null, (k) => dict[k] ?? k);
     const validation = loc.find((t) => t.key === "validation");
@@ -257,8 +257,8 @@ describe("localizeTopics — same i18n keys as the builder form", () => {
   it("min/max titles follow capabilities (length vs value)", () => {
     const topics = buildSchemaTopics(typeConfigJsonSchema as never);
     const dict: Record<string, string> = {
-      "system.settings.config.typeConfig.minLength": "Lunghezza min",
-      "system.settings.config.typeConfig.minValue": "Valore min",
+      "system.settings.config.type_config.min_length": "Lunghezza min",
+      "system.settings.config.type_config.min_value": "Valore min",
     };
     const strCaps = { validation: { min: "length" }, widget: {} } as never;
     const numCaps = { validation: { min: "value" }, widget: {} } as never;

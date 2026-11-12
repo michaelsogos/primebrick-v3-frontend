@@ -17,13 +17,13 @@
   } = $props();
 
   const modes = [
-    { key: 'table', icon: Table2, titleKey: 'system.entities.list.viewMode.table' },
-    { key: 'cards', icon: LayoutGrid, titleKey: 'system.entities.list.viewMode.cards' },
-    { key: 'cards_list', icon: LayoutList, titleKey: 'system.entities.list.viewMode.cardsList' },
+    { key: 'table', icon: Table2, titleKey: 'system.entities.list.view_mode.table' },
+    { key: 'cards', icon: LayoutGrid, titleKey: 'system.entities.list.view_mode.cards' },
+    { key: 'cards_list', icon: LayoutList, titleKey: 'system.entities.list.view_mode.cards_list' },
   ] as const;
 </script>
 
-<ButtonGroup segmented aria-label={$t('system.entities.list.viewMode.groupAria')}>
+<ButtonGroup segmented aria-label={$t('system.entities.list.view_mode.group_aria')}>
   {#each modes as mode (mode.key)}
     {@const active = viewMode === mode.key}
     <Button

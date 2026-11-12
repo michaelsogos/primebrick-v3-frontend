@@ -22,8 +22,18 @@ export type EntityWritePayload<E> = {
   translations?: PendingTranslationRow[];
 };
 
-/** One pending translation row piggybacked on an entity write. */
-export type PendingTranslationRow = { key: string; language: string; value: string };
+/**
+ * One pending translation row flushed through the dedicated translation
+ * gateway route. `uuid`+`version` present → update of an existing row
+ * (optimistic-concurrency CAS); absent → create.
+ */
+export type PendingTranslationRow = {
+  key: string;
+  language: string;
+  value: string;
+  uuid?: string;
+  version?: number;
+};
 
 export type ModuleInfo = {
   id: string;
@@ -52,6 +62,13 @@ export type ModuleInfo = {
   nav?: ModuleNavLink[];
   /** Route census declared by the module — access-filtered like `nav`. */
   routes?: ModuleRouteDecl[];
+  /**
+   * The translations module serving this module's runtime dict
+   * (`/api/v1/system/translations/<module>/<lang>`). Absent = self —
+   * the module id IS its translations module. Sibling modules are
+   * virtual: their keys live in the declaring service's schema.
+   */
+  translations_module?: string;
   /**
    * Remote sheet panels declared by the module — access-filtered like
    * `routes`. The sheet engine is host-side; each decl ships a

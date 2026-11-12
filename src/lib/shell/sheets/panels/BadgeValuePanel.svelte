@@ -18,7 +18,7 @@
    */
   import { t, dict } from '$lib/i18n';
   import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
-  import { SheetPanelLayout } from '@primebrick/ui';
+  import { SheetPanelLayout, SheetPanelFooter } from '@primebrick/ui';
   import { Button } from '@primebrick/ui';
   import { TextInput } from '@primebrick/ui';
   import { PrimeField } from '@primebrick/ui';
@@ -109,9 +109,9 @@
     const v = draftCode.trim();
     if (!v) return undefined;
     if (!BADGE_CODE_RE.test(v))
-      return $t('system.settings.config.typeConfig.badgeCodeInvalid');
+      return $t('system.settings.config.type_config.badge_code_invalid');
     if (builder.values?.[v] && v !== editingKey)
-      return $t('system.settings.config.typeConfig.badgeCodeDuplicate');
+      return $t('system.settings.config.type_config.badge_code_duplicate');
     return undefined;
   });
 
@@ -171,16 +171,16 @@
   {/snippet}
   {#snippet title()}
     {$t(mode === 'add'
-      ? 'system.settings.config.typeConfig.badgeAddTitle'
-      : 'system.settings.config.typeConfig.badgeEditTitle')}
+      ? 'system.settings.config.type_config.badge_add_title'
+      : 'system.settings.config.type_config.badge_edit_title')}
   {/snippet}
 
   <div class="flex flex-col gap-4">
     <!-- CODICE full width -->
       <PrimeField
         id="tcb-badge-sheet-code"
-        label={$t('system.settings.config.typeConfig.badgeCode')}
-        help={{ text: $t('system.settings.config.typeConfig.badgeCodeHelp'), priority: 'INFORMATION', title: $t('system.settings.config.typeConfig.badgeCode') }}
+        label={$t('system.settings.config.type_config.badge_code')}
+        help={{ text: $t('system.settings.config.type_config.badge_code_help'), priority: 'INFORMATION', title: $t('system.settings.config.type_config.badge_code') }}
         error={draftCodeError}
       >
         {#snippet control({ id })}
@@ -202,8 +202,8 @@
     <!-- COLOR full width -->
     <PrimeField
         id="tcb-badge-sheet-color"
-        label={$t('system.settings.config.typeConfig.badgeColor')}
-        help={{ text: $t('system.settings.config.typeConfig.badgeColorHelp'), priority: 'INFORMATION', title: $t('system.settings.config.typeConfig.badgeColor') }}
+        label={$t('system.settings.config.type_config.badge_color')}
+        help={{ text: $t('system.settings.config.type_config.badge_color_help'), priority: 'INFORMATION', title: $t('system.settings.config.type_config.badge_color') }}
       >
         {#snippet control({ id })}
           <Popover.Root bind:open={colorPopoverOpen}>
@@ -264,8 +264,8 @@
     <div class="min-w-0">
         <PrimeField
           id="tcb-badge-sheet-label"
-          label={$t('system.settings.config.typeConfig.badgeLabelKey')}
-          help={{ text: $t('system.settings.config.typeConfig.badgeLabelKeyHelp'), priority: 'INFORMATION', title: $t('system.settings.config.typeConfig.badgeLabelKey') }}
+          label={$t('system.settings.config.type_config.badge_label_key')}
+          help={{ text: $t('system.settings.config.type_config.badge_label_key_help'), priority: 'INFORMATION', title: $t('system.settings.config.type_config.badge_label_key') }}
         >
           {#snippet control({ id })}
             <ComboSelect
@@ -282,7 +282,7 @@
               allowCreate={true}
               defaultSearch={labelKeySearchFor(draftCode)}
               placeholder={labelKeySearchFor(draftCode)}
-              searchPlaceholder={$t('system.settings.config.typeConfig.badgeLabelKey')}
+              searchPlaceholder={$t('system.settings.config.type_config.badge_label_key')}
               display="detailed"
               truncateFrom="start"
               data-testid="tcb-badge-label"
@@ -308,30 +308,28 @@
 </SheetPanelLayout>
 
 {#snippet addFooter()}
-  <div class="p-3">
+  <SheetPanelFooter>
     <Button
       type="button"
-      class="w-full"
       onclick={addRow}
       disabled={!draftCode.trim() || !!draftCodeError}
       data-testid="tcb-badge-add"
     >
       <Plus class="h-4 w-4" />
-      {$t('system.settings.config.typeConfig.addValue')}
+      {$t('system.settings.config.type_config.add_value')}
     </Button>
-  </div>
+  </SheetPanelFooter>
 {/snippet}
 
 {#snippet saveFooter()}
-  <div class="p-3">
+  <SheetPanelFooter>
     <Button
       type="button"
-      class="w-full"
       onclick={saveEdit}
       disabled={!draftCode.trim() || !!draftCodeError}
       data-testid="tcb-badge-save"
     >
       {$t('app.common.save')}
     </Button>
-  </div>
+  </SheetPanelFooter>
 {/snippet}

@@ -55,6 +55,10 @@ export default defineConfig(({ mode }) => {
 			exclude: ['@primebrick/ui', '@primebrick/core']
 		},
 		server: {
+			// Bind IPv4 loopback only — the default 'localhost' resolves to ::1
+			// on Windows, which put the dev server on an IPv6-only socket that
+			// curl/127.0.0.1 probes (and some tooling) could not reach.
+			host: '127.0.0.1',
 			fs: {
 				allow: [
 					// Allow Vite to serve files from the workspace root (pnpm hoists

@@ -84,7 +84,7 @@
     rowSelected
       ? 'bg-neutral-50 ring-1 ring-primary/40 dark:bg-neutral-700 dark:ring-primary/35'
       : undefined,
-    rowFocused ? 'border-2 border-primary ring-2 ring-primary/20' : ''
+    rowFocused ? 'border-primary-gradient' : ''
   )}
   onclick={(e) => {
     if (!rowSelectionEnabled) return;

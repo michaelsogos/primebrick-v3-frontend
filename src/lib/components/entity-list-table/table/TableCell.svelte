@@ -1,10 +1,12 @@
 <script lang="ts" generics="TRow extends Record<string, unknown>">
   import { resolve } from '$app/paths';
   import { routesCensusFromModules } from '$lib/api';
-  import { entityRefHref, reverseRefHref } from '$lib/entity-list/entity-links';
+  import { entityRefHref, reverseRefHref, subjectDecl, subjectFieldLabel, filteredEntityListHref } from '$lib/entity-list/entity-links';
+  import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
+  import CellAffordance from './CellAffordance.svelte';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
   import { t } from '$lib/i18n';
-  import { formatListCellValue, toDisplayString } from '@primebrick/ui';
+  import { formatListCellValue, toDisplayString, colorCssFromToken, extJsonStringify, FILTER_OPERATOR_KEY } from '@primebrick/ui';
   import { formatDatetimeCellDisplay } from '$lib/entity-list';
   import { Badge } from '@primebrick/ui';
   import { ScheduleSpecCell, DynamicIcon } from '@primebrick/ui';
@@ -14,10 +16,13 @@
   import { uiLang } from '$lib/i18n/store.svelte';
   import { CircleCheck } from '@primebrick/ui/vendor/lucide'
   import { CircleX } from '@primebrick/ui/vendor/lucide';
+  import { ExternalLink } from '@primebrick/ui/vendor/lucide';
+  import JsonCellViewer from './JsonCellViewer.svelte';
   import { Tooltip } from '@primebrick/ui';
   import { getAuditFieldValue } from '../utils/cell-formatting';
   import { getAuditColumnsContext, getMetaUidContext } from '../context';
   import { SparklineBars } from '@primebrick/ui';
+  import { MetaAvatar } from '$lib/components/ui/avatar-preview';
 
   let {
     row,
@@ -34,11 +39,43 @@
   } = $props();
 
   const value = $derived(row[column.key]);
+  /** DAL auto-join convention: `created_by`/`updated_by`/`deleted_by` (and
+   *  any ref-ish column) ship a `<key>_name` sibling holding the resolved
+   *  display name. Display paths always prefer it; href builders keep the
+   *  raw value (uuid stays the link target). */
+  const displayValue = $derived((row[`${column.key}_name`] as unknown) ?? value);
+  /** Null-state label contract (`column.null_label`) — contextual
+   *  translated text instead of `"-"` when the row matches `when`. */
+  const nullLabel = $derived(
+    value === null || value === undefined
+      ? column.null_label &&
+        (column.null_label.when === undefined ||
+          (column.null_label.when.equals !== undefined
+            ? row[column.null_label.when.field] === column.null_label.when.equals
+            : column.null_label.when.not !== undefined
+              ? row[column.null_label.when.field] !== column.null_label.when.not
+              : true))
+        ? column.null_label.label_key
+        : undefined
+      : undefined
+  );
 
   /** Module route census — resolves `ref`/`reverse_ref` entity names to
    *  real declared routes (FE-owned URLs, never hardcoded in meta). */
   const routeCensus = $derived(routesCensusFromModules(shellNav.modules));
   const metaUid = getMetaUidContext();
+  /** `column.color` is a TailwindColorToken (canonical: `colorCssFromToken`
+   *  → inline style) — meta strings are invisible to the FE content scan,
+   *  so class-based colors silently dead-render. Same mechanism as the
+   *  create-form `subject_combo` `_icon_color`. */
+  const iconStyle = $derived(column.color ? `color:${colorCssFromToken(column.color)}` : undefined);
+  /** `format:"nats_subject"` display name — resolved from the module census
+   *  (emits+callables `label_key`), same source as the create form. */
+  const subjectLabel = $derived.by(() => {
+    if (column.format !== 'nats_subject' || typeof value !== 'string' || !value) return undefined;
+    const key = subjectDecl(shellNav.modules, value)?.label_key;
+    return key ? $t(key) : undefined;
+  });
 
   /** `type:"sparkline"` — resolve the per-row bucket series from the
    *  batch-loaded `sparklineData` map; series labels resolve `label_key`
@@ -68,6 +105,31 @@
   const NATS_SUBJECT_HREF = '/system/settings/modules';
 
   type JsonCondition = { field: string; op?: string; value?: unknown };
+  /** Trigger/filter `{field,op,value}` DSL vocabulary → canonical
+   *  `system.entities.list.operators.*` key segments (the same keys the
+   *  list FilterBar badges translate through — segments sourced from
+   *  `FILTER_OPERATOR_KEY`, never invented glyphs). */
+  const OP_I18N_KEY: Record<string, string> = {
+    eq: FILTER_OPERATOR_KEY['='],
+    neq: FILTER_OPERATOR_KEY['!='],
+    gt: FILTER_OPERATOR_KEY['>'],
+    gte: FILTER_OPERATOR_KEY['>='],
+    lt: FILTER_OPERATOR_KEY['<'],
+    lte: FILTER_OPERATOR_KEY['<='],
+    contains: FILTER_OPERATOR_KEY.contains,
+    exists: 'exists',
+  };
+  const opLabel = (op?: string) => {
+    const key = OP_I18N_KEY[op ?? 'eq'];
+    const translated = key ? $t(`system.entities.list.operators.${key}`) : '';
+    return translated && !translated.includes('operators.') ? translated : (op ?? '=');
+  };
+  /** Entity-list link chrome for badge-wrapped links. */
+  const CELL_LINK_CLASS = 'text-primary underline underline-offset-2 rounded-sm hover:bg-neutral-200/80 dark:hover:bg-neutral-700/80';
+  /** Plain text CTAs in cells (filtered-list links, viewer CTAs): ghost
+   *  anatomy — foreground text, ghost `accent` hover bg, underline ON
+   *  hover only, standard underline offset. */
+  const CELL_TEXT_LINK_CLASS = 'text-foreground underline-offset-2 rounded-sm px-1 py-0.5 hover:bg-accent hover:underline';
 
   /** `format:"json"` cell content: a `[{field, op, value}]` condition list
    *  renders as prose chips (job trigger `filter` contract); anything else
@@ -84,7 +146,7 @@
 {#if cellSnippet}
   {@render cellSnippet({ row, column })}
 {:else if column.type === 'boolean'}
-  <div class="flex justify-center">
+  <div class="flex w-full justify-center">
     {#if value === true}
       <Tooltip.Root>
         <Tooltip.Trigger>
@@ -121,72 +183,122 @@
     class="shadow-none"
     style="background-color: {badgeColors.bgColor}; color: {badgeColors.textColor}; border-color: {badgeColors.borderColor};"
   >
-    {column.badge.values[badgeValue]?.label_text || $t(column.badge.values[badgeValue]?.label_key || `system.entities.customer.status.${badgeValue}`)}
+    {column.badge.values[badgeValue]?.label_text ?? (column.badge.values[badgeValue]?.label_key ? $t(column.badge.values[badgeValue].label_key!) : String(badgeValue))}
   </Badge>
 {:else if column.format === 'schedule_spec' && typeof value === 'string' && value !== ''}
   <ScheduleSpecCell {value} />
 {:else if column.format === 'nats_subject' && value}
-  <a
-    href={resolve(NATS_SUBJECT_HREF)}
-    target="_blank"
-    rel="noopener noreferrer"
-    class="inline-flex max-w-full items-center gap-1 text-primary hover:underline"
-    title={toDisplayString(value)}
-  >
-    <Badge variant="outline" class="gap-1 shadow-none">
-      {#if column.icon}<DynamicIcon name={column.icon} size={12} class="shrink-0" />{/if}
-      <span class="truncate font-mono text-[11px]">{toDisplayString(value)}</span>
-    </Badge>
-  </a>
+  <!-- Display name (translated census label_key) renders INSIDE the badge
+       when the census resolves it; the raw subject path always lives in
+       the tooltip. Without a census match the badge shows the path itself. -->
+  <Tooltip.Root>
+    <Tooltip.Trigger>
+      {#snippet child({ props })}
+        <a
+          {...props}
+          href={resolve(NATS_SUBJECT_HREF)}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex max-w-full rounded-sm"
+        >
+          <Badge variant="secondary" class="gap-1 shadow-none">
+            {#if column.icon}<DynamicIcon name={column.icon} size={12} class="shrink-0" style={iconStyle} />{/if}
+            <span class={['truncate text-xs', !subjectLabel && 'font-mono text-[11px]']}>{subjectLabel ?? toDisplayString(value)}</span>
+          </Badge>
+        </a>
+      {/snippet}
+    </Tooltip.Trigger>
+    <Tooltip.Content>
+      <p class="font-mono text-xs">{toDisplayString(value)}</p>
+    </Tooltip.Content>
+  </Tooltip.Root>
 {:else if column.format === 'json'}
   {@const json = jsonCellContent(value)}
   {#if json.kind === 'conditions'}
     <div class="flex min-w-0 flex-wrap gap-1">
       {#each json.conditions as cond (cond.field)}
-        <Badge variant="secondary" class="gap-1 font-normal">
-          <span class="font-semibold">{cond.field}</span>
-          <span class="text-primary">{cond.op ?? 'eq'}</span>
-          {#if cond.value !== undefined}<span class="italic text-muted-foreground">{toDisplayString(cond.value)}</span>{/if}
-        </Badge>
+        <!-- Canonical black tooltip: the condition's own JSON fragment,
+             pretty-printed. -->
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            <Badge variant="secondary" class="gap-1.5 font-normal">
+              <span class="text-xs font-bold text-foreground">{subjectFieldLabel(shellNav.modules, typeof row.event_subject === 'string' ? row.event_subject : undefined, cond.field)}</span>
+              <span class="text-xs text-primary">{opLabel(cond.op)}</span>
+              {#if cond.value !== undefined}<span class="text-xs italic text-muted-foreground">{toDisplayString(cond.value)}</span>{/if}
+            </Badge>
+          </Tooltip.Trigger>
+          <Tooltip.Content>
+            <pre class="max-w-xs overflow-x-auto font-mono text-xs">{extJsonStringify(cond, 2)}</pre>
+          </Tooltip.Content>
+        </Tooltip.Root>
       {/each}
     </div>
   {:else}
-    <span class="min-w-0 truncate font-mono text-[11px]">{json.text || '-'}</span>
+    <!-- Generic JSONB fallback — specific renderers (condition chips above)
+         win; everything else gets the standard viewer sheet. -->
+    <JsonCellViewer {value} />
   {/if}
 {:else if column.type === 'ref' && column.ref && value}
-  {@const href = entityRefHref(routeCensus, column.ref, toDisplayString(value))}
-  {#if href}
-    <a
-      href={resolve(href as '/')}
-      target="_blank"
-      rel="noopener noreferrer"
-      class="inline-flex max-w-full items-center gap-1 text-primary hover:underline"
-    >
-      <Badge variant="outline" class="gap-1 shadow-none">
-        {#if column.icon}<DynamicIcon name={column.icon} size={12} class="shrink-0" />{/if}
-        <span class="truncate font-mono text-[11px]">{toDisplayString(value)}</span>
-      </Badge>
-    </a>
+  {#if column.ref.presentation === 'badge'}
+    <!-- Opt-in legacy anatomy — badge pill as a single `_blank` link. -->
+    {@const href = entityRefHref(routeCensus, column.ref, toDisplayString(value))}
+    {#if href}
+      <a
+        href={resolve(href as '/')}
+        target="_blank"
+        rel="noopener noreferrer"
+        class={['inline-flex max-w-full items-center gap-1', CELL_LINK_CLASS]}
+      >
+        <Badge variant="outline" class="gap-1 shadow-none">
+          {#if column.icon}<DynamicIcon name={column.icon} size={12} class="shrink-0" style={iconStyle} />{/if}
+          <span class="truncate font-mono text-[11px]">{toDisplayString(displayValue)}</span>
+        </Badge>
+      </a>
+    {:else}
+      <span class="min-w-0 truncate font-mono text-[11px]">{toDisplayString(displayValue)}</span>
+    {/if}
+  {:else if column.ref.route === 'none'}
+    <span class="min-w-0 truncate">{toDisplayString(displayValue)}</span>
   {:else}
-    <span class="min-w-0 truncate font-mono text-[11px]">{toDisplayString(value)}</span>
+    <!-- Default "link" anatomy: medium text (underline on hover) opens
+         the record sheet; trailing ExternalLink → filtered /list _blank. -->
+    {@const iconHref = filteredEntityListHref(routeCensus, column.ref.entity, [
+      { field: column.ref.filter_field ?? metaUid, op: '=', value: toDisplayString(value) },
+    ])}
+    <CellAffordance
+      text={toDisplayString(displayValue)}
+      ontextclick={() =>
+        openSheet('entity.record', { entity: column.ref!.entity, value, ref: column.ref }, { stack: true })}
+      href={iconHref ?? undefined}
+      icon_title={$t('app.common.open_in_new_tab')}
+      test_id={`ref-cell-${column.key}`}
+    >
+      {#snippet icon()}
+        <ExternalLink class="size-3.5" />
+      {/snippet}
+    </CellAffordance>
   {/if}
 {:else if column.type === 'ref_count' && column.reverse_ref}
   {@const href = reverseRefHref(routeCensus, column.reverse_ref, metaUid, row)}
   {#if href}
+    <!-- 1-N convention: a filtered-list link is rendered as a plain link,
+         never a badge (badges are for N-1 detail navigation). The count is
+         shown when the service decorated it; `ref` without a count stays
+         a plain link too. -->
     <a
       href={resolve(href as '/')}
       target="_blank"
       rel="noopener noreferrer"
-      class="inline-flex items-center gap-1 text-primary hover:underline"
+      class={['inline-flex items-center gap-1', CELL_TEXT_LINK_CLASS]}
     >
-      <Badge variant="secondary" class="gap-1 shadow-none">
-        {#if column.icon}<DynamicIcon name={column.icon} size={12} class="shrink-0" />{/if}
-        <span>{value !== undefined && value !== null ? toDisplayString(value) : $t(column.label_key)}</span>
-      </Badge>
+      {#if column.icon}<DynamicIcon name={column.icon} size={12} class="shrink-0" style={iconStyle} />{/if}
+      <span class="truncate">{value !== undefined && value !== null ? `${toDisplayString(value)} ${$t(column.label_key)}` : $t(column.label_key)}</span>
     </a>
   {:else}
     <span class="min-w-0 truncate">{value !== undefined && value !== null ? toDisplayString(value) : '-'}</span>
   {/if}
+{:else if nullLabel}
+  <span class="min-w-0 truncate text-xs italic text-destructive">{$t(nullLabel)}</span>
 {:else if column.type === 'datetime'}
   {@const mode = datetimeIanaModeByKey[column.key] ?? 'browser'}
   {@const parts = formatDatetimeCellDisplay(
@@ -206,6 +318,18 @@
   {:else}
     <span class="min-w-0 truncate">{parts.text}</span>
   {/if}
+{:else if column.type === 'avatar'}
+  <!-- `type:"avatar"` — initials from the column's own value, color from
+       the sibling `avatar.color_field` (same pattern as `uom.field`). -->
+  {#if value !== undefined && value !== null && value !== ''}
+    <MetaAvatar
+      initials={toDisplayString(value)}
+      color={column.avatar?.color_field ? (row[column.avatar.color_field] as string | undefined) : undefined}
+      size="sm"
+    />
+  {:else}
+    <span class="min-w-0 truncate">-</span>
+  {/if}
 {:else}
-  <span class="min-w-0 truncate">{getAuditFieldValue(row, column, $uiLang, formatListCellValue, getAuditColumnsContext())}</span>
+  <span class="min-w-0 truncate">{displayValue !== value ? toDisplayString(displayValue) : getAuditFieldValue(row, column, $uiLang, formatListCellValue, getAuditColumnsContext())}</span>
 {/if}

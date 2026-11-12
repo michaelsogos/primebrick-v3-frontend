@@ -53,12 +53,14 @@ import {
   isBackendGatewayUnreachable,
   backendOfflineTags,
   defaultSearchGate,
+  nextSearchScopeKeys,
   resolvePresetSelection,
   resolvePresetConditions,
   serviceApiBase
 } from '$lib/entity-list';
 import type { EntityMeta, AdvancedFilter, DeletionFilterMode, ListResponse, FilterCondition } from '$lib/entity-list/types';
 import { appendListFilterParams } from '$lib/entity-list/list-filter-params';
+import { parseUrlFilters } from '$lib/components/entity-list-table/composables/use-url-filters-sync.svelte';
 import { useSyncChannel } from '$lib/composables/useSyncChannel.svelte';
 import { serviceCodeOf, useServiceAvailability } from '$lib/composables/use-service-availability.svelte';
 import { onConnectivityRestored } from '$lib/app-connectivity-events';
@@ -138,7 +140,6 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
     filterValues: {} as Record<string, unknown>,
     advancedFilters: [] as AdvancedFilter[],
     globalConnector: 'AND' as 'AND' | 'OR',
-    filtersOpen: false,
 
     visibleKeys: [] as string[],
     selectedKeys: [] as string[],
@@ -183,6 +184,12 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
   const skFilterValues = `${skColumnOrder}:filterValues`;
   const skAdvancedFilters = `${skColumnOrder}:advancedFilters`;
   const skFilterPresets = `${opts.storageKeyPrefix}filterPresets`;
+  const skDeletionFilter = `${opts.storageKeyPrefix}deletionFilter`;
+  const skSelectedKeys = `${opts.storageKeyPrefix}selectedKeys`;
+  const skPage = `${opts.storageKeyPrefix}page`;
+  const skPageSize = `${opts.storageKeyPrefix}pageSize`;
+  const skGlobalConnector = `${opts.storageKeyPrefix}globalConnector`;
+  const skSearch = `${opts.storageKeyPrefix}search`;
 
   // ── persistence (canonical medium + legacy read fallback) ────────────
 
@@ -215,6 +222,7 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
 
   let stateRestored = false;
   let sortRestored = false;
+  let pageSizeRestored = false;
 
   function restorePersistentState() {
     if (stateRestored) return;
@@ -274,6 +282,50 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
           _state.presetSelections = parsed as Record<string, string>;
         }
       }
+      const df = storageGet(skDeletionFilter);
+      if (df === 'non_deleted' || df === 'deleted' || df === 'all') {
+        _state.deletionFilterMode = df;
+      }
+      const sel = storageGet(skSelectedKeys);
+      if (sel) {
+        const parsed = JSON.parse(sel) as unknown;
+        if (Array.isArray(parsed)) {
+          _state.selectedKeys = parsed.filter((k): k is string => typeof k === 'string');
+        }
+      }
+      const pg = storageGet(skPage);
+      if (pg) {
+        const n = Number(JSON.parse(pg));
+        if (Number.isInteger(n) && n >= 1) _state.page = n;
+      }
+      const psz = storageGet(skPageSize);
+      if (psz) {
+        const n = Number(JSON.parse(psz));
+        if (Number.isInteger(n) && n >= 1) {
+          _state.pageSize = n;
+          pageSizeRestored = true;
+        }
+      }
+      const gc = storageGet(skGlobalConnector);
+      if (gc === 'AND' || gc === 'OR') _state.globalConnector = gc;
+      const srch = storageGet(skSearch);
+      if (typeof srch === 'string' && srch.length) {
+        _state.search = srch;
+        _state.appliedSearch = srch;
+      }
+      // URL filters WIN over persisted state — `filteredListHref` deep
+      // links (ref_count / reverse_ref navigation) must land applied,
+      // before the first loadRows ships them.
+      const url = parseUrlFilters(new URLSearchParams(window.location.search));
+      if (url.hasUrlFilters) {
+        _state.filterValues = { ..._state.filterValues, ...url.filterValues };
+        if (url.advancedFilters.length) _state.advancedFilters = [..._state.advancedFilters, ...url.advancedFilters];
+        if (url.search) {
+          _state.search = url.search;
+          _state.appliedSearch = url.search;
+        }
+        if (url.searchIn.length) _state.searchInKeys = url.searchIn;
+      }
     } catch {
       // ignore bad storage payloads
     }
@@ -286,6 +338,12 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
     storageSet(skFilterValues, JSON.stringify(_state.filterValues));
     storageSet(skAdvancedFilters, JSON.stringify(_state.advancedFilters));
     storageSet(skFilterPresets, JSON.stringify(_state.presetSelections));
+    storageSet(skDeletionFilter, _state.deletionFilterMode);
+    storageSet(skSelectedKeys, JSON.stringify(_state.selectedKeys));
+    storageSet(skPage, JSON.stringify(_state.page));
+    storageSet(skPageSize, JSON.stringify(_state.pageSize));
+    storageSet(skGlobalConnector, _state.globalConnector);
+    storageSet(skSearch, _state.appliedSearch);
   }
 
   // Persist UI state changes (write-only; gated on meta so restoration-time
@@ -299,6 +357,12 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
     void _state.filterValues;
     void _state.advancedFilters;
     void _state.presetSelections;
+    void _state.deletionFilterMode;
+    void _state.selectedKeys;
+    void _state.page;
+    void _state.pageSize;
+    void _state.globalConnector;
+    void _state.appliedSearch;
     persistState();
   });
 
@@ -322,7 +386,9 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
       _state.sortKey = defSort?.key ?? null;
       _state.sortDir = defSort?.dir ?? 'asc';
     }
-    _state.pageSize = _state.meta?.table?.default_page_size ?? _state.pageSize;
+    if (!pageSizeRestored) {
+      _state.pageSize = _state.meta?.table?.default_page_size ?? _state.pageSize;
+    }
     ensureVisibleKeys();
   }
 
@@ -414,12 +480,7 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
     const res = await apiFetchWithTimeout(`${opts.basePath}/list?${qs.toString()}`, { signal: controller.signal }, 30_000);
     if (!res.ok) {
       const apiDetails = await readApiErrorDetails(res);
-      throw new ApiListError(
-        apiDetails.code ?? 'LIST_FAILED',
-        res.status,
-        apiDetails.internalCode ?? undefined,
-        apiDetails.instance ?? undefined
-      );
+      throw new ApiListError(apiDetails.code ?? 'LIST_FAILED', res.status, apiDetails);
     }
     const data = extJsonParse<ListResponse<TRow>>(await res.text());
     _state.rows = data.rows;
@@ -477,10 +538,10 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
     const isDbDown = code === 'DATABASE_UNAVAILABLE';
 
     if (isBackendGatewayUnreachable(code, status)) {
-      _state.error = tFn('app.serverUnreachable');
+      _state.error = tFn('app.server_unreachable');
       pushNotification({
         impact: 'CRITICAL',
-        messageKey: 'app.serverUnreachable',
+        messageKey: 'app.server_unreachable',
         scopeKey,
         tags: backendOfflineTags(status),
         toast: false
@@ -488,7 +549,7 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
       return;
     }
 
-    _state.error = isDbDown ? tFn('app.common.dbUnavailable') : tFn('app.common.loadFailed');
+    _state.error = isDbDown ? tFn('app.common.db_unavailable') : tFn('app.common.load_failed');
     const tags: AppErrorTag[] = [
       { label: code, tone: 'danger' },
       ...(status !== null ? [{ label: `HTTP ${status}`, tone: 'danger' } as const] : [])
@@ -497,10 +558,17 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
     if (e instanceof ApiListError && e.instance) tags.push({ label: e.instance, tone: 'danger' });
     pushNotification({
       impact: isDbDown ? 'CRITICAL' : 'HIGH',
-      messageKey: isDbDown ? 'app.common.dbUnavailable' : 'app.common.loadFailed',
+      messageKey: isDbDown ? 'app.common.db_unavailable' : 'app.common.load_failed',
       scopeKey,
       tags,
-      toast: false
+      toast: false,
+      ...(e instanceof ApiListError
+        ? {
+            ...(e.detail ? { detail: e.detail } : {}),
+            ...(e.severity ? { severity: e.severity } : {}),
+            ...(e.extra ? { extra: e.extra } : {})
+          }
+        : {})
     });
   }
 
@@ -664,9 +732,6 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
     // get globalConnector() {
     //   return _state.globalConnector;
     // },
-    get filtersOpen() {
-      return _state.filtersOpen;
-    },
     get visibleKeys() {
       return _state.visibleKeys;
     },
@@ -756,6 +821,15 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
         void refreshRows({ clampPage: true });
       }
     },
+    /** Toggle one column in/out of the `search_in` scope — shared
+     *  semantics via `nextSearchScopeKeys` (null = all fields). */
+    toggleSearchKey(key: string) {
+      _state.searchInKeys = nextSearchScopeKeys(_state.searchInKeys, key);
+      if (_state.appliedSearch.trim()) {
+        _state.page = 1;
+        void refreshRows({ clampPage: true });
+      }
+    },
     onSortChange(key: string | null, dir: 'asc' | 'desc') {
       _state.sortKey = key;
       _state.sortDir = dir;
@@ -786,7 +860,6 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
       _state.filterValues = {};
       _state.advancedFilters = [];
       _state.globalConnector = 'AND';
-      _state.filtersOpen = false;
       _state.page = 1;
       void refreshRows({ clampPage: true });
     },
@@ -804,13 +877,9 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
       _state.page = 1;
       void refreshRows({ clampPage: true });
     },
-    setFiltersOpen(open: boolean) {
-      _state.filtersOpen = open;
-    },
-    // toggleFilters — superseded by setFiltersOpen; never called.
-    // toggleFilters() {
-    //   _state.filtersOpen = !_state.filtersOpen;
-    // },
+    // filtersOpen/setFiltersOpen removed — the filters-sheet pressed state
+    // is derived from the sheet lifecycle in useEntitySheetSync.filtersOpen;
+    // no parallel boolean store exists here by design.
     // setRows — external-enrichment hook superseded by the `onRowsLoaded`
     // option; never called.
     // setRows(rows: TRow[]) {

@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-@source inline("{border-primary-gradient,border-primary-gradient-popover,border-primary-gradient-soft,border-readonly-gradient,border-destructive-gradient,border-destructive-gradient-soft,border-warning-gradient,border-warning-gradient-soft,border-warning-gradient-popover,border-info-gradient,border-info-gradient-popover,border-info-gradient-soft,border-success-gradient,border-success-gradient-popover,border-success-gradient-soft,border-destructive-gradient-popover,border-neutral-gradient-popover,dialog-bump,hover-border-primary-gradient-soft,bg-primary-gradient-soft,border-left-primary-gradient-soft,divider-primary-gradient,text-primary-gradient,hr-primary-gradient,border-primary-gradient-bottom,border-primary-gradient-tl,bg-range-primary-gradient,bg-range-destructive-gradient,bg-range-warning-gradient,bg-range-info-gradient,bg-range-success-gradient,shadow-selected-primary}");
+@source inline("{border-primary-gradient,border-primary-gradient-popover,border-primary-gradient-soft,border-readonly,border-disabled,border-destructive-gradient,border-destructive-gradient-soft,border-warning-gradient,border-warning-gradient-soft,border-warning-gradient-popover,border-info-gradient,border-info-gradient-popover,border-info-gradient-soft,border-success-gradient,border-success-gradient-popover,border-success-gradient-soft,border-destructive-gradient-popover,border-neutral-gradient-popover,dialog-bump,hover-border-primary-gradient-soft,bg-primary-gradient-soft,border-left-primary-gradient-soft,divider-primary-gradient,text-primary-gradient,hr-primary-gradient,border-primary-gradient-bottom,border-primary-gradient-tl,bg-range-primary-gradient,bg-range-destructive-gradient,bg-range-warning-gradient,bg-range-info-gradient,bg-range-success-gradient,shadow-selected-primary}");
 
 /* Meta-driven `fill-*` utilities: entity-meta `sparkline.series[].color`
    declares Tailwind classes that live ONLY in the DB — the content scan can
@@ -143,6 +143,31 @@
   background:
     linear-gradient(to bottom right, #bae6fd, #c7d2fe) padding-box,
     linear-gradient(to bottom right, #38bdf8, #818cf8) border-box;
+}
+
+/**
+ * Keyboard-focus frame for table rows — same sky→indigo primary gradient as
+ * border-primary-gradient, but the interior stays TRANSPARENT so the row
+ * beneath shows through and only the 1px border ring paints. An opaque
+ * padding-box fill (the border-primary-gradient trick) would hide the row,
+ * while a transparent fill lets the border-box gradient bleed across the
+ * whole element — the mask-composite xor keeps only the ring. Painted by a
+ * measured overlay sibling of <table> (tr cannot be a containing block and
+ * border-collapse ignores radius on it). Decorative only: pointer-events
+ * none, never in layout — zero reflow, always.
+ */
+@utility row-focus-frame {
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: linear-gradient(to bottom right, #38bdf8, #818cf8) border-box;
+  -webkit-mask:
+    linear-gradient(#fff 0 0) padding-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#fff 0 0) padding-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
 }
 
 /**
@@ -338,18 +363,24 @@
 }
 
 /**
- * Readonly/disabled gradient border: same sky→indigo gradient as
- * border-primary-gradient but at 50% opacity, matching the disabled checkbox
- * appearance (from-sky-400 to-indigo-400 + disabled:opacity-50).
- * Used by readonly/disabled inputs to visually distinguish them from active
- * inputs (which use border-primary-gradient at full opacity).
- * Defined AFTER border-primary-gradient so it wins when both classes are present.
+ * Canonical three-state input chrome:
+ *   - normal:   `border-primary-gradient` + `--background` fill
+ *   - readonly: neutral grey border (`--border`) + the SAME `--background`
+ *               fill as normal — the field is data, not decoration;
+ *   - disabled: grey border (`--border`) + `--muted` fill — the
+ *               darker-than-white background is the disabled signal.
+ * NOTE: `--input` is sky-tinted BY DESIGN (it IS the normal-state border
+ * color) — never use it for the grey states.
+ * Both utilities fully override border AND background so they win over
+ * border-primary-gradient regardless of class order.
  */
-@utility border-readonly-gradient {
-  border: 1px solid transparent;
-  background:
-    linear-gradient(hsl(var(--background)), hsl(var(--background))) padding-box,
-    linear-gradient(to bottom right, rgba(56, 189, 248, 0.5), rgba(129, 140, 248, 0.5)) border-box;
+@utility border-readonly {
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--background));
+}
+@utility border-disabled {
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--muted));
 }
 
 /**

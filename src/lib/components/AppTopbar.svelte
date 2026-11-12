@@ -11,9 +11,9 @@
   import { Bell } from '@primebrick/ui/vendor/lucide'
   import { Globe } from '@primebrick/ui/vendor/lucide'
   import { TriangleAlert } from '@primebrick/ui/vendor/lucide'
-  import { BookOpen } from '@primebrick/ui/vendor/lucide'
+  import { BookOpenText } from '@primebrick/ui/vendor/lucide'
   import { AiIcon } from '@primebrick/ui';
-  import { GradientIcon } from '$lib/components/ui/gradient-icon';
+  import { GradientIcon, GRADIENT_ICON_PATHS } from '$lib/components/ui/gradient-icon';
   import { appErrors } from '$lib/errors/app-errors';
   import { getResolvedIanaTimeZone } from '@primebrick/ui';
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
@@ -85,8 +85,8 @@
         variant="ghost"
         size="icon"
         class="relative shrink-0"
-        aria-label={$t('app.aiChat.aria')}
-        title={$t('app.aiChat.aria')}
+        aria-label={$t('app.ai_chat.aria')}
+        title={$t('app.ai_chat.aria')}
         onclick={() => openSheet('shell.aiChat', {})}
       >
         <AiIcon size={16} />
@@ -97,8 +97,8 @@
       {#if ianaTimeZone}
         <span
           class="inline-flex min-w-0 max-w-[min(40vw,10rem)] items-center gap-1.5 sm:max-w-56"
-          title={`${$t('app.health.ianaTimezone')}: ${ianaTimeZone}`}
-          aria-label={`${$t('app.health.ianaTimezone')}: ${ianaTimeZone}`}
+          title={`${$t('app.health.iana_timezone')}: ${ianaTimeZone}`}
+          aria-label={`${$t('app.health.iana_timezone')}: ${ianaTimeZone}`}
         >
           <Globe class="size-4 shrink-0 text-muted-foreground opacity-80" aria-hidden="true" />
           <span class="truncate text-xs text-muted-foreground">{ianaTimeZone}</span>
@@ -144,28 +144,12 @@
         variant="ghost"
         size="icon"
         class="relative"
-        aria-label={$t('app.aiGuide.aria')}
-        title={$t('app.aiGuide.aria')}
+        aria-label={$t('app.ai_guide.aria')}
+        title={$t('app.ai_guide.aria')}
         data-testid="app-topbar-guide-ai-cta"
         onclick={() => openSheet('shell.aiGuide', {})}
       >
-        <GradientIcon
-          size={16}
-          paths={[
-            'M12 3V2',
-            'M16.066 16.865 7 22l2-11V6a3 3 0 016 0v5l2 11',
-            'm19.792 4.5.866-.5',
-            'm19.797 13.5.866.5',
-            'M21 9h1',
-            'M3 9H2',
-            'm4.203 13.5-.866.5',
-            'M4.208 4.5 3.342 4',
-            'M5.5 22h13',
-            'm7.932 16.875 7.377-4.178',
-            'M8 11h8',
-            'M8 7h8',
-          ]}
-        />
+        <GradientIcon size={16} paths={GRADIENT_ICON_PATHS.lighthouse} />
       </Button>
 
       <Button
@@ -178,7 +162,7 @@
         data-testid="app-topbar-docs-cta"
         onclick={() => openSheet('shell.docs', {}, { modal: false })}
       >
-        <BookOpen class="size-4" />
+        <BookOpenText class="size-4" />
       </Button>
 
       <ThemeToggle />

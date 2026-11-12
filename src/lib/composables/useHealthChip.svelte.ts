@@ -9,17 +9,17 @@ export type HealthChip = HealthChipState;
 export function chipLabel(chip: HealthChipState): string {
   const tt = get(t);
   return chip === 'backend_offline'
-    ? tt('app.health.beOffline')
+    ? tt('app.health.be_offline')
     : chip === 'db_offline'
-      ? tt('app.health.dbOffline')
+      ? tt('app.health.db_offline')
       : chip === 'redis_offline'
-        ? tt('app.health.redisOffline')
+        ? tt('app.health.redis_offline')
         : chip === 'nats_offline'
-          ? tt('app.health.natsOffline')
+          ? tt('app.health.nats_offline')
           : chip === 'idp_offline'
-            ? tt('app.health.idpOffline')
+            ? tt('app.health.idp_offline')
             : chip === 'ok'
-              ? tt('app.health.beOnline')
+              ? tt('app.health.be_online')
               : tt('app.common.loading');
 }
 

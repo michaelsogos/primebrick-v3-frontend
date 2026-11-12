@@ -100,7 +100,7 @@
       versionHistoryData = data.data || [];
       versionHistoryHasMore = data.pagination?.hasMore || false;
     } catch (e) {
-      versionHistoryError = $t('system.entities.versionHistory.error');
+      versionHistoryError = $t('system.entities.version_history.error');
       console.error('Failed to load version history:', e);
     } finally {
       versionHistoryLoading = false;
@@ -124,7 +124,7 @@
       versionHistoryData = [...versionHistoryData, ...(data.data || [])];
       versionHistoryHasMore = data.pagination?.hasMore || false;
     } catch (e) {
-      versionHistoryError = $t('system.entities.versionHistory.error');
+      versionHistoryError = $t('system.entities.version_history.error');
       console.error('Failed to load version history:', e);
     } finally {
       versionHistoryLoading = false;
@@ -244,8 +244,8 @@
     for (const [field, change] of Object.entries(delta)) {
       if (field === 'version') continue; // Skip version field
 
-      let fieldLabel = $t(`system.entities.versionHistory.field.${field}`);
-      if (fieldLabel === `system.entities.versionHistory.field.${field}`) {
+      let fieldLabel = $t(`system.entities.version_history.field.${field}`);
+      if (fieldLabel === `system.entities.version_history.field.${field}`) {
         // Fallback to entity-specific fields translation if versionHistory field doesn't exist
         fieldLabel = $t(`${entities_ns}.entities.${i18nEntity}.fields.${field}`) || field;
       }
@@ -276,9 +276,9 @@
       const isDateField = column?.type === 'date' || (!column && /_at$/.test(field));
       const isDateTimeField = column?.type === 'datetime' || (!column && /(_at|changed_at|last_synced_at)$/.test(field));
       function formatValue(value: unknown): string {
-        if (value === null || value === undefined) return $t('system.entities.versionHistory.null');
-        if (Array.isArray(value) && value.length === 0) return $t('system.entities.versionHistory.emptyList');
-        if (value === '') return $t('system.entities.versionHistory.null');
+        if (value === null || value === undefined) return $t('system.entities.version_history.null');
+        if (Array.isArray(value) && value.length === 0) return $t('system.entities.version_history.empty_list');
+        if (value === '') return $t('system.entities.version_history.null');
         if (column?.type === 'date' || isDateField) {
           return formatUiDate(value as string | number | Date, $uiLang);
         }
@@ -324,9 +324,9 @@
       if (oldValue == null && newValue != null) {
         descriptions.push({
           field: fieldLabel,
-          operator: isCreateOrInsert ? $t('system.entities.versionHistory.set') : $t('system.entities.versionHistory.changedFrom'),
-          toOperator: isCreateOrInsert ? undefined : $t('system.entities.versionHistory.to'),
-          oldValue: isCreateOrInsert ? undefined : $t('system.entities.versionHistory.null'),
+          operator: isCreateOrInsert ? $t('system.entities.version_history.set') : $t('system.entities.version_history.changed_from'),
+          toOperator: isCreateOrInsert ? undefined : $t('system.entities.version_history.to'),
+          oldValue: isCreateOrInsert ? undefined : $t('system.entities.version_history.null'),
           newValue: isJson ? undefined : formatValue(newValue),
           isBadge,
           badgeColor,
@@ -340,10 +340,10 @@
       } else if (oldValue != null && newValue == null) {
         descriptions.push({
           field: fieldLabel,
-          operator: $t('system.entities.versionHistory.changedFrom'),
-          toOperator: $t('system.entities.versionHistory.to'),
+          operator: $t('system.entities.version_history.changed_from'),
+          toOperator: $t('system.entities.version_history.to'),
           oldValue: isJson ? undefined : formatValue(oldValue),
-          newValue: $t('system.entities.versionHistory.null'),
+          newValue: $t('system.entities.version_history.null'),
           isBadge,
           badgeColor,
           badgeLabelText,
@@ -359,8 +359,8 @@
       } else if (oldValue != newValue) {
         descriptions.push({
           field: fieldLabel,
-          operator: $t('system.entities.versionHistory.changedFrom'),
-          toOperator: $t('system.entities.versionHistory.to'),
+          operator: $t('system.entities.version_history.changed_from'),
+          toOperator: $t('system.entities.version_history.to'),
           oldValue: isJson ? undefined : formatValue(oldValue),
           newValue: isJson ? undefined : formatValue(newValue),
           isBadge,
@@ -381,8 +381,8 @@
         // Unchanged value but field is in delta (e.g. updated_by forced for audit trail) — show plain value
         descriptions.push({
           field: fieldLabel,
-          operator: $t('system.entities.versionHistory.unchanged'),
-          newValue: newValue == null ? $t('system.entities.versionHistory.null') : (isJson ? undefined : formatValue(newValue)),
+          operator: $t('system.entities.version_history.unchanged'),
+          newValue: newValue == null ? $t('system.entities.version_history.null') : (isJson ? undefined : formatValue(newValue)),
           isBadge,
           badgeColor,
           badgeLabelText,
@@ -410,7 +410,7 @@
     <History class="size-4" />
   {/snippet}
   {#snippet title()}
-    {$t('system.entities.versionHistory.title')}
+    {$t('system.entities.version_history.title')}
   {/snippet}
     {#if versionHistoryLoading && versionHistoryData.length === 0}
       <div class="grid h-full place-items-center p-3">
@@ -418,7 +418,7 @@
           <div class="pb-watermark-loading">
             <Hourglass class="size-20 text-info" />
           </div>
-          <div class="text-sm font-medium text-muted-foreground">{$t('system.entities.versionHistory.loading')}</div>
+          <div class="text-sm font-medium text-muted-foreground">{$t('system.entities.version_history.loading')}</div>
         </div>
       </div>
     {:else if versionHistoryError}
@@ -436,7 +436,7 @@
           <div class="pb-watermark-empty">
             <Info class="size-20 text-info" />
           </div>
-          <div class="text-sm font-medium text-muted-foreground">{$t('system.entities.versionHistory.empty')}</div>
+          <div class="text-sm font-medium text-muted-foreground">{$t('system.entities.version_history.empty')}</div>
         </div>
       </div>
     {:else}
@@ -447,7 +447,7 @@
             {@const borderClass = getAuditActionBorderClass(entry.action)}
             {@const ActionIcon = getAuditActionIcon(entry.action)}
             {@const isUpdate = entry.action === 'UPDATE' || entry.action === 'CREATE' || entry.action === 'INSERT' || entry.action === 'SOFT_DELETE' || entry.action === 'DELETE' || entry.action === 'RESTORE' || entry.action === 'CLONE'}
-            {@const descriptions = entry.action === 'HARD_DELETE' ? [$t('system.entities.versionHistory.recordHardDeleted')]
+            {@const descriptions = entry.action === 'HARD_DELETE' ? [$t('system.entities.version_history.record_hard_deleted')]
               : formatAuditDelta(entry.delta, entry.action)}
 
             <Timeline.Item>
@@ -473,7 +473,7 @@
                       onclick={() => toggleEntryExpanded(entry.id)}
                     >
                       <ChevronDown class={cn("size-4 transition-transform", expandedEntries.has(entry.id) && "rotate-180")} />
-                      <span class="ml-1">{expandedEntries.has(entry.id) ? $t('system.entities.versionHistory.hideDetails') : $t('system.entities.versionHistory.showDetails')}</span>
+                      <span class="ml-1">{expandedEntries.has(entry.id) ? $t('system.entities.version_history.hide_details') : $t('system.entities.version_history.show_details')}</span>
                     </Button>
                   </div>
                 {/if}
@@ -496,7 +496,7 @@
                                     class="shadow-none text-xs"
                                     style="background-color: {oldBadgeColors.bgColor}; color: {oldBadgeColors.textColor}; border-color: {oldBadgeColors.borderColor};"
                                   >
-                                    {delta.oldBadgeLabelText || $t(delta.oldBadgeLabelKey || `system.entities.customer.status.${delta.oldValue}`)}
+                                    {delta.oldBadgeLabelText || (delta.oldBadgeLabelKey ? $t(delta.oldBadgeLabelKey) : String(delta.oldValue))}
                                   </Badge>
                                 {:else if delta.isColor && delta.oldColorValue}
                                   <Tooltip.Root>
@@ -531,7 +531,7 @@
                                     class="shadow-none text-xs"
                                     style="background-color: {newBadgeColors.bgColor}; color: {newBadgeColors.textColor}; border-color: {newBadgeColors.borderColor};"
                                   >
-                                    {delta.badgeLabelText || $t(delta.badgeLabelKey || `system.entities.customer.status.${delta.newValue}`)}
+                                    {delta.badgeLabelText || (delta.badgeLabelKey ? $t(delta.badgeLabelKey) : String(delta.newValue))}
                                   </Badge>
                                 {:else if delta.isColor && delta.colorValue}
                                   <Tooltip.Root>
@@ -588,7 +588,7 @@
               {:else}
                 <ChevronDown class="size-4 mr-2" />
               {/if}
-              {$t('system.entities.versionHistory.viewMore')}
+              {$t('system.entities.version_history.view_more')}
             </Button>
           </div>
         {/if}

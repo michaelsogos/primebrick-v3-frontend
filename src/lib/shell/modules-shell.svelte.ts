@@ -74,6 +74,19 @@ function resolveModuleFromRoute(pathname: string): string | null {
 }
 
 /**
+ * The TRANSLATIONS module owning the route's runtime dict. Virtual
+ * sibling modules (`crm-settings`) carry `translations_module` pointing
+ * at the declaring service — dict fetches must resolve to it or they
+ * 404 on a module code that owns no schema.
+ */
+function resolveDictModuleFromRoute(pathname: string): string | null {
+  const moduleId = resolveModuleIdFromPrefixes(_state.modules, pathname);
+  if (!moduleId) return null;
+  const m = _state.modules.find((x) => x.id === moduleId);
+  return m ? (m.translations_module ?? m.id) : null;
+}
+
+/**
  * Resolve a remote sheet declaration by open-sheet key (`<module>.<name>`)
  * across every discovered module's `sheets[]` — the declarations arrive
  * inside the `/modules` payload already access-filtered server-side, so a
@@ -201,6 +214,7 @@ export const shellNav = {
   reloadModuleNav,
   syncModuleFromRoute,
   resolveModuleFromRoute,
+  resolveDictModuleFromRoute,
   getLastRoute,
   saveLastRoute,
   clearLastRoute,

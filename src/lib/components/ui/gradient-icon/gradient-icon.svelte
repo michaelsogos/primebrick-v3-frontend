@@ -16,8 +16,10 @@
   import { cn } from '$lib/utils';
 
   interface Props {
-    /** Lucide path `d` attributes — the icon's inner nodes, in order. */
-    paths: string[];
+    /** Lucide path `d` attributes — the icon's inner nodes, in order.
+     *  Readonly: pass `GRADIENT_ICON_PATHS.<name>` from `./paths` — the
+     *  named vocabulary — never raw inline `d` strings. */
+    paths: readonly string[];
     /** Icon size in pixels. */
     size?: number;
     /** Stroke width. */
@@ -31,7 +33,7 @@
      * sky-400 → indigo-400 → sky-400 sweep. Pass e.g.
      * `['#fbbf24', '#fb923c', '#fbbf24']` for the amber favorites star.
      */
-    stops?: string[];
+    stops?: readonly string[];
     /** Fill the icon's interior with the gradient (filled-star look) instead of stroke-only. */
     filled?: boolean;
   }

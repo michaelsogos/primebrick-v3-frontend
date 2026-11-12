@@ -53,15 +53,17 @@
   const updateSchema = z.object({
     display_name: displayNameSchema(z.string()),
     email: z.string()
-      .email({ message: 'app.common.validation.invalidEmail' })
+      .email({ message: 'app.common.validation.invalid_email' })
       .max(320, { message: maxMsg(320) })
       .optional()
       .or(z.literal('')),
-    roles: z.array(z.string()).min(1, { message: 'app.common.validation.rolesRequired' }).default([]),
+    roles: z.array(z.string()).min(1, { message: 'app.common.validation.roles_required' }).default([]),
     avatar_color: z.string()
-      .regex(/^#[0-9A-Fa-f]{6}$/, { message: 'app.common.validation.invalidFormat' })
+      .regex(/^#[0-9A-Fa-f]{6}$/, { message: 'app.common.validation.invalid_format' })
       .optional()
       .or(z.literal('')),
+    idp_is_admin: z.boolean().default(false),
+    auth_method_enforcer_dismissed: z.boolean().default(false),
   });
 
   let user = $state<{
@@ -74,11 +76,13 @@
     avatar_color?: string;
     avatar_initials?: string;
     roles?: string[];
-    is_active?: boolean;
-    is_admin?: boolean;
-    is_verified?: boolean;
-    email_verified?: boolean;
-    issuer?: string;
+    idp_is_admin?: boolean;
+    idp_is_verified?: boolean;
+    idp_email_verified?: boolean;
+    idp_issuer?: string;
+    suspended_at?: string;
+    suspended_by?: string;
+    auth_method_enforcer_dismissed?: boolean;
     version: number;
     created_at?: string;
     created_by?: string;
@@ -132,6 +136,8 @@
           avatar_color: updateForm.data.avatar_color || undefined,
           avatar_initials: initials,
           roles: updateForm.data.roles || [],
+          idp_is_admin: updateForm.data.idp_is_admin,
+          auth_method_enforcer_dismissed: updateForm.data.auth_method_enforcer_dismissed,
           version: user.version,
         };
         const response = await apiFetch(`/api/v1/auth/users/${uuid}`, {
@@ -189,6 +195,8 @@
           email: data.email || '',
           avatar_color: data.avatar_color || '',
           roles: data.roles || [],
+          idp_is_admin: data.idp_is_admin === true,
+          auth_method_enforcer_dismissed: data.auth_method_enforcer_dismissed === true,
         },
       });
     } catch (error) {
@@ -203,7 +211,7 @@
 
   const { handleBeforeUnload, handleCancel } = useUnsavedChangesGuard(
     () => formGuard.hasChanges,
-    'system.settings.users.update.unsavedChanges',
+    'system.settings.users.update.unsaved_changes',
   );
 </script>
 
@@ -247,8 +255,8 @@
               <!-- Color Picker -->
               <ColorSelector
                 bind:value={$form.avatar_color}
-                labelKey="system.settings.users.update.avatarColor"
-                placeholderKey="system.settings.users.update.selectColorPlaceholder"
+                labelKey="system.settings.users.update.avatar_color"
+                placeholderKey="system.settings.users.update.select_color_placeholder"
                 triggerId="avatar-color-trigger"
               />
             </div>
@@ -262,11 +270,11 @@
                 <FormControl>
                   {#snippet children({ props })}
                     <div class="space-y-2">
-                      <FormLabel for={props.id} required>{$t('system.settings.users.update.displayName')}</FormLabel>
+                      <FormLabel for={props.id} required>{$t('system.settings.users.update.display_name')}</FormLabel>
                       <TextInput
                         {...props}
                         bind:value={$form.display_name}
-                        placeholder={$t('system.settings.users.update.displayNamePlaceholder')}
+                        placeholder={$t('system.settings.users.update.display_name_placeholder')}
                       />
                       <TranslatedFormFieldErrors />
                     </div>
@@ -283,7 +291,7 @@
                         {...props}
                         type="email"
                         bind:value={$form.email}
-                        placeholder={$t('system.settings.users.update.emailPlaceholder')}
+                        placeholder={$t('system.settings.users.update.email_placeholder')}
                       />
                       <TranslatedFormFieldErrors />
                     </div>
@@ -311,7 +319,7 @@
                         valueField="idp_role"
                         labelField="label_key"
                         isLabelTranslated={true}
-                        placeholder={$t('system.settings.users.update.rolesPlaceholder')}
+                        placeholder={$t('system.settings.users.update.roles_placeholder')}
                         isOptionDisabled={(opt) => {
                           const role = opt as RoleOption;
                           return !role.is_admin && (!role.permissions || !Array.isArray(role.permissions) || role.permissions.length === 0);
@@ -319,10 +327,10 @@
                         getSearchKeywords={(opt) => {
                           const role = opt as RoleOption;
                           const kws: string[] = [];
-                          if (role.is_admin) kws.push($t('app.auth.roles.systemAdministrator'));
+                          if (role.is_admin) kws.push($t('app.auth.roles.system_administrator'));
                           if (Array.isArray(role.permissions)) kws.push(...role.permissions);
                           if (!role.is_admin && (!role.permissions || !Array.isArray(role.permissions) || role.permissions.length === 0)) {
-                            kws.push($t('app.auth.roles.notValidRole'));
+                            kws.push($t('app.auth.roles.not_valid_role'));
                           }
                           return kws;
                         }}
@@ -334,14 +342,14 @@
                             {#if role.is_admin}
                               <Badge variant="outline" class="w-fit gap-1 text-[10px] py-0 px-1.5 text-success border-success/30">
                                 <ShieldUser class="size-3" />
-                                {$t('app.auth.roles.systemAdministrator')}
+                                {$t('app.auth.roles.system_administrator')}
                               </Badge>
                             {:else if role.permissions && Array.isArray(role.permissions) && role.permissions.length > 0}
                               <span class="italic text-muted-foreground text-xs truncate">{role.permissions.join(', ')}</span>
                             {:else}
                               <Badge variant="outline" class="w-fit gap-1 text-[10px] py-0 px-1.5 text-muted-foreground border-muted-foreground/30">
                                 <ShieldOff class="size-3" />
-                                {$t('app.auth.roles.notValidRole')}
+                                {$t('app.auth.roles.not_valid_role')}
                               </Badge>
                             {/if}
                           </div>
@@ -357,69 +365,90 @@
             <!-- Column 2: IDP fields (readonly) -->
             <div class="space-y-4">
               <div class="space-y-2">
-                <label for="idp-code" class="text-sm font-medium">{$t('system.settings.users.update.idpCode')}</label>
+                <label for="idp-code" class="text-sm font-medium">{$t('system.settings.users.update.idp_code')}</label>
                 <TextInput id="idp-code" value={user?.idp_code} readonly />
               </div>
 
               <div class="space-y-2">
-                <label for="idp-org" class="text-sm font-medium">{$t('system.settings.users.update.idpOrg')}</label>
+                <label for="idp-org" class="text-sm font-medium">{$t('system.settings.users.update.idp_org')}</label>
                 <TextInput id="idp-org" value={user?.idp_org} readonly />
               </div>
 
               <div class="space-y-2">
-                <label for="idp-username" class="text-sm font-medium">{$t('system.settings.users.update.idpUsername')}</label>
+                <label for="idp-username" class="text-sm font-medium">{$t('system.settings.users.update.idp_username')}</label>
                 <TextInput id="idp-username" value={user?.idp_username} readonly />
               </div>
 
               <div class="space-y-2">
-                <label for="issuer" class="text-sm font-medium">{$t('system.settings.users.update.issuer')}</label>
-                <TextInput id="issuer" value={user?.issuer} readonly />
+                <label for="idp-issuer" class="text-sm font-medium">{$t('system.settings.users.update.issuer')}</label>
+                <TextInput id="idp-issuer" value={user?.idp_issuer} readonly />
               </div>
 
-              <!-- Readonly checkboxes -->
+              <!-- Casdoor-console admin flag — admin-editable (immutable contract
+                   does NOT apply: decided by privileged users on user_profiles). -->
+              <FormField form={superFormObj} name="idp_is_admin">
+                <FormControl>
+                  {#snippet children({ props })}
+                    <div class="flex items-center space-x-2">
+                      <Checkbox {...props} bind:checked={$form.idp_is_admin} id="idp_is_admin" />
+                      <label for="idp_is_admin" class="inline-flex items-center gap-1 text-sm font-medium">{$t('system.settings.users.update.is_admin')}
+                        {#if getColMeta('idp_is_admin')?.tooltip && getColMeta('idp_is_admin')?.show_form_tooltip !== false}
+                          <FormLabelWithPriorityHelp
+                            text={$t(getColMeta('idp_is_admin')!.tooltip!)}
+                            priority={getColMeta('idp_is_admin')?.tooltip_priority}
+                            title={getColMeta('idp_is_admin')?.tooltip_title ? $t(getColMeta('idp_is_admin')!.tooltip_title!) : undefined}
+                          />
+                        {/if}
+                      </label>
+                    </div>
+                  {/snippet}
+                </FormControl>
+              </FormField>
+
               <div class="flex items-center space-x-2">
-                <Checkbox checked={user?.is_admin === true} disabled id="is-admin" />
-                <label for="is-admin" class="inline-flex items-center gap-1 text-sm font-medium">{$t('system.settings.users.update.isAdmin')}
-                  {#if getColMeta('is_admin')?.tooltip && getColMeta('is_admin')?.show_form_tooltip !== false}
+                <Checkbox checked={user?.idp_is_verified === true} disabled id="idp-is-verified" />
+                <label for="idp-is-verified" class="inline-flex items-center gap-1 text-sm font-medium">{$t('system.settings.users.update.is_verified')}
+                  {#if getColMeta('idp_is_verified')?.tooltip && getColMeta('idp_is_verified')?.show_form_tooltip !== false}
                     <FormLabelWithPriorityHelp
-                      text={$t(getColMeta('is_admin')!.tooltip!)}
-                      priority={getColMeta('is_admin')?.tooltip_priority}
-                      title={getColMeta('is_admin')?.tooltip_title ? $t(getColMeta('is_admin')!.tooltip_title!) : undefined}
+                      text={$t(getColMeta('idp_is_verified')!.tooltip!)}
+                      priority={getColMeta('idp_is_verified')?.tooltip_priority}
+                      title={getColMeta('idp_is_verified')?.tooltip_title ? $t(getColMeta('idp_is_verified')!.tooltip_title!) : undefined}
                     />
                   {/if}
                 </label>
               </div>
 
               <div class="flex items-center space-x-2">
-                <Checkbox checked={user?.is_active === true} disabled id="is-active" />
-                <label for="is-active" class="text-sm font-medium">{$t('system.settings.users.update.isActive')}</label>
-              </div>
-
-              <div class="flex items-center space-x-2">
-                <Checkbox checked={user?.is_verified === true} disabled id="is-verified" />
-                <label for="is-verified" class="inline-flex items-center gap-1 text-sm font-medium">{$t('system.settings.users.update.isVerified')}
-                  {#if getColMeta('is_verified')?.tooltip && getColMeta('is_verified')?.show_form_tooltip !== false}
+                <Checkbox checked={user?.idp_email_verified === true} disabled id="idp-email-verified" />
+                <label for="idp-email-verified" class="inline-flex items-center gap-1 text-sm font-medium">{$t('system.settings.users.update.email_verified')}
+                  {#if getColMeta('idp_email_verified')?.tooltip && getColMeta('idp_email_verified')?.show_form_tooltip !== false}
                     <FormLabelWithPriorityHelp
-                      text={$t(getColMeta('is_verified')!.tooltip!)}
-                      priority={getColMeta('is_verified')?.tooltip_priority}
-                      title={getColMeta('is_verified')?.tooltip_title ? $t(getColMeta('is_verified')!.tooltip_title!) : undefined}
+                      text={$t(getColMeta('idp_email_verified')!.tooltip!)}
+                      priority={getColMeta('idp_email_verified')?.tooltip_priority}
+                      title={getColMeta('idp_email_verified')?.tooltip_title ? $t(getColMeta('idp_email_verified')!.tooltip_title!) : undefined}
                     />
                   {/if}
                 </label>
               </div>
 
-              <div class="flex items-center space-x-2">
-                <Checkbox checked={user?.email_verified === true} disabled id="email-verified" />
-                <label for="email-verified" class="inline-flex items-center gap-1 text-sm font-medium">{$t('system.settings.users.update.emailVerified')}
-                  {#if getColMeta('email_verified')?.tooltip && getColMeta('email_verified')?.show_form_tooltip !== false}
-                    <FormLabelWithPriorityHelp
-                      text={$t(getColMeta('email_verified')!.tooltip!)}
-                      priority={getColMeta('email_verified')?.tooltip_priority}
-                      title={getColMeta('email_verified')?.tooltip_title ? $t(getColMeta('email_verified')!.tooltip_title!) : undefined}
-                    />
-                  {/if}
-                </label>
-              </div>
+              <!-- Auth-method enforcer — admin can re-arm it on legacy users. -->
+              <FormField form={superFormObj} name="auth_method_enforcer_dismissed">
+                <FormControl>
+                  {#snippet children({ props })}
+                    <div class="flex items-center space-x-2">
+                      <Checkbox {...props} bind:checked={$form.auth_method_enforcer_dismissed} id="auth_method_enforcer_dismissed" />
+                      <label for="auth_method_enforcer_dismissed" class="text-sm font-medium">{$t('system.settings.users.update.auth_method_enforcer_dismissed')}</label>
+                    </div>
+                  {/snippet}
+                </FormControl>
+              </FormField>
+
+              {#if user?.suspended_at}
+                <div class="flex items-center space-x-2">
+                  <Checkbox checked disabled id="suspended" />
+                  <label for="suspended" class="text-sm font-medium">{$t('system.entities.user_profile.fields.suspended')}</label>
+                </div>
+              {/if}
             </div>
           </div>
         </form>

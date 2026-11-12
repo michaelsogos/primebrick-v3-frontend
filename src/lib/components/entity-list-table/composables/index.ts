@@ -14,7 +14,6 @@ export { useToolbarMode } from './useToolbarMode.svelte';
 export type { ToolbarMode } from './useToolbarMode.svelte';
 export { useStickyColumns } from './useStickyColumns.svelte';
 export { useScrollPreservation } from './useScrollPreservation.svelte';
-export { useSheetPanelManagement } from './useSheetPanelManagement.svelte';
 export { useSheetPanels } from './useSheetPanels.svelte';
 export type { UseSheetPanelsOptions } from './useSheetPanels.svelte';
 

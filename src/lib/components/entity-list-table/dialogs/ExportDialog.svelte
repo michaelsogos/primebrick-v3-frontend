@@ -46,12 +46,12 @@
 
 <BorderedDialog bind:open={open} {onOpenChange} severity="warning" class="sm:max-w-md" showCloseButton={false}>
   <Dialog.Header class="pb-4">
-    <Dialog.Title>{$t('app.common.exportConfirmTitle')}</Dialog.Title>
+    <Dialog.Title>{$t('app.common.export_confirm_title')}</Dialog.Title>
     <Dialog.Description>
       {#if selectedCount > 0}
-        {$t('app.common.exportConfirm')} {selectedCount} {$t(`${ns}.entities.${entity}.plural`)}?
+        {$t('app.common.export_confirm')} {selectedCount} {$t(`${ns}.entities.${entity}.plural`)}?
       {:else}
-        {$t('app.common.exportConfirm')} {totalCount} {$t(`${ns}.entities.${entity}.plural`)}?
+        {$t('app.common.export_confirm')} {totalCount} {$t(`${ns}.entities.${entity}.plural`)}?
       {/if}
     </Dialog.Description>
   </Dialog.Header>
@@ -91,7 +91,7 @@
           {$t('app.common.exporting')}
         {:else}
           <BsFiletypeXlsx class="size-5" />
-          {$t('app.common.exportExcel')}
+          {$t('app.common.export_excel')}
         {/if}
       </Button>
       <Button
@@ -104,7 +104,7 @@
           {$t('app.common.exporting')}
         {:else}
           <BsFiletypeCsv class="size-5" />
-          {$t('app.common.exportCsv')}
+          {$t('app.common.export_csv')}
         {/if}
       </Button>
     </div>

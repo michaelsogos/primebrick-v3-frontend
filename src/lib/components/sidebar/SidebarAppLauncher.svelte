@@ -11,6 +11,8 @@
   import { resolveModuleLabel } from '$lib/shell/module-label';
   import { routesCensusFromModules } from '$lib/api';
   import { routePatternMatches } from '$lib/navigation/access-guard';
+  // Leaf/page icons arrive materialized in the discovery payload — read
+  // them plainly; `file-box` stays the fail-closed tail on statics.
   import { userPreferences } from '$lib/composables/useUserPreferences.svelte';
   import type { ModuleInfo, ModuleNavLink } from '$lib/api-types';
   import { goto } from '$app/navigation';
@@ -19,7 +21,7 @@
   import { DynamicIcon } from '@primebrick/ui';
   import { ChevronsUpDown } from '@primebrick/ui/vendor/lucide';
   import { ChevronRight, StarOff } from '@primebrick/ui/vendor/lucide';
-  import { GradientIcon } from '$lib/components/ui/gradient-icon';
+  import { GradientIcon, GRADIENT_ICON_PATHS, GRADIENT_ICON_STOPS } from '$lib/components/ui/gradient-icon';
   import { APP_ROOT_ICON } from '$lib/shell/app-icons';
   import { get } from 'svelte/store';
   import { tick } from 'svelte';
@@ -99,6 +101,10 @@
     ];
   });
 
+  /** Route census shared by favorites + leaf icon defaults — one derived
+   *  so the modules payload flattens once. */
+  const routesCensus = $derived(routesCensusFromModules(shellNav.modules));
+
   /** Favorite pages — resolved LIVE against the route census so labels and
    *  icons never go stale (the preference stores only route paths). A
    *  favorite whose route left the census is `orphan` — hidden from the
@@ -112,7 +118,7 @@
       module: string | null;
       orphan: boolean;
     }[] => {
-      const census = routesCensusFromModules(shellNav.modules);
+      const census = routesCensus;
       const leaves = shellNav.modules.flatMap((m) =>
         flattenNavLeaves(m.nav ?? []).map((l) => ({ ...l, module: m.id })),
       );
@@ -501,19 +507,9 @@
     'flex h-11 w-full cursor-pointer items-center gap-2 rounded-md border border-transparent px-2 text-left text-sm outline-hidden select-none touch-manipulation focus-visible:ring-2 focus-visible:ring-ring';
   const ctaBtn =
     'ms-auto flex size-9 shrink-0 items-center justify-center rounded-md text-muted-foreground outline-hidden hover:bg-sidebar-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring';
-  /** Lucide `external-link` path data — the "open link" affordance, stroked
-   *  with the primary gradient (same convention as the topbar AI/FARO CTAs). */
-  const externalLinkPaths = [
-    'M15 3h6v6',
-    'M10 14 21 3',
-    'M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6'
-  ];
-  /** Lucide `star` path + amber gradient — the favorites identity marker
-   *  (same convention as PageHeader's favorite toggle). */
-  const starPaths = [
-    'M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z'
-  ];
-  const amberStops = ['#fbbf24', '#fb923c', '#fbbf24'];
+  const externalLinkPaths = GRADIENT_ICON_PATHS.external_link;
+  const starPaths = GRADIENT_ICON_PATHS.star;
+  const amberStops = GRADIENT_ICON_STOPS.amber;
 </script>
 
 <Sidebar.Menu>
@@ -526,7 +522,7 @@
             size="lg"
             class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             title={triggerLabel}
-            aria-label={$t('app.nav.rootLevel')}
+            aria-label={$t('app.nav.root_level')}
             data-testid="app-launcher-trigger"
           >
             <div
@@ -575,7 +571,7 @@
           <div
             class="flex min-w-48 max-w-[300px] flex-col overflow-y-auto p-1"
             role="listbox"
-            aria-label={$t('app.nav.rootLevel')}
+            aria-label={$t('app.nav.root_level')}
             data-launcher-col="0"
             data-testid="app-launcher-apps"
           >
@@ -625,7 +621,7 @@
                     type="button"
                     tabindex="-1"
                     class={ctaBtn}
-                    aria-label={$t('app.nav.goTo')}
+                    aria-label={$t('app.nav.go_to')}
                     data-testid="launcher-cta"
                     disabled={d.hidden}
                     onclick={(e) => {
@@ -683,7 +679,9 @@
                   onkeydown={(e) => handleRowKeydown(e, 1, i)}
                 >
                   <div class="flex size-5 shrink-0 items-center justify-center">
-                    <DynamicIcon name={g.m.icon ?? 'layout-grid'} size={14} />
+                    {#if g.m.icon}
+                      <DynamicIcon name={g.m.icon} size={14} />
+                    {/if}
                   </div>
                   <span class="min-w-0 flex-1 truncate">{resolveModuleLabel(g.m, $t)}</span>
                   <span class="shrink-0 text-[10px] tabular-nums text-muted-foreground">{g.items.length}</span>
@@ -724,7 +722,9 @@
                 onkeydown={(e) => handleRowKeydown(e, 1, i)}
               >
                 <div class="flex size-5 shrink-0 items-center justify-center">
-                  <DynamicIcon name={m.icon ?? 'layout-grid'} size={14} />
+                  {#if m.icon}
+                    <DynamicIcon name={m.icon} size={14} />
+                  {/if}
                 </div>
                 <span class="min-w-0 flex-1 truncate">{resolveModuleLabel(m, $t)}</span>
                 {#if currentModuleId === m.id && selModuleId !== m.id}
@@ -734,7 +734,7 @@
                   type="button"
                   tabindex="-1"
                   class={ctaBtn}
-                  aria-label={$t('app.nav.goTo')}
+                  aria-label={$t('app.nav.go_to')}
                   data-testid="launcher-cta"
                   disabled={d.hidden}
                   onclick={(e) => {
@@ -839,7 +839,9 @@
                 onkeydown={(e) => handleRowKeydown(e, 2, i)}
               >
                 <div class="flex size-5 shrink-0 items-center justify-center">
-                  <DynamicIcon name={item.icon ?? 'circle'} size={14} />
+                  {#if item.icon}
+                    <DynamicIcon name={item.icon} size={14} />
+                  {/if}
                 </div>
                 <span class="min-w-0 flex-1 truncate">{$t(item.label_key)}</span>
                 {#if page.url.pathname === item.href && selLeafId !== item.id}
@@ -858,7 +860,7 @@
           data-testid="app-launcher-footer"
           hints={[
             { keys: ['↑', '↓', '←', '→'] },
-            { keys: ['⏎'], label: $t('app.nav.goTo') },
+            { keys: ['⏎'], label: $t('app.nav.go_to') },
             { keys: ['esc'], size: 'modifier', label: $t('app.common.close') },
           ]}
         >

@@ -68,7 +68,7 @@ in `src/lib/entity-list/types.ts`. All fields are snake_case end to end.
 | `entity` | yes | Entity key, snake_case singular — matches the route segment |
 | `translation_key` | yes | snake_case singular i18n prefix for all entity keys |
 | `title_key` | yes | i18n key for the entity title |
-| `uid` | yes | Column key used as unique row identity |
+| `uid` | yes | Column key used as unique row identity. The record sheet renders it as the top identity badge: `secondary` pill at **input anatomy** (h-9, w-full, px-3, mono value) + `file-key` icon (amber accent, same token family as the payload-map `path` source) + inner copy CTA — label row above like every form field, all glyphs at the canonical 16px CTA size |
 | `display_field` | yes | Key of the primary display column — drives the first/sticky column |
 | `display_name` | response | Display expression template (`${field}` syntax). Optional in the static meta — `assembleMeta` materializes it as `"${display_field}"` when omitted |
 | `actions_overrides` | no | Per-op `enabled` escape hatch — may only toggle existing ops, never invents them |
@@ -136,7 +136,7 @@ of truth: placement (`*_all` → bulk, else row), `row_key` (`meta.uid`),
 `translation_key` (`<entities_ns>.actions.<op>`), `required_permission`
 (route permissions, sentinels → `AUTHENTICATED_ADMIN`/`AUTHENTICATED_USER`),
 `require_step_up` (route `mfa`). `entity_op.cta` on the route overrides
-the non-default chrome (`icon`, `text_color`, `visible_on`, `row_key`,
+the non-default chrome (`icon`, `color`, `visible_on`, `row_key`,
 `translation_key`, `confirm_key`, `placement`). Authored `meta.table`
 entries survive only as explicit per-`action_name` overrides — a CTA
 without a backing `entity_op` route fails at boot, and vice-versa every

@@ -26,6 +26,9 @@ test.describe("entity-form submit gating", () => {
   let createdVersion = 0;
 
   test("Save unlocks only when the form is tainted AND valid", async ({ page, context }) => {
+    // The popup cold-mounts the remote form chunk — under parallel load the
+    // 30s element wait alone can outlast the default 30s test budget.
+    test.setTimeout(120_000);
     await loginAsTestAdmin(page);
     await page.goto("/system/job/triggers", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });

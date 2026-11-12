@@ -35,12 +35,12 @@
 
 <BorderedDialog bind:open={open} {onOpenChange} severity="warning" class="sm:max-w-md" showCloseButton={false}>
   <Dialog.Header class="pb-4">
-    <Dialog.Title>{$t('app.common.exportHtmlConfirmTitle')}</Dialog.Title>
+    <Dialog.Title>{$t('app.common.export_html_confirm_title')}</Dialog.Title>
     <Dialog.Description>
       {#if selectedCount > 0}
-        {$t('app.common.exportHtmlConfirm')} {selectedCount} {$t(`${ns}.entities.${entity}.plural`)}?
+        {$t('app.common.export_html_confirm')} {selectedCount} {$t(`${ns}.entities.${entity}.plural`)}?
       {:else}
-        {$t('app.common.exportHtmlConfirm')} {totalCount} {$t(`${ns}.entities.${entity}.plural`)}?
+        {$t('app.common.export_html_confirm')} {totalCount} {$t(`${ns}.entities.${entity}.plural`)}?
       {/if}
     </Dialog.Description>
   </Dialog.Header>

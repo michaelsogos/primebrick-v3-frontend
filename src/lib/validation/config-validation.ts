@@ -64,14 +64,14 @@ export function buildConfigValueSchema(
   const isUnsigned = validation?.unsigned === true;
   if (type === 'bigint') {
     const bigintRegex = isUnsigned ? /^\d+$/ : /^-?\d+$/;
-    const bigintMsg = isUnsigned ? 'app.common.validation.invalidBigintUnsigned' : 'app.common.validation.invalidBigint';
+    const bigintMsg = isUnsigned ? 'app.common.validation.invalid_bigint_unsigned' : 'app.common.validation.invalid_bigint';
     schema = schema.refine((val) => val === '' || bigintRegex.test(val), { message: bigintMsg });
   } else if (type === 'number' || type === 'money') {
     const numRegex = isUnsigned ? /^\d*\.?\d+$/ : /^-?\d*\.?\d+$/;
-    const numMsg = isUnsigned ? 'app.common.validation.invalidNumberUnsigned' : 'app.common.validation.invalidNumber';
+    const numMsg = isUnsigned ? 'app.common.validation.invalid_number_unsigned' : 'app.common.validation.invalid_number';
     schema = schema.refine((val) => val === '' || numRegex.test(val), { message: numMsg });
   } else if (type === 'boolean') {
-    schema = schema.refine((val) => val === '' || /^(true|false)$/.test(val), { message: 'app.common.validation.invalidBoolean' });
+    schema = schema.refine((val) => val === '' || /^(true|false)$/.test(val), { message: 'app.common.validation.invalid_boolean' });
   } else if (type === 'url') {
     schema = schema.refine((val) => {
       if (!val) return true; // required handled above
@@ -81,12 +81,12 @@ export function buildConfigValueSchema(
       } catch {
         return false;
       }
-    }, { message: 'app.common.validation.invalidUrl' });
+    }, { message: 'app.common.validation.invalid_url' });
   } else if (type === 'email') {
     schema = schema.refine((val) => {
       if (!val) return true;
       return EMAIL_REGEX.test(val);
-    }, { message: 'app.common.validation.invalidEmail' });
+    }, { message: 'app.common.validation.invalid_email' });
   } else if (type === 'phone') {
     // Full validation via libphonenumber-js — same library and logic as SDK.
     const parsedConfig = parseTypeConfig(type_config);
@@ -101,7 +101,7 @@ export function buildConfigValueSchema(
       } catch {
         return false;
       }
-    }, { message: 'app.common.validation.invalidPhone' });
+    }, { message: 'app.common.validation.invalid_phone' });
   } else if (type === 'json') {
     schema = schema.refine((val) => {
       if (!val) return true;
@@ -111,7 +111,7 @@ export function buildConfigValueSchema(
       } catch {
         return false;
       }
-    }, { message: 'app.common.validation.invalidJson' });
+    }, { message: 'app.common.validation.invalid_json' });
   }
 
   // Apply validation rules from type_config.validation
@@ -219,13 +219,13 @@ export function buildConfigValueSchema(
         // Invalid regex pattern — configuration error, must fail consistently
         // with SDK (which also throws). Do NOT silently skip.
         // Always use the invalid-pattern key, even if a custom regex error key is configured.
-        schema = schema.refine(() => false, { message: 'app.common.validation.invalidRegexPattern' });
+        schema = schema.refine(() => false, { message: 'app.common.validation.invalid_regex_pattern' });
         return schema;
       }
       schema = schema.refine((val) => {
         if (!val) return true;
         return regex.test(val);
-      }, { message: regexKey ?? 'app.common.validation.regexMismatch' });
+      }, { message: regexKey ?? 'app.common.validation.regex_mismatch' });
     }
   }
 

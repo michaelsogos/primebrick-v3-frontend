@@ -140,7 +140,9 @@ export function useModuleTranslations(): { stop: () => void } {
 
   function reloadFor(lang: UiLang) {
     const path = page.url.pathname;
-    const moduleId = shellNav.resolveModuleFromRoute(path);
+    // Dict module, not module id — virtual siblings translate under the
+    // declaring service's schema (translations_module contract).
+    const moduleId = shellNav.resolveDictModuleFromRoute(path);
     // 'system' is the shared platform dictionary (entity labels
     // system.entities.*, shared chrome strings) — NOT settings-owned; every
     // module page needs it (a service-owned page under module `job` still
@@ -160,7 +162,7 @@ export function useModuleTranslations(): { stop: () => void } {
     // `$effect` tracks `page.url.pathname` reactively.
     $effect(() => {
       const path = page.url.pathname;
-      const moduleId = shellNav.resolveModuleFromRoute(path);
+      const moduleId = shellNav.resolveDictModuleFromRoute(path);
       const lang = get(uiLang);
       if (moduleId) {
         void ensureModuleTranslations(moduleId, lang);

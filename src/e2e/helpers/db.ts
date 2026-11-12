@@ -172,7 +172,7 @@ export async function upsertFakeBrevoProvider(
     `INSERT INTO emailsender.providers
        (uuid, provider, api_key, api_endpoint, from_email, from_name, reply_to,
         created_by, updated_by, version)
-     VALUES (gen_random_uuid(), 'brevo', $1, $2, $3, 'Primebrick E2E', NULL,
+     VALUES (uuidv7(), 'brevo', $1, $2, $3, 'Primebrick E2E', NULL,
         'system', 'system', 1)
      ON CONFLICT (provider) DO UPDATE SET
        api_key = EXCLUDED.api_key,
@@ -204,7 +204,7 @@ export async function upsertEmailTemplateFixture(template: {
     `INSERT INTO emailsender.email_templates
        (uuid, code, language_iso, subject, body_html, body_text, variables,
         created_by, updated_by, version)
-     VALUES (gen_random_uuid(), $1, $2, $3, '<p>x</p>', 'x', $4::jsonb,
+     VALUES (uuidv7(), $1, $2, $3, '<p>x</p>', 'x', $4::jsonb,
         'e2e', 'e2e', 1)`,
     [
       template.code,
@@ -311,8 +311,8 @@ export async function deleteMfaFactorsByUsername(username: string): Promise<void
   const pool = getPool();
   await pool.query(
     `DELETE FROM public.user_mfa_factors
-     WHERE user_profile_id IN (
-       SELECT id FROM public.user_profiles WHERE idp_username = $1
+     WHERE user_profile_uuid IN (
+       SELECT uuid FROM public.user_profiles WHERE idp_username = $1
      )`,
     [username],
   );

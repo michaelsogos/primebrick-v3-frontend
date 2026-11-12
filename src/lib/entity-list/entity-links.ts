@@ -9,19 +9,125 @@
  * census-declared route resolves `null` and the cell renders the raw
  * value: route drift degrades to a plain cell, never a broken link.
  */
-import type { CensusRoute } from '$lib/api';
+import type { CensusRoute, ModuleInfo } from '$lib/api';
 import { toDisplayString } from '@primebrick/ui';
 import type { MetaColumn } from './types';
+
+/** Subject → census declaration (emit or callable) — the `label_key` gives
+ *  the translated display name; `payload_schema.properties` gives field
+ *  display titles. The SAME declarations the create-form `subject_combo`
+ *  options are built from — one source of truth, never re-derived. */
+export function subjectDecl(
+	modules: readonly ModuleInfo[],
+	subject: string
+): { label_key?: string; payload_schema?: Record<string, unknown> } | undefined {
+	for (const m of modules) {
+		for (const e of m.events?.emits ?? []) if (e.subject === subject) return e;
+		for (const c of m.callables?.callables ?? []) if (c.subject === subject) return c;
+	}
+	return undefined;
+}
+
+/** JSON Schema `properties[field]` display title for condition chips —
+ *  a dotted path resolves on its first segment; unknown fields degrade to
+ *  the raw name, never to silence. */
+export function subjectFieldLabel(
+	modules: readonly ModuleInfo[],
+	subject: string | undefined,
+	field: string
+): string {
+	if (!subject) return field;
+	const props = (subjectDecl(modules, subject)?.payload_schema?.properties ?? undefined) as
+		| Record<string, { title?: string; description?: string; properties?: Record<string, unknown> }>
+		| undefined;
+	if (!props) return field;
+	// Walk the dot path into nested `properties` — the LEAF property is
+	// the field's own declaration (`trigger.metric` → payload.trigger's
+	// `metric` property). `title` is the canonical short label;
+	// `description` is the honest fallback every emitted schema carries.
+	let node: Record<string, unknown> | undefined = props;
+	let leaf: { title?: string; description?: string; properties?: Record<string, unknown> } | undefined;
+	for (const seg of field.split('.')) {
+		leaf = node?.[seg] as typeof leaf;
+		if (!leaf) return field;
+		node = leaf.properties;
+	}
+	return leaf?.title ?? leaf?.description ?? field;
+}
 
 type ColumnRef = NonNullable<MetaColumn['ref']>;
 type ColumnReverseRef = NonNullable<MetaColumn['reverse_ref']>;
 
+/**
+ * One filter term in a filtered-list URL — the wire-level contract that
+ * `useUrlFiltersSync` parses back (`filters[i][field|op|value[|connector]]`).
+ * `value` may be scalar, an `IN`/`NOT IN` array, or a BETWEEN `{start,end}`.
+ */
+export type ListFilterLinkTerm = {
+	field: string;
+	/** Wire operator — '=' default. 'ILIKE', 'IN', 'BETWEEN', '>', … per the
+	 *  `appendListFilterParams` serializer. */
+	op?: string;
+	value:
+		| string
+		| number
+		| boolean
+		| readonly (string | number | boolean)[]
+		| { start: string; end: string };
+	/** 'AND' default — emitted explicitly so links never rely on parser defaults. */
+	connector?: 'AND' | 'OR';
+};
+
+/**
+ * Serialize ONE wire filter term to `filters[i][field|op|value[|connector]]`
+ * bracket params — the canonical verbatim format `translateFilterConditions`
+ * consumes server-side. Use this for raw `FilterCondition[]` (arbitrary WHERE
+ * terms): scalar → `value`, array → `value[]`, BETWEEN → `value[start|end]`.
+ */
+export function appendListFilterTerm(
+	params: URLSearchParams,
+	i: number,
+	term: ListFilterLinkTerm
+) {
+	params.set(`filters[${i}][field]`, term.field);
+	params.set(`filters[${i}][op]`, term.op ?? '=');
+	const v = term.value;
+	if (typeof v === 'object' && v !== null && 'start' in v) {
+		params.set(`filters[${i}][value][start]`, v.start);
+		params.set(`filters[${i}][value][end]`, v.end);
+	} else if (Array.isArray(v)) {
+		for (const item of v) params.append(`filters[${i}][value][]`, String(item));
+	} else {
+		params.set(`filters[${i}][value]`, String(v));
+	}
+	params.set(`filters[${i}][connector]`, term.connector ?? 'AND');
+}
+
+/**
+ * Filtered-list link builder — the STANDARD way to deep-link any entity's
+ * list pre-filtered. Callers supply only the entity name + filter terms;
+ * the target `kind:"list"` route resolves from the census (metadata —
+ * never a hardcoded URL) and the wire format is canonical. Returns `null`
+ * when the entity declares no list route — degrade to a plain cell, never
+ * a broken link.
+ */
+export function filteredEntityListHref(
+	census: readonly CensusRoute[],
+	entity: string,
+	terms: ListFilterLinkTerm[]
+): string | null {
+	if (terms.length === 0) return null;
+	const list = census.find((r) => r.entity === entity && r.kind === 'list');
+	if (!list) return null;
+	const params = new URLSearchParams();
+	terms.forEach((t, i) => appendListFilterTerm(params, i, t));
+	return `${list.route}?${params.toString()}`;
+}
+
 /** Filtered-list URL in the `useUrlFiltersSync` contract. */
 function filteredListHref(route: string, field: string, value: string): string {
 	const params = new URLSearchParams();
-	params.set('filters[0][field]', field);
-	params.set('filters[0][op]', '=');
-	params.set('filters[0][value]', value);
+	appendListFilterTerm(params, 0, { field, op: '=', value });
 	return `${route}?${params.toString()}`;
 }
 
@@ -35,7 +141,9 @@ export function entityRefHref(
 	ref: ColumnRef,
 	value: string
 ): string | null {
-	if ((ref.route ?? 'detail') === 'list') {
+	const route = ref.route ?? 'detail';
+	if (route === 'none') return null;
+	if (route === 'list') {
 		const list = census.find((r) => r.entity === ref.entity && r.kind === 'list');
 		if (!list) return null;
 		return filteredListHref(list.route, ref.filter_field ?? 'uuid', value);

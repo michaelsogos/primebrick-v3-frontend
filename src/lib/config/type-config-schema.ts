@@ -156,17 +156,17 @@ export function serializeTypeConfig(config: ParsedTypeConfig): string {
  */
 const GENERIC_ERROR_KEYS: Record<string, string> = {
   required: 'app.common.validation.required',
-  min: 'app.common.validation.tooShort',
-  max: 'app.common.validation.tooLong',
-  url: 'app.common.validation.invalidUrl',
-  email: 'app.common.validation.invalidEmail',
-  phone: 'app.common.validation.invalidPhone',
-  regex: 'app.common.validation.regexMismatch',
-  invalidUrl: 'app.common.validation.invalidUrl',
-  invalidEmail: 'app.common.validation.invalidEmail',
-  invalidPhone: 'app.common.validation.invalidPhone',
-  invalidUrlProtocol: 'app.common.validation.invalidUrlProtocol',
-  invalidRegexPattern: 'app.common.validation.invalidRegexPattern',
+  min: 'app.common.validation.too_short',
+  max: 'app.common.validation.too_long',
+  url: 'app.common.validation.invalid_url',
+  email: 'app.common.validation.invalid_email',
+  phone: 'app.common.validation.invalid_phone',
+  regex: 'app.common.validation.regex_mismatch',
+  invalidUrl: 'app.common.validation.invalid_url',
+  invalidEmail: 'app.common.validation.invalid_email',
+  invalidPhone: 'app.common.validation.invalid_phone',
+  invalidUrlProtocol: 'app.common.validation.invalid_url_protocol',
+  invalidRegexPattern: 'app.common.validation.invalid_regex_pattern',
 };
 
 export function autoErrorLabelKey(configKey: string, rule: string): string {
@@ -207,6 +207,6 @@ export interface ValuesSourceDefinition {
  * Extensible: add new sources here (countries, languages, timezones, etc.).
  */
 export const BUILTIN_VALUES_SOURCES: ValuesSourceDefinition[] = [
-  { id: 'currencies', label_key: 'system.settings.config.typeConfig.valuesSource.currencies', value_field: 'code', label_field: 'name' },
-  { id: 'ai_models', label_key: 'system.settings.config.typeConfig.valuesSource.ai_models', value_field: 'id', label_field: 'label_key' },
+  { id: 'currencies', label_key: 'system.settings.config.type_config.values_source.currencies', value_field: 'code', label_field: 'name' },
+  { id: 'ai_models', label_key: 'system.settings.config.type_config.values_source.ai_models', value_field: 'id', label_field: 'label_key' },
 ];

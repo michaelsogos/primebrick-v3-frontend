@@ -26,6 +26,7 @@
   import type { ModuleInfo } from '$lib/api-types';
   import RemotePageMount from '$lib/components/remote-page/RemotePageMount.svelte';
   import EntityFormPage from '$lib/entity-form/EntityFormPage.svelte';
+  import EntityDictPage from '$lib/components/entity-dict-page/EntityDictPage.svelte';
   import RemotePageErrorPanel from '$lib/components/remote-page/RemotePageErrorPanel.svelte';
   import { Button } from '@primebrick/ui';
   import { resolvePageForPath, type ResolvedPage } from '$lib/navigation/page-resolver';
@@ -101,6 +102,10 @@
 {#if resolved?.kind === 'remote'}
   {#key appPage.url.pathname}
     <RemotePageMount decl={resolved.decl} {components} />
+  {/key}
+{:else if resolved?.kind === 'archetype' && resolved.archetype === 'entity_dict'}
+  {#key appPage.url.pathname}
+    <EntityDictPage decl={resolved.decl} />
   {/key}
 {:else if resolved?.kind === 'archetype'}
   {#key appPage.url.pathname}

@@ -330,7 +330,7 @@
       labelField="label_key"
       isLabelTranslated
       aria-invalid={ariaInvalid}
-      placeholder={$t('app.common.selectValue')}
+      placeholder={$t('app.common.select_value')}
       data-testid={`config-input-badge-${fieldKey}`}
     />
     {#if firstError}
@@ -348,7 +348,7 @@
       labelField={selectConfig?.label_field ?? 'label_key'}
       isLabelTranslated
       aria-invalid={ariaInvalid}
-      placeholder={$t('app.common.selectValue')}
+      placeholder={$t('app.common.select_value')}
       disabled={selectLoading}
       loading={selectLoading}
       display="detailed"
@@ -372,7 +372,7 @@
       labelField={selectConfig?.label_field ?? 'label_key'}
       isLabelTranslated
       aria-invalid={ariaInvalid}
-      placeholder={$t('app.common.selectValue')}
+      placeholder={$t('app.common.select_value')}
       disabled={selectLoading}
       loading={selectLoading}
       data-testid={`config-input-multi-select-${fieldKey}`}
@@ -383,7 +383,7 @@
   </div>
 {:else if type === 'bigint' || type === 'number'}
   <NumericInput
-    type={type as 'bigint' | 'number' | 'money'}
+    kind={type === 'bigint' ? 'bigint' : 'number'}
     {type_config}
     bind:value
     errors={errors}
@@ -393,15 +393,18 @@
   />
 {:else if type === 'money'}
   <NumericInput
-    type="money"
+    kind="decimal"
     {type_config}
     bind:value
     errors={errors}
     {onChange}
     lang={$uiLang}
-    currencySymbol={moneyCurrencySymbol}
-    currencyCode={moneyCurrency}
-    onCurrencyClick={onTypeConfigChange ? openCurrencyPicker : undefined}
+    uom={{
+      kind: 'currency',
+      code: moneyCurrency,
+      symbol: moneyCurrencySymbol,
+      on_pick: onTypeConfigChange ? openCurrencyPicker : undefined,
+    }}
     data-testid={`config-input-money-${fieldKey}`}
   />
 {:else if type === 'date' || type === 'datetime' || type === 'time'}
@@ -410,7 +413,7 @@
       bind:value={dateValue}
       includeTime={type === 'datetime'}
       timeOnly={type === 'time'}
-      placeholder={type === 'time' ? $t('app.common.selectTime') : $t('app.common.selectDate')}
+      placeholder={type === 'time' ? $t('app.common.select_time') : $t('app.common.select_date')}
     />
     {#if firstError}
       <p class="text-xs text-destructive mt-1">{translatedError}</p>

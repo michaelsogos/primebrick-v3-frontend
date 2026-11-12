@@ -22,6 +22,8 @@ import type { PageRouteDeclaration } from '@primebrick/ui';
 import { PUBLIC_API_ORIGIN } from '$env/static/public';
 import { building, browser } from '$app/environment';
 import { extJsonStringify } from '$lib/api-ext';
+import { appendListFilterTerm } from '$lib/entity-list/entity-links';
+import type { FilterCondition } from '$lib/entity-list/types';
 import { getCachedETag, setCachedETag } from '@primebrick/ui/cache';
 
 export type { HealthModule, HealthPayload, ModuleInfo, ModuleNav, ModuleNavLink, ServiceInfo, ConfigEntry, ConfigEntryType, AiModel } from '$lib/api-types';
@@ -38,6 +40,20 @@ const ENTITY_API_PATH = '/api/v1/entities';
  */
 const ENTITY_SERVICE_MAP: Record<string, string> = {
   customer: 'crm',
+  customer_type: 'crm',
+  contact_type: 'crm',
+  account_kind: 'crm',
+  customer_link_type: 'crm',
+  consent_type: 'crm',
+  company_dimension: 'crm',
+  local_address_type: 'crm',
+  qualification: 'crm',
+  marketing_qualification: 'crm',
+  legal_form: 'crm',
+  local_address: 'crm',
+  customer_account: 'crm',
+  customer_contact: 'crm',
+  customer_link: 'crm',
   ai_model: 'ai',
   ai_cerebellum: 'ai',
   job_schedule: 'job',
@@ -772,7 +788,11 @@ export async function fetchModuleTranslations(moduleCode: string, language: stri
   return await res.json();
 }
 
-/** Admin: list translations (paginated, filtered by module + language). */
+/** Admin: list translations — canonical entity `/list` contract:
+ *  `filters[i][field|op|value]` WHERE terms, `search`/`search_in`,
+ *  `connector`, sort, paging, `deleted_records`; `module` + `language`
+ *  are the dedicated convenience params.
+ *  Wire shape is the standard `EntityListResult`: `{ rows, page, page_size, total }`. */
 export async function fetchTranslationList(moduleCode: string, query: {
   page?: number;
   page_size?: number;
@@ -780,7 +800,12 @@ export async function fetchTranslationList(moduleCode: string, query: {
   sort_key?: string;
   sort_dir?: string;
   deleted_records?: string;
-}): Promise<{ rows: unknown[]; total: bigint }> {
+  search?: string;
+  search_in?: readonly string[];
+  connector?: 'AND' | 'OR';
+  /** Arbitrary WHERE terms — serialized verbatim via `appendListFilterTerm`. */
+  filters?: readonly FilterCondition[];
+}): Promise<{ rows: unknown[]; page: number; page_size: number; total: bigint }> {
   const params = new URLSearchParams({ module: moduleCode });
   if (query.page) params.set('page', String(query.page));
   if (query.page_size) params.set('page_size', String(query.page_size));
@@ -788,6 +813,10 @@ export async function fetchTranslationList(moduleCode: string, query: {
   if (query.sort_key) params.set('sort_key', query.sort_key);
   if (query.sort_dir) params.set('sort_dir', query.sort_dir);
   if (query.deleted_records) params.set('deleted_records', query.deleted_records);
+  if (query.search) params.set('search', query.search);
+  if (query.search_in?.length) params.set('search_in', query.search_in.join(','));
+  if (query.connector) params.set('connector', query.connector);
+  query.filters?.forEach((f, i) => appendListFilterTerm(params, i, { field: f.field, op: f.op, value: f.value }));
   const res = await apiFetch(`/api/v1/entities/translation/list?${params}`);
   if (!res.ok) throw new Error(`Translations list request failed (${res.status})`);
   return await res.json();

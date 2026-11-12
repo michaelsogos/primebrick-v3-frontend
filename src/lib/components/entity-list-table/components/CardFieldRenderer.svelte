@@ -74,7 +74,7 @@
             </button>
           {/snippet}
         </Tooltip.Trigger>
-        <Tooltip.Content>{$t('system.entities.list.emptyField')}</Tooltip.Content>
+        <Tooltip.Content>{$t('system.entities.list.empty_field')}</Tooltip.Content>
       </Tooltip.Root>
     {:else}
       <TableCell

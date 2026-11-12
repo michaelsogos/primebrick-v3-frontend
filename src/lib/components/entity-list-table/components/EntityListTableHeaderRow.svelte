@@ -77,7 +77,7 @@
             checked={allOnPageSelected}
             indeterminate={headerIndeterminate}
             onCheckedChange={() => toggleAllOnPage()}
-            aria-label={$t('system.entities.list.selectAll')}
+            aria-label={$t('system.entities.list.select_all')}
           />
         </div>
       </Table.Head>
@@ -95,16 +95,16 @@
           onclick={() => handleSortClick(col)}
         >
           <div use:stickyColumnsState.stickyRef={{ key: col.key, isHead: true }}>
-            <span class="inline-flex items-center gap-1">
+            <span class="inline-flex items-center gap-1 {sortKey === col.key ? 'text-primary font-semibold' : ''}">
               {#if col.icon}<DynamicIcon name={col.icon} size={14} class="shrink-0 opacity-70" />{/if}
               {$t(col.label_key)}
               {#if isColumnSortable(col)}
                 {#if sortKey !== col.key}
                   <ArrowUpDown class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-60'} />
                 {:else if sortDir === 'asc'}
-                  <ArrowUp class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-80'} />
+                  <ArrowUp class={rowsLoading ? 'size-3 opacity-30' : 'size-3'} />
                 {:else}
-                  <ArrowDown class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-80'} />
+                  <ArrowDown class={rowsLoading ? 'size-3 opacity-30' : 'size-3'} />
                 {/if}
               {/if}
             </span>
@@ -129,16 +129,16 @@
         >
           {#if col.datetime_iana_toggle}
             <div class="flex w-full min-w-0 items-center justify-between gap-1">
-              <span class="inline-flex min-w-0 items-center gap-1">
+              <span class="inline-flex min-w-0 items-center gap-1 {sortKey === col.key ? 'text-primary font-semibold' : ''}">
                 {#if col.icon}<DynamicIcon name={col.icon} size={14} class="shrink-0 opacity-70" />{/if}
                 {$t(col.label_key)}
                 {#if isColumnSortable(col)}
                   {#if sortKey !== col.key}
                     <ArrowUpDown class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-60'} />
                   {:else if sortDir === 'asc'}
-                    <ArrowUp class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-80'} />
+                    <ArrowUp class={rowsLoading ? 'size-3 opacity-30' : 'size-3'} />
                   {:else}
-                    <ArrowDown class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-80'} />
+                    <ArrowDown class={rowsLoading ? 'size-3 opacity-30' : 'size-3'} />
                   {/if}
                 {/if}
               </span>
@@ -147,11 +147,11 @@
                 data-pb-datetime-iana-toggle
                 class="inline-flex shrink-0 rounded-md p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
                 title={(datetimeIanaModeByKey[col.key] ?? 'browser') === 'browser'
-                  ? $t('system.entities.list.datetimeIana.hintBrowser')
-                  : $t('system.entities.list.datetimeIana.hintRecord')}
+                  ? $t('system.entities.list.datetime_iana.hint_browser')
+                  : $t('system.entities.list.datetime_iana.hint_record')}
                 aria-label={(datetimeIanaModeByKey[col.key] ?? 'browser') === 'browser'
-                  ? $t('system.entities.list.datetimeIana.hintBrowser')
-                  : $t('system.entities.list.datetimeIana.hintRecord')}
+                  ? $t('system.entities.list.datetime_iana.hint_browser')
+                  : $t('system.entities.list.datetime_iana.hint_record')}
                 onclick={(e) => {
                   e.stopPropagation();
                   toggleDatetimeIana(col);
@@ -165,16 +165,16 @@
               </button>
             </div>
           {:else}
-            <span class="inline-flex items-center gap-1">
+            <span class="inline-flex items-center gap-1 {sortKey === col.key ? 'text-primary font-semibold' : ''}">
               {#if col.icon}<DynamicIcon name={col.icon} size={14} class="shrink-0 opacity-70" />{/if}
               {$t(col.label_key)}
               {#if isColumnSortable(col)}
                 {#if sortKey !== col.key}
                   <ArrowUpDown class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-60'} />
                 {:else if sortDir === 'asc'}
-                  <ArrowUp class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-80'} />
+                  <ArrowUp class={rowsLoading ? 'size-3 opacity-30' : 'size-3'} />
                 {:else}
-                  <ArrowDown class={rowsLoading ? 'size-3 opacity-30' : 'size-3 opacity-80'} />
+                  <ArrowDown class={rowsLoading ? 'size-3 opacity-30' : 'size-3'} />
                 {/if}
               {/if}
             </span>
@@ -199,8 +199,8 @@
                 previewPanel.openPreview(viewRows[0]);
               }
             }}
-            aria-label={$t('system.entities.list.togglePreviewPanel')}
-            title={$t('system.entities.list.togglePreviewPanel')}
+            aria-label={$t('system.entities.list.toggle_preview_panel')}
+            title={$t('system.entities.list.toggle_preview_panel')}
             class="transition-transform duration-300"
           >
             {#if previewPanel.state.previewPanelOpen}

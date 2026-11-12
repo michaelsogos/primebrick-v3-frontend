@@ -16,7 +16,7 @@ function toastEvent(tone: ToastTone, message: string, data?: ExternalToast & { t
 
   const label =
     tone === 'critical'
-      ? tr('app.common.impact.criticalError')
+      ? tr('app.common.impact.critical_error')
       : tone === 'error'
         ? tr('app.common.impact.error')
         : tone === 'warning'

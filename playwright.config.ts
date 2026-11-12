@@ -29,6 +29,7 @@ const EDGE_SPECS = [
   "ai-json-schema-pending-actions.spec.ts",
   "ai-json-schema-quality.spec.ts",
   "ai-regex-quality.spec.ts",
+  "ai-translation-powered.spec.ts",
   "smart-regex-model-selector.spec.ts",
   // lighthouse-a11y drives the shared Edge session too (CDP :9333) and
   // attaches LH to it — parallel workers would race tabs on one browser.

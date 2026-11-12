@@ -1,6 +1,5 @@
 import { SvelteSet } from 'svelte/reactivity';
-import { sheetState, closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
-import { useSheetPanelManagement } from './useSheetPanelManagement.svelte';
+import { useEntitySheetSync, nextSearchScopeKeys } from '$lib/entity-list';
 import type { MetaColumn, ViewName, AdvancedFilter } from '$lib/entity-list/types';
 import type { DeepReadonly } from '@primebrick/ui';
 
@@ -14,6 +13,7 @@ export interface UseSheetPanelsOptions {
   onSearchInKeysChange: () => (keys: string[] | null) => void;
   onVisibleKeysChange: () => (keys: string[]) => void;
   onResetColumnVisibility: () => (view: ViewName) => void;
+  entity: () => string;
   filterableColumns: () => MetaColumn[];
   searchableColumns: () => MetaColumn[];
   nonAuditingColumns: () => MetaColumn[];
@@ -24,26 +24,21 @@ export interface UseSheetPanelsOptions {
   onResetFilters?: () => (() => void) | undefined;
   advancedFilters: () => AdvancedFilter[] | null;
   onAdvancedFiltersChange?: () => ((filters: AdvancedFilter[], connector: 'AND' | 'OR') => void) | undefined;
-  filtersOpen: () => boolean;
-  setFiltersOpen: (open: boolean) => void;
+  /** Optional IANA contract — present only when the host owns
+   *  `datetime_iana_toggle` columns (ELT today; dict has none). */
+  datetimeIanaToggleColumns?: () => MetaColumn[];
+  datetimeIanaModeByKey?: () => Record<string, 'browser' | 'record'>;
+  toggleDatetimeIana?: () => (col: MetaColumn) => void;
+  datetimeIanaDisabled?: () => boolean;
 }
 
+/** ELT's sheet-panel surface — declares the four `entity.*` factories on
+ *  top of the shared sync contract (props stay live while a sheet is
+ *  open; `filtersOpen`/`toggleFiltersSheet` are the funnel CTA pair). */
 export function useSheetPanels(options: UseSheetPanelsOptions) {
-  const sheetPanelManagement = useSheetPanelManagement();
-
   function toggleSearchKey(key: string) {
-    const current = options.searchInKeys();
     const cb = options.onSearchInKeysChange();
-    if (!current || current.length === 0) {
-      cb([key]);
-      return;
-    }
-    if (current.includes(key)) {
-      const next = current.filter((k) => k !== key);
-      cb(next.length ? next : null);
-      return;
-    }
-    cb([...current, key]);
+    cb(nextSearchScopeKeys(options.searchInKeys(), key));
   }
 
   function toggleColumnKey(key: string) {
@@ -60,94 +55,76 @@ export function useSheetPanels(options: UseSheetPanelsOptions) {
     cb([...visible, key]);
   }
 
-  // Do not `$effect`-open from `filtersOpen`: while the sheet is closing, `filtersOpen` can
-  // still be true for a tick and `openSheet` runs again (infinite reopen loop).
-
-  /** Parent can set `bind:filtersOpen={false}` to dismiss the filters sheet. */
-  $effect(() => {
-    void options.filtersOpen();
-    void sheetState.open;
-    void sheetState.panelId;
-    if (!options.filtersOpen() && sheetState.open && sheetState.panelId === 'entity.filters') closeSheet();
-  });
-
-  // Keep sheet panel props reactive while open (SheetHost stores a snapshot at `openSheet()` time).
-  // Without this, checkboxes in `entity.columns` / `entity.searchIn` don't visually toggle even though
-  // the underlying selection changes.
-  $effect(() => {
-    void sheetState.open;
-    void sheetState.panelId;
-    void options.visibleKeys();
-    void options.searchInKeys();
-    void options.searchableColumns();
-    void options.filterableColumns();
-    void options.nonAuditingColumns();
-    void options.auditingColumnsGroup();
-    void options.stickyColumnsGroup();
-
-    if (!sheetState.open) return;
-    if (sheetState.panelId === 'entity.columns') {
-      const stickyColumnsGroup = options.stickyColumnsGroup();
-      const nonAuditingColumns = options.nonAuditingColumns();
-      const auditingColumnsGroup = options.auditingColumnsGroup();
-      sheetState.props = {
-        stickyColumns: stickyColumnsGroup,
-        nonAuditingColumns,
-        auditingColumns: auditingColumnsGroup,
-        visibleKeys: options.visibleKeys(),
-        toggleColumnKey,
-        onReorderKeys: (group: 'sticky' | 'data' | 'auditing', keys: string[]) => {
-          const allowed = new SvelteSet(
-            (group === 'sticky'
-              ? stickyColumnsGroup
-              : group === 'data'
-                ? nonAuditingColumns
-                : auditingColumnsGroup
-            ).map((c) => c.key)
-          );
-          const dedup: string[] = [];
-          const seen = new SvelteSet<string>();
-          for (const k of keys) {
-            if (!allowed.has(k)) continue;
-            if (seen.has(k)) continue;
-            seen.add(k);
-            dedup.push(k);
-          }
-          options.columnOrder.applyColumnVisibility(group, dedup);
-        },
-        onResetColumnVisibility: () => options.onResetColumnVisibility()('table')
-      };
-      return;
-    }
-    if (sheetState.panelId === 'entity.searchIn') {
-      sheetState.props = {
+  const sync = useEntitySheetSync({
+    panels: {
+      'entity.columns': () => {
+        const stickyColumnsGroup = options.stickyColumnsGroup();
+        const nonAuditingColumns = options.nonAuditingColumns();
+        const auditingColumnsGroup = options.auditingColumnsGroup();
+        return {
+          stickyColumns: stickyColumnsGroup,
+          nonAuditingColumns,
+          auditingColumns: auditingColumnsGroup,
+          visibleKeys: options.visibleKeys(),
+          toggleColumnKey,
+          onReorderKeys: (group: 'sticky' | 'data' | 'auditing', keys: string[]) => {
+            const allowed = new SvelteSet(
+              (group === 'sticky'
+                ? stickyColumnsGroup
+                : group === 'data'
+                  ? nonAuditingColumns
+                  : auditingColumnsGroup
+              ).map((c) => c.key)
+            );
+            const dedup: string[] = [];
+            const seen = new SvelteSet<string>();
+            for (const k of keys) {
+              if (!allowed.has(k)) continue;
+              if (seen.has(k)) continue;
+              seen.add(k);
+              dedup.push(k);
+            }
+            options.columnOrder.applyColumnVisibility(group, dedup);
+          },
+          onResetColumnVisibility: () => options.onResetColumnVisibility()('table')
+        };
+      },
+      'entity.searchIn': () => ({
         searchInKeys: options.searchInKeys(),
         searchableColumns: options.searchableColumns(),
         onSearchInKeysChange: options.onSearchInKeysChange(),
         toggleSearchKey
-      };
-    }
-    if (sheetState.panelId === 'entity.filters') {
-      sheetState.props = {
+      }),
+      'entity.filters': () => ({
+        entity: options.entity(),
         filterableColumns: options.filterableColumns(),
         filterValues: options.filterValues() ?? {},
         onFilterValuesChange: options.onFilterValuesChange?.(),
         onResetFilters: options.onResetFilters?.(),
         advancedFilters: options.advancedFilters() ?? [],
         onAdvancedFiltersChange: options.onAdvancedFiltersChange?.()
-      };
+      }),
+      ...(options.datetimeIanaToggleColumns && options.toggleDatetimeIana
+        ? {
+            'entity.datetimeIana': () => ({
+              datetimeIanaColumns: options.datetimeIanaToggleColumns!(),
+              modeByKey: options.datetimeIanaModeByKey?.() ?? {},
+              onToggle: options.toggleDatetimeIana!(),
+              disabled: options.datetimeIanaDisabled?.() ?? false
+            })
+          }
+        : {})
     }
   });
 
-  /** When the global sheet closes after showing filters, mirror that to the bindable prop. */
-  $effect(() => {
-    void sheetState.open;
-    void sheetPanelManagement.state.lastPanelId;
-    if (!sheetState.open && sheetPanelManagement.state.lastPanelId === 'entity.filters') options.setFiltersOpen(false);
-  });
-
   return {
-    get state(): DeepReadonly<{ lastPanelId: string | null }> { return sheetPanelManagement.state; },
+    get state(): DeepReadonly<{ lastPanelId: string | null }> {
+      return { lastPanelId: sync.lastPanelId };
+    },
+    get filtersOpen() {
+      return sync.filtersOpen;
+    },
+    toggleFiltersSheet: sync.toggleFiltersSheet,
     toggleSearchKey,
     toggleColumnKey,
   };

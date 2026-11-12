@@ -1,36 +1,67 @@
 <script lang="ts">
-  import { browser } from "$app/environment";
-  import { Button } from '@primebrick/ui';
-  import { TextInput } from "@primebrick/ui";
-  import { PrimeField } from "@primebrick/ui";
-  import { Sheet } from "@primebrick/ui";
-  import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-  import { dropdownMenuItemWithSelectedClass } from '$lib/components/ui/dropdown-menu/dropdown-menu-item-selected';
-  import { Badge } from '@primebrick/ui';
-  import { DropdownMenuCheckboxItem } from "$lib/components/ui/dropdown-menu";
-  import { t } from "$lib/i18n";
-  import { uiLang } from "$lib/i18n/store.svelte";
-  import { closeSheet } from "$lib/shell/sheets/sheet-manager.svelte";
-  import { SheetPanelLayout } from '@primebrick/ui';
-  import SheetHeaderAction from "$lib/shell/sheets/SheetHeaderAction.svelte";
-  import { X as XIcon } from '@primebrick/ui/vendor/lucide';
-  import { Funnel } from '@primebrick/ui/vendor/lucide';
-  import { Eraser } from '@primebrick/ui/vendor/lucide'
-  import { ChevronDown } from '@primebrick/ui/vendor/lucide'
-  import { Play } from '@primebrick/ui/vendor/lucide'
-  import { Pencil } from '@primebrick/ui/vendor/lucide'
-  import { X } from '@primebrick/ui/vendor/lucide'
-import { Switch } from '@primebrick/ui';
-  import type { MetaColumn, AdvancedFilter, FilterOperator } from "$lib/entity-list/types";
-  import { getOperatorsForColumnType } from "$lib/entity-list/types";
-  import { DateWheelPicker } from "@primebrick/ui";
-  import { CalendarDate, CalendarDateTime, parseDate, parseDateTime } from "@internationalized/date";
-  import { badgeClassesFromToken } from '@primebrick/ui';
-  import { onMount } from "svelte";
-  import { getResolvedIanaTimeZone } from "@primebrick/ui";
-  import { formatListCellValue } from '@primebrick/ui';
+  /**
+   * FiltersPanel — the entity-list filters sheet. EVERY field control is
+   * resolved by `FormFieldDispatcher surface="filter"` from the column
+   * contract (`type`/`format`/`options_source`/`ref`) — the panel owns no
+   * control anatomy of its own: badges are `display="badge"` multi
+   * ComboSelects, census subjects the detailed multi combo, booleans the
+   * tri-state, entity refs the paged server combobox, write-only editor
+   * widgets degrade to text.
+   *
+   * Standard tab = one criterion per filterable column (quick filters).
+   * Advanced tab = explicit {field, operator, value} criteria rows — the
+   * value slot renders the SAME dispatcher (operator-aware: BETWEEN shows
+   * a pair; array-producing controls feed IN/NOT IN through the core
+   * serializer).
+   *
+   * Apply is draft-commit: the sheet stays open (sheets.md semantics —
+   * commit closes only for form panels).
+   */
+  import { browser } from '$app/environment';
+  import { onMount } from 'svelte';
+  import {
+    Button,
+    ButtonGroup,
+    ComboSelect,
+    PrimeField,
+    SearchInput,
+    SheetPanelLayout,
+    SheetPanelFooter,
+    DynamicIcon,
+    formatListCellValue,
+    getResolvedIanaTimeZone,
+    numericKindOf,
+  } from '@primebrick/ui';
+  import SheetHeaderAction from '$lib/shell/sheets/SheetHeaderAction.svelte';
+  import FormFieldDispatcher from '$lib/entity-form/FormFieldDispatcher.svelte';
+  import { useCensusSubjectOptions } from '$lib/entity-form/use-census-subject-options.svelte';
+  import { shellNav } from '$lib/shell/modules-shell.svelte';
+  import { t } from '$lib/i18n';
+  import { uiLang } from '$lib/i18n/store.svelte';
+  import {
+    Funnel,
+    Eraser,
+    Play,
+    Pencil,
+    X as XIcon,
+  } from '@primebrick/ui/vendor/lucide';
+  import { calendarDateToUtcIso, isoToCalendarDate } from '$lib/entity-form/date-wire';
+  import { CalendarDate, CalendarDateTime } from '@internationalized/date';
+  import type {
+    MetaColumn,
+    AdvancedFilter,
+    FilterOperator,
+  } from '$lib/entity-list/types';
+  import {
+    getOperatorsForColumnType,
+    FILTER_OPERATOR_ICON,
+    FILTER_OPERATOR_KEY,
+  } from '$lib/entity-list/types';
 
   interface Props {
+    /** Entity being filtered — feeds `options_source:"audit.actors"`
+     *  columns through `{entity}/audit-actors`. */
+    entity?: string;
     filterableColumns?: MetaColumn[];
     filterValues?: Record<string, unknown>;
     onFilterValuesChange?: (values: Record<string, unknown>) => void;
@@ -40,6 +71,7 @@ import { Switch } from '@primebrick/ui';
   }
 
   let {
+    entity,
     filterableColumns = [],
     filterValues = {},
     onFilterValuesChange,
@@ -48,826 +80,523 @@ import { Switch } from '@primebrick/ui';
     onAdvancedFiltersChange,
   }: Props = $props();
 
-  // Temporary filter values (being edited by user)
-  let tempFilterValues = $state<Record<string, unknown>>({});
+  // Census subject vocabularies — same derivation the form surface uses.
+  const census = useCensusSubjectOptions(() => shellNav.modules);
 
-  // Local state for DateDropper values (CalendarDate or CalendarDateTime objects)
-  let dateDropperValues: Record<string, CalendarDate | CalendarDateTime | null> = $state({});
-  let timezoneValues: Record<string, string> = $state({});
+  // Draft state — committed only by Apply (see applyFilters).
+  let tempFilterValues = $state<Record<string, unknown>>({});
+  let timezoneValues = $state<Record<string, string>>({});
   let browserTimezone = $state<string | null>(null);
+
+  let tempAdvancedFilters = $state<AdvancedFilter[]>([]);
+  let globalConnector = $state<'AND' | 'OR'>('AND');
+
+  let newFilterField = $state<string>('');
+  let newFilterOperator = $state<FilterOperator>('=');
+  let newFilterValue = $state<unknown>('');
+  let newFilterStart = $state<unknown>(null);
+  let newFilterEnd = $state<unknown>(null);
+  let advancedTimezone = $state<string>('');
+  let editingFilterId = $state<string | null>(null);
+
+  let tabValue = $state<'standard' | 'advanced'>('standard');
+
+  // Standard vs advanced surfaces: `datetime` columns are ADVANCED-ONLY —
+  // a same-instant equality quick-filter is noise (ranges/`BETWEEN` live
+  // in the advanced criteria). `date` stays standard (day-precision
+  // equality is meaningful). NUMERIC columns (`numericKindOf` — number/
+  // bigint/decimal/money/ref_count) are advanced-only the same way: a
+  // bare equality quick-filter is rarely the question — `>`/`>=`/
+  // `BETWEEN` are, and those ops live in advanced criteria.
+  // The advanced field combo gets the FULL set.
+  const standardColumnsBase = $derived(
+    filterableColumns.filter((c) => c.type !== 'datetime' && numericKindOf(c) === null),
+  );
+  const fieldOptionsColumns = $derived(filterableColumns);
+
+  // Field-name search — standard tab only (the advanced field combo has
+  // its own internal search; a shared box there filters nothing it sees).
+  let fieldSearch = $state('');
+  const filteredColumns = $derived.by(() => {
+    const q = fieldSearch.trim().toLowerCase();
+    if (!q) return standardColumnsBase;
+    return standardColumnsBase.filter(
+      (c) =>
+        c.key.toLowerCase().includes(q) ||
+        c.label_key.toLowerCase().includes(q) ||
+        $t(c.label_key).toLowerCase().includes(q),
+    );
+  });
 
   onMount(() => {
     if (!browser) return;
     browserTimezone = getResolvedIanaTimeZone();
-  });
-
-  // Advanced filters state
-  let tempAdvancedFilters: AdvancedFilter[] = $state([]);
-  let globalConnector: 'AND' | 'OR' = $state('AND');
-
-  // New filter being created
-  let newFilterField = $state<string>(""); 
-  let newFilterOperator = $state<FilterOperator>("="); 
-  let newFilterValue = $state<AdvancedFilter['value']>("");
-
-  // BETWEEN operator state
-  let newFilterStartDate = $state<unknown>("");
-  let newFilterEndDate = $state<unknown>("");
-
-  // Edit mode state
-  let editingFilterId = $state<string | null>(null);
-
-  // Filters mode: standard (quick per-column inputs) vs advanced (operator list)
-  let tabValue = $state<"standard" | "advanced">("standard");
-
-  // Initialize temp values when component loads
-  onMount(() => {
-    tempFilterValues = { ...filterValues };
+    advancedTimezone = browserTimezone || 'UTC';
     tempAdvancedFilters = [...advancedFilters];
-    // Sync date dropper values
+    const initial = { ...filterValues };
     for (const col of filterableColumns) {
-      if (col.type === "date" || col.type === "datetime") {
-        const tz = timezoneValues[col.key] || browserTimezone || "UTC";
-        dateDropperValues[col.key] = isoToCalendarDate(filterValues[col.key] as string | undefined, col.type, tz);
+      if (col.type === 'date' || col.type === 'datetime') {
+        const tz = browserTimezone || 'UTC';
+        timezoneValues[col.key] = tz;
+        const raw = initial[col.key];
+        if (typeof raw === 'string' && raw) {
+          initial[col.key] = isoToCalendarDate(raw, col.type, tz);
+        }
       }
     }
+    tempFilterValues = initial;
   });
-
-  function updateTempFilterValue(key: string, value: unknown) {
-    tempFilterValues = { ...tempFilterValues, [key]: value };
-  }
-
-  function clearTempFilter(key: string) {
-    const newValues = { ...tempFilterValues };
-    delete newValues[key];
-    tempFilterValues = newValues;
-    // Also clear date dropper value if it's a date field
-    if (dateDropperValues[key] !== undefined) {
-      dateDropperValues[key] = null;
-    }
-  }
 
   function applyFilters() {
-    // Sync date dropper values to temp filter values before applying
+    const next = { ...tempFilterValues };
     for (const col of filterableColumns) {
-      if (
-        (col.type === "date" || col.type === "datetime") &&
-        dateDropperValues[col.key] !== undefined
-      ) {
-        const dateValue = dateDropperValues[col.key] as CalendarDate | CalendarDateTime | null;
-        // Only send value and timezone if date is actually selected
-        if (dateValue) {
-          const tz = timezoneValues[col.key] || browserTimezone || "UTC";
-          // Always convert to UTC using the selected timezone
-          const utcIso = calendarDateToUtcIso(dateValue, tz);
-          tempFilterValues = { ...tempFilterValues, [col.key]: utcIso };
-
-          // Store timezone in local state for UI restoration (not sent to BE)
-          timezoneValues[col.key] = tz;
-
-          // Only send IANA field if:
-          // 1. Column has datetime_iana_toggle (has IANA field in DB)
-          // 2. Selected timezone differs from browser timezone
-          if (col.datetime_iana_toggle && tz !== browserTimezone) {
-            const ianaField = col.datetime_iana_toggle.record_iana_field;
-            tempFilterValues = { ...tempFilterValues, [ianaField]: tz };
-          }
-        } else {
-          // Clear timezone from local state if date is cleared
-          timezoneValues[col.key] = browserTimezone || "UTC";
+      if (col.type !== 'date' && col.type !== 'datetime') continue;
+      const ianaField = col.datetime_iana_toggle?.record_iana_field;
+      const v = next[col.key];
+      if (v instanceof CalendarDateTime) {
+        const tz = timezoneValues[col.key] || browserTimezone || 'UTC';
+        next[col.key] = calendarDateToUtcIso(v, tz);
+        if (ianaField) {
+          if (tz !== browserTimezone) next[ianaField] = tz;
+          else delete next[ianaField];
         }
+      } else if (v instanceof CalendarDate) {
+        next[col.key] = v.toString();
+        if (ianaField) delete next[ianaField];
+      } else if (ianaField) {
+        delete next[ianaField];
       }
     }
-    onFilterValuesChange?.(tempFilterValues);
-    applyAdvancedFilters();
+    tempFilterValues = next;
+    onFilterValuesChange?.(next);
+    onAdvancedFiltersChange?.(tempAdvancedFilters, globalConnector);
   }
 
-  function getBadgeOptions(col: MetaColumn) {
-    if (col.type !== "badge" || !col.badge?.values) return [];
-    return Object.entries(col.badge.values).map(([key, value]) => ({
-      key,
-      label:
-        value.label_text ||
-        $t(value.label_key || `system.entities.customer.status.${key}`),
-      color: value.color,
-    }));
-  }
-
-  // Conversione da stringa ISO a CalendarDate o CalendarDateTime
-  function isoToCalendarDate(
-    isoString: string | null | undefined,
-    type: "date" | "datetime" = "date",
-    timezone: string = "UTC",
-  ): CalendarDate | CalendarDateTime | null {
-    if (!isoString) return null;
-    try {
-      if (type === "datetime") {
-        // For UTC strings (with 'Z'), convert to the specified timezone
-        if (isoString.endsWith('Z')) {
-          const date = new Date(isoString);
-          // Get date parts in the specified timezone using Intl
-          const formatter = new Intl.DateTimeFormat('en-US', {
-            timeZone: timezone,
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            hour12: false,
-          });
-          const parts = formatter.formatToParts(date);
-          const get = (t: string) => parseInt(parts.find(p => p.type === t)?.value || '0', 10);
-          let hour = get('hour');
-          if (hour === 24) hour = 0;
-          return new CalendarDateTime(get('year'), get('month'), get('day'), hour, get('minute'), get('second'));
-        }
-        return parseDateTime(isoString);
-      }
-      return parseDate(isoString);
-    } catch {
-      return null;
-    }
-  }
-
-  // Conversione da CalendarDate o CalendarDateTime a stringa ISO UTC
-  function calendarDateToUtcIso(date: CalendarDate | CalendarDateTime | null, timezone: string): string | null {
-    if (!date) return null;
-    if (date instanceof CalendarDate) {
-      // For dates without time, just return the date string
-      return date.toString();
-    }
-    // For CalendarDateTime, convert to UTC using the specified timezone
-    // CalendarDateTime is timezone-naive, so we need to convert it using the timezone
-    const year = date.year;
-    const month = date.month;
-    const day = date.day;
-    const hour = date.hour;
-    const minute = date.minute;
-    const second = date.second;
-
-    // Create a Date object in the specified timezone and convert to UTC ISO string
-    const dateInTimezone = new Date(Date.UTC(year, month - 1, day, hour, minute, second));
-    // Adjust for timezone offset
-    const offset = getTimezoneOffset(timezone);
-    const utcDate = new Date(dateInTimezone.getTime() - offset * 60 * 1000);
-    return utcDate.toISOString();
-  }
-
-  // Get timezone offset in minutes from UTC
-  function getTimezoneOffset(timezone: string): number {
-    const date = new Date();
-    const utcDate = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));
-    const tzDate = new Date(date.toLocaleString('en-US', { timeZone: timezone }));
-    return (tzDate.getTime() - utcDate.getTime()) / (1000 * 60);
-  }
-
-  function renderFilterInput(col: MetaColumn) {
-    if (col.type === "badge" && col.badge?.values) {
-      // ... (rest of the code remains the same)
-      const options = getBadgeOptions(col);
-      const selectedKeys = (tempFilterValues[col.key] as string[]) || [];
-
-      return {
-        type: "multiselect" as const,
-        options,
-        selectedKeys,
-        placeholder: $t(`system.entities.list.filterPlaceholder`),
-      };
-    }
-
-    // For date types - use DateDropper
-    if (col.type === "date" || col.type === "datetime") {
-      return {
-        type: "date-dropper" as const,
-      };
-    }
-
-    // For text types - use text input
-    return {
-      type: "input" as const,
-      inputType: "text",
-      placeholder: $t(`system.entities.list.filterPlaceholder`),
-      value: (tempFilterValues[col.key] as string) || "",
-    };
-  }
-
-  function toggleBadgeSelection(colKey: string, optionKey: string) {
-    const currentSelection = (tempFilterValues[colKey] as string[]) || [];
-    const newSelection = currentSelection.includes(optionKey)
-      ? currentSelection.filter((k) => k !== optionKey)
-      : [...currentSelection, optionKey];
-    tempFilterValues = {
-      ...tempFilterValues,
-      [colKey]: newSelection.length > 0 ? newSelection : undefined,
-    };
-  }
   function resetAllFilters() {
-    // Clear temporary filter values (inputs in panel)
     tempFilterValues = {};
-    // Clear date dropper values
-    for (const col of filterableColumns) {
-      if (col.type === "date" || col.type === "datetime") {
-        dateDropperValues[col.key] = null;
-      }
-    }
-    // Clear advanced filters
+    timezoneValues = {};
     tempAdvancedFilters = [];
-    newFilterField = "";
-    newFilterOperator = "=";
-    newFilterValue = "";
+    newFilterField = '';
+    newFilterOperator = '=';
+    newFilterValue = '';
+    newFilterStart = null;
+    newFilterEnd = null;
     editingFilterId = null;
-    // Reset actual applied filters
     onResetFilters?.();
+  }
+
+  // ── Advanced tab ────────────────────────────────────────────────────
+
+  const selectedColumn = $derived(filterableColumns.find((c) => c.key === newFilterField));
+  const availableOperators = $derived(
+    selectedColumn ? getOperatorsForColumnType(selectedColumn.type) : [],
+  );
+  const fieldOptions = $derived(
+    fieldOptionsColumns.map((c) => ({ value: c.key, label: $t(c.label_key), _icon: c.icon ?? '' })),
+  );
+  const operatorOptions = $derived(
+    availableOperators.map((op) => ({
+      value: op,
+      label: $t(`system.entities.list.operators.${FILTER_OPERATOR_KEY[op]}`),
+      _icon: FILTER_OPERATOR_ICON[op],
+    })),
+  );
+
+  // Field-change side effect (ComboSelect has no change callback): a new
+  // field resets the draft value and re-clamps the operator. Setting
+  // `prevField` first makes editAdvancedFilter a no-op here.
+  let prevField = $state('');
+  $effect(() => {
+    const f = newFilterField;
+    if (f === prevField) return;
+    prevField = f;
+    editingFilterId = null;
+    newFilterValue = '';
+    newFilterStart = null;
+    newFilterEnd = null;
+    const col = filterableColumns.find((c) => c.key === f);
+    const ops = col ? getOperatorsForColumnType(col.type) : [];
+    if (ops.length && !ops.includes(newFilterOperator)) newFilterOperator = ops[0];
+  });
+
+  // Dispatcher output → wire value: CalendarDateTime needs the timezone
+  // conversion, CalendarDate keeps its string, everything else passes.
+  function criterionValue(raw: unknown): unknown {
+    if (raw instanceof CalendarDateTime) {
+      return calendarDateToUtcIso(raw, advancedTimezone || browserTimezone || 'UTC');
+    }
+    if (raw instanceof CalendarDate) return raw.toString();
+    return raw;
   }
 
   function addAdvancedFilter() {
     if (!newFilterField) return;
-
-    const selectedColumn = filterableColumns.find((c) => c.key === newFilterField);
-    let value: AdvancedFilter['value'] = newFilterValue;
-
-    // Handle BETWEEN operator
-    if (newFilterOperator === "BETWEEN") {
-      if (!newFilterStartDate || !newFilterEndDate) return;
-      // Convert date/datetime values to ISO strings
-      if (selectedColumn?.type === "datetime") {
-        const tz = browserTimezone || "UTC";
-        const startUtc = calendarDateToUtcIso(newFilterStartDate as CalendarDate | CalendarDateTime, tz);
-        const endUtc = calendarDateToUtcIso(newFilterEndDate as CalendarDate | CalendarDateTime, tz);
-        value = { start: startUtc, end: endUtc };
-      } else if (selectedColumn?.type === "date") {
-        // Convert date values to ISO strings
-        const startIso = (newFilterStartDate as CalendarDate)?.toString();
-        const endIso = (newFilterEndDate as CalendarDate)?.toString();
-        value = { start: startIso, end: endIso };
-      } else {
-        value = { start: newFilterStartDate, end: newFilterEndDate };
-      }
-    } else if (Array.isArray(newFilterValue)) {
-      if (newFilterValue.length === 0) return;
-    } else if (!newFilterValue) {
-      return;
-    } else if (selectedColumn?.type === "datetime") {
-      // Convert single datetime value to UTC
-      const tz = browserTimezone || "UTC";
-      value = calendarDateToUtcIso(newFilterValue as CalendarDate | CalendarDateTime, tz);
-    } else if (selectedColumn?.type === "date") {
-      // Convert single date value to ISO string
-      value = (newFilterValue as CalendarDate)?.toString();
+    let value: AdvancedFilter['value'];
+    if (newFilterOperator === 'BETWEEN') {
+      const start = criterionValue(newFilterStart);
+      const end = criterionValue(newFilterEnd);
+      if (start == null || start === '' || end == null || end === '') return;
+      value = { start, end };
+    } else {
+      const v = criterionValue(newFilterValue);
+      if (v == null || v === '' || (Array.isArray(v) && v.length === 0)) return;
+      value = v;
     }
 
     if (editingFilterId) {
-      // Update existing filter
-      tempAdvancedFilters = tempAdvancedFilters.map((filter) =>
-        filter.id === editingFilterId
-          ? { ...filter, field: newFilterField, operator: newFilterOperator, value }
-          : filter
+      tempAdvancedFilters = tempAdvancedFilters.map((f) =>
+        f.id === editingFilterId
+          ? { ...f, field: newFilterField, operator: newFilterOperator, value: value as AdvancedFilter['value'] }
+          : f,
       );
       editingFilterId = null;
     } else {
-      // Add new filter
-      const newFilter: AdvancedFilter = {
-        id: crypto.randomUUID(),
-        field: newFilterField,
-        operator: newFilterOperator,
-        value,
-      };
-      tempAdvancedFilters = [...tempAdvancedFilters, newFilter];
+      tempAdvancedFilters = [
+        ...tempAdvancedFilters,
+        {
+          id: crypto.randomUUID(),
+          field: newFilterField,
+          operator: newFilterOperator,
+          value: value as AdvancedFilter['value'],
+        },
+      ];
     }
 
-    // Reset form
-    newFilterField = "";
-    newFilterOperator = "=";
-    newFilterValue = "";
-    newFilterStartDate = "";
-    newFilterEndDate = "";
+    newFilterField = '';
+    newFilterValue = '';
+    newFilterStart = null;
+    newFilterEnd = null;
   }
 
   function editAdvancedFilter(filter: AdvancedFilter) {
+    const col = filterableColumns.find((c) => c.key === filter.field);
+    prevField = filter.field; // mark before assigning — the watcher no-ops
     newFilterField = filter.field;
     newFilterOperator = filter.operator;
     editingFilterId = filter.id;
-
-    const selectedColumn = filterableColumns.find((c) => c.key === filter.field);
-
-    // Handle BETWEEN operator
-    if (filter.operator === "BETWEEN" && typeof filter.value === "object" && filter.value !== null && "start" in filter.value && "end" in filter.value) {
-      // Convert ISO strings back to CalendarDate/CalendarDateTime using existing helper
-      if (selectedColumn?.type === "datetime" || selectedColumn?.type === "date") {
-        newFilterStartDate = isoToCalendarDate(filter.value.start as string, selectedColumn.type, browserTimezone || "UTC");
-        newFilterEndDate = isoToCalendarDate(filter.value.end as string, selectedColumn.type, browserTimezone || "UTC");
-      } else {
-        newFilterStartDate = filter.value.start;
-        newFilterEndDate = filter.value.end;
-      }
-      newFilterValue = "";
+    const restore = (raw: unknown) =>
+      col?.type === 'datetime' || col?.type === 'date'
+        ? isoToCalendarDate(raw as string, col.type, browserTimezone || 'UTC')
+        : raw;
+    const v = filter.value;
+    if (
+      filter.operator === 'BETWEEN' &&
+      typeof v === 'object' &&
+      v !== null &&
+      'start' in v &&
+      'end' in v
+    ) {
+      newFilterStart = restore(v.start);
+      newFilterEnd = restore(v.end);
+      newFilterValue = '';
     } else {
-      // Convert ISO string back to CalendarDate/CalendarDateTime using existing helper
-      if (selectedColumn?.type === "datetime" || selectedColumn?.type === "date") {
-        newFilterValue = isoToCalendarDate(filter.value as string, selectedColumn.type, browserTimezone || "UTC");
-      } else {
-        newFilterValue = filter.value;
-      }
-      newFilterStartDate = "";
-      newFilterEndDate = "";
+      newFilterValue = restore(v);
+      newFilterStart = null;
+      newFilterEnd = null;
     }
   }
 
   function cancelEditAdvancedFilter() {
     editingFilterId = null;
-    newFilterField = "";
-    newFilterOperator = "=";
-    newFilterValue = "";
-    newFilterStartDate = "";
-    newFilterEndDate = "";
-  }
-
-  function toggleBadgeFilterValue(key: string) {
-    const currentSelection = Array.isArray(newFilterValue) ? newFilterValue : (newFilterValue ? [newFilterValue] : []);
-    const newSelection = currentSelection.includes(key)
-      ? currentSelection.filter((k) => k !== key)
-      : [...currentSelection, key];
-    newFilterValue = newSelection.length > 0 ? newSelection : "";
+    newFilterField = '';
+    newFilterOperator = '=';
+    newFilterValue = '';
+    newFilterStart = null;
+    newFilterEnd = null;
   }
 
   function removeAdvancedFilter(id: string) {
     tempAdvancedFilters = tempAdvancedFilters.filter((f) => f.id !== id);
   }
 
-  function applyAdvancedFilters() {
-    // Apply filters with global connector
-    onAdvancedFiltersChange?.(tempAdvancedFilters, globalConnector);
+  // Summary line for a committed criterion — badge values resolve through
+  // the column's declared `badge.values` (label_text/label_key), never an
+  // entity-specific fallback; booleans read the tri-state vocabulary.
+  function badgeLabel(col: MetaColumn | undefined, key: unknown): string {
+    const decl = col?.badge?.values?.[key as string];
+    return decl?.label_text ?? (decl?.label_key ? $t(decl.label_key) : String(key));
   }
+
+  function summaryValue(col: MetaColumn | undefined, filter: AdvancedFilter): string {
+    const v = filter.value;
+    if (Array.isArray(v)) return v.map((x) => badgeLabel(col, x)).join(', ');
+    if (col?.type === 'boolean' || col?.pg_type === 'boolean') {
+      return v === 'true' || v === true
+        ? $t('system.entities.list.boolean_true')
+        : $t('system.entities.list.boolean_false');
+    }
+    if (
+      filter.operator === 'BETWEEN' &&
+      typeof v === 'object' &&
+      v !== null &&
+      'start' in v &&
+      'end' in v
+    ) {
+      return col
+        ? `${formatListCellValue(col, v.start, $uiLang)} – ${formatListCellValue(col, v.end, $uiLang)}`
+        : `${String(v.start)} – ${String(v.end)}`;
+    }
+    return col ? formatListCellValue(col, v, $uiLang) : String(v);
+  }
+
+  const addDisabled = $derived(
+    !newFilterField ||
+      (newFilterOperator === 'BETWEEN'
+        ? newFilterStart == null || newFilterStart === '' || newFilterEnd == null || newFilterEnd === ''
+        : newFilterValue == null ||
+          newFilterValue === '' ||
+          (Array.isArray(newFilterValue) && newFilterValue.length === 0)),
+  );
 </script>
 
-<SheetPanelLayout contentClass="flex min-h-0 flex-col overflow-hidden p-0" footer={applyFooter}>
-    {#snippet icon()}
-      <Funnel class="size-4" />
-    {/snippet}
-    {#snippet title()}
-      {$t("system.entities.list.filters")}
-    {/snippet}
-    {#snippet actions()}
-      <SheetHeaderAction title={$t("app.common.reset")} onclick={resetAllFilters}>
-        <Eraser class="size-4" />
-      </SheetHeaderAction>
-      <Sheet.Close
-        class="ring-offset-background focus-visible:ring-ring inline-flex size-8 items-center justify-center rounded-md text-muted-foreground opacity-70 transition-opacity hover:bg-accent hover:text-accent-foreground hover:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
-        title={$t("app.common.done")}
-        onclick={() => closeSheet()}
-      >
-        <XIcon class="size-4" />
-      </Sheet.Close>
-    {/snippet}
-    {#snippet toolbar()}
-      <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-3 py-1">
-        <span class="justify-self-end text-xs font-medium {tabValue === 'standard' ? 'font-bold text-foreground' : 'text-muted-foreground'}">
-          {$t("system.entities.list.standardFilters")}
-        </span>
-        <Switch
-          checked={tabValue === 'advanced'}
-          onCheckedChange={(checked) => tabValue = checked ? 'advanced' : 'standard'}
-          aria-label={$t("system.entities.list.advancedFilters")}
-          data-testid="filters-mode-switch"
+<SheetPanelLayout contentClass="p-4" footer={applyFooter}>
+  {#snippet icon()}
+    <Funnel class="size-4" />
+  {/snippet}
+  {#snippet title()}
+    {$t('system.entities.list.filters')}
+  {/snippet}
+  {#snippet actions()}
+    <SheetHeaderAction title={$t('app.common.reset')} onclick={resetAllFilters}>
+      <Eraser class="size-4" />
+    </SheetHeaderAction>
+  {/snippet}
+  {#snippet toolbar()}
+    <div class="space-y-2">
+      <ButtonGroup segmented class="w-full">
+        {#each [['standard', 'funnel'], ['advanced', 'hammer']] as [mode, icon] (mode)}
+          {@const active = tabValue === mode}
+          <Button
+            variant="ghost"
+            size="sm"
+            type="button"
+            class="flex-1 {active
+              ? 'bg-foreground/10 text-foreground shadow-xs'
+              : 'text-muted-foreground'}"
+            aria-pressed={active}
+            data-testid="filters-mode-{mode}"
+            onclick={() => (tabValue = mode as 'standard' | 'advanced')}
+          >
+            <DynamicIcon name={icon} size={14} class="shrink-0" />
+            {$t(`system.entities.list.${mode}_filters`)}
+          </Button>
+        {/each}
+      </ButtonGroup>
+      {#if tabValue === 'standard'}
+        <SearchInput
+          bind:value={fieldSearch}
+          placeholder={$t('system.entities.list.search_fields')}
+          data_testid="filters-field-search"
         />
-        <span class="justify-self-start text-xs font-medium {tabValue === 'advanced' ? 'font-bold text-foreground' : 'text-muted-foreground'}">
-          {$t("system.entities.list.advancedFilters")}
-        </span>
-      </div>
-    {/snippet}
-
-    {#if tabValue === "standard"}
-    <div class="flex-1 overflow-y-auto p-4">
-      {#each filterableColumns as col (col.key)}
-        <PrimeField id="filter-{col.key}" label={$t(col.label_key)} help={col} class="mb-4">
-          {#snippet control()}
-
-          {#if renderFilterInput(col).type === "multiselect"}
-            {@const filterConfig = renderFilterInput(col)}
-            {@const options = filterConfig.options}
-            {@const selectedKeys = filterConfig.selectedKeys || []}
-            {@const placeholder = filterConfig.placeholder}
-
-            <DropdownMenu.Root>
-              <DropdownMenu.Trigger>
-                {#snippet child({ props })}
-                  <Button
-                    id="filter-{col.key}"
-                    variant="outline"
-                    class="h-9 w-full justify-between font-normal"
-                    {...props}
-                  >
-                    <span
-                      class={selectedKeys.length > 0
-                        ? "text-foreground"
-                        : "text-muted-foreground/70 text-xs"}
-                    >
-                      {selectedKeys.length > 0
-                        ? `${selectedKeys.length} ${$t("system.entities.list.selected")}`
-                        : placeholder}
-                    </span>
-                    <div class="flex items-center gap-1">
-                      {#if selectedKeys.length > 0}
-                        <button
-                          type="button"
-                          class="flex size-5 cursor-pointer items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                          onpointerdown={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                          }}
-                          onclick={(e) => {
-                            e.stopPropagation();
-                            e.preventDefault();
-                            clearTempFilter(col.key);
-                          }}
-                          title={$t("app.common.clear")}
-                        >
-                          <XIcon class="size-3" />
-                        </button>
-                      {/if}
-                      <ChevronDown class="h-4 w-4 shrink-0" />
-                    </div>
-                  </Button>
-                {/snippet}
-              </DropdownMenu.Trigger>
-              <DropdownMenu.Content
-                align="start"
-                class="w-full max-h-96 overflow-auto"
-              >
-                {#each options as option (option.key)}
-                  {@const badgeColors = badgeClassesFromToken(
-                    option.color ?? null,
-                  )}
-                  <DropdownMenuCheckboxItem
-                    checked={selectedKeys.includes(option.key)}
-                    onCheckedChange={() =>
-                      toggleBadgeSelection(col.key, option.key)}
-                    closeOnSelect={false}
-                  >
-                    <Badge
-                      class="shadow-none"
-                      style="background-color: {badgeColors.bgColor}; color: {badgeColors.textColor}; border-color: {badgeColors.borderColor};"
-                    >
-                      {option.label}
-                    </Badge>
-                  </DropdownMenuCheckboxItem>
-                {/each}
-              </DropdownMenu.Content>
-            </DropdownMenu.Root>
-          {:else if renderFilterInput(col).type === "date-dropper"}
-            <div class="relative">
-              <DateWheelPicker
-                bind:value={dateDropperValues[col.key]}
-                bind:timezone={timezoneValues[col.key]}
-                placeholder={$t("system.entities.list.filterPlaceholder")}
-                includeTime={col.type === "datetime"}
-              />
-              {#if dateDropperValues[col.key]}
-                <button
-                  type="button"
-                  class="absolute right-8 top-1/2 -translate-y-1/2 flex size-5 cursor-pointer items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                  onclick={() => clearTempFilter(col.key)}
-                  title={$t("app.common.clear")}
-                >
-                  <XIcon class="size-3" />
-                </button>
-              {/if}
-            </div>
-          {:else}
-            {@const filterConfig = renderFilterInput(col)}
-            {@const inputType = filterConfig.inputType}
-            {@const placeholder = filterConfig.placeholder}
-            {@const value = filterConfig.value}
-
-            <TextInput
-              id="filter-{col.key}"
-              type={inputType}
-              {placeholder}
-              {value}
-              oninput={(e) =>
-                updateTempFilterValue(col.key, e.currentTarget.value)}
-              clearLabel={$t("app.common.clear")}
-              onClear={() => clearTempFilter(col.key)}
-              class="w-full placeholder:text-muted-foreground/70 placeholder:text-xs"
-            />
-          {/if}
-          {/snippet}
-        </PrimeField>
-      {/each}
-
-      {#if filterableColumns.length === 0}
-        <div
-          class="flex flex-col items-center justify-center py-8 text-center text-muted-foreground"
-        >
-          <p class="text-sm">{$t("system.entities.list.noFilterableFields")}</p>
-        </div>
+      {:else}
+        <ButtonGroup segmented class="w-full">
+          {#each [['AND', 'ampersand', 'system.entities.list.all_criteria'], ['OR', 'split', 'system.entities.list.at_least_one_criteria']] as [conn, icon, labelKey] (conn)}
+            <Button
+              variant="ghost"
+              size="sm"
+              class="flex-1 {globalConnector === conn
+                ? 'bg-foreground/10 text-foreground shadow-xs'
+                : 'text-muted-foreground'}"
+              aria-pressed={globalConnector === conn}
+              data-testid="filters-connector-{conn.toLowerCase()}"
+              onclick={() => (globalConnector = conn as 'AND' | 'OR')}
+            >
+              <DynamicIcon name={icon} size={14} />
+              {$t(labelKey)}
+            </Button>
+          {/each}
+        </ButtonGroup>
       {/if}
     </div>
-    {:else}
-    <div class="flex-1 overflow-y-auto p-4">
-      <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-3 mb-4">
-        <span class="justify-self-end text-xs font-medium {globalConnector === 'AND' ? 'font-bold text-foreground' : 'text-muted-foreground'}">
-          {$t('system.entities.list.allCriteria')}
-        </span>
-        <Switch
-          checked={globalConnector === 'OR'}
-          onCheckedChange={(checked) => globalConnector = checked ? 'OR' : 'AND'}
-          aria-label={$t('system.entities.list.connector')}
-        />
-        <span class="justify-self-start text-xs font-medium {globalConnector === 'OR' ? 'font-bold text-foreground' : 'text-muted-foreground'}">
-          {$t('system.entities.list.atLeastOneCriteria')}
-        </span>
-      </div>
-      {#if tempAdvancedFilters.length > 0}
-        <div class="space-y-3 mb-4">
-          {#each tempAdvancedFilters as filter (filter.id)}
-            {@const column = filterableColumns.find((c) => c.key === filter.field)}
-            <div class="flex items-center gap-2 p-3 bg-muted/30 rounded-md border">
-              <div class="flex-1 min-w-0">
-                <div class="text-xs flex flex-wrap items-center gap-1">
-                  <span class="font-bold text-foreground">
-                    {column ? $t(column.label_key) : filter.field}
-                  </span>
-                  <span class="text-primary">
-                    {$t(`system.entities.list.operators.${filter.operator}`)}
-                  </span>
-                  <span class="italic text-muted-foreground">
-                    {Array.isArray(filter.value)
-                      ? filter.value.map((v) =>
-                          column?.badge?.values?.[v]?.label_text ||
-                          $t(column?.badge?.values?.[v]?.label_key || `system.entities.customer.status.${v}`)
-                        ).join(", ")
-                      : filter.operator === "BETWEEN" && typeof filter.value === "object" && filter.value !== null && "start" in filter.value && "end" in filter.value
-                      ? `${formatListCellValue(column ?? { type: 'text' }, filter.value.start, $uiLang)} e ${formatListCellValue(column ?? { type: 'text' }, filter.value.end, $uiLang)}`
-                      : formatListCellValue(column ?? { type: 'text' }, filter.value, $uiLang)}
-                  </span>
-                </div>
-              </div>
-              <div class="flex items-center gap-1">
-                <button
-                  type="button"
-                  class="flex size-6 cursor-pointer items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                  onclick={() => editAdvancedFilter(filter)}
-                  title={$t("app.common.edit")}
-                >
-                  <Pencil class="size-3" />
-                </button>
-                <button
-                  type="button"
-                  class="flex size-6 cursor-pointer items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                  onclick={() => removeAdvancedFilter(filter.id)}
-                  title={$t("app.common.remove")}
-                >
-                  <X class="size-3" />
-                </button>
-              </div>
-            </div>
-          {/each}
-        </div>
-      {/if}
+  {/snippet}
 
-      <div class="border-t pt-4">
-        <div class="space-y-3">
-          <div>
-            <label class="text-xs font-normal text-foreground mb-1 block" for="advanced-field">
-              {$t("system.entities.list.field")}
-            </label>
-            <DropdownMenu.Root>
-              <DropdownMenu.Trigger>
-                {#snippet child({ props })}
-                  <Button
-                    variant="outline"
-                    class="h-9 w-full justify-between font-normal"
-                    {...props}
-                  >
-                    <span
-                      class={newFilterField
-                        ? "text-foreground"
-                        : "text-muted-foreground/70 text-xs"}
-                    >
-                      {newFilterField
-                        ? (filterableColumns.find((c) => c.key === newFilterField)
-                            ? $t(filterableColumns.find((c) => c.key === newFilterField)!.label_key)
-                            : newFilterField)
-                        : $t("system.entities.list.selectField")}
-                    </span>
-                    <ChevronDown class="h-4 w-4 shrink-0" />
-                  </Button>
-                {/snippet}
-              </DropdownMenu.Trigger>
-              <DropdownMenu.Content align="start" class="w-full max-h-96 overflow-auto">
-                {#each filterableColumns as col (col.key)}
-                  <DropdownMenu.Item
-                    onSelect={() => {
-                      newFilterField = col.key;
-                      editingFilterId = null;
-                      newFilterValue = "";
-                      newFilterStartDate = "";
-                      newFilterEndDate = "";
-                      const columnType = col.type;
-                      const operators = getOperatorsForColumnType(columnType);
-                      if (!operators.includes(newFilterOperator)) {
-                        newFilterOperator = operators[0];
-                      }
-                    }}
-                    closeOnSelect={true}
-                    class={dropdownMenuItemWithSelectedClass('', newFilterField === col.key)}
-                  >
-                    {$t(col.label_key)}
-                  </DropdownMenu.Item>
-                {/each}
-              </DropdownMenu.Content>
-            </DropdownMenu.Root>
-          </div>
-
-          {#if newFilterField}
-            {@const selectedColumn = filterableColumns.find((c) => c.key === newFilterField)}
-            {@const availableOperators = selectedColumn
-              ? getOperatorsForColumnType(selectedColumn.type)
-              : []}
-            <div>
-              <label class="text-xs font-normal text-foreground mb-1 block" for="advanced-operator">
-                {$t("system.entities.list.operator")}
-              </label>
-              <DropdownMenu.Root>
-                <DropdownMenu.Trigger>
-                  {#snippet child({ props })}
-                    <Button
-                      variant="outline"
-                      class="h-9 w-full justify-between font-normal"
-                      {...props}
-                    >
-                      <span class="text-foreground">
-                        {newFilterOperator ? $t(`system.entities.list.operators.${newFilterOperator}`) : ''}
-                      </span>
-                      <ChevronDown class="h-4 w-4 shrink-0" />
-                    </Button>
-                  {/snippet}
-                </DropdownMenu.Trigger>
-                <DropdownMenu.Content align="start" class="w-full">
-                  {#each availableOperators as op (op)}
-                    <DropdownMenu.Item
-                      onSelect={() => {
-                        newFilterOperator = op as FilterOperator;
-                        newFilterStartDate = "";
-                        newFilterEndDate = "";
-                      }}
-                      closeOnSelect={true}
-                      class={dropdownMenuItemWithSelectedClass('', newFilterOperator === op)}
-                    >
-                      {$t(`system.entities.list.operators.${op}`)}
-                    </DropdownMenu.Item>
-                  {/each}
-                </DropdownMenu.Content>
-              </DropdownMenu.Root>
-            </div>
-
-            <div>
-              <label class="text-xs font-normal text-foreground mb-1 block" for="advanced-value">
-                {$t("system.entities.list.value")}
-              </label>
-              {#if selectedColumn?.type === "badge" && selectedColumn.badge?.values}
-                {@const selectedBadgeKeys = Array.isArray(newFilterValue) ? newFilterValue : (newFilterValue ? [newFilterValue] : [])}
-                <DropdownMenu.Root>
-                  <DropdownMenu.Trigger>
-                    {#snippet child({ props })}
-                      <Button
-                        variant="outline"
-                        class="h-9 w-full justify-between font-normal"
-                        {...props}
-                      >
-                        <span
-                          class={selectedBadgeKeys.length > 0
-                            ? "text-foreground"
-                            : "text-muted-foreground/70 text-xs"}
-                        >
-                          {selectedBadgeKeys.length > 0
-                            ? `${selectedBadgeKeys.length} ${$t("system.entities.list.selected")}`
-                            : $t("system.entities.list.selectValue")}
-                        </span>
-                        <ChevronDown class="h-4 w-4 shrink-0" />
-                      </Button>
-                    {/snippet}
-                  </DropdownMenu.Trigger>
-                  <DropdownMenu.Content align="start" class="w-full max-h-96 overflow-auto">
-                    {#each Object.entries(selectedColumn.badge?.values || {}) as [key, value] (key)}
-                      {@const badgeColors = badgeClassesFromToken(value.color ?? null)}
-                      <DropdownMenuCheckboxItem
-                        checked={selectedBadgeKeys.includes(key)}
-                        onCheckedChange={() => toggleBadgeFilterValue(key)}
-                        closeOnSelect={false}
-                      >
-                        <Badge
-                          class="shadow-none"
-                          style="background-color: {badgeColors.bgColor}; color: {badgeColors.textColor}; border-color: {badgeColors.borderColor};"
-                        >
-                          {value.label_text ||
-                            $t(value.label_key || `system.entities.customer.status.${key}`)}
-                        </Badge>
-                      </DropdownMenuCheckboxItem>
-                    {/each}
-                  </DropdownMenu.Content>
-                </DropdownMenu.Root>
-              {:else if selectedColumn?.type === "date" || selectedColumn?.type === "datetime"}
-                {#if newFilterOperator === "BETWEEN"}
-                  <div class="space-y-2">
-                    <DateWheelPicker
-                      bind:value={newFilterStartDate}
-                      placeholder={$t("system.entities.list.selectValue")}
-                      includeTime={selectedColumn?.type === "datetime"}
-                    />
-                    <DateWheelPicker
-                      bind:value={newFilterEndDate}
-                      placeholder={$t("system.entities.list.selectValue")}
-                      includeTime={selectedColumn?.type === "datetime"}
-                    />
-                  </div>
-                {:else}
-                  <DateWheelPicker
-                    bind:value={newFilterValue}
-                    placeholder={$t("system.entities.list.selectValue")}
-                    includeTime={selectedColumn?.type === "datetime"}
-                  />
+  {#if tabValue === 'standard'}
+    {#each filteredColumns as col (col.key)}
+      <PrimeField
+        label={$t(col.label_key)}
+        icon={col.icon}
+        help={col}
+        help_context="list"
+        class="mb-4"
+      >
+        {#snippet control({ id })}
+          <FormFieldDispatcher
+            surface="filter"
+            column={col}
+            filterEntity={entity}
+            bind:value={tempFilterValues[col.key]}
+            bind:timezone={timezoneValues[col.key]}
+            emitsOptions={census.emitsOptions}
+            callablesOptions={census.callablesOptions}
+            controlProps={{ id }}
+          />
+        {/snippet}
+      </PrimeField>
+    {/each}
+  {:else}
+    {#if tempAdvancedFilters.length > 0}
+      <div class="space-y-3 mb-4">
+        {#each tempAdvancedFilters as filter (filter.id)}
+          {@const column = filterableColumns.find((c) => c.key === filter.field)}
+          <div class="flex items-center gap-2 p-3 bg-muted/30 rounded-md border">
+            <div class="flex-1 min-w-0">
+              <div class="text-xs flex flex-wrap items-center gap-1">
+                {#if column?.icon}
+                  <DynamicIcon name={column.icon} size={14} class="shrink-0 opacity-70" />
                 {/if}
+                <span class="font-bold text-foreground">
+                  {column ? $t(column.label_key) : filter.field}
+                </span>
+                <span class="text-primary inline-flex items-center gap-0.5">
+                  {$t(`system.entities.list.operators.${FILTER_OPERATOR_KEY[filter.operator]}`)}
+                </span>
+                <span class="italic text-muted-foreground">
+                  {summaryValue(column, filter)}
+                </span>
+              </div>
+            </div>
+            <div class="flex items-center gap-1">
+              <button
+                type="button"
+                class="flex size-6 cursor-pointer items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                onclick={() => editAdvancedFilter(filter)}
+                title={$t('app.common.edit')}
+                data-testid="filters-criterion-edit"
+              >
+                <Pencil class="size-3" />
+              </button>
+              <button
+                type="button"
+                class="flex size-6 cursor-pointer items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                onclick={() => removeAdvancedFilter(filter.id)}
+                title={$t('app.common.remove')}
+                data-testid="filters-criterion-remove"
+              >
+                <XIcon class="size-3" />
+              </button>
+            </div>
+          </div>
+        {/each}
+      </div>
+    {/if}
+
+    <div class={tempAdvancedFilters.length > 0 ? 'border-t pt-4' : ''}>
+      <div class="space-y-3">
+        <PrimeField label={$t('system.entities.list.field')}>
+          {#snippet control({ id })}
+            <ComboSelect
+              {id}
+              mode="single"
+              bind:value={newFilterField}
+              options={fieldOptions}
+              valueField="value"
+              labelField="label"
+              iconField="_icon"
+              placeholder={$t('system.entities.list.select_field')}
+            />
+          {/snippet}
+        </PrimeField>
+
+        {#if selectedColumn}
+          <PrimeField label={$t('system.entities.list.operator')}>
+            {#snippet control({ id })}
+              <ComboSelect
+                {id}
+                mode="single"
+                bind:value={newFilterOperator}
+                options={operatorOptions}
+                valueField="value"
+                labelField="label"
+                iconField="_icon"
+              />
+            {/snippet}
+          </PrimeField>
+
+          <PrimeField label={$t('system.entities.list.value')}>
+            {#snippet control({ id })}
+              {#if newFilterOperator === 'BETWEEN'}
+                <div class="space-y-2">
+                  <FormFieldDispatcher
+                    surface="filter"
+                    column={selectedColumn}
+                    filterEntity={entity}
+                    bind:value={newFilterStart}
+                    bind:timezone={advancedTimezone}
+                    controlProps={{ id }}
+                  />
+                  <FormFieldDispatcher
+                    surface="filter"
+                    column={selectedColumn}
+                    filterEntity={entity}
+                    bind:value={newFilterEnd}
+                    bind:timezone={advancedTimezone}
+                  />
+                </div>
               {:else}
-                <TextInput
-                  placeholder={$t("system.entities.list.filterPlaceholder")}
-                  value={newFilterValue as string}
-                  clearLabel={$t("app.common.clear")}
-                  oninput={(e) => (newFilterValue = e.currentTarget.value)}
-                  onClear={() => (newFilterValue = "")}
-                  class="w-full placeholder:text-muted-foreground/70 placeholder:text-xs"
+                <FormFieldDispatcher
+                  surface="filter"
+                  column={selectedColumn}
+                  filterEntity={entity}
+                  bind:value={newFilterValue}
+                  bind:timezone={advancedTimezone}
+                  emitsOptions={census.emitsOptions}
+                  callablesOptions={census.callablesOptions}
+                  controlProps={{ id }}
                 />
               {/if}
-            </div>
+            {/snippet}
+          </PrimeField>
 
-            {#if editingFilterId}
-              <div class="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  class="flex-1"
-                  onclick={cancelEditAdvancedFilter}
-                >
-                  {$t("app.common.cancel")}
-                </Button>
-                <Button
-                  variant="default"
-                  size="sm"
-                  class="flex-1"
-                  onclick={addAdvancedFilter}
-                  disabled={!newFilterField || (
-                    newFilterOperator === "BETWEEN" ? (!newFilterStartDate || !newFilterEndDate) :
-                    Array.isArray(newFilterValue) ? newFilterValue.length === 0 :
-                    !newFilterValue
-                  )}
-                >
-                  {$t("app.common.edit")}
-                </Button>
-              </div>
-            {:else}
+          {#if editingFilterId}
+            <div class="flex gap-2">
+              <Button variant="outline" size="sm" class="flex-1" onclick={cancelEditAdvancedFilter}>
+                {$t('app.common.cancel')}
+              </Button>
               <Button
                 variant="default"
                 size="sm"
-                class="w-full"
+                class="flex-1"
                 onclick={addAdvancedFilter}
-                disabled={!newFilterField || (
-                  newFilterOperator === "BETWEEN" ? (!newFilterStartDate || !newFilterEndDate) :
-                  Array.isArray(newFilterValue) ? newFilterValue.length === 0 :
-                  !newFilterValue
-                )}
+                disabled={addDisabled}
               >
-                {$t("system.entities.list.addFilter")}
+                {$t('app.common.edit')}
               </Button>
-            {/if}
+            </div>
+          {:else}
+            <Button
+              variant="default"
+              size="sm"
+              class="w-full"
+              onclick={addAdvancedFilter}
+              disabled={addDisabled}
+              data-testid="filters-add-criterion"
+            >
+              {$t('system.entities.list.add_filter')}
+            </Button>
           {/if}
-        </div>
+        {/if}
       </div>
-
-      {#if filterableColumns.length === 0}
-        <div
-          class="flex flex-col items-center justify-center py-8 text-center text-muted-foreground"
-        >
-          <p class="text-sm">{$t("system.entities.list.noFilterableFields")}</p>
-        </div>
-      {/if}
     </div>
-    {/if}
+  {/if}
+
+  {#if filterableColumns.length === 0}
+    <div class="flex flex-col items-center justify-center py-8 text-center text-muted-foreground">
+      <p class="text-sm">{$t('system.entities.list.no_filterable_fields')}</p>
+    </div>
+  {/if}
 </SheetPanelLayout>
 
 <!-- Primary CTA lives in FOOT (form-panel convention), not in HEAD. -->
 {#snippet applyFooter()}
-  <div class="p-3">
+  <SheetPanelFooter>
     <Button
       type="button"
       variant="default"
-      class="w-full"
       onclick={applyFilters}
       data-testid="filters-apply"
     >
       <Play class="size-4" />
-      {$t("app.common.apply")}
+      {$t('app.common.apply')}
     </Button>
-  </div>
+  </SheetPanelFooter>
 {/snippet}

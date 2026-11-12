@@ -141,7 +141,7 @@
       {#if docMissing}
         <div class="flex flex-col items-center gap-2 py-16 text-muted-foreground">
           <BookOpen class="size-8" />
-          <p class="text-sm">{$t('app.docs.notFound')}</p>
+          <p class="text-sm">{$t('app.docs.not_found')}</p>
         </div>
       {:else if doc}
         <article class="docs-page mx-auto max-w-3xl">

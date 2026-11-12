@@ -8,14 +8,6 @@ import type { MetaColumn } from '../entity-list/types';
 
 const cols = (arr: Partial<MetaColumn>[]) => arr as MetaColumn[];
 
-function toObj(params: URLSearchParams): Record<string, string[]> {
-	const out: Record<string, string[]> = {};
-	for (const [k, v] of params.entries()) {
-		(out[k] ??= []).push(v);
-	}
-	return out;
-}
-
 describe('appendListFilterParams', () => {
 	it('emits bracket-notation filters for quick filterValues', () => {
 		const p = new URLSearchParams();
@@ -41,18 +33,46 @@ describe('appendListFilterParams', () => {
 		expect(p.get('filters[0][value]')).toBe('true');
 	});
 
-	it('badge array fans out into OR-chained conditions ending with AND', () => {
+	it('badge array emits a single IN condition with repeated value[] keys', () => {
 		const p = new URLSearchParams();
 		appendListFilterParams(p, {
 			filterValues: { status: ['A', 'B', 'C'] },
 			columns: cols([{ key: 'status', type: 'badge' }])
 		});
-		const o = toObj(p);
-		expect(o['filters[0][connector]']).toEqual(['OR']);
-		expect(o['filters[1][connector]']).toEqual(['OR']);
-		expect(o['filters[2][connector]']).toEqual(['AND']);
-		expect(o['filters[0][value]']).toEqual(['A']);
-		expect(o['filters[2][value]']).toEqual(['C']);
+		expect(p.get('filters[0][field]')).toBe('status');
+		expect(p.get('filters[0][op]')).toBe('IN');
+		expect(p.getAll('filters[0][value][]')).toEqual(['A', 'B', 'C']);
+		expect(p.get('filters[0][connector]')).toBe('AND');
+		expect(p.get('filters[1][field]')).toBeNull();
+	});
+
+	it('empty array emits nothing', () => {
+		const p = new URLSearchParams();
+		appendListFilterParams(p, {
+			filterValues: { status: [] },
+			columns: cols([{ key: 'status', type: 'badge' }])
+		});
+		expect(p.get('filters[0][field]')).toBeNull();
+	});
+
+	it('options_source text column uses = (governed equality, not ILIKE)', () => {
+		const p = new URLSearchParams();
+		appendListFilterParams(p, {
+			filterValues: { event_subject: 'emailsender.send' },
+			columns: cols([{ key: 'event_subject', type: 'text', options_source: 'census.emits' }])
+		});
+		expect(p.get('filters[0][op]')).toBe('=');
+		expect(p.get('filters[0][value]')).toBe('emailsender.send');
+	});
+
+	it('options_source array uses IN (multi governed selection)', () => {
+		const p = new URLSearchParams();
+		appendListFilterParams(p, {
+			filterValues: { event_subject: ['emailsender.send', 'job.completed'] },
+			columns: cols([{ key: 'event_subject', type: 'text', options_source: 'census.emits' }])
+		});
+		expect(p.get('filters[0][op]')).toBe('IN');
+		expect(p.getAll('filters[0][value][]')).toEqual(['emailsender.send', 'job.completed']);
 	});
 
 	it('advanced contains/startsWith/endsWith map to ILIKE patterns', () => {

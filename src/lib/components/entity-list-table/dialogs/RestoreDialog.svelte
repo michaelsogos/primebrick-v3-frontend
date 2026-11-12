@@ -4,12 +4,14 @@
   import { Dialog } from '@primebrick/ui';
   import { BorderedDialog } from '@primebrick/ui';
   import { EntityConfirmQuestion } from '@primebrick/ui';
+  import { actionColorButtonVariant } from '@primebrick/ui';
   import { getEntitiesNsContext } from '../context';
+  import type { ActionChrome } from '../types';
 
   interface RestoreDialogProps {
     /**
      * Entity translation key (e.g. 'ai_model', 'customer'). The title is
-     * auto-built as `app.common.restoreEntityTitle` + `<entities_ns>.entities.{entity}.singular`
+     * auto-built as `<action label> <entities_ns>.entities.{entity}.singular`
      * — NEVER pass a custom title.
      */
     entity: string;
@@ -17,6 +19,10 @@
     entities_ns?: string;
     /** Optional record name shown under the description. */
     recordName?: string;
+    /** `meta.actions["restore.single"]` chrome — meta-driven copy: label
+     *  (title verb + confirm button), `confirm_key` (message template),
+     *  `busy_key` (in-flight label), `color` (accent bar + button). */
+    chrome?: ActionChrome;
     open: boolean;
     onOpenChange: (open: boolean) => void;
     isRestoring: boolean;
@@ -28,6 +34,7 @@
     entity,
     entities_ns,
     recordName,
+    chrome,
     open = $bindable(),
     onOpenChange,
     isRestoring,
@@ -37,15 +44,17 @@
 
   const ns = $derived(entities_ns ?? getEntitiesNsContext());
   let entityName = $derived($t(`${ns}.entities.${entity}.singular`));
+  let actionLabel = $derived($t(chrome?.label_key ?? 'app.common.restore'));
+  let severity = $derived(chrome?.color ?? 'warning');
 </script>
 
-<BorderedDialog bind:open={open} {onOpenChange} severity="warning" class="sm:max-w-md" showCloseButton={false}>
+<BorderedDialog bind:open={open} {onOpenChange} {severity} class="sm:max-w-md" showCloseButton={false}>
   <Dialog.Header class="pb-4">
     <Dialog.Title>
-      {$t('app.common.restoreEntityTitle', { entity: entityName })}
+      {actionLabel} {entityName}
     </Dialog.Title>
     <Dialog.Description>
-      <EntityConfirmQuestion action="restore" {entity} entities_ns={ns} {recordName} />
+      <EntityConfirmQuestion action="restore" {entity} entities_ns={ns} {recordName} confirm_key={chrome?.confirm_key} />
     </Dialog.Description>
   </Dialog.Header>
   <Dialog.Footer class="gap-2 sm:space-x-0">
@@ -58,15 +67,15 @@
       {$t('app.common.cancel')}
     </Button>
     <Button
-      variant="warning"
+      variant={actionColorButtonVariant(severity)}
       class="hover:scale-105 transition-all"
       onclick={onConfirm}
       disabled={isRestoring}
     >
       {#if isRestoring}
-        {$t('app.common.restoring')}
+        {$t(chrome?.busy_key ?? 'app.common.restoring')}
       {:else}
-        {$t('app.common.restore')}
+        {actionLabel}
       {/if}
     </Button>
   </Dialog.Footer>

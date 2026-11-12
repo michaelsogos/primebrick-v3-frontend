@@ -26,8 +26,9 @@
     refreshDisabled: boolean;
     onRefresh: () => void;
     filterableColumns: MetaColumn[];
-    filtersOpen: boolean;
-    onFiltersOpenChange: (open: boolean) => void;
+    /** Funnel CTA handler — toggle semantics owned by the sheet-sync
+     *  composable (open/close + live props; no parallel boolean state). */
+    onToggleFilters: () => void;
     onColumnSelectorClick: () => void;
     onCreateAction?: () => void;
     /** Meta-driven create CTA shape (route census `kind:"create"`) —
@@ -56,8 +57,7 @@
     refreshDisabled,
     onRefresh,
     filterableColumns,
-    filtersOpen,
-    onFiltersOpenChange,
+    onToggleFilters,
     onColumnSelectorClick,
     onCreateAction,
     create_cta,
@@ -71,6 +71,7 @@
   {#snippet left()}
   <div class="flex min-w-0 flex-1 basis-0 items-center gap-2 sm:min-w-[260px] sm:max-w-[520px]">
     <SearchBar
+      data_testid="entity-search"
       search={search}
       onSearchInput={onSearchInput}
       searchInKeys={searchInKeys}
@@ -92,6 +93,7 @@
       <DeletionFilterToggle
         deletionFilterMode={deletionFilterMode}
         onDeletionFilterModeChange={onDeletionFilterModeChange}
+        test_id="entity-deletion-filter"
       />
       <div class="h-6 w-px divider-primary-gradient" aria-hidden="true"></div>
     {/if}
@@ -122,7 +124,7 @@
         variant="ghost"
         size="sm"
         type="button"
-        onclick={() => onFiltersOpenChange(!filtersOpen)}
+        onclick={onToggleFilters}
         aria-label={$t('system.entities.list.filters')}
         title={$t('system.entities.list.filters')}
       >

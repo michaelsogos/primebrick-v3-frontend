@@ -35,12 +35,12 @@
 
 <BorderedDialog bind:open={open} {onOpenChange} severity="warning" class="sm:max-w-md" showCloseButton={false}>
   <Dialog.Header class="pb-4">
-    <Dialog.Title>{$t('app.common.duplicateConfirmTitle')}</Dialog.Title>
+    <Dialog.Title>{$t('app.common.duplicate_confirm_title')}</Dialog.Title>
     <Dialog.Description>
       {#if duplicateScope === 'single'}
-        {$t('app.common.duplicateConfirmSingle')}?
+        {$t('app.common.duplicate_confirm_single')}?
       {:else}
-        {$t('app.common.duplicateConfirm')} {selectedCount} {$t(`${ns}.entities.${entity}.plural`)}?
+        {$t('app.common.duplicate_confirm')} {selectedCount} {$t(`${ns}.entities.${entity}.plural`)}?
       {/if}
     </Dialog.Description>
   </Dialog.Header>

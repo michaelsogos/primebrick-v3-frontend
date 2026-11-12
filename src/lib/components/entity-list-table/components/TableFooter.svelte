@@ -1,14 +1,10 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
-  import { Button } from '@primebrick/ui';
-  import { ButtonGroup, Toolbar, KeyboardHints } from '@primebrick/ui';
-  import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-  import { dropdownMenuSelectedItemClass } from '$lib/components/ui/dropdown-menu/dropdown-menu-item-selected';
+  import { Toolbar, KeyboardHints, Tooltip } from '@primebrick/ui';
   import { SelectionCounter } from '../toolbar';
-  import { ChevronsLeft } from '@primebrick/ui/vendor/lucide'
-  import { ChevronLeft } from '@primebrick/ui/vendor/lucide'
-  import { ChevronRight } from '@primebrick/ui/vendor/lucide'
-  import { ChevronsRight } from '@primebrick/ui/vendor/lucide';
+  import PaginationControls from './PaginationControls.svelte';
+  import RangeLabel from './RangeLabel.svelte';
+  import { Keyboard } from '@primebrick/ui/vendor/lucide';
 
   let {
     footerRangeTotal,
@@ -31,7 +27,8 @@
     page,
     totalPages,
     onPageChange,
-    onPageSizeChange
+    onPageSizeChange,
+    create_label_key
   }: {
     footerRangeTotal: number;
     footerRangeStart: number;
@@ -54,6 +51,9 @@
     totalPages: number;
     onPageChange: (page: number) => void;
     onPageSizeChange: (size: number) => void;
+    /** Label key of the toolbar NEW CTA — when a create action exists the
+     *  legend mirrors it verbatim (Ins = same target). */
+    create_label_key?: string;
   } = $props();
 </script>
 
@@ -61,13 +61,7 @@
   {#snippet left()}
   <!-- Left side: Row range + Selection Counter -->
   <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
-    <div class="text-muted-foreground">
-      {#if footerRangeTotal === 0}
-        0
-      {:else}
-        {footerRangeStart}-{footerRangeEnd} / {footerRangeTotal}
-      {/if}
-    </div>
+    <RangeLabel start={footerRangeStart} end={footerRangeEnd} total={footerRangeTotal} />
     {#if rowSelectionEnabled && selectionCount > 0}
       <SelectionCounter
         selectionCount={selectionCount}
@@ -84,113 +78,58 @@
   {/snippet}
 
   {#snippet center()}
-  <!-- Centered keybind legend — the ELT bindings from
-       useKeyboardNavigation (absolute overlay, hidden when the footer
-       is too narrow to host it without collisions). -->
-  <KeyboardHints
-    class="hidden lg:flex"
-    data-testid="elt-kbd-legend"
-    hints={[
-      { keys: ['↑', '↓'], label: $t('system.entities.list.keys.move') },
-      ...(rowSelectionEnabled
-        ? [{ keys: ['Space'], label: $t('system.entities.list.keys.select') }]
-        : []),
-      { keys: ['⏎'], label: $t('system.entities.list.keys.actions') },
-      { keys: ['←', '→'], label: $t('system.entities.list.keys.preview') },
-      { keys: ['esc'], size: 'modifier', label: $t('app.common.close') },
-    ]}
-  />
+  <!-- Centered keyboard-legend trigger — the ELT bindings from
+       useKeyboardNavigation live in the tooltip it opens (too many
+       hints for an inline legend); the Toolbar collision guard still
+       hides the trigger when the footer physically cannot host it. -->
+  <Tooltip.Root>
+    <Tooltip.Trigger
+      data-testid="elt-kbd-legend"
+      class="hidden items-center gap-1.5 rounded-md px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground lg:inline-flex"
+    >
+      <Keyboard class="size-3.5" />
+      {$t('system.entities.list.keyboard_commands')}
+    </Tooltip.Trigger>
+    <Tooltip.PriorityContent
+      priority="HINT"
+      title={$t('system.entities.list.keyboard_commands')}
+      side="top"
+      sideOffset={8}
+      data-testid="elt-kbd-legend-panel"
+    >
+      <KeyboardHints
+        tone="inverted"
+        layout="median"
+        class="flex-col items-stretch gap-2 text-xs text-background min-w-56"
+        hints={[
+          { keys: ['↑', '↓', '←', '→'], size: 'key-lg' as const, label: $t('system.entities.list.keys.move') },
+          ...(rowSelectionEnabled
+            ? [{ keys: ['Space'], size: 'modifier-lg' as const, label: $t('system.entities.list.keys.select') }]
+            : []),
+          { keys: ['Enter'], size: 'modifier-lg' as const, label: $t('system.entities.list.keys.actions') },
+          ...(create_label_key ? [{ keys: ['Ins'], size: 'modifier-lg' as const, label: $t(create_label_key) }] : []),
+          { keys: ['Esc'], size: 'modifier-lg' as const, label: $t('app.common.close') },
+          { keys: [{ label: 'Pag.', glyph: '↑' }, { label: 'Pag.', glyph: '↓' }], size: 'modifier-lg' as const, label: $t('system.entities.list.keys.page') },
+          { keys: [{ label: 'Home', glyph: '↖' }, { label: 'End', glyph: '↘' }], size: 'modifier-lg' as const, label: $t('system.entities.list.keys.first_last') },
+        ]}
+      />
+    </Tooltip.PriorityContent>
+  </Tooltip.Root>
   {/snippet}
 
-  <!-- Right side: Page size + Pagination controls -->
-  <div class="flex items-center gap-2">
-    <span class="text-muted-foreground">{$t('system.entities.list.pageSize')}</span>
-    <DropdownMenu.Root>
-      <DropdownMenu.Trigger>
-        {#snippet child({ props })}
-          <Button variant="ghost" size="sm" {...props}>
-            {pageSize}
-          </Button>
-        {/snippet}
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Content align="start">
-        {#each pageSizeOptions as opt (opt)}
-          <DropdownMenu.Item
-            class={dropdownMenuSelectedItemClass(opt === pageSize)}
-            onSelect={() => {
-              onPageSizeChange(opt);
-            }}
-          >
-            {opt}
-          </DropdownMenu.Item>
-        {/each}
-      </DropdownMenu.Content>
-    </DropdownMenu.Root>
-
-    <div class="mx-1 h-6 w-px divider-primary-gradient" aria-hidden="true"></div>
-
-    <div class="flex items-center gap-2">
-      <ButtonGroup segmented aria-label={$t('system.entities.list.pagination.firstPage')}>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          disabled={footerPage <= 1}
-          onclick={() => {
-            if (footerUsesClientPaging) clientSelectedPage = 1;
-            else onPageChange(1);
-          }}
-          aria-label={$t('system.entities.list.pagination.firstPage')}
-          title={$t('system.entities.list.pagination.firstPage')}
-        >
-          <ChevronsLeft class="size-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          disabled={footerPage <= 1}
-          onclick={() => {
-            if (footerUsesClientPaging) clientSelectedPage = Math.max(1, clientSelectedPage - 1);
-            else onPageChange(Math.max(1, page - 1));
-          }}
-          aria-label={$t('system.entities.list.pagination.previousPage')}
-          title={$t('system.entities.list.pagination.previousPage')}
-        >
-          <ChevronLeft class="size-4" />
-        </Button>
-      </ButtonGroup>
-      <div class="whitespace-nowrap px-0.5 text-center tabular-nums text-muted-foreground">
-        {$t('system.entities.list.paginationStatus')
-          .replace('{page}', String(footerPage))
-          .replace('{total}', String(footerTotalPages))}
-      </div>
-      <ButtonGroup segmented aria-label={$t('system.entities.list.pagination.nextPage')}>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          disabled={footerPage >= footerTotalPages}
-          onclick={() => {
-            if (footerUsesClientPaging) clientSelectedPage = Math.min(footerTotalPages, clientSelectedPage + 1);
-            else onPageChange(Math.min(totalPages, page + 1));
-          }}
-          aria-label={$t('system.entities.list.pagination.nextPage')}
-          title={$t('system.entities.list.pagination.nextPage')}
-        >
-          <ChevronRight class="size-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          disabled={footerPage >= footerTotalPages}
-          onclick={() => {
-            if (footerUsesClientPaging) clientSelectedPage = footerTotalPages;
-            else onPageChange(totalPages);
-          }}
-          aria-label={$t('system.entities.list.pagination.lastPage')}
-          title={$t('system.entities.list.pagination.lastPage')}
-        >
-          <ChevronsRight class="size-4" />
-        </Button>
-      </ButtonGroup>
-    </div>
-  </div>
+  <!-- Right side: the shared pager cluster — `onPageChange` resolves the
+       client-vs-server route once (selected-rows client paging vs server
+       paging), the control itself stays branch-free. -->
+  <PaginationControls
+    page={footerPage}
+    totalPages={footerTotalPages}
+    pageSize={pageSize}
+    pageSizeOptions={pageSizeOptions}
+    onPageChange={(p) => {
+      if (footerUsesClientPaging) clientSelectedPage = p;
+      else onPageChange(p);
+    }}
+    onPageSizeChange={onPageSizeChange}
+    test_id_prefix="elt"
+  />
 </Toolbar>

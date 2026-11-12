@@ -39,7 +39,15 @@ export type EntityRowActions = {
   restore?: boolean;
   versionHistory?: boolean;
   custom_actions?: RowCustomAction[];
+  /** CTA chrome overrides from `meta.actions[op]` (label_key/icon/color)
+   *  — cosmetics only; logic stays standard (e.g. soft-delete-as-disable
+   *  renders "Deactivate"+exec-stop). */
+  edit_chrome?: ActionChrome;
+  delete_chrome?: ActionChrome;
+  restore_chrome?: ActionChrome;
 };
+
+export type ActionChrome = Pick<EntityAction, 'label_key' | 'icon' | 'color' | 'confirm_key' | 'busy_key'>;
 
 export type ViewMode = 'table' | 'cards' | 'cards_list';
 
@@ -135,7 +143,6 @@ export type EntityListTableProps<TRow extends Record<string, unknown>> = {
    *  override the generic "New" label in the toolbar button. */
   create_cta?: { label_key?: string; icon?: string };
   onEditAction?: (row: TRow) => void;
-  filtersOpen?: boolean;
   filterValues?: Record<string, unknown>;
   onFilterValuesChange?: (values: Record<string, unknown>) => void;
   onResetFilters?: () => void;

@@ -35,6 +35,13 @@
 
   const { notifyParentRefresh } = useSyncChannel('primebrick_config_sync', { mode: 'sender' });
 
+  /**
+   * Pending-translation queue owner — entries queued inside this page's
+   * subtree (AI key_picker chat, translation editor sheet) flush ONLY
+   * through this page's save and die with it.
+   */
+  const PENDING_TRANSLATIONS_OWNER = 'config-entry.create';
+
   // Config type options for the dropdown — `icon` is a Lucide name rendered
   // by ComboSelect's `iconField` (kept in sync with the value widget).
   const configTypeOptions: Array<{ value: string; label: string; icon: string }> = [
@@ -116,7 +123,7 @@
       if (!updateForm.valid) return;
 
       // Drained OUTSIDE the try so the catch can re-queue them on failure.
-      const translations = takePendingTranslations();
+      const translations = takePendingTranslations(PENDING_TRANSLATIONS_OWNER);
       try {
         // Flush queued translation rows into the SAME write — the BE inserts
         // them in the entity's transaction (atomic). Rows queued by the AI
@@ -142,7 +149,7 @@
 
         pushNotification({
           impact: 'NONE',
-          message: $t('system.settings.configurations.create.createSuccess'),
+          message: $t('system.settings.configurations.create.create_success'),
           scope: 'config_entry',
         });
 
@@ -153,7 +160,9 @@
         console.error('Failed to create config entry:', error);
         // Re-queue drained translations so a retry can still flush them.
         for (const row of translations) {
-          addPendingTranslation(row.key, { [row.language]: row.value });
+          addPendingTranslation(PENDING_TRANSLATIONS_OWNER, row.key, {
+            [row.language]: { value: row.value, uuid: row.uuid, version: row.version },
+          });
         }
         cancel();
       }
@@ -172,7 +181,7 @@
 
   const { handleBeforeUnload, handleCancel } = useUnsavedChangesGuard(
     () => formGuard.hasChanges,
-    'system.settings.configurations.create.unsavedChanges',
+    'system.settings.configurations.create.unsaved_changes',
   );
 
   // TypeConfigBuilder writes auto-derived defaults (e.g. max_length=65535 for
@@ -196,7 +205,7 @@
   // the pending queue dies with the form (zero orphan rows). The validation
   // timer cleans itself inside useForceFormValidation.
   $effect(() => () => {
-    clearPendingTranslations();
+    clearPendingTranslations(PENDING_TRANSLATIONS_OWNER);
   });
 
   const isCreatePage = $derived(true);
@@ -260,12 +269,14 @@
 
   // Build ComboSelect options: each group_key becomes an object with the
   // raw key as value and the full i18n key as label (translated at render time)
-  type GroupKeyOption = { group_key: string; label_key: string };
+  type GroupKeyOption = { group_key: string; label_key: string; _icon: string; _icon_color: string };
 
   const groupKeyOptions = $derived<GroupKeyOption[]>(
     existingGroupKeys.map((gk) => ({
       group_key: gk,
       label_key: `system.settings.config.auth.group.${gk}`,
+      _icon: 'languages',
+      _icon_color: 'sky-500',
     })),
   );
 
@@ -295,12 +306,12 @@
   const labelKeyOptions = $derived(
     allI18nKeys
       .filter((k) => k.startsWith('system.settings.config.auth.') && k.endsWith('.label'))
-      .map((k) => ({ key: k })),
+      .map((k) => ({ key: k, _icon: 'languages', _icon_color: 'sky-500' })),
   );
   const descriptionKeyOptions = $derived(
     allI18nKeys
       .filter((k) => k.startsWith('system.settings.config.auth.') && k.endsWith('.description'))
-      .map((k) => ({ key: k })),
+      .map((k) => ({ key: k, _icon: 'languages', _icon_color: 'sky-500' })),
   );
 
   // Pre-filter prefix: when the popover opens, only show keys matching the
@@ -342,7 +353,7 @@
                     <FormLabel for={props.id}>
                       {$t('system.settings.configurations.create.key')}
                       <FormLabelWithPriorityHelp
-                        text={$t('system.settings.configurations.create.keyHelp')}
+                        text={$t('system.settings.configurations.create.key_help')}
                         priority="HINT"
                       />
                     </FormLabel>
@@ -350,14 +361,14 @@
                       {...props}
                       bind:value={$form.key}
                       oninput={handleKeyInput}
-                      placeholder={$t('system.settings.configurations.create.keyPlaceholder')}
+                      placeholder={$t('system.settings.configurations.create.key_placeholder')}
                       aria-invalid={keyExistsError || props['aria-invalid'] === 'true' || props['aria-invalid'] === true}
                       data-testid="config-create-key"
                     />
                     <TranslatedFormFieldErrors />
                     {#if keyExistsError}
                       <div class="text-destructive text-xs font-medium" data-testid="key-exists-error">
-                        {$t('system.settings.configurations.create.keyExists')}
+                        {$t('system.settings.configurations.create.key_exists')}
                       </div>
                     {/if}
                   </div>
@@ -372,7 +383,7 @@
                     <FormLabel for={props.id}>
                       {$t('system.settings.configurations.create.type')}
                       <FormLabelWithPriorityHelp
-                        text={$t('system.settings.configurations.create.typeHelp')}
+                        text={$t('system.settings.configurations.create.type_help')}
                         priority="HINT"
                       />
                     </FormLabel>
@@ -384,7 +395,7 @@
                       valueField="value"
                       labelField="label"
                       iconField="icon"
-                      placeholder={$t('app.common.selectValue')}
+                      placeholder={$t('app.common.select_value')}
                       data-testid="config-create-type"
                     />
                     <TranslatedFormFieldErrors />
@@ -401,7 +412,7 @@
                       <FormLabel for={props.id}>
                         {$t('system.settings.configurations.create.value')}
                         <FormLabelWithPriorityHelp
-                          text={$t('system.settings.configurations.create.valueHelp')}
+                          text={$t('system.settings.configurations.create.value_help')}
                           priority="INFORMATION"
                         />
                       </FormLabel>
@@ -425,11 +436,11 @@
                 {#snippet children({ props })}
                   <div class="space-y-2">
                     <FormLabel for={props.id}>
-                      {$t('system.settings.configurations.create.labelKey')}
+                      {$t('system.settings.configurations.create.label_key')}
                       <FormLabelWithPriorityHelp
-                        text={$t('system.settings.configurations.create.labelKeyHelp')}
+                        text={$t('system.settings.configurations.create.label_key_help')}
                         priority="INFORMATION"
-                        title={$t('app.common.optionalTooltipTitle')}
+                        title={$t('app.common.optional_tooltip_title')}
                         labelKey="app.common.optional"
                       />
                     </FormLabel>
@@ -442,6 +453,8 @@
                       valueField="key"
                       labelField="key"
                       isLabelTranslated={true}
+                      iconField="_icon"
+                      iconColorField="_icon_color"
                       allowCreate={true}
                       defaultSearch={labelKeyDefaultSearch}
                       placeholder={labelKeyPlaceholder}
@@ -461,11 +474,11 @@
                 {#snippet children({ props })}
                   <div class="space-y-2">
                     <FormLabel for={props.id}>
-                      {$t('system.settings.configurations.create.descriptionKey')}
+                      {$t('system.settings.configurations.create.description_key')}
                       <FormLabelWithPriorityHelp
-                        text={$t('system.settings.configurations.create.descriptionKeyHelp')}
+                        text={$t('system.settings.configurations.create.description_key_help')}
                         priority="INFORMATION"
-                        title={$t('app.common.optionalTooltipTitle')}
+                        title={$t('app.common.optional_tooltip_title')}
                         labelKey="app.common.optional"
                       />
                     </FormLabel>
@@ -478,6 +491,8 @@
                       valueField="key"
                       labelField="key"
                       isLabelTranslated={true}
+                      iconField="_icon"
+                      iconColorField="_icon_color"
                       allowCreate={true}
                       defaultSearch={descriptionKeyDefaultSearch}
                       placeholder={descriptionKeyPlaceholder}
@@ -497,11 +512,11 @@
                 {#snippet children({ props })}
                   <div class="space-y-2">
                     <FormLabel for={props.id}>
-                      {$t('system.settings.configurations.create.groupKey')}
+                      {$t('system.settings.configurations.create.group_key')}
                       <FormLabelWithPriorityHelp
-                        text={$t('system.settings.configurations.create.groupKeyHelp')}
+                        text={$t('system.settings.configurations.create.group_key_help')}
                         priority="INFORMATION"
-                        title={$t('app.common.optionalTooltipTitle')}
+                        title={$t('app.common.optional_tooltip_title')}
                         labelKey="app.common.optional"
                       />
                     </FormLabel>
@@ -514,14 +529,16 @@
                       valueField="group_key"
                       labelField="label_key"
                       isLabelTranslated={true}
+                      iconField="_icon"
+                      iconColorField="_icon_color"
                       allowCreate={true}
                       loading={groupKeysLoading}
                       getSearchKeywords={(opt) => {
                         const gk = (opt as GroupKeyOption).group_key;
                         return gk ? [$t(`system.settings.config.auth.group.${gk}`)] : [];
                       }}
-                      placeholder={$t('system.settings.configurations.create.groupKeyPlaceholder')}
-                      searchPlaceholder={$t('system.settings.configurations.create.groupKeySearch')}
+                      placeholder={$t('system.settings.configurations.create.group_key_placeholder')}
+                      searchPlaceholder={$t('system.settings.configurations.create.group_key_search')}
                       display="detailed"
                       secondaryField="group_key"
                       showDescription={false}
@@ -550,7 +567,7 @@
               checked={$form.reserved}
               onCheckedChange={(checked) => { $form.reserved = checked; }}
               label={$t('system.settings.configurations.create.reserved')}
-              tooltip={$t('system.settings.configurations.create.reservedHelp')}
+              tooltip={$t('system.settings.configurations.create.reserved_help')}
               tooltipPriority="INFORMATION"
               data-testid="config-create-reserved"
             />
@@ -562,11 +579,12 @@
               <FormControl>
                 {#snippet children({ props })}
                   <div class="space-y-2">
-                    <FormLabel for={props.id}>{$t('system.settings.configurations.create.typeConfig')}</FormLabel>
+                    <FormLabel for={props.id}>{$t('system.settings.configurations.create.type_config')}</FormLabel>
                     <TypeConfigBuilder
                       type={$form.type as ConfigEntryType}
                       configKey={$form.key ?? ''}
                       type_config={$form.type_config || null}
+                      pending_owner={PENDING_TRANSLATIONS_OWNER}
                       onTypeConfigChange={(newConfig) => $form.type_config = newConfig}
                     />
                     <TranslatedFormFieldErrors />

@@ -135,7 +135,7 @@ export function useGuideAi(model_id: string) {
         if (!pendingDocs.found) {
           return {
             kind: 'local_response',
-            response: { content: get(t)('app.smart.guide.ai.noDocumentation') },
+            response: { content: get(t)('app.smart.guide.ai.no_documentation') },
           };
         }
         // Collapsed stage (Option A): the loop already produced the final

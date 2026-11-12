@@ -100,4 +100,48 @@ describe("PrimeField", () => {
     });
     expect(screen.queryByLabelText("Help")).not.toBeInTheDocument();
   });
+
+  it("renders NO ghost icon for a MetaColumn without tooltip keys", () => {
+    // Regression: a column-shaped object lacking `tooltip*` fell into the
+    // FieldHelp branch and produced a truthy all-undefined resolvedHelp —
+    // icon rendered, tooltip never opened (ID/NAME filter labels).
+    render(PrimeFieldHelpFixture, {
+      props: {
+        help: { label_key: "col.name", type: "text" } as never,
+        control: inputControl,
+      },
+    });
+    expect(screen.queryByLabelText("Help")).not.toBeInTheDocument();
+  });
+
+  it("renders NO icon for a pre-mapped help with no renderable content", () => {
+    render(PrimeFieldHelpFixture, {
+      props: { help: {} as never, control: inputControl },
+    });
+    expect(screen.queryByLabelText("Help")).not.toBeInTheDocument();
+  });
+
+  it("gates meta help on show_list_tooltip when help_context='list'", () => {
+    render(PrimeFieldHelpFixture, {
+      props: {
+        help: { tooltip: "meta.tooltip.key", show_list_tooltip: false },
+        help_context: "list",
+        control: inputControl,
+      },
+    });
+    expect(screen.queryByLabelText("Help")).not.toBeInTheDocument();
+  });
+
+  it("ignores show_form_tooltip when help_context='list'", () => {
+    // A column hidden on forms but allowed on lists must still show on the
+    // list surface — the flags are per-surface, not global.
+    render(PrimeFieldHelpFixture, {
+      props: {
+        help: { tooltip: "meta.tooltip.key", show_form_tooltip: false, show_list_tooltip: true },
+        help_context: "list",
+        control: inputControl,
+      },
+    });
+    expect(screen.getByLabelText("Help")).toBeInTheDocument();
+  });
 });

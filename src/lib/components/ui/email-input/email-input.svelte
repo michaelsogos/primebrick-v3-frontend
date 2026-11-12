@@ -16,9 +16,9 @@
       onChange?: (value: string) => void;
       /** Errors array (i18n keys in `key|jsonParams` format) — renders below input. */
       errors?: string[];
-      /** Readonly mode — shows copy button instead of clear. */
+      /** Readonly/disabled mode — shows copy button instead of clear. */
       readonly?: boolean;
-      /** Disabled mode. */
+      /** Disabled mode — keeps the copy affordance (value stays copyable). */
       disabled?: boolean;
     }
   >;
@@ -38,9 +38,9 @@
 
   let mode = $derived(disabled ? "disabled" : readonly ? "readonly" : "editable");
   // Clear CTA is always rendered in editable mode (disabled while empty);
-  // readonly shows copy only when there is a value to copy.
+  // readonly/disabled shows copy only when there is a value to copy.
   let showTrailing = $derived(
-    mode === "editable" || (mode === "readonly" && (value ?? "").length > 0)
+    mode === "editable" || (value ?? "").length > 0
   );
   let clearDisabled = $derived((value ?? "").length === 0);
   let hasError = $derived(errors.length > 0);
@@ -49,8 +49,8 @@
   let inputClass = $derived(
     cn(
       showTrailing && "pr-9",
-      mode === "readonly" && "border-readonly-gradient",
-      mode === "disabled" && "border-readonly-gradient",
+      mode === "readonly" && "border-readonly",
+      mode === "disabled" && "border-disabled",
       "border-primary-gradient hover:brightness-105 focus-within:ring-2 focus-within:ring-ring/50 rounded-md transition-all duration-200",
       className,
     ),
@@ -109,12 +109,12 @@
   />
 
   {#if showTrailing}
-    {#if mode === "readonly"}
+    {#if mode !== "editable"}
       <button
         type="button"
         onclick={handleCopy}
         tabindex={-1}
-        class={cn(inputTrailingIconButtonClasses, "text-foreground")}
+        class={inputTrailingIconButtonClasses}
         aria-label={$t('app.common.copy')}
         title={$t('app.common.copy')}
         data-testid="email-input-copy"

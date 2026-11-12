@@ -255,16 +255,16 @@ export function useRowActions<TRow extends Record<string, unknown>>(
       if (result.errors.length > 0) {
         pushNotification({
           impact: 'MEDIUM',
-          messageKey: 'system.entities.list.duplicatePartialSuccess',
+          messageKey: 'system.entities.list.duplicate_partial_success',
           messageParams: { count: result.uuids.length, failed: result.errors.length },
-          scope: tFn('app.common.errors.scope.duplicateApi')
+          scope: tFn('app.common.errors.scope.duplicate_api')
         });
       } else {
         pushNotification({
           impact: 'LOW',
-          messageKey: 'system.entities.list.duplicateSuccess',
+          messageKey: 'system.entities.list.duplicate_success',
           messageParams: { count: result.uuids.length },
-          scope: tFn('app.common.errors.scope.duplicateApi')
+          scope: tFn('app.common.errors.scope.duplicate_api')
         });
       }
 
@@ -333,7 +333,13 @@ export function useRowActions<TRow extends Record<string, unknown>>(
   async function runEndpointAction(action: RowCustomAction, row: TRow): Promise<boolean> {
     const ep = findActionEndpoint(getActions?.(), action.action_name);
     if (!ep) return false;
-    const url = serviceApiPrefix(entityFn()) + fillActionPath(ep.path, row, uidFn());
+    // Optimistic-lock convention: endpoints that gate on `requireVersionQuery`
+    // (suspend/reactivate/restore-style writes) get the caller-observed
+    // version exactly like delete/restore do. Endpoints that ignore query
+    // params are unaffected.
+    const versionQs =
+      typeof row.version === 'number' ? `?version=${row.version}` : '';
+    const url = serviceApiPrefix(entityFn()) + fillActionPath(ep.path, row, uidFn()) + versionQs;
     const body = action.row_key
       ? JSON.stringify({ [action.row_key]: row[action.row_key] })
       : undefined;
@@ -382,9 +388,9 @@ export function useRowActions<TRow extends Record<string, unknown>>(
         // but isn't wired anywhere (contract violation).
         pushNotification({
           type: '/errors/not-implemented',
-          title: tFn('app.common.errors.notImplemented.title'),
+          title: tFn('app.common.errors.not_implemented.title'),
           status: 501,
-          detail: tFn('app.common.errors.notImplemented.detail', { action: action.action_name }),
+          detail: tFn('app.common.errors.not_implemented.detail', { action: action.action_name }),
           instance: `customAction:${action.action_name}`,
           internal_code: 'CUSTOM_ACTION_NO_HANDLER',
           severity: 'LOW',

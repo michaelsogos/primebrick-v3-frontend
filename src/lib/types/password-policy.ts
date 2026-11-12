@@ -79,8 +79,8 @@ export const PASSWORD_POLICY_CHECKLIST_RULES: Record<PasswordPolicy, PasswordChe
 
 /** Per-policy error label key (must match BE exactly). */
 export const PASSWORD_POLICY_ERROR_LABEL_KEYS: Record<PasswordPolicy, string> = {
-  [PasswordPolicy.ALPHA_NUMERIC]: "app.common.validation.passwordPolicyAlphaNumeric",
-  [PasswordPolicy.LETTER_AND_NUMBER]: "app.common.validation.passwordPolicyLetterAndNumber",
-  [PasswordPolicy.LETTER_NUMBER_SPECIAL]: "app.common.validation.passwordPolicyLetterNumberSpecial",
-  [PasswordPolicy.MIXED_CASE_SPECIAL]: "app.common.validation.passwordPolicyMixedCaseSpecial",
+  [PasswordPolicy.ALPHA_NUMERIC]: "app.common.validation.password_policy_alpha_numeric",
+  [PasswordPolicy.LETTER_AND_NUMBER]: "app.common.validation.password_policy_letter_and_number",
+  [PasswordPolicy.LETTER_NUMBER_SPECIAL]: "app.common.validation.password_policy_letter_number_special",
+  [PasswordPolicy.MIXED_CASE_SPECIAL]: "app.common.validation.password_policy_mixed_case_special",
 };
