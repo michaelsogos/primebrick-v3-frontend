@@ -6,6 +6,27 @@
 - Applies automatically at the start of any new session.
 - Triggered whenever a new feature, refactor, debt management, or bugfix is requested.
 
+## Documentation deep-dive — MANDATORY gate before TIC and TOC
+
+No phase ever starts on memory or code examples alone. Before entering
+EITHER phase the agent MUST run a thorough documentation pass across
+**every repo the task's domain touches** — `AGENTS.md`, `.devin/rules/*`,
+`docs/ai/*`, `docs/dev-guide/*` in each of them. Docs are the contract;
+source code is only the proof.
+
+- **Before TIC** (Analysis Phase → plan file): map the task's domain to
+  the repos it concerns, read the relevant rules and canonical docs in
+  each of them, and cite the doc findings in the plan — file paths,
+  never memory.
+- **Before TOC** (execution after `PROCEED`): re-read the docs governing
+  the areas the plan touches — they are the authority the change must
+  satisfy, and they may have changed since planning. A doc-vs-plan
+  conflict stops execution and goes back to the user; it is never
+  resolved silently.
+
+Skipping this gate is a protocol violation — wrong locale codes, wrong
+icon vocabulary and anatomy drift all trace back to skipped doc reads.
+
 ## Actions
 1. **Analysis Phase**: Analyze the codebase to fully understand the requirements, but **DO NOT modify any source code files** during this phase.
 2. **File Creation**: Automatically generate a new Markdown plan file inside the directory `d:\git\primebrick\primebrick-workspace\ai-plans\`. You are free to decide the file name based on the task context (e.g., `feature-xyz-plan.md` or `bugfix-abc-plan.md`). Ensure the file uses the `.md` extension. When in plan mode please use sub-agents to create the plan file.
