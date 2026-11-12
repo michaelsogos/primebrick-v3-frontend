@@ -36,6 +36,7 @@
   import { Accordion, Badge, Label, DynamicIcon, colorCssFromToken } from '@primebrick/ui';
   import { Copy, Check } from '@primebrick/ui/vendor/lucide';
   import { orderedColumns } from '$lib/entity-list/types';
+  import { computeInitials } from '$lib/utils/avatar-initials';
   import type { MetaColumn, EntityMeta } from '$lib/entity-list/types';
   import type { FormFieldPlacement } from '@primebrick/ui';
 
@@ -131,6 +132,18 @@
     record;
     editing;
     draft = { ...record };
+  });
+
+  /** Avatar columns with `avatar.initials_field` DERIVE their draft value
+   *  from the sibling while editing — the preview (MetaAvatar reads the
+   *  same draft) and the save share the one derived value. Immutable or
+   *  not, derivation wins in edit mode; readonly shows the stored value. */
+  $effect(() => {
+    if (!editing) return;
+    for (const col of allColumns) {
+      const src = col.type === 'avatar' ? col.avatar?.initials_field : undefined;
+      if (src) draft[col.key] = computeInitials(draft[src] as string | undefined | null);
+    }
   });
 
   function placementStyle(p: FormFieldPlacement): string {

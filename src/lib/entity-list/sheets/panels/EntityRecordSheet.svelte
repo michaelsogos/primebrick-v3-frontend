@@ -194,6 +194,14 @@
     for (const k of saveKeys) {
       if (draft[k] !== record[k]) fields[k] = draft[k];
     }
+    // Avatar-initials derivation: `type:"avatar"` columns are immutable
+    // (never in saveKeys), but when their `initials_field` sibling crosses
+    // the wire the derived initials ride with it — the same rule the
+    // dedicated form pages apply at submit.
+    for (const col of meta?.columns ?? []) {
+      const src = col.type === 'avatar' ? col.avatar?.initials_field : undefined;
+      if (src && fields[src] !== undefined) fields[col.key] = draft[col.key];
+    }
     return fields;
   }
 
