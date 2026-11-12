@@ -108,16 +108,19 @@
    *  popping the right one: X in the left pane closes the left pane. */
   let closeTargetSecondary = $state(false);
 
-  /**
-   * Controlled dialog: keep `open` in sync with `sheetState.open`.
-   * Ignore a spurious `false` right after `openSheet()` (see `shouldSuppressSheetDialogClose`).
-   */
-  function onSheetOpenChange(next: boolean) {
-    if (next) {
-      sheetState.open = true;
-      return;
-    }
-    if (shouldSuppressSheetDialogClose()) return;
+  /** A fresh stack clears the pane-touch flag — opening a sheet from a
+   *  pane is not "interacting with the left pane" for close routing
+   *  (the version badge lives in the record pane; without this, one
+   *  badge click + Escape would kill the record instead of popping). */
+  $effect(() => {
+    void sheetState.secondary;
+    closeTargetSecondary = false;
+  });
+
+  /** Route a dialog-level close request to the pane that owns it:
+   *  X/Escape in the left pane closes only that pane; anything else
+   *  pops (or closes) through the manager. */
+  function routeDialogClose() {
     if (sheetState.secondary && closeTargetSecondary) {
       closeTargetSecondary = false;
       closeSecondarySheet();
@@ -125,22 +128,43 @@
     }
     closeSheet();
   }
+
+  /**
+   * Controlled dialog: `bind:open` keeps `sheetState.open` in sync with
+   * internal closes (Escape/X/outside all funnel through here).
+   * While stacked, a close request only pops ONE pane — the binding
+   * already wrote open=false, so re-assert true or the content would
+   * unmount even though the sheet must survive.
+   * Ignore a spurious `false` right after `openSheet()` (see `shouldSuppressSheetDialogClose`).
+   */
+  function onSheetOpenChange(next: boolean) {
+    if (next) {
+      sheetState.open = true;
+      return;
+    }
+    if (shouldSuppressSheetDialogClose()) {
+      sheetState.open = true;
+      return;
+    }
+    const wasStacked = sheetState.secondary !== null;
+    routeDialogClose();
+    if (wasStacked) sheetState.open = true;
+  }
 </script>
 
-<Sheet.Root open={sheetState.open} onOpenChange={onSheetOpenChange}>
+<Sheet.Root bind:open={sheetState.open} onOpenChange={onSheetOpenChange}>
   <Sheet.Content showClose={false} side={sheetState.side} class={cn(sheetState.contentClass, sheetState.secondary && "sm:max-w-3xl", sheetState.expanded && "w-1/2 sm:max-w-none", "shadow-[4px_0_24px_-4px_rgba(0,0,0,0.3)] transition-[max-width] duration-300 ease-out")} modal={sheetState.modal} onEscapeKeydown={(e) => {
-    // Stacked: Escape pops the RIGHT pane instead of closing the whole
-    // sheet — the left pane slides back in place (pushPane outro). The
-    // veto is required because the dialog's internal close unmounts the
-    // content even though `sheetState.open` stays true.
+    // Stacked: Escape pops ONE pane — veto the internal close so the
+    // left pane slides back in place (pushPane outro).
     if (!sheetState.secondary) return;
     e.preventDefault();
-    if (closeTargetSecondary) {
-      closeTargetSecondary = false;
-      closeSecondarySheet();
-    } else {
-      closeSheet();
-    }
+    routeDialogClose();
+  }} onInteractOutside={(e) => {
+    // Stacked: an outside click also pops ONE pane instead of closing
+    // both panes together.
+    if (!sheetState.secondary) return;
+    e.preventDefault();
+    routeDialogClose();
   }}>
     <!-- svelte-ignore a11y_no_static_element_interactions — pointerdown
          capture only records WHICH pane was last touched so the dialog

@@ -274,16 +274,20 @@ export function openSheet(
     return;
   }
   // Two-sheet stack: the open panel slides left; the new one takes the
-  // right slot. A non-stacked open always clears the left pane.
+  // right slot. A non-stacked open always clears the left pane. When a
+  // stack is already open, the ORIGINAL left pane is kept — re-stacking
+  // must not overwrite it (e.g. re-clicking the version badge inside the
+  // record pane would otherwise swap the record for a second copy of
+  // version history and lose the record slot).
   sheetState.secondary =
     options?.stack && sheetState.open && sheetState.panelId
-      ? {
+      ? (sheetState.secondary ?? {
           panelId: sheetState.panelId,
           props: sheetState.props,
           side: sheetState.side,
           contentClass: sheetState.contentClass,
           modal: sheetState.modal
-        }
+        })
       : null;
   // Declared chrome defaults — the caller's options always win.
   const defaults = remoteDecl?.default_options;
