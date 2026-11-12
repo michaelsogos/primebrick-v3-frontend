@@ -365,19 +365,21 @@
 /**
  * Canonical three-state input chrome:
  *   - normal:   `border-primary-gradient` + `--background` fill
- *   - readonly: neutral grey border (`--input`) + the SAME `--background`
+ *   - readonly: neutral grey border (`--border`) + the SAME `--background`
  *               fill as normal — the field is data, not decoration;
- *   - disabled: grey border + `--muted` fill — the darker-than-white
- *               background is the disabled signal, text stays readable.
+ *   - disabled: grey border (`--border`) + `--muted` fill — the
+ *               darker-than-white background is the disabled signal.
+ * NOTE: `--input` is sky-tinted BY DESIGN (it IS the normal-state border
+ * color) — never use it for the grey states.
  * Both utilities fully override border AND background so they win over
  * border-primary-gradient regardless of class order.
  */
 @utility border-readonly {
-  border: 1px solid hsl(var(--input));
+  border: 1px solid hsl(var(--border));
   background: hsl(var(--background));
 }
 @utility border-disabled {
-  border: 1px solid hsl(var(--input));
+  border: 1px solid hsl(var(--border));
   background: hsl(var(--muted));
 }
 
