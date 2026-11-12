@@ -168,7 +168,7 @@
       <Badge
         id="record-sheet-uid-badge"
         variant="secondary"
-        class="h-9 w-full max-w-full justify-start gap-2 truncate rounded-md px-3 font-mono shadow-none [&>svg]:size-4"
+        class="h-9 w-full max-w-full justify-start gap-2 truncate px-3 font-mono shadow-none [&>svg]:size-4"
         title={String(uidValue)}
         data-testid="entity-record-sheet-uid-badge"
       >
