@@ -34,6 +34,21 @@ icon vocabulary and anatomy drift all trace back to skipped doc reads.
 4. **MANDATORY BLOCKER**: Once the file is saved, output this exact message in the chat: *"Planning complete. I have created the plan file inside your ai-plans folder. Awaiting approval."* 
 5. **HALT EXECUTION**: Stop immediately. **DO NOT** execute any coding, terminal commands, or subagents until the user explicitly sends the keyword: **"PROCEED"**.
 
+## Tests are deliverables — final specs from the first write
+
+Every behavioral verification written during a task MUST land as a
+final, persistent test in its canonical location — the first draft is
+already the deliverable and is refined incrementally; it is never a
+throwaway probe deleted after it passes.
+
+- Writing the same check twice — a temporary script now, the real
+  spec later — is forbidden wasted work.
+- A deleted probe deletes its proof: any behavior only ever verified
+  by a temporary file counts as UNVERIFIED until the persistent spec
+  exists.
+- Exploratory checks run inside the final spec while it is developed,
+  never in scratch files; assertions sharpen as evidence arrives.
+
 ## Dev stack persistence — every turn
 
 BE, FE, job-handler and CRM MUST stay running across turns and session
