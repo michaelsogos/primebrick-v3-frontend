@@ -145,7 +145,7 @@
       controlProps={{ id: `record-sheet-field-${col.key}` }}
       emitsOptions={census.emitsOptions}
       callablesOptions={census.callablesOptions}
-      readonly={!editing}
+      disabled={!editing}
       bind:value={draft[col.key]}
       record={draft}
     />

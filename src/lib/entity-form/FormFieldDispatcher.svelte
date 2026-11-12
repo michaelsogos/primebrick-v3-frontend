@@ -112,7 +112,10 @@
 		/** Badge-option values the page disables live (closed-vocab option
 		 *  policy — e.g. `user` when a trigger has no event source). */
 		disabledBadgeValues?: string[];
+		/** Placement-level read-only — white-bg readonly chrome. */
 		readonly?: boolean;
+		/** Surface/dependency-level disabled — muted disabled chrome. */
+		disabled?: boolean;
 		/** Bindable IANA timezone for the `date` filter control — the panel
 		 *  converts CalendarDate→UTC at apply time using the picker's tz. */
 		timezone?: string;
@@ -144,6 +147,7 @@
 		controlProps,
 		disabledBadgeValues,
 		readonly = false,
+		disabled = false,
 		timezone = $bindable(),
 		filterEntity,
 		record = $bindable(),
@@ -463,7 +467,14 @@
 	 *  `disabled_when` — fail-closed while a prop comparison can't
 	 *  evaluate yet. */
 	const depOff = $derived(dep ? depDisabled(dep, record, pivotRow.state.row) : false);
-	const effectiveReadonly = $derived(readonly || depOff);
+	/** Two distinct states, two distinct chromes: `readonly` (placement
+	 *  policy — grey border + white bg) vs `disabled` (surface /
+	 *  dependency gating — grey border + muted bg). `effectiveLocked`
+	 *  feeds controls that expose no readonly prop — a locked combo
+	 *  renders the disabled chrome by contract. */
+	const effectiveReadonly = $derived(readonly);
+	const effectiveDisabled = $derived(disabled || depOff);
+	const effectiveLocked = $derived(effectiveReadonly || effectiveDisabled);
 	/** `control_prop` → the format the pivot row selects — substitutes the
 	 *  static `column.format` inside `deriveControl`. */
 	const depFormat = $derived(dep ? depControlFormat(dep, pivotRow.state.row) : undefined);
@@ -626,7 +637,7 @@
 </script>
 
 {#if control === 'schedule_spec'}
-	<ScheduleSpecInput bind:value={stringValue.value} readonly={effectiveReadonly} {placeholder} {...controlProps} />
+	<ScheduleSpecInput bind:value={stringValue.value} readonly={effectiveReadonly} disabled={effectiveDisabled} {placeholder} {...controlProps} />
 {:else if control === 'json'}
 	<JsonValueEditor
 		bind:value={stringValue.value}
@@ -635,7 +646,7 @@
 		maxHeight="24rem"
 		preview_open={false}
 		{placeholder}
-		readonly={effectiveReadonly}
+		readonly={effectiveLocked}
 		on_ai_assist={onJsonAiAssist}
 		extra_completions={ruleCompletions}
 		{...controlProps}
@@ -654,7 +665,7 @@
 		display="detailed"
 		allowCreate={column.allow_create === true}
 		{placeholder}
-		disabled={effectiveReadonly}
+		disabled={effectiveLocked}
 		{...controlProps}
 	/>
 	{#if column.options_source === 'census.callables' && targetCallable?.permissions?.length}
@@ -675,7 +686,7 @@
 		labelField="label_key"
 		isLabelTranslated={true}
 		{placeholder}
-		disabled={effectiveReadonly}
+		disabled={effectiveLocked}
 		{...controlProps}
 	/>
 {:else if control === 'avatar'}
@@ -695,6 +706,7 @@
 		source_entity={sourceEmit?.entity}
 		options_resolver={optionsResolver}
 		readonly={effectiveReadonly}
+		disabled={effectiveDisabled}
 		on_ai_assist={onJsonAiAssist}
 		extra_completions={ruleCompletions}
 		{...controlProps}
@@ -712,11 +724,11 @@
 			: undefined}
 		display="badge"
 		{placeholder}
-		disabled={effectiveReadonly}
+		disabled={effectiveLocked}
 		{...controlProps}
 	/>
 {:else if control === 'textarea'}
-	<Textarea bind:value={stringValue.value} {placeholder} readonly={effectiveReadonly} {...controlProps} />
+	<Textarea bind:value={stringValue.value} {placeholder} readonly={effectiveReadonly} disabled={effectiveDisabled} {...controlProps} />
 {:else if control === 'number'}
 	<NumericInput
 		kind={numKind}
@@ -726,15 +738,15 @@
 		max={column.max}
 		unsigned={column.unsigned}
 		{placeholder}
-		disabled={effectiveReadonly}
+		disabled={effectiveLocked}
 		{...controlProps}
 	/>
 {:else if control === 'email'}
-	<EmailInput bind:value={stringValue.value} {placeholder} disabled={effectiveReadonly} {...controlProps} />
+	<EmailInput bind:value={stringValue.value} {placeholder} readonly={effectiveReadonly} disabled={effectiveDisabled} {...controlProps} />
 {:else if control === 'url'}
-	<UrlInput bind:value={stringValue.value} {placeholder} disabled={effectiveReadonly} {...controlProps} />
+	<UrlInput bind:value={stringValue.value} {placeholder} readonly={effectiveReadonly} disabled={effectiveDisabled} {...controlProps} />
 {:else if control === 'phone'}
-	<PhoneInput bind:value={stringValue.value} {placeholder} disabled={effectiveReadonly} {...controlProps} />
+	<PhoneInput bind:value={stringValue.value} {placeholder} readonly={effectiveReadonly} disabled={effectiveDisabled} {...controlProps} />
 {:else if control === 'date'}
 	<DateWheelPicker
 		bind:value={dateValue.value}
@@ -742,7 +754,7 @@
 		{placeholder}
 		includeTime={column.type === 'datetime' || column.format === 'datetime'}
 		timeOnly={column.format === 'time'}
-		disabled={effectiveReadonly}
+		disabled={effectiveLocked}
 		{...controlProps}
 	/>
 {:else if control === 'badge_multi'}
@@ -755,7 +767,7 @@
 		colorField="color"
 		display="badge"
 		{placeholder}
-		disabled={effectiveReadonly}
+		disabled={effectiveLocked}
 		{...controlProps}
 	/>
 {:else if control === 'subject_combo_multi'}
@@ -772,7 +784,7 @@
 		display="detailed"
 		allowCreate={column.allow_create === true}
 		{placeholder}
-		disabled={effectiveReadonly}
+		disabled={effectiveLocked}
 		{...controlProps}
 	/>
 {:else if control === 'entity_ref'}
@@ -794,7 +806,7 @@
 		loadingMore={entityRef.state.loadingMore}
 		loading={entityRef.state.loading}
 		{placeholder}
-		disabled={effectiveReadonly}
+		disabled={effectiveLocked}
 		{...controlProps}
 	/>
 {:else if control === 'actor_multi'}
@@ -806,7 +818,7 @@
 		labelField="label"
 		loading={auditActors.state.loading}
 		{placeholder}
-		disabled={effectiveReadonly}
+		disabled={effectiveLocked}
 		{...controlProps}
 	/>
 {:else if control === 'color'}
@@ -817,7 +829,7 @@
 	<ColorSelector
 		bind:value={stringValue.value}
 		{placeholder}
-		disabled={effectiveReadonly}
+		disabled={effectiveLocked}
 		triggerId={controlProps?.id as string | undefined}
 	/>
 {:else if control === 'boolean_tristate'}
@@ -830,7 +842,7 @@
 				type="button"
 				class="flex-1 {active ? 'bg-foreground/10 text-foreground shadow-xs' : 'text-muted-foreground'}"
 				aria-pressed={active}
-				disabled={effectiveReadonly}
+				disabled={effectiveLocked}
 				onclick={() => (triStateValue.value = opt.key)}
 			>
 				{#if opt.icon === 'true'}
@@ -843,5 +855,5 @@
 		{/each}
 	</ButtonGroup>
 {:else}
-	<TextInput bind:value={stringValue.value} {placeholder} readonly={effectiveReadonly} {...controlProps} />
+	<TextInput bind:value={stringValue.value} {placeholder} readonly={effectiveReadonly} disabled={effectiveDisabled} {...controlProps} />
 {/if}

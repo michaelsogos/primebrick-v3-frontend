@@ -39,6 +39,7 @@
 		value = $bindable(),
 		record = $bindable(),
 		readonly = false,
+		disabled = false,
 		mode = 'update',
 		controlProps,
 		inForm = false,
@@ -56,7 +57,13 @@
 		columns: ReadonlyMap<string, MetaColumn>;
 		value?: unknown;
 		record?: Record<string, unknown>;
+		/** Placement-level read-only (white-bg readonly chrome) — a field
+		 *  locked inside an otherwise-editable form. */
 		readonly?: boolean;
+		/** Surface-level disabled (muted disabled chrome) — the whole
+		 *  surface is non-editable (record sheet without the pencil,
+		 *  dependency-gated field). Distinct state from `readonly`. */
+		disabled?: boolean;
 		/** Lifecycle mode — `immutable` columns are editable ONLY on
 		 *  `kind:"create"`; every update/detail surface renders them disabled.
 		 *  Fallback surfaces (record sheet) are always 'update'. */
@@ -86,16 +93,18 @@
 
 	const labelFor = $derived(controlProps?.id as string | undefined);
 
-/** Effective read-only state — placement readonly, surface readonly,
- *  `kind:"calculated"` server projections (never writable by construction),
- *  or the `immutable` lifecycle: the field was set at creation
- *  (user-supplied or derived) and is frozen for the record's life. */
-const fieldReadonly = $derived(
-	readonly ||
-		placement?.readonly === true ||
+/** Disabled state — surface-level non-editability (sheet without the
+ *  pencil), `kind:"calculated"` server projections (never writable by
+ *  construction), or the `immutable` lifecycle frozen after creation.
+ *  Renders the disabled chrome (grey border + muted bg). */
+const fieldDisabled = $derived(
+	disabled ||
 		column.kind === 'calculated' ||
 		(column.immutable === true && mode !== 'create'),
 );
+/** Readonly state — placement-readonly: a value-locked field inside an
+ *  editable form. Renders the readonly chrome (grey border + white bg). */
+const fieldReadonly = $derived(readonly || placement?.readonly === true);
 
 	/** SwitchField binds a strict `boolean`; the field value is the
 	 *  record's `unknown` (undefined on columns the row never populated).
@@ -123,7 +132,7 @@ const fieldReadonly = $derived(
 				: undefined}
 			tooltipTitle={column.tooltip_title ? $t(column.tooltip_title) : undefined}
 			tooltipPriority={column.tooltip_priority}
-			disabled={fieldReadonly}
+			disabled={fieldDisabled || fieldReadonly}
 			bind:checked={boolValue.value}
 			{...controlProps}
 		/>
@@ -176,6 +185,7 @@ const fieldReadonly = $derived(
 		{columns}
 		{controlProps}
 		{disabledBadgeValues}
+		disabled={fieldDisabled}
 		readonly={fieldReadonly}
 		bind:value
 		bind:record

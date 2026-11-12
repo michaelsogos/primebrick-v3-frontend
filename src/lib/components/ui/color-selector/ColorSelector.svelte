@@ -53,7 +53,7 @@
     <Popover.Root>
       <Popover.Trigger>
         {#snippet child({ props })}
-          <Button {...props} variant="outline" id={triggerId} {disabled} class="w-full justify-start">
+          <Button {...props} variant="outline" id={triggerId} {disabled} class="w-full justify-start disabled:border-disabled disabled:hover:brightness-100 disabled:opacity-100">
             <div class="flex w-full items-center gap-4">
               <div
                 class="w-5 h-5 rounded-full border shadow-sm"
