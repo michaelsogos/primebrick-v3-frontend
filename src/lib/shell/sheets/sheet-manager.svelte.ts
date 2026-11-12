@@ -350,12 +350,6 @@ export function closeSheet() {
   });
 }
 
-/** Close only the LEFT (secondary) pane — the right pane keeps its
- *  slot. Used by the secondary pane's own close affordance. */
-export function closeSecondarySheet() {
-  sheetState.secondary = null;
-}
-
 /**
  * Expanded mode — a panel that opts in (e.g. the docs viewer) may widen to
  * half the viewport. Expanded implies modal (the underlying page is covered

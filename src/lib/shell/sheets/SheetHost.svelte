@@ -1,7 +1,6 @@
 <script lang="ts">
   import { Sheet } from "@primebrick/ui";
   import {
-    closeSecondarySheet,
     closeSheet,
     sheetState,
     shouldSuppressSheetDialogClose,
@@ -101,31 +100,11 @@
     };
   }
 
-  /** Which pane the last pointer interaction happened in — set on
-   *  pointerdown capture (fires before the pane's Sheet.Close click and
-   *  before the dialog close request), consumed by onSheetOpenChange.
-   *  It routes the close to the interacted pane instead of always
-   *  popping the right one: X in the left pane closes the left pane. */
-  let closeTargetSecondary = $state(false);
-
-  /** A fresh stack clears the pane-touch flag — opening a sheet from a
-   *  pane is not "interacting with the left pane" for close routing
-   *  (the version badge lives in the record pane; without this, one
-   *  badge click + Escape would kill the record instead of popping). */
-  $effect(() => {
-    void sheetState.secondary;
-    closeTargetSecondary = false;
-  });
-
-  /** Route a dialog-level close request to the pane that owns it:
-   *  X/Escape in the left pane closes only that pane; anything else
-   *  pops (or closes) through the manager. */
+  /** LIFO stack discipline: every close request pops the TOP pane first —
+   *  the left (secondary) pane can never outlive the right one. A close
+   *  affordance rendered inside the left pane also unwinds the top sheet;
+   *  the record only becomes closable once it is alone on the stack. */
   function routeDialogClose() {
-    if (sheetState.secondary && closeTargetSecondary) {
-      closeTargetSecondary = false;
-      closeSecondarySheet();
-      return;
-    }
     closeSheet();
   }
 
@@ -166,15 +145,11 @@
     e.preventDefault();
     routeDialogClose();
   }}>
-    <!-- svelte-ignore a11y_no_static_element_interactions — pointerdown
-         capture only records WHICH pane was last touched so the dialog
-         close can route to it; it is not itself an interaction. -->
-    <div class="flex h-full min-h-0" onpointerdowncapture={() => (closeTargetSecondary = false)}>
+    <div class="flex h-full min-h-0">
       {#if sheetState.secondary && !sheetState.expanded}
         <div
           transition:pushPane
           class="h-full min-w-0 flex-1 border-r border-border"
-          onpointerdowncapture={() => (closeTargetSecondary = true)}
           data-testid="sheet-secondary-pane"
         >
           {#if SecondaryPanel}
