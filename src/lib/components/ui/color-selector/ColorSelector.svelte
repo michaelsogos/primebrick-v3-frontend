@@ -9,9 +9,10 @@
    * Not avatar-specific — can be used for any color selection field.
    */
   import { t } from "$lib/i18n";
+  import { cn } from "$lib/utils";
   import { Button } from '@primebrick/ui';
   import * as ColorPicker from "$lib/components/ui/color-picker";
-  import { Popover } from '@primebrick/ui';
+  import { Popover, CopyButton, inputTrailingIconButtonClasses } from '@primebrick/ui';
 
   let {
     value = $bindable(),
@@ -37,6 +38,11 @@
      *  the popover cannot open — the field is display-only. */
     disabled?: boolean;
   } = $props();
+
+  // Same copy-CTA contract as the text inputs (input-anatomy.mdx): in
+  // display-only mode the trailing edge shows copy instead of the picker
+  // affordance — only when there is a value to copy.
+  let showCopy = $derived(disabled && (value ?? "").length > 0);
 </script>
 
 <!-- Color Picker -->
@@ -51,19 +57,32 @@
   {/if}
   <div class={labelKey ? "mt-2" : undefined}>
     <Popover.Root>
-      <Popover.Trigger>
-        {#snippet child({ props })}
-          <Button {...props} variant="outline" id={triggerId} {disabled} class="w-full justify-start disabled:border-disabled disabled:hover:brightness-100 disabled:opacity-100">
-            <div class="flex w-full items-center gap-4">
-              <div
-                class="w-5 h-5 rounded-full border shadow-sm"
-                style="background-color: {value || fallbackColor};"
-              ></div>
-              {value || placeholder || (placeholderKey ? $t(placeholderKey) : value)}
-            </div>
-          </Button>
-        {/snippet}
-      </Popover.Trigger>
+      <div class="relative">
+        <Popover.Trigger>
+          {#snippet child({ props })}
+            <Button {...props} variant="outline" id={triggerId} {disabled} class={cn("w-full justify-start disabled:border-disabled disabled:hover:brightness-100 disabled:opacity-100", showCopy && "pr-9")}>
+              <div class="flex w-full items-center gap-4">
+                <div
+                  class="w-5 h-5 rounded-full border shadow-sm"
+                  style="background-color: {value || fallbackColor};"
+                ></div>
+                {value || placeholder || (placeholderKey ? $t(placeholderKey) : value)}
+              </div>
+            </Button>
+          {/snippet}
+        </Popover.Trigger>
+        {#if showCopy}
+          <CopyButton
+            text={value ?? ""}
+            variant="ghost"
+            size="icon"
+            class={inputTrailingIconButtonClasses}
+            aria-label={$t('app.common.copy')}
+            title={$t('app.common.copy')}
+            data-testid="color-selector-copy"
+          />
+        {/if}
+      </div>
       <Popover.Content class="z-[100] w-auto p-0">
         <div class="p-3">
           <ColorPicker.Root bind:value />

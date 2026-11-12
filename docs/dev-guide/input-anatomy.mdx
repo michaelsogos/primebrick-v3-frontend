@@ -72,6 +72,11 @@ field — it owns clear/copy/trailing per this contract. Specialized inputs
 (`EmailInput`, `UrlInput`, `PhoneInput`, `Password` fields,
 `SmartRegexInput`) follow the same trailing geometry.
 
+Trigger-button controls follow the same copy rule: `ColorSelector`'s
+trigger keeps swatch + hex visible in `disabled` (display-only) mode and
+mounts the shared `CopyButton` at `right-1.5` with `pr-9` padding —
+only when a value exists, never in editable mode.
+
 Use `InputGroup`/`InputGroupAddon` (flow-based) when the trailing element is
 a real inner button — e.g. a text CTA like "search in" or a `proto://`
 selector — rather than an icon.
