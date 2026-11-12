@@ -124,9 +124,8 @@ test.describe.serial("Suite A — User creation + password login", () => {
     // Close the roles dropdown by clicking elsewhere.
     await adminPage.getByTestId("admin-user-create-form").click();
 
-    // Ensure the user is active — otherwise Casdoor marks it isForbidden and
-    // the onboarded user's login is rejected.
-    await adminPage.getByTestId("admin-user-create-is-active-checkbox").check();
+    // New users are active by construction (no is_active flag — suspension
+    // is a post-create admin action).
 
     // Ensure send_invitation is checked (it may default to checked or unchecked).
     const sendInvToggle = adminPage.getByTestId("admin-user-create-send-invitation-toggle");

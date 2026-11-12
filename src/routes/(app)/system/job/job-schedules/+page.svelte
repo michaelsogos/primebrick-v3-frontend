@@ -7,11 +7,10 @@
    *
    * The `schedule_kind` filter preset (recurring / once / all) renders in
    * the toolbar from `meta.table.filter_presets`; the `run_stats` column
-   * is the builtin `type:"sparkline"` cell. The create CTA in the toolbar
-   * is census-derived — `/system/job/job-schedules/create` is
-   * `kind:"create"` on `job_schedule` with `job.jobs.scheduleNew` label
-   * (manual scheduling is a module-owned remote workflow, not a plain
-   * entity form).
+   * is the builtin `type:"sparkline"` cell. No create CTA — the census
+   * declares no `kind:"create"` route for `job_schedule`: manual schedule
+   * arming was absorbed into triggers, so the registry is read + lifecycle
+   * actions only.
    */
   import EntityTablePage from '$lib/components/entity-table-page/EntityTablePage.svelte';
 

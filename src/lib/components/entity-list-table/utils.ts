@@ -1,4 +1,5 @@
 import type { MetaColumn } from '$lib/entity-list/types';
+import { toDisplayString } from '@primebrick/ui';
 import { getAuditableDisplayValue, isAuditableFieldEmpty } from './utils/auditable-fields';
 
 /**
@@ -27,7 +28,7 @@ export function getRowKey<T extends Record<string, unknown>>(
   uid: string
 ): string {
   const v = row[uid as keyof T] as unknown;
-  return typeof v === 'string' ? v : String(v ?? '');
+  return typeof v === 'string' ? v : toDisplayString(v ?? '');
 }
 
 /**
@@ -71,6 +72,7 @@ export function getCellClass(column: MetaColumn): string {
     case 'number':
     case 'currency':
       return `${baseClass} text-right`;
+    case 'boolean':
     case 'date':
     case 'datetime':
       return `${baseClass} text-center`;

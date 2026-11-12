@@ -41,8 +41,8 @@
 <EntityTablePage
   basePath={entityApiBase('provider')}
   storageKeyPrefix="pb:emailsender:providers:"
-  errorScopeKey="app.common.errors.scope.emailsenderProvidersList"
-  errorScopeKeyInit="app.common.errors.scope.emailsenderProvidersPageInit"
+  errorScopeKey="app.common.errors.scope.emailsender_providers_list"
+  errorScopeKeyInit="app.common.errors.scope.emailsender_providers_page_init"
   editPath={edit_path}
   deletionFilter={false}
   syncChannel="primebrick_email_provider_sync"

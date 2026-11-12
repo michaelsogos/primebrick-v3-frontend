@@ -39,10 +39,10 @@
    * registered in the IDP after an IDP data reset). */
   function passkeyErrorMessage(err: { internal_code?: string }): { message?: string } {
     if (err.internal_code === 'webauthn_credential_not_found') {
-      return { message: $t('app.auth.login.passkey.credentialNotFound') };
+      return { message: $t('app.auth.login.passkey.credential_not_found') };
     }
     if (err.internal_code === 'webauthn_session_expired') {
-      return { message: $t('app.auth.login.passkey.sessionExpired') };
+      return { message: $t('app.auth.login.passkey.session_expired') };
     }
     return {};
   }

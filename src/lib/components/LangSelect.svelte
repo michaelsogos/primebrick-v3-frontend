@@ -6,20 +6,17 @@
   import { uiLang, setUiLang } from '$lib/i18n/store.svelte';
   import {
     orderLangEntriesByBrowser,
-    type UiLang,
+    UI_LANG_META,
+    UI_LANGS,
     uiLangTopBarTwoLetterSuffix
   } from '$lib/i18n/languages';
   import { ChevronDown } from '@primebrick/ui/vendor/lucide';
 
-  const LANGS: Array<{ code: UiLang; label: string; flagCode: string }> = [
-    { code: 'en-GB', label: 'British English', flagCode: 'gb' },
-    { code: 'en-US', label: 'American English', flagCode: 'us' },
-    { code: 'it-IT', label: 'Italiano', flagCode: 'it' },
-    { code: 'fr-FR', label: 'Français', flagCode: 'fr' },
-    { code: 'es-ES', label: 'Español', flagCode: 'es' },
-    { code: 'de-DE', label: 'Deutsch', flagCode: 'de' },
-    { code: 'pt-PT', label: 'Português', flagCode: 'pt' }
-  ];
+  const LANGS = UI_LANGS.map((code) => ({
+    code,
+    label: UI_LANG_META[code].label,
+    flagCode: UI_LANG_META[code].flag
+  }));
 
   const sortedLangs = $derived(
     orderLangEntriesByBrowser(

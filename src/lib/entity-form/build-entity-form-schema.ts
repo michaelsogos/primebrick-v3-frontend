@@ -154,7 +154,12 @@ export function buildEntityFormSchema(
 				`page_props.form declares field '${placement.key}' but entity meta has no such column — declaration/entity drift`,
 			);
 		}
-		const required = placement.required ?? col.nullable === false;
+		// Server-managed columns (identity keys via `managed`, audited,
+		// the uid) are never client-writable — the same exemption
+		// `checkEntityFields` applies server-side. An explicit
+		// `placement.required` still wins (author override).
+		const managed = col.audited === true || col.key === meta.uid || col.managed === true;
+		const required = placement.required ?? (col.nullable === false && !managed);
 		let s: z.ZodTypeAny = fieldSpecToZod(col as MetaColumn, { required });
 		fields.push({ key: placement.key, required });
 		if (!required) {

@@ -30,6 +30,9 @@ icon (or the component that owns it).
 | In-flight spinner | `LoaderCircle` | With `animate-spin` |
 | Dropdown caret | `ChevronDown` | |
 | AI capability | `BrainCircuit` | |
+| Docs / user guide browser | `BookOpenText` | Topbar docs CTA and `shell.docs` panel header |
+| UUID / record identity | `FileKey` | `format:"uuid"` fields and the record-sheet uid badge. `Fingerprint`/`FingerprintPattern` are the passkey/WebAuthn domain — banned on entity-uuid surfaces |
+| Record sheet entity icon | singular variant of the authored list icon | A record shows ONE row: `users`→`user`, `users-round`→`user-round` via `RECORD_ICON_VARIANTS` in `EntityRecordSheet.svelte`. Icons without a declared pair render the authored glyph unchanged — extend the map, never guess |
 
 ## RefreshButton
 

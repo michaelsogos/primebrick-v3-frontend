@@ -77,7 +77,7 @@ describe('useTypeConfigBuilder', () => {
     const parsed = JSON.parse(getLastJson());
     expect(parsed.validation.rules.min).toEqual({
       value: 1,
-      error_label_key: 'app.common.validation.tooShort',
+      error_label_key: 'app.common.validation.too_short',
     });
   });
 
@@ -95,14 +95,14 @@ describe('useTypeConfigBuilder', () => {
     expect(builder.validation?.rules?.min?.error_label_key).toBeUndefined();
     // Serialized JSON should have the auto-generated key
     const parsed = JSON.parse(getLastJson());
-    expect(parsed.validation.rules.min.error_label_key).toBe('app.common.validation.tooShort');
+    expect(parsed.validation.rules.min.error_label_key).toBe('app.common.validation.too_short');
   });
 
   it('autoErrorLabelKey uses my_custom_setting fallback when key is empty', () => {
     const { builder, getLastJson } = createBuilder('string', '');
     builder.setMin(1);
     const parsed = JSON.parse(getLastJson());
-    expect(parsed.validation.rules.min.error_label_key).toBe('app.common.validation.tooShort');
+    expect(parsed.validation.rules.min.error_label_key).toBe('app.common.validation.too_short');
   });
 
   it('updating configKey reactively re-generates auto error_label_keys', () => {
@@ -110,13 +110,13 @@ describe('useTypeConfigBuilder', () => {
     builder.setMin(1);
     builder.setMax(100);
     let parsed = JSON.parse(getLastJson());
-    expect(parsed.validation.rules.min.error_label_key).toBe('app.common.validation.tooShort');
-    expect(parsed.validation.rules.max.error_label_key).toBe('app.common.validation.tooLong');
+    expect(parsed.validation.rules.min.error_label_key).toBe('app.common.validation.too_short');
+    expect(parsed.validation.rules.max.error_label_key).toBe('app.common.validation.too_long');
     // Now update the key — setConfigKey re-generates auto keys
     builder.setConfigKey('session_timeout');
     parsed = JSON.parse(getLastJson());
-    expect(parsed.validation.rules.min.error_label_key).toBe('app.common.validation.tooShort');
-    expect(parsed.validation.rules.max.error_label_key).toBe('app.common.validation.tooLong');
+    expect(parsed.validation.rules.min.error_label_key).toBe('app.common.validation.too_short');
+    expect(parsed.validation.rules.max.error_label_key).toBe('app.common.validation.too_long');
   });
 
   it('updating configKey does NOT override custom error_label_keys', () => {
@@ -143,7 +143,7 @@ describe('useTypeConfigBuilder', () => {
     const parsed = JSON.parse(getLastJson());
     expect(parsed.validation.rules.max).toEqual({
       value: 365,
-      error_label_key: 'app.common.validation.tooLong',
+      error_label_key: 'app.common.validation.too_long',
     });
   });
 
@@ -166,7 +166,7 @@ describe('useTypeConfigBuilder', () => {
     const { builder, getLastJson } = createBuilder('string', 'contact');
     builder.setEmail(true);
     const parsed = JSON.parse(getLastJson());
-    expect(parsed.validation.rules.email.error_label_key).toBe('app.common.validation.invalidEmail');
+    expect(parsed.validation.rules.email.error_label_key).toBe('app.common.validation.invalid_email');
   });
 
   it('setEmail(false) removes email rule', () => {
@@ -325,7 +325,7 @@ describe('useTypeConfigBuilder', () => {
     const parsed = JSON.parse(getLastJson());
     expect(parsed.validation.rules.max).toEqual({
       value: 65535,
-      error_label_key: 'app.common.validation.tooLong',
+      error_label_key: 'app.common.validation.too_long',
     });
   });
 

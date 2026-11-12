@@ -98,12 +98,12 @@
     <Coins class="size-4" />
   {/snippet}
   {#snippet title()}
-    {$t('system.settings.config.currencySelect.title')}
+    {$t('system.settings.config.currency_select.title')}
   {/snippet}
   {#snippet toolbar()}
     <SearchInput
       bind:value={searchQuery}
-      placeholder={$t('system.settings.config.currencySelect.searchPlaceholder')}
+      placeholder={$t('system.settings.config.currency_select.search_placeholder')}
       data_testid="currency-select-search"
     />
   {/snippet}
@@ -111,7 +111,7 @@
   {#if !searchQuery && favoriteCurrencies.length > 0}
     <div>
       <SheetSectionTitle>
-        {$t('system.settings.config.currencySelect.favorites')}
+        {$t('system.settings.config.currency_select.favorites')}
       </SheetSectionTitle>
       {#each favoriteCurrencies as currency (currency.code)}
         {@render currencyRow(currency)}
@@ -119,13 +119,13 @@
     </div>
     <div>
       <SheetSectionTitle>
-        {$t('system.settings.config.currencySelect.allCurrencies')}
+        {$t('system.settings.config.currency_select.all_currencies')}
       </SheetSectionTitle>
       {#each nonFavoriteCurrencies as currency (currency.code)}
         {@render currencyRow(currency)}
       {:else}
         <div class="px-3 py-8 text-center text-sm text-muted-foreground">
-          {$t('system.settings.config.currencySelect.noResults')}
+          {$t('system.settings.config.currency_select.no_results')}
         </div>
       {/each}
     </div>
@@ -134,7 +134,7 @@
       {@render currencyRow(currency)}
     {:else}
       <div class="px-3 py-8 text-center text-sm text-muted-foreground">
-        {$t('system.settings.config.currencySelect.noResults')}
+        {$t('system.settings.config.currency_select.no_results')}
       </div>
     {/each}
   {/if}

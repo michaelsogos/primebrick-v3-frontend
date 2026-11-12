@@ -1,0 +1,136 @@
+{
+  "rules": {
+    "raw-switch": {
+      "allowPaths": [
+        "lib/components/config-list/ConfigValueInput.svelte",
+        "lib/components/entity-list-table/panels/PreviewPanel.svelte",
+        "lib/components/anchor-tabs/anchor-tabs-mode-switch.svelte",
+        "lib/components/entity-list-table/components/CardViewRenderer.svelte",
+        "routes/(app)/system/settings/modules/+page.svelte"
+      ]
+    },
+    "button-variant-toolbar": {
+      "appliesTo": [
+        "lib/components/config-list/",
+        "lib/components/entity-list-table/"
+      ]
+    },
+    "panel-layout": {
+      "appliesTo": [
+        "lib/entity-list/sheets/panels/",
+        "lib/shell/sheets/panels/"
+      ]
+    },
+    "panel-content-scroll": {
+      "appliesTo": [
+        "lib/entity-list/sheets/panels/",
+        "lib/shell/sheets/panels/"
+      ]
+    },
+    "panel-raw-label": {
+      "appliesTo": [
+        "lib/entity-list/sheets/panels/",
+        "lib/shell/sheets/panels/"
+      ]
+    },
+    "panel-control-id": {
+      "appliesTo": [
+        "lib/entity-list/sheets/panels/",
+        "lib/shell/sheets/panels/"
+      ]
+    },
+    "panel-select-dropdown": {
+      "appliesTo": [
+        "lib/entity-list/sheets/panels/",
+        "lib/shell/sheets/panels/"
+      ]
+    },
+    "panel-button-testid": {
+      "appliesTo": [
+        "lib/entity-list/sheets/panels/",
+        "lib/shell/sheets/panels/"
+      ]
+    },
+    "panel-switch": {
+      "appliesTo": [
+        "lib/entity-list/sheets/panels/",
+        "lib/shell/sheets/panels/"
+      ]
+    },
+    "panel-search-clearable": {
+      "appliesTo": [
+        "lib/entity-list/sheets/panels/",
+        "lib/shell/sheets/panels/"
+      ]
+    },
+    "panel-raw-input": {
+      "appliesTo": [
+        "lib/entity-list/sheets/panels/",
+        "lib/shell/sheets/panels/"
+      ]
+    },
+    "panel-footer-chrome": {
+      "appliesTo": [
+        "lib/entity-list/sheets/panels/",
+        "lib/shell/sheets/panels/"
+      ],
+      "allowPaths": [
+        "lib/shell/sheets/panels/AiChatPanel.svelte"
+      ]
+    },
+    "panel-toolbar-tools": {
+      "appliesTo": [
+        "lib/entity-list/sheets/panels/",
+        "lib/shell/sheets/panels/"
+      ]
+    },
+    "panel-chrome-class": {
+      "appliesTo": [
+        "lib/entity-list/sheets/panels/",
+        "lib/shell/sheets/panels/"
+      ]
+    },
+    "field-stock-chrome": {
+      "appliesTo": [
+        "lib/"
+      ]
+    },
+    "page-scaffold-ownership": {
+      "allowPaths": [
+        "lib/components/AppShell.svelte",
+        "routes/(app)/docs/[...path]/+page.svelte",
+        "routes/(app)/system/settings/configurations/+page.svelte",
+        "routes/(app)/system/settings/credentials/+page.svelte",
+        "routes/(app)/system/settings/migrations/+page.svelte",
+        "routes/(app)/system/settings/modules/+page.svelte",
+        "routes/(app)/system/settings/roles/create/+page.svelte",
+        "routes/(app)/system/settings/roles/[uuid]/+page.svelte",
+        "routes/(app)/system/settings/templates/+page.svelte",
+        "routes/(app)/system/settings/translations/+page.svelte"
+      ]
+    },
+    "i18n-entity-fallback": {
+      "appliesTo": [
+        "lib/entity-list/",
+        "lib/components/entity-list-table/"
+      ]
+    },
+    "icon-no-fallback": {},
+    "panel-footer-start": {
+      "appliesTo": [
+        "lib/entity-list/sheets/panels/",
+        "lib/shell/sheets/panels/"
+      ]
+    }
+  },
+  "i18n_namespaces": [
+    "app",
+    "system",
+    "custom",
+    "ai",
+    "crm",
+    "emailsender",
+    "job",
+    "webhook"
+  ]
+}

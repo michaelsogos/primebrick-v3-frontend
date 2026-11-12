@@ -6,6 +6,21 @@ export const UI_LANGS = ['en-GB', 'en-US', 'it-IT', 'fr-FR', 'es-ES', 'de-DE', '
 
 export type UiLang = (typeof UI_LANGS)[number];
 
+/**
+ * Native display label + flag-icons country code per supported locale —
+ * the single source for every language picker (top bar, sheets, forms),
+ * so a language always renders the same way everywhere.
+ */
+export const UI_LANG_META: Record<UiLang, { label: string; flag: string }> = {
+  'en-GB': { label: 'British English', flag: 'gb' },
+  'en-US': { label: 'American English', flag: 'us' },
+  'it-IT': { label: 'Italiano', flag: 'it' },
+  'fr-FR': { label: 'Français', flag: 'fr' },
+  'es-ES': { label: 'Español', flag: 'es' },
+  'de-DE': { label: 'Deutsch', flag: 'de' },
+  'pt-PT': { label: 'Português', flag: 'pt' }
+};
+
 export const DEFAULT_LANG: UiLang = 'en-GB';
 
 /** Lowercase canonical tag -> UiLang */

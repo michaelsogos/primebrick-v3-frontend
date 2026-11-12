@@ -4,7 +4,6 @@ import { writable, type Writable } from 'svelte/store';
 
 const STORAGE_KEY = 'pb.lang';
 const I18N_CACHE_PREFIX = 'pb:i18n:';
-const I18N_TTL_MS = 60 * 60 * 1000; // 1 hour — performance only; freshness is guaranteed by BE cache invalidation on writes
 
 function detectBrowserLang(): UiLang {
   if (!browser) return DEFAULT_LANG;
@@ -38,7 +37,7 @@ export function setUiLang(next: UiLang) {
   if (browser) sessionStorage.setItem(STORAGE_KEY, next);
 }
 
-// --- Per-module dict cache in localStorage (5-minute TTL) ---
+// --- Per-module dict cache in localStorage (no TTL — last-known-good) ---
 
 export interface CachedI18nModule {
   dict: Record<string, string>;
@@ -50,9 +49,10 @@ export function getCachedModuleDict(moduleId: string, lang: UiLang): CachedI18nM
   const raw = localStorage.getItem(`${I18N_CACHE_PREFIX}${moduleId}:${lang}`);
   if (!raw) return null;
   try {
-    const parsed = JSON.parse(raw) as CachedI18nModule;
-    if (Date.now() - parsed.cached_at > I18N_TTL_MS) return null; // stale
-    return parsed;
+    // No TTL: a stale dict is still strictly better than raw keys. Freshness
+    // is restored by the always-on fetch (ETag/304) — the entry is replaced
+    // only when a newer dict arrives, never discarded for age alone.
+    return JSON.parse(raw) as CachedI18nModule;
   } catch {
     return null;
   }

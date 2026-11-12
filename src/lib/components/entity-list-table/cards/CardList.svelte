@@ -3,7 +3,7 @@
   import { cn } from '$lib/utils.js';
   import { Checkbox, checkboxInteractiveClass } from '@primebrick/ui';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-  import { Button } from '@primebrick/ui';
+  import { Button, toDisplayString } from '@primebrick/ui';
   import type { MetaColumn } from '$lib/entity-list/types';
   import type { Snippet } from 'svelte';
   import type { CellArgs, EntityRowActions } from '../types';
@@ -71,7 +71,7 @@
 
   function rowKey(row: TRow): string {
     const v = row[uid as keyof typeof row] as unknown;
-    return typeof v === 'string' ? v : String(v ?? '');
+    return typeof v === 'string' ? v : toDisplayString(v ?? '');
   }
 
   function toggleRowSelect(key: string) {
@@ -105,7 +105,7 @@
           ? 'bg-neutral-50 ring-1 ring-primary/40 dark:bg-neutral-700 dark:ring-primary/35'
           : undefined,
         rowDeleted ? 'opacity-60' : '',
-        rowFocused ? 'border-2 border-primary ring-2 ring-primary/20' : ''
+        rowFocused ? 'border-primary-gradient' : ''
       )}
       onclick={(e) => onRowClick?.(r, rk, e)}
       onkeydown={
@@ -133,7 +133,7 @@
               class={checkboxInteractiveClass}
               checked={selectedKeys.includes(rk)}
               onCheckedChange={() => toggleRowSelect(rk)}
-              aria-label={$t('system.entities.list.selectRow')}
+              aria-label={$t('system.entities.list.select_row')}
             />
           </div>
         {/if}
@@ -190,7 +190,7 @@
               <DropdownMenu.Item onclick={() => onVersionHistory(r)}>
                 <div class="flex items-center gap-2">
                   <FileClock class="size-4" />
-                  <span>{$t('app.common.versionHistory')}</span>
+                  <span>{$t('app.common.version_history')}</span>
                 </div>
               </DropdownMenu.Item>
             {/if}

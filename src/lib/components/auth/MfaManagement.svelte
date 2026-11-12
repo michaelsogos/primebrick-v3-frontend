@@ -92,7 +92,7 @@
       console.error("[MfaManagement] Failed to start enrollment:", error);
       pushNotification({
         impact: "HIGH",
-        message: $t("app.auth.mfa.enrollmentError"),
+        message: $t("app.auth.mfa.enrollment_error"),
         scope: "auth",
       });
     } finally {
@@ -102,7 +102,7 @@
 
   async function finishEnrollment() {
     if (otp.code.length !== 6) {
-      enrollError = $t("app.auth.mfa.codeRequired");
+      enrollError = $t("app.auth.mfa.code_required");
       return;
     }
     enrolling = true;
@@ -119,13 +119,13 @@
       });
       if (!resp.ok) {
         const err = await resp.json();
-        enrollError = err.detail || $t("app.auth.mfa.invalidCode");
+        enrollError = err.detail || $t("app.auth.mfa.invalid_code");
         otp.reset();
         return;
       }
       pushNotification({
         impact: "NONE",
-        message: $t("app.auth.mfa.enrollmentSuccess"),
+        message: $t("app.auth.mfa.enrollment_success"),
         scope: "auth",
       });
       enrollDialogOpen = false;
@@ -138,7 +138,7 @@
       await loadFactors();
     } catch (error) {
       console.error("[MfaManagement] Failed to finish enrollment:", error);
-      enrollError = $t("app.auth.mfa.connectionError");
+      enrollError = $t("app.auth.mfa.connection_error");
     } finally {
       enrolling = false;
     }
@@ -163,7 +163,7 @@
       }
       pushNotification({
         impact: "NONE",
-        message: $t("app.auth.mfa.deleteSuccess"),
+        message: $t("app.auth.mfa.delete_success"),
         scope: "auth",
       });
       await loadFactors();
@@ -171,7 +171,7 @@
       console.error("[MfaManagement] Failed to delete factor:", error);
       pushNotification({
         impact: "HIGH",
-        message: $t("app.auth.mfa.deleteError"),
+        message: $t("app.auth.mfa.delete_error"),
         scope: "auth",
       });
     } finally {
@@ -213,8 +213,8 @@
     {#if !authConfigState.loaded || loading || (mfaEnabled && !factorsLoaded)}
       <LoadingWatermark
         icon={ShieldCheck}
-        titleKey="app.auth.mfa.loadingTitle"
-        hintKey="app.auth.mfa.loadingHint"
+        titleKey="app.auth.mfa.loading_title"
+        hintKey="app.auth.mfa.loading_hint"
       />
     {:else if !mfaEnabled}
       <div class="grid min-h-56 place-items-center p-3" data-testid="mfa-management-disabled">
@@ -223,10 +223,10 @@
             <ShieldCheck class="size-20 text-muted-foreground" />
           </div>
           <div class="text-sm font-medium text-muted-foreground">
-            {$t("app.auth.mfa.disabledTitle")}
+            {$t("app.auth.mfa.disabled_title")}
           </div>
           <div class="text-xs text-muted-foreground">
-            {$t("app.auth.mfa.disabledHint")}
+            {$t("app.auth.mfa.disabled_hint")}
           </div>
         </div>
       </div>
@@ -237,10 +237,10 @@
             <ShieldCheck class="size-20 text-muted-foreground" />
           </div>
           <div class="text-sm font-medium text-muted-foreground">
-            {$t("app.auth.mfa.emptyTitle")}
+            {$t("app.auth.mfa.empty_title")}
           </div>
           <div class="text-xs text-muted-foreground">
-            {$t("app.auth.mfa.emptyHint")}
+            {$t("app.auth.mfa.empty_hint")}
           </div>
         </div>
       </div>
@@ -256,17 +256,17 @@
               <Smartphone class="size-5 text-muted-foreground shrink-0 mt-0.5" />
               <div class="flex flex-col min-w-0">
                 <span class="text-sm font-medium truncate">
-                  {factor.label || $t("app.auth.mfa.defaultLabel")}
+                  {factor.label || $t("app.auth.mfa.default_label")}
                 </span>
                 <span class="text-xs text-muted-foreground">
-                  {$t("app.auth.mfa.factorType")}: {factor.factor_type.toUpperCase()}
+                  {$t("app.auth.mfa.factor_type")}: {factor.factor_type.toUpperCase()}
                   {#if factor.is_preferred}
                     <span class="ml-1 text-primary">• {$t("app.auth.mfa.preferred")}</span>
                   {/if}
                 </span>
                 {#if factor.last_used_at}
                   <span class="text-xs text-muted-foreground">
-                    {$t("app.auth.mfa.lastUsed")}: {new Date(factor.last_used_at).toLocaleDateString()}
+                    {$t("app.auth.mfa.last_used")}: {new Date(factor.last_used_at).toLocaleDateString()}
                   </span>
                 {/if}
               </div>
@@ -298,7 +298,7 @@
       {:else}
         <Plus class="size-4 mr-2" />
       {/if}
-      {$t("app.auth.mfa.enrollButton")}
+      {$t("app.auth.mfa.enroll_button")}
     </Button>
   </CardFooter>
 </Card>
@@ -313,13 +313,13 @@
       <DialogHeader>
         <DialogTitle class="flex items-center gap-2">
           <QrCode class="size-5" />
-          {$t("app.auth.mfa.enrollDialogTitle")}
+          {$t("app.auth.mfa.enroll_dialog_title")}
         </DialogTitle>
         <DialogDescription>
           {#if enrollStep === "qr"}
-            {$t("app.auth.mfa.enrollStepQr")}
+            {$t("app.auth.mfa.enroll_step_qr")}
           {:else}
-            {$t("app.auth.mfa.enrollStepVerify")}
+            {$t("app.auth.mfa.enroll_step_verify")}
           {/if}
         </DialogDescription>
       </DialogHeader>
@@ -336,18 +336,18 @@
             />
           </div>
           <div class="space-y-2">
-            <p class="text-xs text-muted-foreground">{$t("app.auth.mfa.manualEntry")}:</p>
+            <p class="text-xs text-muted-foreground">{$t("app.auth.mfa.manual_entry")}:</p>
             <code class="block bg-muted px-2 py-1 rounded text-xs font-mono break-all" data-testid="mfa-enroll-secret">{secret}</code>
           </div>
           {#if recoveryCodes.length > 0}
             <div class="space-y-2">
-              <p class="text-xs text-muted-foreground">{$t("app.auth.mfa.recoveryCodes")}:</p>
+              <p class="text-xs text-muted-foreground">{$t("app.auth.mfa.recovery_codes")}:</p>
               <div class="bg-muted rounded p-2 space-y-1">
                 {#each recoveryCodes as code (code)}
                   <code class="block text-xs font-mono">{code}</code>
                 {/each}
               </div>
-              <p class="text-xs text-destructive">{$t("app.auth.mfa.recoveryCodesWarning")}</p>
+              <p class="text-xs text-destructive">{$t("app.auth.mfa.recovery_codes_warning")}</p>
             </div>
           {/if}
           <Button onclick={() => (enrollStep = "verify")} class="w-full" data-testid="mfa-enroll-continue-button">
@@ -362,13 +362,13 @@
               id="mfa-enroll-label"
               type="text"
               maxlength={100}
-              placeholder={$t("app.auth.mfa.labelPlaceholder")}
+              placeholder={$t("app.auth.mfa.label_placeholder")}
               bind:value={enrollLabel}
               data-testid="mfa-enroll-label-input"
             />
           </div>
           <div class="space-y-2">
-            <Label for="mfa-enroll-code">{$t("app.auth.mfa.verifyCode")}</Label>
+            <Label for="mfa-enroll-code">{$t("app.auth.mfa.verify_code")}</Label>
             <OtpInput
               id="mfa-enroll-code"
               data-testid="mfa-enroll-code-input"
@@ -384,7 +384,7 @@
             {#if enrolling}
               <Spinner class="size-4 mr-2" />
             {/if}
-            {$t("app.auth.mfa.verifyAndEnable")}
+            {$t("app.auth.mfa.verify_and_enable")}
           </Button>
         </div>
       {/if}
@@ -393,8 +393,8 @@
   <!-- Delete Confirmation Dialog -->
   <BorderedDialog bind:open={deleteDialogOpen} severity="destructive" class="sm:max-w-md">
       <DialogHeader>
-        <DialogTitle>{$t("app.auth.mfa.deleteDialogTitle")}</DialogTitle>
-        <DialogDescription>{$t("app.auth.mfa.deleteDialogDescription")}</DialogDescription>
+        <DialogTitle>{$t("app.auth.mfa.delete_dialog_title")}</DialogTitle>
+        <DialogDescription>{$t("app.auth.mfa.delete_dialog_description")}</DialogDescription>
       </DialogHeader>
       <DialogFooter>
         <Button variant="outline" onclick={() => (deleteDialogOpen = false)} data-testid="mfa-delete-cancel-button">

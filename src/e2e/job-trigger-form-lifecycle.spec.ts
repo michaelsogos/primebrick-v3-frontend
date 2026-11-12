@@ -224,10 +224,11 @@ test.describe("schedule_spec assist — choicebox mode cards", () => {
     await minuteInput.pressSequentially("DFDF");
     await expect(minuteInput).toHaveValue("");
 
-    // Month accepts only letters that stay a name prefix: J-A-N keeps,
-    // X is dropped (no month name starts with X).
+    // Digits-only vocabulary — names/quartz rejected in EVERY field.
     await monthInput.pressSequentially("JXAN");
-    await expect(monthInput).toHaveValue("JAN");
+    await expect(monthInput).toHaveValue("");
+    await domInput.pressSequentially("?LW");
+    await expect(domInput).toHaveValue("");
 
     // The digit mask rejects out-of-range numbers at keystroke: 99 → 9,
     // and a 4-digit run is impossible (599 → 59).
@@ -267,16 +268,16 @@ test.describe("schedule_spec assist — choicebox mode cards", () => {
     await dowInput.fill("");
 
     // The legend is off by default — the toggle (second trailing CTA)
-    // reveals it, contextual to the ACTIVE cell (dow → 0-7 SUN-SAT).
+    // reveals it, contextual to the ACTIVE cell (dow → 0-7).
     const legendToggle = popup.locator('[data-testid$="-cron-expr-legend-toggle"]');
     await expect(popup.locator('[data-testid$="-cron-expr-legend"]')).toBeHidden();
     await legendToggle.click();
     await expect(popup.locator('[data-testid$="-cron-expr-legend"]')).toBeVisible();
-    await expect(popup.locator('[data-testid$="-cron-expr-legend"]')).toContainText("0-7 SUN-SAT");
+    await expect(popup.locator('[data-testid$="-cron-expr-legend"]')).toContainText("0-7");
 
-    // Example chips inside the legend fill the active cell.
-    await popup.locator('[data-testid$="-cron-expr-example-MON-FRI"]').click();
-    await expect(dowInput).toHaveValue("MON-FRI");
+    // Example chips inside the legend fill the active cell (dow range ex: 1-5).
+    await popup.locator('[data-testid$="-cron-expr-example-1-5"]').click();
+    await expect(dowInput).toHaveValue("1-5");
     await dowInput.fill("");
     await legendToggle.click();
     await expect(popup.locator('[data-testid$="-cron-expr-legend"]')).toBeHidden();
@@ -296,15 +297,15 @@ test.describe("schedule_spec assist — choicebox mode cards", () => {
     // Paste fan-out: a full expression pasted into one field fills them all.
     await dowInput.evaluate((el) => {
       const dt = new DataTransfer();
-      dt.setData("text/plain", "*/15 9 * JAN MON-FRI");
+      dt.setData("text/plain", "*/15 9 * 1 1-5");
       el.dispatchEvent(
         new ClipboardEvent("paste", { clipboardData: dt, bubbles: true, cancelable: true }),
       );
     });
     await expect(hourInput).toHaveValue("9");
     await expect(domInput).toHaveValue("*");
-    await expect(monthInput).toHaveValue("JAN");
-    await expect(dowInput).toHaveValue("MON-FRI");
+    await expect(monthInput).toHaveValue("1");
+    await expect(dowInput).toHaveValue("1-5");
 
     // A complete valid expression produces the live localized description
     // and unlocks Apply.
@@ -314,7 +315,7 @@ test.describe("schedule_spec assist — choicebox mode cards", () => {
     // Apply writes the canonical string into the SAME text field (single
     // source of truth).
     await applyCta.click();
-    await expect(schedField.locator("input").first()).toHaveValue("*/15 9 * JAN MON-FRI");
+    await expect(schedField.locator("input").first()).toHaveValue("*/15 9 * 1 1-5");
 
     // The interpreter strip confirms the applied spec.
     await expect(popup.locator('[data-testid$="-interpreter"]')).toBeVisible();
@@ -352,7 +353,11 @@ test.describe("schedule_spec assist — choicebox mode cards", () => {
       'xpath=ancestor::*[contains(@class,"overflow-hidden")][1]'
     ).locator('div.border-t').last();
     const footerFit = await footer.evaluate((el) => {
-      const [legend, ctas] = el.children as unknown as HTMLElement[];
+      // KeyboardHints renders N hint spans + the `end` snippet (ms-auto CTAs):
+      // the real air is between the LAST hint group and the button row.
+      const kids = Array.from(el.children) as HTMLElement[];
+      const ctas = kids[kids.length - 1];
+      const legend = kids[kids.length - 2];
       return {
         fits: el.scrollWidth <= el.clientWidth,
         air: ctas.getBoundingClientRect().left - legend.getBoundingClientRect().right,

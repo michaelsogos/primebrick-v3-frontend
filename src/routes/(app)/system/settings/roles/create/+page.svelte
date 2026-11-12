@@ -88,12 +88,12 @@
   function validate(): boolean {
     errors = {};
     if (!idp_role) {
-      errors.idp_role = $t('system.settings.roles.validation.idpRoleRequired');
+      errors.idp_role = $t('system.settings.roles.validation.idp_role_required');
     } else if (!/^[a-z0-9_]+$/.test(idp_role)) {
-      errors.idp_role = $t('system.settings.roles.validation.idpRoleFormat');
+      errors.idp_role = $t('system.settings.roles.validation.idp_role_format');
     }
     if (!idp_org) {
-      errors.idp_org = $t('system.settings.roles.validation.idpOrgRequired');
+      errors.idp_org = $t('system.settings.roles.validation.idp_org_required');
     }
     return Object.keys(errors).length === 0;
   }
@@ -123,17 +123,17 @@
 
 <AppPageScaffold>
 
-  <p class="text-sm text-muted-foreground mb-4">{$t('system.settings.roles.createSubtitle')}</p>
+  <p class="text-sm text-muted-foreground mb-4">{$t('system.settings.roles.create_subtitle')}</p>
 
   <AnchorTabs value="details">
     <div class="flex items-center justify-between gap-4">
       <AnchorTabsList>
-        <AnchorTabsTrigger value="details">{$t('system.settings.roles.tabDetails')}</AnchorTabsTrigger>
-        <AnchorTabsTrigger value="permissions">{$t('system.settings.roles.tabPermissions')}</AnchorTabsTrigger>
+        <AnchorTabsTrigger value="details">{$t('system.settings.roles.tab_details')}</AnchorTabsTrigger>
+        <AnchorTabsTrigger value="permissions">{$t('system.settings.roles.tab_permissions')}</AnchorTabsTrigger>
       </AnchorTabsList>
       <AnchorTabsModeSwitch
-        label_show_all={$t('system.settings.roles.modeShowAll')}
-        label_hide={$t('system.settings.roles.modeHide')}
+        label_show_all={$t('system.settings.roles.mode_show_all')}
+        label_hide={$t('system.settings.roles.mode_hide')}
       />
     </div>
 
@@ -141,9 +141,9 @@
       <div class="space-y-6 max-w-2xl pt-6">
         <div class="space-y-2">
           <Label for="idp_role">
-            {$t('system.settings.roles.fieldIdpRole')}
+            {$t('system.settings.roles.field_idp_role')}
             <FormLabelWithPriorityHelp
-              text={$t('system.settings.roles.fieldIdpRoleHint')}
+              text={$t('system.settings.roles.field_idp_role_hint')}
               priority="HINT"
             />
           </Label>
@@ -162,9 +162,9 @@
 
         <div class="space-y-2">
           <Label for="idp_org">
-            {$t('system.settings.roles.fieldIdpOrg')}
+            {$t('system.settings.roles.field_idp_org')}
             <FormLabelWithPriorityHelp
-              text={$t('system.settings.roles.fieldIdpOrgHint')}
+              text={$t('system.settings.roles.field_idp_org_hint')}
               priority="INFORMATION"
             />
           </Label>
@@ -175,7 +175,7 @@
             options={orgs}
             valueField="idp_code"
             labelField="idp_code"
-            placeholder={$t('system.settings.roles.fieldIdpOrgPlaceholder')}
+            placeholder={$t('system.settings.roles.field_idp_org_placeholder')}
             loading={orgsLoading}
             searchable
             data-testid="roles-form-idp-org"
@@ -187,9 +187,9 @@
 
         <div class="space-y-2">
           <Label for="label_key">
-            {$t('system.settings.roles.fieldLabelKey')}
+            {$t('system.settings.roles.field_label_key')}
             <FormLabelWithPriorityHelp
-              text={$t('system.settings.roles.fieldLabelKeyHint')}
+              text={$t('system.settings.roles.field_label_key_hint')}
               priority="HINT"
             />
           </Label>
@@ -209,9 +209,9 @@
             data-testid="roles-form-is-admin"
           />
           <Label for="is_admin" class="cursor-pointer">
-            {$t('system.settings.roles.fieldIsAdmin')}
+            {$t('system.settings.roles.field_is_admin')}
             <FormLabelWithPriorityHelp
-              text={$t('system.settings.roles.fieldIsAdminHint')}
+              text={$t('system.settings.roles.field_is_admin_hint')}
               priority="INFORMATION"
             />
           </Label>
@@ -222,9 +222,9 @@
     <AnchorTabsContent value="permissions">
       <div class="space-y-6 pt-6">
         {#if permissionsCatalog.state.loading}
-          <p class="text-sm text-muted-foreground">{$t('system.settings.roles.permissionsLoading')}</p>
+          <p class="text-sm text-muted-foreground">{$t('system.settings.roles.permissions_loading')}</p>
         {:else if permissionsCatalog.state.modules.length === 0}
-          <p class="text-sm text-muted-foreground">{$t('system.settings.roles.permissionsEmpty')}</p>
+          <p class="text-sm text-muted-foreground">{$t('system.settings.roles.permissions_empty')}</p>
         {:else}
           {#each permissionsCatalog.state.modules as module (module.code)}
             <div class="rounded-md border" data-testid={`roles-perm-module-${module.code}`}>

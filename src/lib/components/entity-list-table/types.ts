@@ -1,5 +1,5 @@
 import type { Snippet } from 'svelte';
-import type { MetaColumn, SortDir, ViewName, AdvancedFilter, EntityAction, RowCustomAction, DeletionFilterMode, FilterPreset } from '$lib/entity-list/types';
+import type { MetaColumn, SortDir, ViewName, AdvancedFilter, EntityAction, RowCustomAction, BulkCustomAction, DeletionFilterMode, FilterPreset } from '$lib/entity-list/types';
 
 export type CellArgs<TRow extends Record<string, unknown>> = {
   row: TRow;
@@ -39,7 +39,15 @@ export type EntityRowActions = {
   restore?: boolean;
   versionHistory?: boolean;
   custom_actions?: RowCustomAction[];
+  /** CTA chrome overrides from `meta.actions[op]` (label_key/icon/color)
+   *  — cosmetics only; logic stays standard (e.g. soft-delete-as-disable
+   *  renders "Deactivate"+exec-stop). */
+  edit_chrome?: ActionChrome;
+  delete_chrome?: ActionChrome;
+  restore_chrome?: ActionChrome;
 };
+
+export type ActionChrome = Pick<EntityAction, 'label_key' | 'icon' | 'color' | 'confirm_key' | 'busy_key'>;
 
 export type ViewMode = 'table' | 'cards' | 'cards_list';
 
@@ -120,6 +128,9 @@ export type EntityListTableProps<TRow extends Record<string, unknown>> = {
    * from `entityActions` only — no parallel boolean flags.
    */
   entityCustomActions?: RowCustomAction[];
+  /** Bulk-bar custom CTAs from `meta.table.bulk_custom_actions` — endpoint
+   *  dispatch rides `meta.actions` (entity_op-declared routes). */
+  entityBulkCustomActions?: BulkCustomAction[];
   /**
    * Derived capability contract from `meta.actions`. When provided, standard
    * row/bulk CTAs are additionally gated on the op existing, being `enabled`,
@@ -132,7 +143,6 @@ export type EntityListTableProps<TRow extends Record<string, unknown>> = {
    *  override the generic "New" label in the toolbar button. */
   create_cta?: { label_key?: string; icon?: string };
   onEditAction?: (row: TRow) => void;
-  filtersOpen?: boolean;
   filterValues?: Record<string, unknown>;
   onFilterValuesChange?: (values: Record<string, unknown>) => void;
   onResetFilters?: () => void;

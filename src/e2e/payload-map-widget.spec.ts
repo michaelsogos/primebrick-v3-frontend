@@ -137,7 +137,7 @@ test.describe("payload-map widget", () => {
     // disabled but still carrying honest type icons:
     //   changed_at  → date-time → calendar-clock
     //   changed_by  → uuid + x_semantic:"actor.uuid" → user-cog (actor)
-    //   email/uuid  → mail / fingerprint
+    //   email/uuid  → mail / file-key
     const eyeToggle = popup.getByTestId("payload-map-path-templateCode-toggle-disabled");
     await expect(eyeToggle).toBeVisible();
     await eyeToggle.click();
@@ -145,7 +145,7 @@ test.describe("payload-map widget", () => {
       col1.locator('[data-propnv-path="$.customer.email"]').locator("svg.lucide-mail"),
     ).toBeVisible();
     await expect(
-      col1.locator('[data-propnv-path="$.customer.uuid"]').locator("svg.lucide-fingerprint-pattern"),
+      col1.locator('[data-propnv-path="$.customer.uuid"]').locator("svg.lucide-file-key"),
     ).toBeVisible();
     await expect(
       col0.locator('[data-propnv-path="$.change"]').locator("svg.lucide-braces"),
@@ -202,7 +202,6 @@ test.describe("payload-map widget", () => {
     // Component-supported marking: `isValueInvalid` asks the same
     // jsonSchemaCheck the wire gate runs — the bad badge carries
     // data-invalid + destructive variant, the good one stays secondary.
-    const badges = toRow.locator("[data-slot='badge'], .badge, span[class*='badge']");
     await expect(toRow.locator("[data-invalid]")).toHaveCount(1);
     await expect(toRow.locator("[data-invalid]").first()).toContainText("not-an-email");
     // Exactly ONE hint line under the control — the engine dedupes the
@@ -255,7 +254,6 @@ test.describe("payload-map widget", () => {
     await expect(toRow.locator('[role="combobox"][aria-invalid="true"]')).toHaveCount(0);
     await expect(toRow.getByTestId("payload-map-issue")).toHaveCount(0);
 
-    const codeRow = popup.getByTestId("payload-map-row-templateCode");
     await clickUntilExpanded(popup.getByTestId("payload-map-kind-templateCode"));
     await pickOption(popup, /event property|campo evento|propriet/i);
     await popup.keyboard.press("Escape");
@@ -267,7 +265,6 @@ test.describe("payload-map widget", () => {
 
     // `languageIso` is required too — "Context" auto-selects the first
     // compatible meta kind (actor_locale, lang→lang) via defaultMeta.
-    const langRow = popup.getByTestId("payload-map-row-languageIso");
     await clickUntilExpanded(popup.getByTestId("payload-map-kind-languageIso"));
     await pickOption(popup, /context|contesto/i);
     await popup.keyboard.press("Escape");
@@ -298,7 +295,6 @@ test.describe("payload-map widget", () => {
       await pickEventAndTarget(popup);
 
       // `templateCode` → "Fixed value" → the fixture template.
-      const codeRow = popup.getByTestId("payload-map-row-templateCode");
       await clickUntilExpanded(popup.getByTestId("payload-map-kind-templateCode"));
       await pickOption(popup, /fixed value|valore fisso/i);
       await popup.keyboard.press("Escape");
@@ -395,7 +391,6 @@ test.describe("payload-map widget", () => {
       await expect(mapBlock.locator('[aria-invalid="true"]')).toHaveCount(0);
 
       // Remaining required fields → the whole form unblocks.
-      const toRow = popup.getByTestId("payload-map-row-to");
       await clickUntilExpanded(popup.getByTestId("payload-map-kind-to"));
       await pickOption(popup, /event property|campo evento|propriet/i);
       await popup.keyboard.press("Escape");
@@ -404,7 +399,6 @@ test.describe("payload-map widget", () => {
       await toPathPopover.locator('[data-propnv-path="$.customer"]').click();
       await toPathPopover.locator('[data-propnv-path="$.customer.email"]').click();
       await popup.keyboard.press("Escape");
-      const langRow = popup.getByTestId("payload-map-row-languageIso");
       await clickUntilExpanded(popup.getByTestId("payload-map-kind-languageIso"));
       await pickOption(popup, /context|contesto/i);
       await popup.keyboard.press("Escape");
@@ -609,7 +603,6 @@ test.describe("payload-map widget", () => {
     // `$.customer.email` is a SCALAR email — pathCompatible admits it as
     // a single-element wrap; `changed_fields` (array<string> nude) stays
     // out because bare strings can't prove the email domain.
-    const toRow2 = popup.getByTestId("payload-map-row-to");
     await clickUntilExpanded(popup.getByTestId("payload-map-kind-to"));
     await pickOption(popup, /event property|campo evento|propriet/i);
     await popup.keyboard.press("Escape");

@@ -76,7 +76,7 @@
       error = e instanceof Error ? e.message : 'Failed to load modules';
       pushNotification({
         impact: 'HIGH',
-        messageKey: 'system.settings.modules.loadFailed',
+        messageKey: 'system.settings.modules.load_failed',
         scope: $t('system.settings.modules.title'),
         detail: error,
       });
@@ -88,16 +88,16 @@
   function handleImportModule() {
     pushNotification({
       impact: 'MEDIUM',
-      messageKey: 'system.settings.modules.notImplemented',
-      scope: $t('system.settings.modules.importModule'),
+      messageKey: 'system.settings.modules.not_implemented',
+      scope: $t('system.settings.modules.import_module'),
     });
   }
 
   function handleOpenMarketplace() {
     pushNotification({
       impact: 'MEDIUM',
-      messageKey: 'system.settings.modules.notImplemented',
-      scope: $t('system.settings.modules.openMarketplace'),
+      messageKey: 'system.settings.modules.not_implemented',
+      scope: $t('system.settings.modules.open_marketplace'),
     });
   }
 
@@ -110,14 +110,14 @@
       pushNotification({
         impact: 'NONE',
         messageKey: result.is_enabled
-          ? 'system.settings.modules.moduleEnabled'
-          : 'system.settings.modules.moduleDisabled',
+          ? 'system.settings.modules.module_enabled'
+          : 'system.settings.modules.module_disabled',
         scope: $t('system.settings.modules.title'),
       });
     } catch (e) {
       pushNotification({
         impact: 'HIGH',
-        messageKey: 'system.settings.modules.toggleFailed',
+        messageKey: 'system.settings.modules.toggle_failed',
         scope: $t('system.settings.modules.title'),
         detail: e instanceof Error ? e.message : undefined,
       });
@@ -157,13 +157,13 @@
       deleteTarget = null;
       pushNotification({
         impact: 'NONE',
-        messageKey: 'system.settings.modules.moduleDeleted',
+        messageKey: 'system.settings.modules.module_deleted',
         scope: $t('system.settings.modules.title'),
       });
     } catch (e) {
       pushNotification({
         impact: 'HIGH',
-        messageKey: 'system.settings.modules.deleteFailed',
+        messageKey: 'system.settings.modules.delete_failed',
         scope: $t('system.settings.modules.title'),
         detail: e instanceof Error ? e.message : undefined,
       });
@@ -203,7 +203,7 @@
                   <TriangleAlert class="size-20 text-warning" />
                 </div>
                 <div class="text-sm font-medium text-muted-foreground">
-                  {$t('system.settings.modules.loadFailed')}
+                  {$t('system.settings.modules.load_failed')}
                 </div>
               </div>
             </div>
@@ -214,10 +214,10 @@
                   <TriangleAlert class="size-20 text-warning" />
                 </div>
                 <div class="text-sm font-medium text-muted-foreground">
-                  {$t('system.settings.modules.noModules')}
+                  {$t('system.settings.modules.no_modules')}
                 </div>
                 <div class="text-xs text-muted-foreground">
-                  {$t('system.settings.modules.noModulesHint')}
+                  {$t('system.settings.modules.no_modules_hint')}
                 </div>
               </div>
             </div>
@@ -324,9 +324,9 @@
 
                     <!-- Scaler indicator -->
                     {#if !isReserved && behindScaler}
-                      <Badge variant="outline" class="gap-1 text-[11px] font-medium" title={$t('system.settings.modules.behindScaler')}>
+                      <Badge variant="outline" class="gap-1 text-[11px] font-medium" title={$t('system.settings.modules.behind_scaler')}>
                         <Layers class="size-3.5 opacity-90" />
-                        <span>{$t('system.settings.modules.behindScaler')}</span>
+                        <span>{$t('system.settings.modules.behind_scaler')}</span>
                       </Badge>
                     {/if}
 
@@ -365,7 +365,7 @@
                         </div>
                         <div class="flex items-center gap-2 shrink-0">
                           <span class="text-[11px] text-muted-foreground tabular-nums"
-                            title={$t('system.settings.modules.lastSeen')}>
+                            title={$t('system.settings.modules.last_seen')}>
                             {formatLastSeen(instance.last_health_check_at)}
                           </span>
                           <Badge
@@ -401,11 +401,11 @@
         <div class="flex items-center justify-end gap-2">
           <Button variant="default" onclick={handleImportModule}>
             <Download class="size-4" />
-            {$t('system.settings.modules.importModule')}
+            {$t('system.settings.modules.import_module')}
           </Button>
           <Button variant="outline" onclick={handleOpenMarketplace}>
             <Store class="size-4" />
-            {$t('system.settings.modules.openMarketplace')}
+            {$t('system.settings.modules.open_marketplace')}
           </Button>
         </div>
       </div>

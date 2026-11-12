@@ -33,16 +33,6 @@
     showSelectedOnly,
     selectionCount,
     orderedSelectedRows,
-    allOnPageSelected,
-    headerIndeterminate,
-    toggleAllOnPage,
-    allColumns,
-    effectiveSortKey,
-    sortDir,
-    onSortChange,
-    sortableColumns,
-    datetimeIanaToggleColumns,
-    toggleDatetimeIana,
     onEntityRowClick,
     onToggleRowSelect,
     onOpenRowDropdown,
@@ -80,16 +70,6 @@
     showSelectedOnly: boolean;
     selectionCount: number;
     orderedSelectedRows: TRow[];
-    allOnPageSelected: boolean;
-    headerIndeterminate: boolean;
-    toggleAllOnPage: () => void;
-    allColumns: MetaColumn[];
-    effectiveSortKey: string | null;
-    sortDir: 'asc' | 'desc';
-    onSortChange: (key: string | null, dir: 'asc' | 'desc') => void;
-    sortableColumns: MetaColumn[];
-    datetimeIanaToggleColumns: MetaColumn[];
-    toggleDatetimeIana: (col: MetaColumn) => void;
     onEntityRowClick: (key: string, e: MouseEvent) => void;
     onToggleRowSelect: (key: string) => void;
     onOpenRowDropdown: (row: TRow) => void;
@@ -131,16 +111,6 @@
     showSelectedOnly={showSelectedOnly}
     selectionCount={selectionCount}
     orderedSelectedRows={orderedSelectedRows}
-    allOnPageSelected={allOnPageSelected}
-    headerIndeterminate={headerIndeterminate}
-    toggleAllOnPage={toggleAllOnPage}
-    allColumns={allColumns}
-    effectiveSortKey={effectiveSortKey}
-    sortDir={sortDir}
-    onSortChange={onSortChange}
-    sortableColumns={sortableColumns}
-    datetimeIanaToggleColumns={datetimeIanaToggleColumns}
-    toggleDatetimeIana={toggleDatetimeIana}
     onEntityRowClick={onEntityRowClick}
     onToggleRowSelect={onToggleRowSelect}
     onOpenRowDropdown={onOpenRowDropdown}

@@ -74,14 +74,14 @@
       service = updated;
       pushNotification({
         impact: 'NONE',
-        messageKey: 'app.common.saveSuccess',
-        scope: $t('system.settings.modules.config.serviceInfo'),
+        messageKey: 'app.common.save_success',
+        scope: $t('system.settings.modules.config.service_info'),
       });
     } catch (e) {
       pushNotification({
         impact: 'HIGH',
-        messageKey: 'app.common.saveFailed',
-        scope: $t('system.settings.modules.config.serviceInfo'),
+        messageKey: 'app.common.save_failed',
+        scope: $t('system.settings.modules.config.service_info'),
         detail: e instanceof Error ? e.message : undefined,
       });
     } finally {
@@ -97,14 +97,14 @@
       );
       pushNotification({
         impact: 'NONE',
-        messageKey: 'app.common.saveSuccess',
-        scope: $t('system.settings.modules.config.moduleConfig'),
+        messageKey: 'app.common.save_success',
+        scope: $t('system.settings.modules.config.module_config'),
       });
     } catch (e) {
       pushNotification({
         impact: 'HIGH',
-        messageKey: 'app.common.saveFailed',
-        scope: $t('system.settings.modules.config.moduleConfig'),
+        messageKey: 'app.common.save_failed',
+        scope: $t('system.settings.modules.config.module_config'),
         detail: e instanceof Error ? e.message : undefined,
       });
     }
@@ -124,10 +124,10 @@
       <Tabs.Root bind:value={activeTab}>
         <Tabs.List>
           <Tabs.Trigger value="service-info">
-            {$t('system.settings.modules.config.serviceInfo')}
+            {$t('system.settings.modules.config.service_info')}
           </Tabs.Trigger>
           <Tabs.Trigger value="module-config">
-            {$t('system.settings.modules.config.moduleConfig')}
+            {$t('system.settings.modules.config.module_config')}
           </Tabs.Trigger>
         </Tabs.List>
 
@@ -140,7 +140,7 @@
                 {/snippet}
               </PrimeField>
 
-              <PrimeField id="base_url" label={$t('system.settings.modules.config.baseUrl')}>
+              <PrimeField id="base_url" label={$t('system.settings.modules.config.base_url')}>
                 {#snippet control({ id })}
                   <TextInput {id} bind:value={formData.base_url} />
                 {/snippet}
@@ -154,11 +154,11 @@
 
               <PrimeField id="icon" label={$t('system.settings.modules.config.icon')}>
                 {#snippet control({ id })}
-                  <TextInput {id} bind:value={formData.icon} placeholder={$t('system.settings.modules.config.iconPlaceholder')} />
+                  <TextInput {id} bind:value={formData.icon} placeholder={$t('system.settings.modules.config.icon_placeholder')} />
                 {/snippet}
               </PrimeField>
 
-              <PrimeField id="icon_type" label={$t('system.settings.modules.config.iconType')}>
+              <PrimeField id="icon_type" label={$t('system.settings.modules.config.icon_type')}>
                 {#snippet control({ id })}
                   <ComboSelect
                     {id}
@@ -166,9 +166,9 @@
                     value={formData.icon_type}
                     onChange={(v) => (formData.icon_type = v as IconType)}
                     options={[
-                      { value: 'icon', label: $t('system.settings.modules.config.iconTypeIcon') },
-                      { value: 'url', label: $t('system.settings.modules.config.iconTypeUrl') },
-                      { value: 'base64', label: $t('system.settings.modules.config.iconTypeBase64') },
+                      { value: 'icon', label: $t('system.settings.modules.config.icon_type_icon') },
+                      { value: 'url', label: $t('system.settings.modules.config.icon_type_url') },
+                      { value: 'base64', label: $t('system.settings.modules.config.icon_type_base64') },
                     ]}
                     valueField="value"
                     labelField="label"
@@ -183,7 +183,7 @@
                 {/snippet}
               </PrimeField>
 
-              <PrimeField id="github_repo_url" label={$t('system.settings.modules.config.githubRepoUrl')}>
+              <PrimeField id="github_repo_url" label={$t('system.settings.modules.config.github_repo_url')}>
                 {#snippet control({ id })}
                   <TextInput {id} bind:value={formData.github_repo_url} />
                 {/snippet}
@@ -191,9 +191,9 @@
 
               <div class="col-span-2 space-y-2">
                 <span class="inline-flex items-center gap-1 text-sm font-medium">
-                  {$t('system.settings.modules.config.serviceVersion')}
+                  {$t('system.settings.modules.config.service_version')}
                   <FormLabelWithPriorityHelp
-                    text={$t('system.settings.modules.config.serviceVersionHint')}
+                    text={$t('system.settings.modules.config.service_version_hint')}
                     priority="INFORMATION"
                   />
                 </span>
@@ -217,12 +217,12 @@
           {:else if configError}
             <div class="rounded-lg border border-warning/30 bg-warning/5 p-4">
               <p class="text-sm text-muted-foreground">
-                {$t('system.settings.modules.config.configNotAvailable')}
+                {$t('system.settings.modules.config.config_not_available')}
               </p>
             </div>
           {:else if configEntries.length === 0}
             <div class="text-sm text-muted-foreground">
-              {$t('system.settings.modules.config.noConfigEntries')}
+              {$t('system.settings.modules.config.no_config_entries')}
             </div>
           {:else}
             <div class="space-y-4">

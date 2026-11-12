@@ -3,7 +3,8 @@
   import { cn } from '$lib/utils.js';
   import CardFieldRenderer from './CardFieldRenderer.svelte';
   import CardActions from './CardActions.svelte';
-  import type { MetaColumn } from '$lib/entity-list/types';
+  import type { MetaColumn, RowCustomAction } from '$lib/entity-list/types';
+  import type { EntityRowActions } from '../types';
 
   let {
     row,
@@ -46,22 +47,7 @@
     datetimeIanaModeByKey: Record<string, 'browser' | 'record'>;
     cell?: Snippet<[{ row: TRow; column: MetaColumn }]>;
     rowActions?: Snippet<[{ row: TRow }]>;
-    entityRowActions?: {
-      edit?: boolean;
-      duplicate?: boolean;
-      preview?: boolean;
-      delete?: boolean;
-      restore?: boolean;
-      versionHistory?: boolean;
-      custom_actions?: Array<{
-        action_name: string;
-        translation_key: string;
-        icon: string;
-        text_color?: string;
-        disabled_when_deleted?: boolean;
-        required_permission?: string | string[];
-      }>;
-    };
+    entityRowActions?: EntityRowActions;
     dropdownMenuRow: TRow | null;
     viewMode: 'cards_list' | 'cards_grid';
     onEntityRowClick: (key: string, e: MouseEvent) => void;
@@ -74,7 +60,7 @@
     onDeleteRow: (row: TRow) => void;
     onRestoreRow: (row: TRow) => void;
     onPreviewRow: (row: TRow) => void;
-    handleCustomAction?: (action: { action_name: string; translation_key: string }, row: TRow) => void;
+    handleCustomAction?: (action: RowCustomAction, row: TRow) => void;
     /** Per-column batch sparkline buckets — same map as the table view. */
     sparklineData?: Record<string, { by_key: Record<string, unknown[]>; bucket_unit?: string }>;
   } = $props();
@@ -98,7 +84,7 @@
     rowSelected
       ? 'bg-neutral-50 ring-1 ring-primary/40 dark:bg-neutral-700 dark:ring-primary/35'
       : undefined,
-    rowFocused ? 'border-2 border-primary ring-2 ring-primary/20' : ''
+    rowFocused ? 'border-primary-gradient' : ''
   )}
   onclick={(e) => {
     if (!rowSelectionEnabled) return;

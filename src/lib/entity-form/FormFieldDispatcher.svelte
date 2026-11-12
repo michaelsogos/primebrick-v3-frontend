@@ -2,13 +2,21 @@
 	/**
 	 * FormFieldDispatcher — the entity-form twin of `ConfigValueInput`:
 	 * selects the CONTROL for one declared field from the served column
-	 * metadata (`format` first, then `type`, then `pg_type` fallback) plus
-	 * the page-domain placement policy (`widget` override, `options_source`,
-	 * `readonly`, `placeholder_key`).
+	 * metadata (`format` first, then `type`, then `pg_type` fallback; the
+	 * column also owns `widget`/`options_source`/`allow_create` — the
+	 * semantic input contract every surface shares) plus the page-domain
+	 * placement policy (`readonly`, `placeholder_key`).
 	 *
 	 * Rendered inside a `FormField` wrapper by EntityFormPage — this
 	 * component emits only the control itself; label/constraints/errors are
 	 * the wrapper's job.
+	 *
+	 * `surface: "filter"` re-uses the SAME resolution for the filters
+	 * sheet — one control contract, two surface maps: multi-select variants
+	 * where the filter feeds IN semantics (badge/subject/entity-ref), a
+	 * boolean tri-state (any/true/false), and editor-only widgets
+	 * (payload_map/json editors, schedule builder) degrade to plain text
+	 * (a filter needs a value to match, not an authoring surface).
 	 */
 	import type {
 		CallableDecl,
@@ -17,34 +25,64 @@
 		MetaColumn,
 		PayloadOptionsSource,
 	} from '@primebrick/ui';
-	import { flagCodeForBcp47 } from '@primebrick/ui';
+	import { flagCodeForBcp47, toDisplayString, numericKindOf } from '@primebrick/ui';
+	import type { NumericUomSpec } from '@primebrick/ui';
+	import type { Decimal } from '@primebrick/ui';
+	import { currencySymbol } from '$lib/currency';
 	import {
 		TextInput,
 		ComboSelect,
 		JsonValueEditor,
 		PayloadMapEditor,
 		ScheduleSpecInput,
+		DateWheelPicker,
+		Button,
+		ButtonGroup,
 	} from '@primebrick/ui';
 	import { Textarea } from '@primebrick/ui';
 	import { NumericInput } from '@primebrick/ui';
 	import { EmailInput } from '$lib/components/ui/email-input';
 	import { UrlInput } from '$lib/components/ui/url-input';
 	import { PhoneInput } from '$lib/components/ui/phone-input';
+	import { ColorSelector } from '$lib/components/ui/color-selector';
+	import { MetaAvatar } from '$lib/components/ui/avatar-preview';
 	import { t } from '$lib/i18n';
 	import { UI_LANGS } from '$lib/i18n/languages';
 	import { apiFetch } from '$lib/api';
 	import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
+	import { useEntityRefOptions } from './use-entity-ref-options.svelte';
+	import { useAuditActorOptions } from './use-audit-actor-options.svelte';
+	import { useActiveRoles } from '$lib/composables/useActiveRoles.svelte';
+	import { usePivotRow } from './use-pivot-row.svelte';
+	import {
+		depControlFormat,
+		depDisabled,
+		depOptionsFilter,
+		depPivotSignature,
+		depResetsOnPivotChange,
+	} from './depends-on';
 	import { ruleJsonCompletions } from './rule-schema-completions';
+	import { CircleCheck, CircleX } from '@primebrick/ui/vendor/lucide';
+	import { getResolvedIanaTimeZone } from '@primebrick/ui';
+	import { calendarDateToUtcIso, isoToCalendarDate } from './date-wire';
+	import type { CalendarDate, CalendarDateTime } from '@internationalized/date';
 
 	interface Props {
 		column: MetaColumn;
-		placement: FormFieldPlacement;
+		/** Page-domain form placement — absent on the filter surface. */
+		placement?: FormFieldPlacement;
+		/** `form` (default) renders the editing control; `filter` renders the
+		 *  match-value control from the same column contract. */
+		surface?: 'form' | 'filter';
 		value: unknown;
+		/** Explicit placeholder — the filter surface has no placement to read
+		 *  `placeholder_key` from. Form surfaces keep placement resolution. */
+		placeholder?: string;
 		/** Census-derived option vocabulary — `options_source:"census.emits"`
 		 *  (pre-resolved `{value, label, _desc, _sub, _icon, _icon_color}` for
 		 *  the 3-line `display="detailed"` event anatomy: translated display
 		 *  name, italic description, raw subject, left icon). */
-		emitsOptions: {
+		emitsOptions?: {
 			value: string;
 			label: string;
 			_desc: string;
@@ -74,39 +112,115 @@
 		/** Badge-option values the page disables live (closed-vocab option
 		 *  policy — e.g. `user` when a trigger has no event source). */
 		disabledBadgeValues?: string[];
+		/** Placement-level read-only — white-bg readonly chrome. */
 		readonly?: boolean;
+		/** Surface/dependency-level disabled — muted disabled chrome. */
+		disabled?: boolean;
+		/** Bindable IANA timezone for the `date` filter control — the panel
+		 *  converts CalendarDate→UTC at apply time using the picker's tz. */
+		timezone?: string;
+		/** The entity being filtered — required on the filter surface for
+		 *  `options_source:"audit.actors"` columns (the vocabulary is the
+		 *  entity's own audit writers, fetched from `{entity}/audit-actors`). */
+		filterEntity?: string;
+		/** The whole form data record — a numeric column's `uom.field` sibling
+		 *  (the persisted currency/UoM code) is read and written through it.
+		 *  Filter surfaces have no record: uom renders display-only there. */
+		record?: Record<string, unknown>;
+		/** Sibling column map for `depends_on` resolution — the form page
+		 *  owns the served `meta.columns`. Absent on the filter surface:
+		 *  the edge is form-scope by contract and filter columns never
+		 *  declare it. */
+		columns?: ReadonlyMap<string, MetaColumn>;
 	}
 
 	let {
 		column,
 		placement,
+		surface = 'form',
 		value = $bindable(),
-		emitsOptions,
+		placeholder: placeholderProp,
+		emitsOptions = [],
 		callablesOptions = [],
 		targetCallable,
 		sourceEmit,
 		controlProps,
 		disabledBadgeValues,
 		readonly = false,
+		disabled = false,
+		timezone = $bindable(),
+		filterEntity,
+		record = $bindable(),
+		columns,
 	}: Props = $props();
 
-	const placeholder = $derived(placement.placeholder_key ? $t(placement.placeholder_key) : undefined);
-	const control = $derived(resolveControl());
+	const control = $derived(
+		surface === 'filter' ? resolveFilterControl() : resolveFormControl(),
+	);
+
+	/** Filter-surface placeholder defaults — the hint serves the ACTION:
+	 *  picker controls say "select", free-value controls say "filter
+	 *  value". `filterPlaceholder` ("No filter applied") was state copy
+	 *  rendered as an input hint — wrong on every control. */
+	function defaultFilterPlaceholder(ctl: string): string | undefined {
+		if (ctl === 'boolean_tristate') return undefined;
+		if (
+			ctl === 'text' ||
+			ctl === 'textarea' ||
+			ctl === 'number' ||
+			ctl === 'email' ||
+			ctl === 'url' ||
+			ctl === 'phone'
+		)
+			return $t('system.entities.list.filter_value_hint');
+		return $t('system.entities.list.select_value');
+	}
+	const placeholder = $derived(
+		placeholderProp ??
+			(placement?.placeholder_key ? $t(placement.placeholder_key) : undefined) ??
+			(surface === 'filter' ? defaultFilterPlaceholder(control) : undefined),
+	);
 
 	/**
-	 * The control registry is CLOSED — same enforcement posture as
-	 * `validators` in build-entity-form-schema: a widget/control key that
-	 * resolves to no template branch throws at construction instead of
-	 * silently falling back to TextInput (silent drift was the
+	 * The control registry is CLOSED per surface — same enforcement
+	 * posture as `validators` in build-entity-form-schema: a widget/control
+	 * key that resolves to no template branch throws at construction
+	 * instead of silently falling back to TextInput (silent drift was the
 	 * source_subject/bare-Switch failure mode). Boolean columns never
-	 * reach the dispatcher — EntityFormPage renders them as SwitchField.
+	 * reach the form dispatcher — EntityFormPage renders them as
+	 * SwitchField; on the filter surface they map to `boolean_tristate`.
 	 */
-	const CONTROLS = new Set([
+	const FORM_CONTROLS = new Set([
 		'schedule_spec',
 		'json',
 		'subject_combo',
+		'role_multi',
 		'payload_map',
 		'badge',
+		'textarea',
+		'number',
+		'email',
+		'url',
+		'phone',
+		'entity_ref',
+		'color',
+		'date',
+		'text',
+		'avatar',
+	]);
+
+	/** Filter-surface map — the DIFFERENCES from form (everything else is
+	 *  identical): multi variants feed IN semantics, booleans gain the
+	 *  "don't care" state, date columns get the real picker, `ref` columns
+	 *  get the paged entity combobox, audit actors the governed
+	 *  multi-select over the table's own writers. */
+	const FILTER_CONTROLS = new Set([
+		'date',
+		'badge_multi',
+		'subject_combo_multi',
+		'boolean_tristate',
+		'entity_ref',
+		'actor_multi',
 		'textarea',
 		'number',
 		'email',
@@ -115,36 +229,100 @@
 		'text',
 	]);
 
-	function resolveControl(): string {
+	function resolveFormControl(): string {
 		if (column.type === 'boolean' || column.pg_type === 'boolean') {
 			throw new Error(
 				`[FormFieldDispatcher] "${column.key}" is boolean — booleans render via SwitchField in EntityFormPage, never through the dispatcher.`,
 			);
 		}
-		const resolved = placement.widget ?? deriveControl();
-		if (!CONTROLS.has(resolved)) {
+		const resolved =
+			column.widget ??
+			(column.type === 'ref' && column.ref?.entity
+				? 'entity_ref'
+				: deriveControl(depFormat));
+		if (!FORM_CONTROLS.has(resolved)) {
 			throw new Error(
-				`[FormFieldDispatcher] unknown control "${resolved}" for "${column.key}" — register it in CONTROLS + add a template branch.`,
+				`[FormFieldDispatcher] unknown control "${resolved}" for "${column.key}" — register it in FORM_CONTROLS + add a template branch.`,
 			);
 		}
 		return resolved;
 	}
 
-	function deriveControl(): string {
-		const format = column.format;
+	/**
+	 * Filter-surface resolution — `widget` is an EDITOR override and does
+	 * not apply (a `payload_map`/json/schedule_spec column filters as
+	 * contains-text); a `type`/`format` combo with no filter mapping throws
+	 * — same closed posture as the form surface.
+	 */
+	function resolveFilterControl(): string {
+		if (column.type === 'boolean' || column.pg_type === 'boolean') return 'boolean_tristate';
+		if (column.type === 'badge') return 'badge_multi';
+		// Authored `options_source` wins over the structural type — an
+		// audit actor column declared type:"ref" still filters through the
+		// entity's own audit-writers vocabulary, never a paged entity combo.
+		if (column.options_source === 'audit.actors') return 'actor_multi';
+		if (column.type === 'ref' && column.ref?.entity) return 'entity_ref';
+		if (column.type === 'ref_count') return 'number';
+		if (
+			column.type === 'date' ||
+			column.type === 'datetime' ||
+			column.format === 'date' ||
+			column.format === 'datetime'
+		)
+			return 'date';
+		if (
+			column.options_source === 'census.emits' ||
+			column.options_source === 'census.callables'
+		)
+			return 'subject_combo_multi';
+		// Avatar columns filter as contains-text on the stored initials —
+		// the preview renderer is a form/list surface, never a filter control.
+		if (column.type === 'avatar') return 'text';
+		const resolved = deriveControl();
+		if (resolved === 'subject_combo' || resolved === 'json' || resolved === 'payload_map' || resolved === 'schedule_spec')
+			return 'text';
+		if (FILTER_CONTROLS.has(resolved)) return resolved;
+		throw new Error(
+			`[FormFieldDispatcher] "${column.key}" resolves "${resolved}" — no filter-surface control; add it to FILTER_CONTROLS + a template branch.`,
+		);
+	}
+
+	/** `formatOverride` — the `depends_on.control_prop` resolution: the
+	 *  pivot row's prop substitutes `column.format` for control selection
+	 *  (a `value_kind:"phone"` dict row renders PhoneInput). */
+	function deriveControl(formatOverride?: string): string {
+		const format = formatOverride ?? column.format;
+		// Authored `options_source` wins over the structural type — a jsonb
+		// `roles` array still renders the roles multi-combo, never the JSON
+		// editor (same precedence `resolveFilterControl` already declares).
+		if (column.options_source === 'system.roles') return 'role_multi';
+		// `type:"avatar"` — preview renderer, not an input (initials from the
+		// column value, color from the `avatar.color_field` sibling).
+		if (column.type === 'avatar') return 'avatar';
 		if (format === 'schedule_spec') return 'schedule_spec';
 		if (format === 'json' || column.pg_type === 'jsonb' || column.pg_type === 'json') return 'json';
 		if (format === 'nats_subject') {
-			return placement.options_source === 'census.emits' ||
-				placement.options_source === 'census.callables'
+			return column.options_source === 'census.emits' ||
+				column.options_source === 'census.callables'
 				? 'subject_combo'
 				: 'text';
 		}
 		if (format === 'textarea' || column.type === 'textarea') return 'textarea';
-		if (format === 'number' || format === 'money' || column.type === 'number') return 'number';
+		// Numeric control — the shared `numericKindOf` contract: number/money
+		// formats, `type:"number"`/`ref_count`, and every numeric pg_type.
+		if (numericKindOf(column) !== null) return 'number';
 		if (format === 'email') return 'email';
 		if (format === 'url') return 'url';
 		if (format === 'phone') return 'phone';
+		if (format === 'color_hex' || column.type === 'color') return 'color';
+		if (
+			column.type === 'date' ||
+			column.type === 'datetime' ||
+			format === 'date' ||
+			format === 'datetime' ||
+			format === 'time'
+		)
+			return 'date';
 		if (column.type === 'badge') return 'badge';
 		return 'text';
 	}
@@ -165,18 +343,210 @@
 	);
 	const stringValue = {
 		get value(): string {
-			return typeof value === 'string' ? value : value == null ? '' : String(value);
+			return typeof value === 'string' ? value : value == null ? '' : toDisplayString(value);
 		},
 		set value(v: string) {
 			value = v;
 		},
 	};
 	const numValue = {
-		get value(): number | undefined {
-			return typeof value === 'number' ? value : undefined;
+		get value(): string | bigint | number | Decimal {
+			return typeof value === 'number' ||
+				typeof value === 'bigint' ||
+				typeof value === 'string' ||
+				(value != null && typeof value === 'object' && 'v' in (value as object))
+				? (value as string | bigint | number | Decimal)
+				: '';
 		},
-		set value(v: number | undefined) {
+		set value(v: string | bigint | number | Decimal) {
+			value = v === '' ? undefined : v;
+		},
+	};
+	/** Numeric kind from the column contract — ONE resolver (`numericKindOf`)
+	 *  shared with the zod binding and every numeric surface. */
+	const numKind = $derived(numericKindOf(column) ?? 'number');
+	/** Resolved uom spec for the numeric control — `MetaColumn.uom` is the
+	 *  contract; the sibling `uom.field` value rides `record` (form surface
+	 *  only — filters render the adornment display-only). */
+	const numericUom = $derived.by<NumericUomSpec | undefined>(() => {
+		const u = column.uom;
+		if (!u) return undefined;
+		if (u.kind === 'percent') return { kind: 'percent' };
+		const rawCode = surface === 'form' && record ? record[u.field] : undefined;
+		const code =
+			typeof rawCode === 'string' ||
+			typeof rawCode === 'number' ||
+			typeof rawCode === 'boolean'
+				? String(rawCode)
+				: '';
+		if (u.kind === 'currency') {
+			return {
+				kind: 'currency',
+				code,
+				symbol: code ? currencySymbol(code) : '',
+				on_pick: record
+					? () =>
+							openSheet('config.currencySelect', {
+								currentCurrency: code,
+								onCurrencyChange: (c: string) => {
+									if (record) {
+										record[u.field] = c;
+										// self-assign — force the $bindable update through
+										record = record;
+									}
+								},
+							})
+					: undefined,
+			};
+		}
+		return { kind: 'custom', code, symbol: u.symbol ?? code };
+	});
+	/** Multi-select surfaces (filter IN semantics) — an empty selection is
+	 *  `undefined`, not `[]`, so the serializer drops the param entirely. */
+	const arrayValue = {
+		get value(): string[] {
+			return Array.isArray(value) ? value : [];
+		},
+		set value(v: string[]) {
+			value = v.length ? v : undefined;
+		},
+	};
+	/** `date` control value bridge. Filter surface: the panel owns ISO
+	 *  conversion at apply time — the CalendarDate passes through. Form
+	 *  surface: the record carries the WIRE string (`date` = YYYY-MM-DD,
+	 *  `datetime` = timestamptz UTC ISO) — `date-wire` converts through
+	 *  the picker's timezone, same semantics the filter panel owns. */
+	const dateWireType = $derived<'date' | 'datetime' | 'time'>(
+		column.format === 'time'
+			? 'time'
+			: column.type === 'datetime' || column.format === 'datetime'
+				? 'datetime'
+				: 'date',
+	);
+	/** Conversion zone: a `datetime_iana_toggle` binds the display/edit
+	 *  zone to the RECORD's own IANA field (authored contract); else the
+	 *  picker's bound timezone, else the browser's. */
+	const dateWireTz = $derived.by(() => {
+		const recField = column.datetime_iana_toggle?.record_iana_field;
+		const recTz = recField ? (record?.[recField] as string | undefined) : undefined;
+		return recTz ?? timezone ?? getResolvedIanaTimeZone() ?? 'UTC';
+	});
+	const dateValue = {
+		get value(): CalendarDate | CalendarDateTime | null {
+			if (surface === 'form') {
+				return isoToCalendarDate(
+					typeof value === 'string' ? value : null,
+					dateWireType,
+					dateWireTz,
+				);
+			}
+			return (value as CalendarDate | CalendarDateTime | null) ?? null;
+		},
+		set value(v: CalendarDate | CalendarDateTime | null) {
+			if (surface === 'form') {
+				value = v === null ? undefined : calendarDateToUtcIso(v, dateWireTz, dateWireType);
+				return;
+			}
 			value = v;
+		},
+	};
+
+	// ── depends_on — the declared sibling edge (form surface only). The
+	//    pivot column resolves through the served `columns` map; its picked
+	//    ROW feeds `disabled_when.prop`/`control_prop` via `usePivotRow`,
+	//    its stored value feeds the options filter via `depOptionsFilter`. */
+	const dep = $derived(surface === 'form' ? column.depends_on : undefined);
+	const pivotRow = usePivotRow(
+		() => (dep ? columns?.get(dep.field) : undefined),
+		() => (dep ? record?.[dep.field] : undefined),
+	);
+	/** Scope conditions for the dependent's ref-options fetch —
+	 *  `filters[0][country]=<pivot>` while the pivot carries a value. */
+	const depFilters = $derived(dep ? depOptionsFilter(dep, record) : undefined);
+	/** Gate: pivot-until-value (`filter_field`/`control_prop`) plus
+	 *  `disabled_when` — fail-closed while a prop comparison can't
+	 *  evaluate yet. */
+	const depOff = $derived(dep ? depDisabled(dep, record, pivotRow.state.row) : false);
+	/** Two distinct states, two distinct chromes: `readonly` (placement
+	 *  policy — grey border + white bg) vs `disabled` (surface /
+	 *  dependency gating — grey border + muted bg). `effectiveLocked`
+	 *  feeds controls that expose no readonly prop — a locked combo
+	 *  renders the disabled chrome by contract. */
+	const effectiveReadonly = $derived(readonly);
+	const effectiveDisabled = $derived(disabled || depOff);
+	const effectiveLocked = $derived(effectiveReadonly || effectiveDisabled);
+	/** `control_prop` → the format the pivot row selects — substitutes the
+	 *  static `column.format` inside `deriveControl`. */
+	const depFormat = $derived(dep ? depControlFormat(dep, pivotRow.state.row) : undefined);
+
+	// Pivot-change reset — `filter_field`/`control_prop` couple the
+	// dependent's value to the pivot's CURRENT one: a country switch
+	// leaves an Italian legal form behind → integrity leak, so the value
+	// is dropped (the control is re-gated until a fresh pick anyway).
+	let lastDepSig = $state<string | undefined>(undefined);
+	$effect(() => {
+		if (!dep || !depResetsOnPivotChange(dep)) return;
+		const sig = depPivotSignature(dep, record);
+		if (lastDepSig === undefined) {
+			lastDepSig = sig;
+			return;
+		}
+		if (sig !== lastDepSig) {
+			lastDepSig = sig;
+			if (value !== undefined && value !== '') value = undefined;
+		}
+	});
+
+	/** `type:"ref"` options — server-paged combobox delegate over
+	 *  `col.ref.entity`'s `/list`, scoped by `depends_on.filter_field`
+	 *  when declared (no-op unless the surface resolves `entity_ref`).
+	 *  Instantiated unconditionally: Svelte composables must run at init;
+	 *  the fetch is gated on the resolved entity. */
+	const entityRef = useEntityRefOptions(
+		() => column,
+		() => depFilters,
+	);
+
+	/** `options_source:"audit.actors"` options — the filtered entity's own
+	 *  audit writers (single fetch, full vocabulary — client search inside
+	 *  the combo is truthful here). `filterEntity` is required; without it
+	 *  the delegate stays empty rather than fetching the wrong service. */
+	const auditActors = useAuditActorOptions(() => filterEntity);
+
+	/** `options_source:"system.roles"` — the shared `/system/roles/active`
+	 *  vocabulary (same feed the custom user pages feed their ComboSelect).
+	 *  Lazy-gated: only a column actually authored `system.roles` fires the
+	 *  fetch, never every dispatcher instance. */
+	const systemRoles = useActiveRoles({
+		enabled: () => column.options_source === 'system.roles',
+	});
+
+	// Restore display labels for `entity_ref` selections that pre-date the
+	// loaded option pages (draft state, URL-restored filters, edit-form
+	// prefills — a single stored uid on the form surface).
+	$effect(() => {
+		if (control !== 'entity_ref') return;
+		const selected =
+			surface === 'form'
+				? stringValue.value
+					? [stringValue.value]
+					: []
+				: arrayValue.value;
+		if (selected.length > 0) entityRef.ensureSelectedLabels(selected);
+	});
+
+	/** Boolean tri-state filter vocabulary — `any` clears the constraint. */
+	const booleanOptions = [
+		{ key: '', icon: null, labelKey: 'system.entities.list.boolean_any' },
+		{ key: 'true', icon: 'true', labelKey: 'system.entities.list.boolean_true' },
+		{ key: 'false', icon: 'false', labelKey: 'system.entities.list.boolean_false' },
+	] as const;
+	const triStateValue = {
+		get value(): string {
+			return value === 'true' || value === 'false' ? value : '';
+		},
+		set value(v: string) {
+			value = v === '' ? undefined : v;
 		},
 	};
 
@@ -246,8 +616,8 @@
 			const vf = src.value_field;
 			const lf = src.label_field;
 			return (data.rows ?? []).map((row) => ({
-				value: String(row[vf] ?? ''),
-				label: String(row[lf] ?? row[vf] ?? ''),
+				value: toDisplayString(row[vf] ?? ''),
+				label: toDisplayString(row[lf] ?? row[vf] ?? ''),
 				_desc: typeof row.description === 'string' ? row.description : undefined,
 				_icon: src.icon,
 				_icon_color: src.icon_color,
@@ -267,7 +637,7 @@
 </script>
 
 {#if control === 'schedule_spec'}
-	<ScheduleSpecInput bind:value={stringValue.value} {readonly} {placeholder} {...controlProps} />
+	<ScheduleSpecInput bind:value={stringValue.value} readonly={effectiveReadonly} disabled={effectiveDisabled} {placeholder} {...controlProps} />
 {:else if control === 'json'}
 	<JsonValueEditor
 		bind:value={stringValue.value}
@@ -276,7 +646,7 @@
 		maxHeight="24rem"
 		preview_open={false}
 		{placeholder}
-		{readonly}
+		readonly={effectiveLocked}
 		on_ai_assist={onJsonAiAssist}
 		extra_completions={ruleCompletions}
 		{...controlProps}
@@ -285,7 +655,7 @@
 	<ComboSelect
 		mode="single"
 		bind:value={stringValue.value}
-		options={placement.options_source === 'census.callables' ? callablesOptions : emitsOptions}
+		options={column.options_source === 'census.callables' ? callablesOptions : emitsOptions}
 		valueField="value"
 		labelField="label"
 		descriptionField="_desc"
@@ -293,12 +663,12 @@
 		iconField="_icon"
 		iconColorField="_icon_color"
 		display="detailed"
-		allowCreate={placement.allow_create === true}
+		allowCreate={column.allow_create === true}
 		{placeholder}
-		disabled={readonly}
+		disabled={effectiveLocked}
 		{...controlProps}
 	/>
-	{#if placement.options_source === 'census.callables' && targetCallable?.permissions?.length}
+	{#if column.options_source === 'census.callables' && targetCallable?.permissions?.length}
 		<p class="text-xs text-amber-600 dark:text-amber-400" data-testid="callable-permissions-warn">
 			{$t('app.widgets.payload_map.permissions_warn.lead')}
 			{#each targetCallable.permissions as perm (perm)}
@@ -307,6 +677,27 @@
 			— {$t('app.widgets.payload_map.permissions_warn.tail')}
 		</p>
 	{/if}
+{:else if control === 'role_multi'}
+	<ComboSelect
+		mode="multi"
+		bind:value={arrayValue.value}
+		options={systemRoles.state.roles as { idp_role: string; label_key?: string; permissions?: string[]; is_admin?: boolean }[]}
+		valueField="idp_role"
+		labelField="label_key"
+		isLabelTranslated={true}
+		{placeholder}
+		disabled={effectiveLocked}
+		{...controlProps}
+	/>
+{:else if control === 'avatar'}
+	<!-- `type:"avatar"` — preview renderer, never an input. Initials from
+	     the column value, color live from the `avatar.color_field` sibling
+	     in `record` (editing avatar_color re-renders the preview, same as
+	     the /profile page composite). -->
+	<MetaAvatar
+		initials={stringValue.value || undefined}
+		color={column.avatar?.color_field ? (record?.[column.avatar.color_field] as string | undefined) : undefined}
+	/>
 {:else if control === 'payload_map'}
 	<PayloadMapEditor
 		bind:value={stringValue.value}
@@ -314,7 +705,8 @@
 		source_schema={sourceEmit?.payload_schema}
 		source_entity={sourceEmit?.entity}
 		options_resolver={optionsResolver}
-		{readonly}
+		readonly={effectiveReadonly}
+		disabled={effectiveDisabled}
 		on_ai_assist={onJsonAiAssist}
 		extra_completions={ruleCompletions}
 		{...controlProps}
@@ -332,19 +724,136 @@
 			: undefined}
 		display="badge"
 		{placeholder}
-		disabled={readonly}
+		disabled={effectiveLocked}
 		{...controlProps}
 	/>
 {:else if control === 'textarea'}
-	<Textarea bind:value={stringValue.value} {placeholder} {readonly} {...controlProps} />
+	<Textarea bind:value={stringValue.value} {placeholder} readonly={effectiveReadonly} disabled={effectiveDisabled} {...controlProps} />
 {:else if control === 'number'}
-	<NumericInput type="number" bind:value={numValue.value} {placeholder} disabled={readonly} {...controlProps} />
+	<NumericInput
+		kind={numKind}
+		uom={numericUom}
+		bind:value={numValue.value}
+		min={column.min}
+		max={column.max}
+		unsigned={column.unsigned}
+		{placeholder}
+		disabled={effectiveLocked}
+		{...controlProps}
+	/>
 {:else if control === 'email'}
-	<EmailInput bind:value={stringValue.value} {placeholder} disabled={readonly} {...controlProps} />
+	<EmailInput bind:value={stringValue.value} {placeholder} readonly={effectiveReadonly} disabled={effectiveDisabled} {...controlProps} />
 {:else if control === 'url'}
-	<UrlInput bind:value={stringValue.value} {placeholder} disabled={readonly} {...controlProps} />
+	<UrlInput bind:value={stringValue.value} {placeholder} readonly={effectiveReadonly} disabled={effectiveDisabled} {...controlProps} />
 {:else if control === 'phone'}
-	<PhoneInput bind:value={stringValue.value} {placeholder} disabled={readonly} {...controlProps} />
+	<PhoneInput bind:value={stringValue.value} {placeholder} readonly={effectiveReadonly} disabled={effectiveDisabled} {...controlProps} />
+{:else if control === 'date'}
+	<DateWheelPicker
+		bind:value={dateValue.value}
+		bind:timezone
+		{placeholder}
+		includeTime={column.type === 'datetime' || column.format === 'datetime'}
+		timeOnly={column.format === 'time'}
+		disabled={effectiveLocked}
+		{...controlProps}
+	/>
+{:else if control === 'badge_multi'}
+	<ComboSelect
+		mode="multi"
+		bind:value={arrayValue.value}
+		options={badgeOptions}
+		valueField="value"
+		labelField="label"
+		colorField="color"
+		display="badge"
+		{placeholder}
+		disabled={effectiveLocked}
+		{...controlProps}
+	/>
+{:else if control === 'subject_combo_multi'}
+	<ComboSelect
+		mode="multi"
+		bind:value={arrayValue.value}
+		options={column.options_source === 'census.callables' ? callablesOptions : emitsOptions}
+		valueField="value"
+		labelField="label"
+		descriptionField="_desc"
+		secondaryField="_sub"
+		iconField="_icon"
+		iconColorField="_icon_color"
+		display="detailed"
+		allowCreate={column.allow_create === true}
+		{placeholder}
+		disabled={effectiveLocked}
+		{...controlProps}
+	/>
+{:else if control === 'entity_ref'}
+	<!-- Same control contract, two surface bindings: the filter feeds IN
+	     semantics (multi), the form stores the single picked uid. The
+	     paged/search delegate is shared — `depends_on.filter_field`
+	     scopes the options `/list` on the form surface. -->
+	{@const refBind = surface === 'form' ? stringValue : arrayValue}
+	<ComboSelect
+		mode={surface === 'form' ? 'single' : 'multi'}
+		bind:value={refBind.value}
+		options={entityRef.state.options as { value: string; label: string; _sub: string }[]}
+		valueField="value"
+		labelField="label"
+		secondaryField="_sub"
+		display="detailed"
+		onSearchInput={entityRef.onSearchInput}
+		onLoadMore={entityRef.onLoadMore}
+		loadingMore={entityRef.state.loadingMore}
+		loading={entityRef.state.loading}
+		{placeholder}
+		disabled={effectiveLocked}
+		{...controlProps}
+	/>
+{:else if control === 'actor_multi'}
+	<ComboSelect
+		mode="multi"
+		bind:value={arrayValue.value}
+		options={auditActors.state.options as { value: string; label: string }[]}
+		valueField="value"
+		labelField="label"
+		loading={auditActors.state.loading}
+		{placeholder}
+		disabled={effectiveLocked}
+		{...controlProps}
+	/>
+{:else if control === 'color'}
+	<!-- `type:"color"`/`format:"color_hex"` — the canonical picker.
+	     The label row belongs to the field anatomy (form/field surface),
+	     so the selector mounts label-less; the value is a `#RRGGBB`
+	     hex string, disabled in readonly surfaces. -->
+	<ColorSelector
+		bind:value={stringValue.value}
+		{placeholder}
+		disabled={effectiveLocked}
+		triggerId={controlProps?.id as string | undefined}
+	/>
+{:else if control === 'boolean_tristate'}
+	<ButtonGroup segmented class="w-full" {...controlProps}>
+		{#each booleanOptions as opt (opt.key)}
+			{@const active = triStateValue.value === opt.key}
+			<Button
+				variant="ghost"
+				size="sm"
+				type="button"
+				class="flex-1 {active ? 'bg-foreground/10 text-foreground shadow-xs' : 'text-muted-foreground'}"
+				aria-pressed={active}
+				disabled={effectiveLocked}
+				onclick={() => (triStateValue.value = opt.key)}
+			>
+				{#if opt.icon === 'true'}
+					<CircleCheck class="size-4 text-green-600" />
+				{:else if opt.icon === 'false'}
+					<CircleX class="size-4 text-red-600" />
+				{/if}
+				{$t(opt.labelKey)}
+			</Button>
+		{/each}
+	</ButtonGroup>
 {:else}
-	<TextInput bind:value={stringValue.value} {placeholder} {readonly} {...controlProps} />
+	<TextInput bind:value={stringValue.value} {placeholder} readonly={effectiveReadonly} disabled={effectiveDisabled} {...controlProps} />
 {/if}

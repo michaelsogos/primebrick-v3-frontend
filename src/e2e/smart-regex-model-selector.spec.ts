@@ -33,8 +33,8 @@ import { E2E_ADMIN_USERNAME, E2E_ADMIN_PASSWORD } from "./helpers/admin-login";
 const PAGE_URL = "/system/settings/configurations/create";
 
 const test = base.extend<object, { pwContext: BrowserContext; suitePage: Page }>({
-  // eslint-disable-next-line no-empty-pattern
   pwContext: [
+    // eslint-disable-next-line no-empty-pattern
     async ({}, use) => {
       // Shared Edge session (helpers/edge-context): attach to the live CDP
       // session or launch a sanitized one — never a second Edge on the same

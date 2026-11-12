@@ -3,6 +3,8 @@
   import { uiLang } from '$lib/i18n/store.svelte';
   import { Badge } from '@primebrick/ui';
   import { Button } from '@primebrick/ui';
+  import { toDisplayString } from '@primebrick/ui';
+  import { FILTER_OPERATOR_KEY } from '@primebrick/ui';
   import { X as XIcon } from '@primebrick/ui/vendor/lucide';
   import { Eraser as EraserIcon } from '@primebrick/ui/vendor/lucide';
   import type { MetaColumn, AdvancedFilter } from '$lib/entity-list/types';
@@ -31,10 +33,10 @@
     if (col.type === 'badge' && col.badge?.values) {
       const badgeValue = col.badge.values[value as string];
       if (badgeValue) {
-        return badgeValue.label_text || $t(badgeValue.label_key || `system.entities.customer.status.${value}`);
+        return badgeValue.label_text ?? (badgeValue.label_key ? $t(badgeValue.label_key) : toDisplayString(value));
       }
     }
-    return String(value);
+    return toDisplayString(value);
   }
 
   function formatFilterDateValue(isoString: string): string {
@@ -58,27 +60,26 @@
 {#if hasAppliedFilters}
   <div class="flex flex-wrap items-center gap-2">
     <Button
-      variant="soft"
-      tone="primary"
+      variant="ghost"
       size="xs"
       onclick={onResetFilters}
     >
       <EraserIcon class="size-3.5" />
-      {$t('app.common.clearAll')}
+      {$t('app.common.clear_all')}
     </Button>
     <div class="h-6 w-px divider-primary-gradient" aria-hidden="true"></div>
     {#if filterValues && Object.keys(filterValues).length > 0}
       {#each Object.entries(filterValues) as [key, value] (key)}
         {@const col = filterableColumns.find((c) => c.key === key)}
         {#if col}
-          {@const operator = col.type === 'text' ? 'contains' : '='}
+          {@const operator = col.type === 'text' ? 'contains' as const : '=' as const}
           {@const formattedValue = col.type === 'date' || col.type === 'datetime' ? formatFilterDateValue(String(value)) : formatBadgeValue(col, value)}
           <Badge
             variant="secondary"
             class="gap-1.5 pr-1"
           >
             <span class="text-xs font-bold text-foreground">{$t(col.label_key)}</span>
-            <span class="text-xs text-primary">{$t(`system.entities.list.operators.${operator}`)}</span>
+            <span class="text-xs text-primary">{$t(`system.entities.list.operators.${FILTER_OPERATOR_KEY[operator]}`)}</span>
             <span class="text-xs italic text-muted-foreground">{formattedValue}</span>
             <button
               type="button"
@@ -118,7 +119,7 @@
             class="gap-1.5 pr-1"
           >
             <span class="text-xs font-bold text-foreground">{$t(col.label_key)}</span>
-            <span class="text-xs text-primary">{$t(`system.entities.list.operators.${filter.operator}`)}</span>
+            <span class="text-xs text-primary">{$t(`system.entities.list.operators.${FILTER_OPERATOR_KEY[filter.operator]}`)}</span>
             <span class="text-xs italic text-muted-foreground">{formattedValue}</span>
             <button
               type="button"
@@ -137,5 +138,5 @@
     {/if}
   </div>
 {:else}
-  <span class="text-xs italic text-muted-foreground/70">{$t('system.entities.list.filterBadge.noFiltersApplied')}</span>
+  <span class="text-xs italic text-muted-foreground/70">{$t('system.entities.list.filter_badge.no_filters_applied')}</span>
 {/if}

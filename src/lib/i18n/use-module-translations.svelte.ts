@@ -4,7 +4,8 @@
  * Called from `(app)/+layout.svelte`. Loads translations for the current
  * module + language on route change and language change.
  *
- * - Stale-while-revalidate: paints localStorage dict instantly (5-min TTL),
+ * - Last-known-good: paints localStorage dict instantly (no TTL — entries
+ *   survive until a fresher dict replaces them, never expire for age),
  *   then always fetches — apiFetch sends If-None-Match, so an unchanged dict
  *   costs a 304 and a changed dict updates localStorage on the spot
  * - In-memory dedup per session with TTL (LOADED_MODULES Map)
@@ -18,7 +19,7 @@ import { page } from '$app/state';
 import { get, type Unsubscriber } from 'svelte/store';
 import { uiLang, getCachedModuleDict, setCachedModuleDict } from './store.svelte';
 import { mergeModuleDict, getFallbackDict, CORE_DICT_MODULES } from './index';
-import type { UiLang } from './languages';
+import { DEFAULT_LANG, type UiLang } from './languages';
 import { shellNav } from '$lib/shell/modules-shell.svelte';
 import { fetchModuleTranslations, fetchPublicTranslations } from '$lib/api';
 import { onConnectivityRestored } from '$lib/app-connectivity-events';
@@ -49,11 +50,18 @@ async function ensureModuleTranslations(
   // Instant paint from localStorage, then ALWAYS revalidate with the BE:
   // apiFetch sends If-None-Match (pb:etag store) — a 304 means the dict is
   // unchanged, a 200 returns the fresh dict and updates both caches.
-  // This makes F5 always converge to the latest server-side translations,
-  // regardless of the localStorage TTL.
+  // localStorage entries have no TTL: last-known-good paints instantly and
+  // survives until a fresher dict replaces it.
   const cached = getCachedModuleDict(moduleId, lang);
   if (cached) {
     mergeModuleDict(lang, cached.dict);
+  }
+  // EN floor: any cached en-GB dict for this module layers under the lang
+  // dict — keys missing in `lang` (or the whole dict, when the lang fetch
+  // fails) still render English instead of raw keys.
+  if (lang !== DEFAULT_LANG) {
+    const enCached = getCachedModuleDict(moduleId, DEFAULT_LANG);
+    if (enCached) mergeModuleDict(DEFAULT_LANG, enCached.dict);
   }
 
   try {
@@ -132,7 +140,9 @@ export function useModuleTranslations(): { stop: () => void } {
 
   function reloadFor(lang: UiLang) {
     const path = page.url.pathname;
-    const moduleId = shellNav.resolveModuleFromRoute(path);
+    // Dict module, not module id — virtual siblings translate under the
+    // declaring service's schema (translations_module contract).
+    const moduleId = shellNav.resolveDictModuleFromRoute(path);
     // 'system' is the shared platform dictionary (entity labels
     // system.entities.*, shared chrome strings) — NOT settings-owned; every
     // module page needs it (a service-owned page under module `job` still
@@ -152,7 +162,7 @@ export function useModuleTranslations(): { stop: () => void } {
     // `$effect` tracks `page.url.pathname` reactively.
     $effect(() => {
       const path = page.url.pathname;
-      const moduleId = shellNav.resolveModuleFromRoute(path);
+      const moduleId = shellNav.resolveDictModuleFromRoute(path);
       const lang = get(uiLang);
       if (moduleId) {
         void ensureModuleTranslations(moduleId, lang);

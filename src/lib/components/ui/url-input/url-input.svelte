@@ -21,9 +21,9 @@
       onChange?: (value: string) => void;
       /** Errors array (i18n keys in `key|jsonParams` format) — renders below input. */
       errors?: string[];
-      /** Readonly mode — shows copy button instead of clear. */
+      /** Readonly/disabled mode — shows copy button instead of clear. */
       readonly?: boolean;
-      /** Disabled mode. */
+      /** Disabled mode — keeps the copy affordance (value stays copyable). */
       disabled?: boolean;
     }
   >;
@@ -159,7 +159,7 @@
       name={restProps.name}
     />
 
-    {#if readonly && value && !disabled}
+    {#if (readonly || disabled) && value}
       <InputGroup.Addon align="inline-end" class="bg-transparent border-none pl-0">
         <button
           type="button"

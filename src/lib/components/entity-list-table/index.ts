@@ -1,5 +1,9 @@
 export { default as EntityListTable } from './EntityListTable.svelte';
 
+// Footer sub-components — shared by archetype pages (dict consumes these directly)
+export { default as PaginationControls } from './components/PaginationControls.svelte';
+export { default as RangeLabel } from './components/RangeLabel.svelte';
+
 // Toolbar sub-components
 export * from './toolbar';
 
@@ -14,9 +18,6 @@ export * from './panels';
 
 // Dialog sub-components
 export * from './dialogs';
-
-// Pagination sub-components
-export * from './pagination';
 
 // Search sub-components — the canonical SearchInput lives in @primebrick/ui.
 

@@ -53,6 +53,50 @@ type EntityMeta = {
 - Form pages read the SAME root `columns` — tooltip props (`tooltip`,
   `tooltip_priority`, `tooltip_title`, `show_form_tooltip`,
   `show_list_tooltip`), `audited` for audit sections.
+- **Boolean cells are a non-negotiable standard**: `CircleCheck` (true) /
+  `CircleX` (false) icons, horizontally centered in the cell (`TableCell`
+  owns this). Custom cell snippets MUST NOT re-implement or bypass it.
+- **Wire→display conversion goes through `toDisplayString`** (from
+  `@primebrick/ui`) — the ONLY canonical converter for arbitrary wire
+  values. `String(x)` on `unknown`/`Record` values is forbidden: wire JSON
+  parses to null-prototype objects (`json-bigint` strict) and implicit
+  coercion throws `TypeError: Cannot convert object to primitive value`.
+  Enforced by `@typescript-eslint/no-base-to-string` on `src/**`.
+- **Icons are optional everywhere** — `MetaColumn.icon` (rendered before the
+  column label in table headers), CTA `icon`. Absent icon renders nothing
+  and reserves no space; never render `DynamicIcon` with an empty name (it
+  shows a `?` placeholder).
+- **`format` is the semantic renderer discriminator** — `TableCell` switches
+  on it BEFORE `type`:
+  - `schedule_spec` → `ScheduleSpecCell` (badge + localized prose via
+    `@primebrick/ui` schedule-spec i18n).
+  - `nats_subject` → badge + link; known module/service subjects link to the
+    module page (`/system/settings/modules/[code]` via census resolution).
+  - `json` → human-readable chips/prose where the shape is known
+    (`job_trigger.filter` conditions), else safe stringified preview.
+  - `identifier`/`display_name` → standard text affordances.
+- **References are metadata-declared** (`ref`, `reverse_ref`, `ref_count`):
+  - `ref: { entity }` on a `type:"ref"` column → cell links to the target
+    entity's page (census-resolved route).
+  - `reverse_ref: { entity, filter_field, value_template }` on a
+    `type:"ref_count"` virtual column → badge count + link to the children
+    list filtered by `filters[0][field|op|value]` URL params. The
+    `filter_field` MUST be in the target service's `filterableKeys`.
+  - Never invent links: no census route or missing `filterableKeys` entry →
+    render plain, do not guess.
+- **Filtered-list URLs are a standard mechanism** (`entity-links.ts`):
+  `filteredEntityListHref(census, entity, terms)` builds a
+  `filters[i][field|op|value|connector]` deep link for ANY entity from
+  just its name + wire-level terms (scalar, `IN` array, BETWEEN
+  `{start,end}`) — route resolution stays metadata-owned (census), the
+  wire format is the `appendListFilterParams` contract. Use it whenever a
+  cell/CTA must deep-link a filtered list; never hand-assemble params.
+- **Physical columns are auto-derived from the entity class** —
+  `withColumnConstraints` injects every physical column missing from
+  authored `columns` (uid first, audit/deletable columns `audited:true`,
+  auto-injected `default_visible:false`). `hidden: true` on an authored
+  column is the ONLY opt-out — it removes the column from served meta.
+  Restating derived facts (`nullable`, `max_length`, `pg_type`) throws.
 
 ## Closed schema
 

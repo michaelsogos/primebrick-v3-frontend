@@ -68,7 +68,7 @@ in `src/lib/entity-list/types.ts`. All fields are snake_case end to end.
 | `entity` | yes | Entity key, snake_case singular — matches the route segment |
 | `translation_key` | yes | snake_case singular i18n prefix for all entity keys |
 | `title_key` | yes | i18n key for the entity title |
-| `uid` | yes | Column key used as unique row identity |
+| `uid` | yes | Column key used as unique row identity. The record sheet renders it as the top identity badge: `secondary` pill at **input anatomy** (h-9, w-full, px-3, mono value) + `file-key` icon (amber accent, same token family as the payload-map `path` source) + inner copy CTA — label row above like every form field, all glyphs at the canonical 16px CTA size |
 | `display_field` | yes | Key of the primary display column — drives the first/sticky column |
 | `display_name` | response | Display expression template (`${field}` syntax). Optional in the static meta — `assembleMeta` materializes it as `"${display_field}"` when omitted |
 | `actions_overrides` | no | Per-op `enabled` escape hatch — may only toggle existing ops, never invents them |
@@ -84,21 +84,38 @@ is reusable for comboboxes, related-object labels, and other display contexts.
 ## `columns` — the field dictionary
 
 `MetaColumn` describes one entity field. `key`, `label_key`, `type`, and
-`order` are required; every other prop is an optional flag:
+`order` are required on authored entries; every other prop is an optional
+flag. **Physical columns are auto-derived from the entity class** by
+`withColumnConstraints` (dal-pg) — every `@Column` absent from `columns`
+is appended automatically with `default_visible: false` (system columns
+like `uuid`, `version`, `created_by`, `deleted_at` are never authored by
+hand). Authored entries are presentation overrides on top of the class.
 
 | Prop | Purpose |
 |------|---------|
 | `order` | Required explicit position — array position in `columns` does **not** matter. Rendering groups derive from flags: `sticky` first, normal next, `audited` last — each sorted by `order`. Convention: `uuid` is `order: -1` (first sticky, hidden but selectable), `display_field` is `order: 0` |
 | `sticky` | Pinned left — `uuid` and the `display_field` column are the standard sticky pair |
-| `audited` | System audit column (`created_at`, `updated_by`, ...) — rendered last |
-| `default_visible` | `false` = present in the column selector but hidden by default (e.g. `uuid`, `idp_code`) |
+| `audited` | System audit column (`created_at`, `updated_by`, ...) — rendered last. Set automatically on derived audit/deletable columns |
+| `default_visible` | `false` = present in the column selector but hidden by default. Auto-derived columns default to `false` — an authored entry is required to make a system column visible by default |
+| `hidden` | `true` = **the only way to suppress a physical column** — the column is dropped from the served meta entirely (no cell, picker entry, filter, or form field). Everything not explicitly hidden is served |
 | `hideable` | `false` = cannot be hidden |
 | `sortable` / `searchable` / `filterable` | Capability flags — default `true`, set `false` explicitly to disable |
+| `icon` | Field icon name (lucide) — consumed by form labels, column headers, and cell badges. Optional: absent icon renders nothing and reserves no space |
 | `badge` | `{ values: Record<string, { label_key?, label_text?, color? }> }` |
 | `datetime_iana_toggle` | `{ record_iana_field }` — browser-local vs record-timezone header toggle |
 | `sparkline` | `type:"sparkline"` virtual column — `{ endpoint, request_field, row_key, response_field?, series }`; the list engine batch-POSTs row keys after every load (no per-page wiring) and `TableCell` renders `SparklineBars` in every view mode (`table`, `cards_list`, `cards`) |
+| `format` | Semantic renderer discriminator — `TableCell` switches on it **before** `type`: `schedule_spec` → badge + localized prose (`@primebrick/ui` schedule-spec i18n), `nats_subject` → badge + link to the owning module page (census-resolved), `json` → readable chips/prose for known shapes (e.g. trigger filter conditions) else safe preview, `identifier`/`display_name` → text affordances. Closed additive union in `MetaColumnFormat` |
+| `virtual` | `true` = no physical column backing — value arrives via service-side decoration (e.g. trigger `last_run`/`next_run`) or batch endpoints (`sparkline`). `type:"sparkline"`/`"ref_count"` imply it |
+| `ref` | `type:"ref"` — `{ entity }`; the cell links to the target entity's detail page (route resolved through the module census — no hardcoded paths) |
+| `reverse_ref` | `type:"ref_count"` — `{ entity, filter_field, value_template }`; badge count + link to the children list filtered via `filters[0][field|op|value]` URL params. `filter_field` must be in the target service's `filterableKeys` or the link renders plain |
 | `tooltip`, `tooltip_priority`, `tooltip_title` | Tooltip content, severity, title keys |
 | `show_form_tooltip`, `show_list_tooltip` | Tooltip visibility per context |
+
+Cell rendering follows fixed standards no page may bypass: `boolean`
+columns render `CircleCheck`/`CircleX` icons **centered** in the cell;
+arbitrary wire values convert via `toDisplayString` (`@primebrick/ui`),
+never `String()` — wire JSON parses to null-prototype objects and implicit
+coercion throws (`@typescript-eslint/no-base-to-string` enforces this).
 
 ## `table` — EntityListTable options
 
@@ -113,10 +130,17 @@ Present only on entities rendered by `EntityListTable`:
 | `row_custom_actions` | Table-specific custom row CTAs (non-standard ops) |
 | `filter_presets` | Mutually-exclusive preset scope filters rendered as toolbar controls. `display:"button_group"` renders **icon-only** segmented buttons — `icon` required per option, meaning carried by `title` tooltip + `aria-pressed` (the label is never shown); `"combobox"` for long lists. Exactly one option is always active, `where:[]` is the "all" escape, conditions AND into every `/list` request |
 
-`row_custom_actions` entries carry only display config (`action_name`,
-`translation_key`, `icon`, `text_color`, `disabled_when_deleted`,
-`required_permission`). Whether the operation exists is still decided by
-`actions` — the page wires the handler via `customActionHandlers`.
+`row_custom_actions`/`bulk_custom_actions` entries are **synthesized by
+`makeServiceRoutes` from `RpcRoute.entity_op`** — the route is the source
+of truth: placement (`*_all` → bulk, else row), `row_key` (`meta.uid`),
+`translation_key` (`<entities_ns>.actions.<op>`), `required_permission`
+(route permissions, sentinels → `AUTHENTICATED_ADMIN`/`AUTHENTICATED_USER`),
+`require_step_up` (route `mfa`). `entity_op.cta` on the route overrides
+the non-default chrome (`icon`, `color`, `visible_on`, `row_key`,
+`translation_key`, `confirm_key`, `placement`). Authored `meta.table`
+entries survive only as explicit per-`action_name` overrides — a CTA
+without a backing `entity_op` route fails at boot, and vice-versa every
+`entity_op` produces a CTA without any meta.table declaration.
 
 ## `actions` — the capability contract
 
@@ -177,10 +201,13 @@ export const ticketMeta: EntityMeta = {
   uid: "uuid",
   display_field: "title",
   // display_name omitted — materialized as "${title}" by assembleMeta
+  // uuid/created_at/updated_*/version/deleted_* are NOT declared — they are
+  // auto-derived from TicketEntity's @Column decorators (hidden-but-selectable).
   columns: [
     { key: "title", label_key: "system.entities.ticket.fields.title", type: "text", order: 0, sticky: true, hideable: false, sortable: true, searchable: true },
-    { key: "uuid", label_key: "system.entities.ticket.fields.uuid", type: "text", order: -1, sticky: true, default_visible: false },
-    { key: "created_at", label_key: "system.entities.ticket.fields.created_at", type: "datetime", order: 90, audited: true, default_visible: false, searchable: false },
+    // To make an auto-derived system column visible by default, author it:
+    // { key: "created_at", label_key: "...created_at", type: "datetime", order: 90, default_visible: true, searchable: false },
+    // To suppress a physical column entirely: { key: "version", hidden: true, ... }
   ],
   table: {
     default_view: "table",

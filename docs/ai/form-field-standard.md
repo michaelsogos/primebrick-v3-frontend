@@ -74,6 +74,10 @@ of the two sanctioned anatomies:
   under controls — use the label tooltip
 - ❌ `SwitchField description` for field help — use `tooltip*` props
 - ❌ `PrimeField hint` — use `help`
+- ❌ hand-rolled `Switch` + `<FormLabel>` rows for labelled booleans —
+  use `SwitchField` (control-first anatomy); inside superforms it still
+  rides `FormControl` (enforced: eslint `no-restricted-imports` +
+  check-standards `raw-switch`)
 
 ## References
 

@@ -46,7 +46,7 @@
       return $t(passwordPolicy.state.errorLabelKey);
     }
     if (confirmPassword && newPassword !== confirmPassword) {
-      return $t('system.settings.users.changePasswordMismatch');
+      return $t('system.settings.users.change_password_mismatch');
     }
     return null;
   });
@@ -80,8 +80,8 @@
 
       pushNotification({
         impact: 'LOW',
-        messageKey: 'system.settings.users.changePasswordSuccess',
-        scope: $t('system.settings.users.changePassword'),
+        messageKey: 'system.settings.users.change_password_success',
+        scope: $t('system.settings.users.change_password'),
         toast: true,
       });
       onOpenChange?.(false);
@@ -89,8 +89,8 @@
     } catch (e) {
       pushNotification({
         impact: 'HIGH',
-        messageKey: 'system.settings.users.changePasswordFailed',
-        scope: $t('system.settings.users.changePassword'),
+        messageKey: 'system.settings.users.change_password_failed',
+        scope: $t('system.settings.users.change_password'),
         detail: e instanceof Error ? e.message : String(e),
         toast: true,
       });
@@ -107,19 +107,19 @@
 
 <BorderedDialog bind:open={open} {onOpenChange} severity="warning" class="sm:max-w-md" showCloseButton={false}>
   <Dialog.Header class="pb-4">
-    <Dialog.Title>{$t('system.settings.users.changePasswordTitle')}</Dialog.Title>
-    <Dialog.Description>{$t('system.settings.users.changePasswordDescription')}</Dialog.Description>
+    <Dialog.Title>{$t('system.settings.users.change_password_title')}</Dialog.Title>
+    <Dialog.Description>{$t('system.settings.users.change_password_description')}</Dialog.Description>
   </Dialog.Header>
   <div class="space-y-4 py-2">
     <div class="space-y-2">
       <Label for="change-password-new" class="text-sm font-medium leading-none">
-        {$t('system.settings.users.changePasswordNew')}
+        {$t('system.settings.users.change_password_new')}
         <span class="text-destructive">*</span>
       </Label>
       <Password.PasswordInput
         id="change-password-new"
         bind:value={newPassword}
-        placeholder={$t('system.settings.users.changePasswordNewPlaceholder')}
+        placeholder={$t('system.settings.users.change_password_new_placeholder')}
         disabled={isSubmitting}
         autocomplete="new-password"
       />
@@ -131,13 +131,13 @@
     </div>
     <div class="space-y-2">
       <Label for="change-password-confirm" class="text-sm font-medium leading-none">
-        {$t('system.settings.users.changePasswordConfirm')}
+        {$t('system.settings.users.change_password_confirm')}
         <span class="text-destructive">*</span>
       </Label>
       <Password.PasswordInput
         id="change-password-confirm"
         bind:value={confirmPassword}
-        placeholder={$t('system.settings.users.changePasswordConfirmPlaceholder')}
+        placeholder={$t('system.settings.users.change_password_confirm_placeholder')}
         disabled={isSubmitting}
         autocomplete="new-password"
       />
@@ -163,7 +163,7 @@
       {#if isSubmitting}
         {$t('app.common.saving')}
       {:else}
-        {$t('system.settings.users.changePassword')}
+        {$t('system.settings.users.change_password')}
       {/if}
     </Button>
   </Dialog.Footer>

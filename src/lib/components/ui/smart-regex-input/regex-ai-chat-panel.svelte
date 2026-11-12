@@ -18,7 +18,7 @@
   import type { ChatMessage } from '$lib/components/ui/smart-ai/ai-assistant.types';
   import { explainRegex, summarizeRegex, type RegexSummary } from '$lib/components/ui/smart-regex-input/regex-explainer';
   import type { DeepReadonly } from '@primebrick/ui';
-  import { AiIcon } from '$lib/components/ui/ai-icon';
+  import { AiIcon } from '@primebrick/ui';
   import { Bot } from '@primebrick/ui/vendor/lucide';
   import { Check } from '@primebrick/ui/vendor/lucide';
   import { ChevronDown } from '@primebrick/ui/vendor/lucide';
@@ -198,9 +198,9 @@
     </div>
     <div class="bg-muted rounded-lg px-3 py-2 text-xs">
       {#if message.choices && message.choices.length === 1 && message.choices[0].description}
-        {$t('app.smart.regex.ai.hereYouAreWithDesc', { desc: message.choices[0].description })}
+        {$t('app.smart.regex.ai.here_you_are_with_desc', { desc: message.choices[0].description })}
       {:else}
-        {$t('app.smart.regex.ai.hereYouAre')}
+        {$t('app.smart.regex.ai.here_you_are')}
       {/if}
     </div>
   </div>
@@ -287,7 +287,7 @@
     {:else if is_latest && !ai.state.is_streaming && !message.resolution}
       <div class="flex justify-end gap-2" data-testid="smart-regex-ai-single-confirm">
         <span class="text-xs text-muted-foreground self-center mr-1">
-          {$t('app.smart.regex.ai.useThis')}
+          {$t('app.smart.regex.ai.use_this')}
         </span>
         <Button
           size="sm"
@@ -336,7 +336,7 @@
   {#if message.choices && message.choices.length > 1 && !message.resolution}
     <div class="space-y-3" data-testid="smart-regex-ai-choices">
       <p class="text-xs font-medium text-foreground">
-        {$t('app.smart.regex.ai.chooseOption')}
+        {$t('app.smart.regex.ai.choose_option')}
       </p>
       {#each message.choices as choice, i (i)}
         {@const fullRegex = regexDisplay(choice)}

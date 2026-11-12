@@ -18,6 +18,7 @@ export type {
 	MetaColumn,
 	MetaColumnType,
 	RowCustomAction,
+	BulkCustomAction,
 	TableMeta,
 	EntityActionEndpoint,
 	EntityAction,
@@ -46,6 +47,8 @@ export {
 	sanitizeVisibleKeys,
 	searchableTextColumns,
 	getOperatorsForColumnType,
+	FILTER_OPERATOR_ICON,
+	FILTER_OPERATOR_KEY,
 	STANDARD_OPS,
 	isEntityOpEnabled,
 } from '@primebrick/ui';

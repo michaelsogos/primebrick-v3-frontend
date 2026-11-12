@@ -10,12 +10,10 @@
    */
   import { onMount } from 'svelte';
   import { browser } from '$app/environment';
-  import { Sheet } from "@primebrick/ui";
   import { Button } from '@primebrick/ui';
   import { Textarea } from '@primebrick/ui';
   import { cn } from '$lib/utils';
   import { t } from '$lib/i18n';
-  import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import { SheetPanelLayout } from '@primebrick/ui';
   import SheetHeaderAction from '$lib/shell/sheets/SheetHeaderAction.svelte';
   import { aiChatStore } from '$lib/shell/ai-chat/use-ai-chat.svelte';
@@ -23,7 +21,6 @@
   import { MessageSquare } from '@primebrick/ui/vendor/lucide';
   import { Send } from '@primebrick/ui/vendor/lucide';
   import { Plus } from '@primebrick/ui/vendor/lucide';
-  import { X } from '@primebrick/ui/vendor/lucide';
   import { Square } from '@primebrick/ui/vendor/lucide';
   import { Trash2 } from '@primebrick/ui/vendor/lucide';
   import { Bot } from '@primebrick/ui/vendor/lucide';
@@ -115,24 +112,17 @@
   }
 </script>
 
-<SheetPanelLayout contentClass="flex min-h-0 flex-col overflow-hidden p-0">
+<SheetPanelLayout contentClass="flex min-h-0 flex-col p-0">
   {#snippet icon()}
     <MessageSquare class="size-4" />
   {/snippet}
   {#snippet title()}
-    {$t('app.aiChat.title')}
+    {$t('app.ai_chat.title')}
   {/snippet}
   {#snippet actions()}
-    <SheetHeaderAction title={$t('app.aiChat.newConversation')} onclick={handleNewConversation}>
+    <SheetHeaderAction title={$t('app.ai_chat.new_conversation')} onclick={handleNewConversation}>
       <Plus class="size-4" />
     </SheetHeaderAction>
-    <Sheet.Close
-      class="ring-offset-background focus-visible:ring-ring inline-flex size-8 items-center justify-center rounded-md text-muted-foreground opacity-70 transition-opacity hover:bg-accent hover:text-accent-foreground hover:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
-      title={$t('app.common.done')}
-      onclick={() => closeSheet()}
-    >
-      <X class="size-4" />
-    </Sheet.Close>
   {/snippet}
   {#snippet footer()}
     <!-- Pending tool call confirmation -->
@@ -141,17 +131,17 @@
         <div class="flex items-center justify-between gap-2">
           <span class="text-xs text-muted-foreground">
             {#if aiChatStore.pendingToolCall.server}
-              {$t('app.aiChat.toolCallConfirm', { tool: aiChatStore.pendingToolCall.tool })}
+              {$t('app.ai_chat.tool_call_confirm', { tool: aiChatStore.pendingToolCall.tool })}
             {:else}
-              {$t('app.aiChat.navigateConfirm', { route: (aiChatStore.pendingToolCall.args as { route?: string })?.route ?? '?' })}
+              {$t('app.ai_chat.navigate_confirm', { route: (aiChatStore.pendingToolCall.args as { route?: string })?.route ?? '?' })}
             {/if}
           </span>
           <div class="flex gap-1">
             <Button size="sm" variant="default" class="h-7 text-xs" onclick={handleConfirmToolCall}>
-              {$t('app.aiChat.yes')}
+              {$t('app.ai_chat.yes')}
             </Button>
             <Button size="sm" variant="ghost" class="h-7 text-xs" onclick={handleDismissToolCall}>
-              {$t('app.aiChat.no')}
+              {$t('app.ai_chat.no')}
             </Button>
           </div>
         </div>
@@ -171,16 +161,16 @@
         <Textarea
           bind:value={inputText}
           onkeydown={handleKeydown}
-          placeholder={$t('app.aiChat.placeholder')}
+          placeholder={$t('app.ai_chat.placeholder')}
           class="min-h-[40px] max-h-[120px] resize-none text-sm"
           rows={1}
         />
         {#if aiChatStore.isStreaming}
-          <Button variant="destructive" size="icon" class="size-9 shrink-0" onclick={handleStop} title={$t('app.aiChat.stop')}>
+          <Button variant="destructive" size="icon" class="size-9 shrink-0" onclick={handleStop} title={$t('app.ai_chat.stop')}>
             <Square class="size-4" />
           </Button>
         {:else}
-          <Button variant="default" size="icon" class="size-9 shrink-0" onclick={handleSend} disabled={!inputText.trim()} title={$t('app.aiChat.send')}>
+          <Button variant="default" size="icon" class="size-9 shrink-0" onclick={handleSend} disabled={!inputText.trim()} title={$t('app.ai_chat.send')}>
             <Send class="size-4" />
           </Button>
         {/if}
@@ -194,12 +184,13 @@
     {#if aiChatStore.hasConversations}
       <div class="hidden w-48 shrink-0 border-r border-sidebar-border bg-sidebar/50 sm:block">
         <div class="px-2 py-1.5 text-xs font-medium text-muted-foreground">
-          {$t('app.aiChat.conversations')}
+          {$t('app.ai_chat.conversations')}
         </div>
         <div class="flex flex-col gap-0.5 px-1">
           {#each aiChatStore.conversations as conv (conv.uuid)}
             <button
               type="button"
+              data-testid="ai-chat-conversation"
               class={cn(
                 'group flex items-center justify-between gap-1 rounded-sm px-2 py-1.5 text-left text-xs hover:bg-sidebar-accent',
                 aiChatStore.currentConversationUuid === conv.uuid && 'bg-sidebar-accent font-medium'
@@ -229,7 +220,7 @@
         {#if aiChatStore.messages.length === 0 && !aiChatStore.streamingText}
           <div class="flex h-full flex-col items-center justify-center gap-3 text-center text-muted-foreground">
             <Bot class="size-10 opacity-40" />
-            <p class="max-w-xs text-sm">{$t('app.aiChat.welcome')}</p>
+            <p class="max-w-xs text-sm">{$t('app.ai_chat.welcome')}</p>
           </div>
         {:else}
           <div class="flex flex-col gap-3">
@@ -289,9 +280,10 @@
                           msg.feedback === 'up' && 'text-success',
                           msg.feedback === 'down' && 'text-destructive',
                         )}
-                        title={$t('app.aiChat.yes')}
+                        title={$t('app.ai_chat.yes')}
                         onclick={() => handleFeedback(msg.uuid, 'up')}
                         disabled={msg.feedback === 'up'}
+                        data-testid="ai-chat-feedback-up"
                       >
                         <ThumbsUp class="size-3.5" />
                       </button>
@@ -302,9 +294,10 @@
                           msg.feedback === 'down' && 'text-destructive',
                           msg.feedback === 'up' && 'text-success',
                         )}
-                        title={$t('app.aiChat.no')}
+                        title={$t('app.ai_chat.no')}
                         onclick={() => handleFeedback(msg.uuid, 'down')}
                         disabled={msg.feedback === 'down'}
+                        data-testid="ai-chat-feedback-down"
                       >
                         <ThumbsDown class="size-3.5" />
                       </button>
@@ -350,7 +343,7 @@
               <div class="flex gap-2.5">
                 <BotIcon size={26} stroke_width={1.8} class="mt-1 shrink-0" />
                 <div class="rounded-lg px-3 py-2 text-sm text-muted-foreground gradient-ring" style={aiBubbleStyle}>
-                  {$t('app.aiChat.loading')}
+                  {$t('app.ai_chat.loading')}
                 </div>
               </div>
             {/if}

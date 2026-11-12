@@ -49,7 +49,7 @@
     // Parse OAuth params from the URL
     const params = parseConsentParams(page.url.searchParams);
     if (!params) {
-      error = $t('app.mcp.consent.invalidParams');
+      error = $t('app.mcp.consent.invalid_params');
       loading = false;
       return;
     }
@@ -152,9 +152,9 @@
           <CardHeader class="space-y-1">
             <div class="flex items-center gap-2 mb-1">
               <KeyRound class="size-5 text-muted-foreground" />
-              <CardTitle class="text-xl">{$t('app.mcp.consent.loginRequired')}</CardTitle>
+              <CardTitle class="text-xl">{$t('app.mcp.consent.login_required')}</CardTitle>
             </div>
-            <CardDescription>{$t('app.mcp.consent.loginFirst')}</CardDescription>
+            <CardDescription>{$t('app.mcp.consent.login_first')}</CardDescription>
           </CardHeader>
           <CardContent class="space-y-4">
             <!-- Show which client is requesting access -->
@@ -191,14 +191,14 @@
                 <Bot class="size-5 text-primary" />
               </div>
               <div class="flex-1 min-w-0">
-                <p class="text-xs text-muted-foreground">{$t('app.mcp.consent.clientName')}</p>
+                <p class="text-xs text-muted-foreground">{$t('app.mcp.consent.client_name')}</p>
                 <p class="text-sm font-medium truncate">{consent_params.mcp_client_name}</p>
               </div>
             </div>
 
             <!-- Requested scopes -->
             <div class="space-y-2">
-              <p class="text-sm font-medium">{$t('app.mcp.consent.requestedScopes')}</p>
+              <p class="text-sm font-medium">{$t('app.mcp.consent.requested_scopes')}</p>
               <div class="space-y-2">
                 {#each scopes as scope (scope.name)}
                   <div class="flex items-start gap-2 rounded-md border border-border p-2.5">
@@ -218,7 +218,7 @@
             <Alert>
               <Info class="size-4" />
               <AlertDescription class="text-xs">
-                {$t('app.mcp.consent.securityNote')}
+                {$t('app.mcp.consent.security_note')}
               </AlertDescription>
             </Alert>
 
@@ -231,7 +231,7 @@
                 disabled={redirecting}
               >
                 <ShieldX class="size-4 mr-2" />
-                {$t('app.mcp.consent.denyButton')}
+                {$t('app.mcp.consent.deny_button')}
               </Button>
               <Button
                 class="flex-1"
@@ -239,7 +239,7 @@
                 disabled={redirecting}
               >
                 <ShieldCheck class="size-4 mr-2" />
-                {$t('app.mcp.consent.approveButton', { client: consent_params.mcp_client_name })}
+                {$t('app.mcp.consent.approve_button', { client: consent_params.mcp_client_name })}
               </Button>
             </div>
           </CardContent>

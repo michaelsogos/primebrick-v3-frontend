@@ -7,6 +7,8 @@
   import { resolve } from '$app/paths';
   import { userProfileState, userProfileStore } from '$lib/user-profile-store.svelte';
   import { getAndClearRedirectUrl } from '$lib/auth/redirect-cache';
+  // Leaf icons arrive materialized in the discovery payload — `icon` is
+  // emitted (authored or kind-defaulted); `file-box` is the fail-closed tail.
   import type { ModuleNavLink } from '$lib/api-types';
 
   import SidebarOrgSwitcher from '$lib/components/sidebar/SidebarOrgSwitcher.svelte';
@@ -104,7 +106,7 @@
     </Sidebar.Group>
 
     <Sidebar.Group class="pt-0 pb-0">
-      <Sidebar.GroupLabel class="h-7">{$t('app.nav.rootLevel')}</Sidebar.GroupLabel>
+      <Sidebar.GroupLabel class="h-7">{$t('app.nav.root_level')}</Sidebar.GroupLabel>
       <Sidebar.GroupContent>
         <SidebarAppLauncher {collapsed} />
       </Sidebar.GroupContent>
@@ -118,7 +120,7 @@
             <div class="px-2 py-1.5 text-xs text-muted-foreground">{$t('app.common.loading')}</div>
           {:else if moduleNavError}
             <div class="px-2 py-1.5 text-xs text-destructive">
-              {$t('app.modulesLoadFailed')}
+              {$t('app.modules_load_failed')}
               <button onclick={() => shellNav.reloadModuleNav()} class="ml-2 underline">
                 {$t('app.retry')}
               </button>
@@ -138,7 +140,7 @@
       class="text-sidebar-foreground/70 ring-sidebar-ring flex h-7 shrink-0 items-center rounded-md px-2 text-xs font-medium outline-hidden transition-[margin,opa] duration-200 ease-linear group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0"
       data-sidebar="group-label"
     >
-      {$t('app.userMenu.title')}
+      {$t('app.user_menu.title')}
     </div>
     <SidebarProfileMenu {user} {collapsed} onLogout={handleLogout} />
 
@@ -173,7 +175,9 @@
             openGroups[item.id] = !groupOpen;
           }}
         >
-          <DynamicIcon name={item.icon ?? 'circle'} size={16} />
+          {#if item.icon}
+            <DynamicIcon name={item.icon} size={16} />
+          {/if}
           <span>{$t(item.label_key)}</span>
           <ChevronRight
             class="ms-auto size-4 shrink-0 transition-transform group-data-[state=open]/collapsible:rotate-90 group-data-[collapsible=icon]:hidden"
@@ -185,7 +189,9 @@
             {#each item.children as child (child.id)}
               <Sidebar.MenuSubItem>
                 <Sidebar.MenuSubButton href={child.href} isActive={isLinkActive(child.href)}>
-                  <DynamicIcon name={child.icon ?? 'circle'} size={14} />
+                  {#if child.icon}
+                    <DynamicIcon name={child.icon} size={14} />
+                  {/if}
                   <span>{$t(child.label_key)}</span>
                 </Sidebar.MenuSubButton>
               </Sidebar.MenuSubItem>
@@ -199,7 +205,9 @@
       <Sidebar.MenuButton isActive={isLinkActive(item.href)}>
         {#snippet child({ props })}
           <a {...props} href={resolve(item.href as '/')}>
-            <DynamicIcon name={item.icon ?? 'circle'} size={16} />
+            {#if item.icon}
+              <DynamicIcon name={item.icon} size={16} />
+            {/if}
             <span>{$t(item.label_key)}</span>
           </a>
         {/snippet}

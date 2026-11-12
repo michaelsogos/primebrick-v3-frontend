@@ -5,6 +5,7 @@
   import type { useRowActions } from '../composables/useRowActions.svelte';
   import type { useBulkActions } from '../composables/useBulkActions.svelte';
   import type { useExport } from '../composables/useExport.svelte';
+  import type { ActionChrome } from '../types';
 
   let {
     dialogs,
@@ -15,7 +16,11 @@
     total,
     entity,
     entities_ns,
-    translationKey
+    translationKey,
+    deleteChrome,
+    restoreChrome,
+    bulkDeleteChrome,
+    bulkRestoreChrome
   }: EntityListTableDialogsProps = $props();
 
   type EntityListTableDialogsProps = {
@@ -30,6 +35,12 @@
      *  dialog so entity keys compose as `<ns>.entities.*`. */
     entities_ns?: string;
     translationKey?: string;
+    /** `meta.actions[op]` chrome — meta-driven dialog copy (title verb,
+     *  confirm message, busy label, accent severity). */
+    deleteChrome?: ActionChrome;
+    restoreChrome?: ActionChrome;
+    bulkDeleteChrome?: ActionChrome;
+    bulkRestoreChrome?: ActionChrome;
   };
 
   async function confirmDeleteRow() {
@@ -133,6 +144,7 @@
   entity={translationKey ?? entity}
   entities_ns={entities_ns}
   recordName={recordName(dialogs.state.rowToDelete)}
+  chrome={deleteChrome}
   open={dialogs.state.deleteDialogOpen}
   onOpenChange={(open) => { if (!open) dialogs.closeDeleteDialog(); }}
   isDeleting={rowActionsComposable.state.isDeleting}
@@ -144,6 +156,7 @@
   entity={translationKey ?? entity}
   entities_ns={entities_ns}
   recordName={recordName(dialogs.state.rowToRestore)}
+  chrome={restoreChrome}
   open={dialogs.state.restoreDialogOpen}
   onOpenChange={(open) => { if (!open) dialogs.closeRestoreDialog(); }}
   isRestoring={rowActionsComposable.state.isRestoring}
@@ -154,10 +167,14 @@
 <BulkDeleteDialog
   entity={translationKey ?? entity}
   entities_ns={entities_ns}
+  chrome={bulkDeleteChrome}
   open={dialogs.state.bulkDeleteDialogOpen}
   onOpenChange={(open) => { if (!open) dialogs.closeBulkDeleteDialog(); }}
   selectedCount={selectedKeys.length}
+  totalCount={total}
   isDeleting={bulkActions.state.isDeleting}
+  deleteScope={bulkActions.state.deleteScope}
+  onDeleteScopeChange={(s) => bulkActions.setDeleteScope(s)}
   onConfirm={confirmBulkDelete}
   onCancel={cancelBulkDelete}
 />
@@ -165,10 +182,14 @@
 <BulkRestoreDialog
   entity={translationKey ?? entity}
   entities_ns={entities_ns}
+  chrome={bulkRestoreChrome}
   open={dialogs.state.bulkRestoreDialogOpen}
   onOpenChange={(open) => { if (!open) dialogs.closeBulkRestoreDialog(); }}
   selectedCount={selectedKeys.length}
+  totalCount={total}
   isRestoring={bulkActions.state.isRestoring}
+  restoreScope={bulkActions.state.restoreScope}
+  onRestoreScopeChange={(s) => bulkActions.setRestoreScope(s)}
   onConfirm={confirmBulkRestore}
   onCancel={cancelBulkRestore}
 />

@@ -23,7 +23,24 @@
 7. **Input trailing CTAs**: see `docs/ai/input-anatomy.md` — clear =
    `Eraser` rightmost at `right-1.5` (glyph 12px from border), extra icons
    self-position left (`right-10` slot 2). Never invent positions.
-8. **Inner icon-only controls: glyph MUST be 16px** (`size-4`). Applies to
+8. **Page-icon defaults are emission-materialized, never render-fallbacks** —
+   a nav leaf or route without an authored `icon` gets its kind default at
+   `/modules` emission: `dict`→`list`, `list`→`table-2`,
+   `create`/`detail`→`text-cursor-input`, anything else→`file-box` (the
+   maximum fallback). An authored `icon` always wins — defaults fill nulls,
+   never override. Consumers read `link.icon`/`decl.icon` plainly;
+   `circle`/`circle-small` are banned on leaf pages.
+9. **Field-mapped icons: absent data → absent element — NEVER a default
+   icon.** When an icon's value comes from a mapped field (`row.icon`,
+   `link.icon`, `decl.icon`, a `tooltip`/`description` column), render it
+   iff the field carries a value: `{#if icon}<DynamicIcon name={icon}/>{/if}`.
+   A `?? 'tag'`/`?? 'file-box'`/`|| 'layout-grid'` literal is an invented
+   fallback — the element must disappear, not fake an icon. Same rule for
+   the tooltip-ⓘ: it renders iff mapped tooltip/desc content exists.
+   Field→field resolution chains (`decl?.icon ?? leaf?.icon`) and `?? null`/
+   `?? ''` type coercions are NOT fallbacks — only quoted literal tails.
+   Linted by `icon-no-fallback` (check-standards).
+10. **Inner icon-only controls: glyph MUST be 16px** (`size-4`). Applies to
    every standalone icon-only control inside an input (clear `Eraser`,
    `Eye`/`EyeOff`, `Copy`, `Check`/status icons, X-remove). Enforced by
    `[&>svg]:size-4` in `inputTrailingIconColorClasses` —
@@ -31,6 +48,16 @@
    the icon; the chrome owns the glyph size. Excluded: decorative glyphs
    inside trigger content (e.g. `size-3` carets in prefix selector CTAs)
    and leading icons.
+11. **UUID surfaces = `file-key`** — `format:"uuid"` fields and the
+   record-sheet uid badge carry the `file-key` glyph (amber accent where a
+   color is declared). `fingerprint`/`fingerprint-pattern` belong to the
+   passkey/WebAuthn domain only and are banned on entity-uuid surfaces.
+12. **Record surfaces use the SINGULAR icon variant** — a record sheet
+   shows ONE row, so the authored list icon maps through the canonical
+   pair table (`users`→`user`, `users-round`→`user-round` in
+   `EntityRecordSheet.svelte` `RECORD_ICON_VARIANTS`). Icons without a
+   declared pair render unchanged; extend the map when a new plural glyph
+   is authored, never guess variants.
 
 ## Deep dive
 

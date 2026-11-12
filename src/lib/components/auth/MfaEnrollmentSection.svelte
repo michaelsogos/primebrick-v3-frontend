@@ -51,7 +51,7 @@
       console.error('[MfaEnrollmentSection] Failed to start enrollment:', error);
       pushNotification({
         impact: 'HIGH',
-        message: $t('app.auth.mfa.enrollmentError'),
+        message: $t('app.auth.mfa.enrollment_error'),
         scope: 'auth',
       });
     } finally {
@@ -61,7 +61,7 @@
 
   async function finishEnrollment() {
     if (otp.code.length !== 6) {
-      enrollError = $t('app.auth.mfa.codeRequired');
+      enrollError = $t('app.auth.mfa.code_required');
       return;
     }
     enrolling = true;
@@ -78,7 +78,7 @@
       });
       if (!resp.ok) {
         const err = await resp.json();
-        enrollError = err.detail || $t('app.auth.mfa.invalidCode');
+        enrollError = err.detail || $t('app.auth.mfa.invalid_code');
         otp.reset();
         return;
       }
@@ -90,7 +90,7 @@
 
       pushNotification({
         impact: 'NONE',
-        message: $t('app.auth.mfa.enrollmentSuccess'),
+        message: $t('app.auth.mfa.enrollment_success'),
         scope: 'auth',
       });
 
@@ -102,7 +102,7 @@
       oncomplete();
     } catch (error) {
       console.error('[MfaEnrollmentSection] Failed to finish enrollment:', error);
-      enrollError = $t('app.auth.mfa.connectionError');
+      enrollError = $t('app.auth.mfa.connection_error');
     } finally {
       enrolling = false;
     }
@@ -116,20 +116,20 @@
       <ShieldCheck class="size-4 text-emerald-500 mt-0.5 shrink-0" />
       <p class="text-sm italic text-muted-foreground">
         <span class="not-italic text-foreground/80">
-          {$t('app.auth.authMethodEnforcer.benefitSecurity').split(' — ')[0]}
+          {$t('app.auth.auth_method_enforcer.benefit_security').split(' — ')[0]}
         </span>
         <br />
-        <span class="text-muted-foreground/80">— {$t('app.auth.authMethodEnforcer.benefitSecurity').split(' — ')[1]}</span>
+        <span class="text-muted-foreground/80">— {$t('app.auth.auth_method_enforcer.benefit_security').split(' — ')[1]}</span>
       </p>
     </div>
     <div class="flex items-start gap-2">
       <Smartphone class="size-4 text-primary mt-0.5 shrink-0" />
       <p class="text-sm italic text-muted-foreground">
         <span class="not-italic text-foreground/80">
-          {$t('app.auth.authMethodEnforcer.benefitConvenienceMfa').split(' — ')[0]}
+          {$t('app.auth.auth_method_enforcer.benefit_convenience_mfa').split(' — ')[0]}
         </span>
         <br />
-        <span class="text-muted-foreground/80">— {$t('app.auth.authMethodEnforcer.benefitConvenienceMfa').split(' — ')[1]}</span>
+        <span class="text-muted-foreground/80">— {$t('app.auth.auth_method_enforcer.benefit_convenience_mfa').split(' — ')[1]}</span>
       </p>
     </div>
   </div>
@@ -139,7 +139,7 @@
     <div class="flex items-start gap-2">
       <TriangleAlert class="size-4 text-destructive mt-0.5 shrink-0" />
       <p class="text-xs text-muted-foreground">
-        {$t('app.auth.authMethodEnforcer.warningMfa')}
+        {$t('app.auth.auth_method_enforcer.warning_mfa')}
       </p>
     </div>
   </div>
@@ -147,7 +147,7 @@
   {#if enrolling}
     <div class="flex items-center justify-center py-4">
       <Spinner class="size-6" />
-      <span class="ml-2 text-sm text-muted-foreground">{$t('app.auth.authMethodEnforcer.enrolling')}</span>
+      <span class="ml-2 text-sm text-muted-foreground">{$t('app.auth.auth_method_enforcer.enrolling')}</span>
     </div>
   {/if}
 
@@ -159,7 +159,7 @@
       disabled={enrolling}
     >
       <ShieldCheck class="size-4 mr-2" />
-      {$t('app.auth.authMethodEnforcer.enrollMfaButton')}
+      {$t('app.auth.auth_method_enforcer.enroll_mfa_button')}
     </Button>
   </div>
 {:else if enrollStep === 'qr'}
@@ -174,18 +174,18 @@
       />
     </div>
     <div class="space-y-2">
-      <p class="text-xs text-muted-foreground">{$t('app.auth.mfa.manualEntry')}:</p>
+      <p class="text-xs text-muted-foreground">{$t('app.auth.mfa.manual_entry')}:</p>
       <code class="block bg-muted px-2 py-1 rounded text-xs font-mono break-all">{secret}</code>
     </div>
     {#if recoveryCodes.length > 0}
       <div class="space-y-2">
-        <p class="text-xs text-muted-foreground">{$t('app.auth.mfa.recoveryCodes')}</p>
+        <p class="text-xs text-muted-foreground">{$t('app.auth.mfa.recovery_codes')}</p>
         <div class="bg-muted rounded p-2 space-y-1">
           {#each recoveryCodes as code (code)}
             <code class="block text-xs font-mono">{code}</code>
           {/each}
         </div>
-        <p class="text-xs text-destructive">{$t('app.auth.mfa.recoveryCodesWarning')}</p>
+        <p class="text-xs text-destructive">{$t('app.auth.mfa.recovery_codes_warning')}</p>
       </div>
     {/if}
     <div class="flex justify-end">
@@ -202,12 +202,12 @@
         id="mfa-enroller-label"
         type="text"
         maxlength={100}
-        placeholder={$t('app.auth.mfa.labelPlaceholder')}
+        placeholder={$t('app.auth.mfa.label_placeholder')}
         bind:value={enrollLabel}
       />
     </div>
     <div class="space-y-2">
-      <Label for="mfa-enroller-code">{$t('app.auth.mfa.verifyCode')}</Label>
+      <Label for="mfa-enroller-code">{$t('app.auth.mfa.verify_code')}</Label>
       <OtpInput
         id="mfa-enroller-code"
         data-testid="mfa-enroller-code-input"
@@ -224,7 +224,7 @@
         {#if enrolling}
           <Spinner class="size-4 mr-2" />
         {/if}
-        {$t('app.auth.mfa.verifyAndEnable')}
+        {$t('app.auth.mfa.verify_and_enable')}
       </Button>
     </div>
   </div>

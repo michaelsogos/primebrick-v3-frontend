@@ -147,7 +147,7 @@
             <TextInput
               type="text"
               data-testid="login-username-input"
-              placeholder={$t('app.auth.login.usernamePlaceholder')}
+              placeholder={$t('app.auth.login.username_placeholder')}
               bind:value={$form.username}
               {...props}
             />
@@ -164,7 +164,7 @@
             <FormLabel for={props.id}>{$t('app.auth.login.password')}</FormLabel>
             <Password.PasswordInput
               data-testid="login-password-input"
-              placeholder={$t('app.auth.login.passwordPlaceholder')}
+              placeholder={$t('app.auth.login.password_placeholder')}
               bind:value={$form.password}
               {...props}
             />
@@ -178,7 +178,7 @@
       {#if $submitting}
         <Spinner class="mr-2" />
       {/if}
-      {$submitting ? $t('app.auth.login.buttonLoading') : $t('app.auth.login.button')}
+      {$submitting ? $t('app.auth.login.button_loading') : $t('app.auth.login.button')}
     </Button>
     {/if}
 

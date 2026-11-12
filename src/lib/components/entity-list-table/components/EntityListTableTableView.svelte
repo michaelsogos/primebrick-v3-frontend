@@ -14,7 +14,7 @@
   import type { useRowRangeSelection } from '../composables/useRowRangeSelection.svelte';
 
   let {
-    tableRef,
+    tableRef = $bindable(),
     tableDensityClass,
     rowSelectionEnabled,
     stickyColumnsState,
@@ -145,6 +145,61 @@
     previewDropdownOpen: boolean;
     navigatePreview: (direction: number) => void;
   };
+
+  /**
+   * Keyboard-focus frame — a measured overlay sibling of <table> inside the
+   * scroll container (see table.svelte `overlay`). `position: relative` on a
+   * `<tr>` is NOT a containing block, so an in-cell absolute span anchors to
+   * the scroll container and bleeds across the viewport — hence geometry.
+   *
+   * The frame hugs the row's VISIBLE segment, not its full scroll width:
+   * horizontally it tracks the viewport window ([scrollLeft, scrollLeft +
+   * clientWidth] in content coordinates — re-measured on scroll), so the
+   * right rounded edge always lands on the sticky actions column even when
+   * the row's true end is scrolled off-screen. Vertically it glues to the
+   * row (offsetTop) and scrolls with it. The overlay never participates in
+   * layout → zero row shift, always.
+   */
+  let frameRect = $state<{ top: number; left: number; width: number; height: number } | null>(null);
+
+  function measureFocusFrame() {
+    const idx = previewPanel.state.focusedRowIndex;
+    if (idx === null || !tableRef) {
+      frameRect = null;
+      return;
+    }
+    const tr = tableRef.querySelector<HTMLTableRowElement>("tr[data-focused-row-index]");
+    const cont = tableRef.parentElement; // data-slot=table-container (the scroll host)
+    frameRect = tr && cont
+      ? {
+          top: tr.offsetTop,
+          left: cont.scrollLeft,
+          width:
+            Math.min(cont.scrollLeft + cont.clientWidth, tr.offsetLeft + tr.offsetWidth) -
+            cont.scrollLeft,
+          height: tr.offsetHeight,
+        }
+      : null;
+  }
+
+  $effect(() => {
+    previewPanel.state.focusedRowIndex;
+    viewRows;
+    shownColumns;
+    measureFocusFrame();
+  });
+
+  $effect(() => {
+    if (!tableRef) return;
+    const cont = tableRef.parentElement;
+    const ro = new ResizeObserver(measureFocusFrame);
+    ro.observe(tableRef);
+    cont?.addEventListener("scroll", measureFocusFrame, { passive: true });
+    return () => {
+      ro.disconnect();
+      cont?.removeEventListener("scroll", measureFocusFrame);
+    };
+  });
 </script>
 
 <div class="flex h-full overflow-hidden" role="region" aria-label="Table and preview panel">
@@ -217,6 +272,16 @@
         stickyCellClass={(key, idx, isHeader) => stickyCellClassWithCompute(key, stickyColumnsGroup, visibleKeys, isHeader)}
       />
     {/snippet}
+    {#snippet focusFrameOverlay()}
+      {#if frameRect}
+        <div
+          data-testid="elt-row-focus-frame"
+          aria-hidden="true"
+          class="row-focus-frame pointer-events-none absolute z-[60]"
+          style="top:{frameRect.top}px;left:{frameRect.left}px;width:{frameRect.width}px;height:{frameRect.height}px"
+        ></div>
+      {/if}
+    {/snippet}
     <TableRoot
       class={cn(
         'w-full bg-background **:data-[slot=table]:isolate **:data-[slot=table]:bg-background **:data-[slot=table-cell]:bg-clip-border [&_[data-slot=table-cell]:not(.sticky)]:bg-background dark:[&_[data-slot=table-cell]:not(.sticky)]:bg-neutral-950 [&_[data-slot=table-head]:not(.sticky)]:bg-neutral-50 dark:[&_[data-slot=table-head]:not(.sticky)]:bg-neutral-900',
@@ -224,6 +289,7 @@
       )}
       containerClass="h-full overflow-auto"
       children={tableChildren}
+      overlay={focusFrameOverlay}
       bind:ref={tableRef}
     />
   </div>

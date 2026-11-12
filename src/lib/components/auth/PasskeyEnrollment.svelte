@@ -111,7 +111,7 @@
 
       pushNotification({
         impact: "NONE",
-        message: $t("app.auth.passkeys.enrollmentSuccess"),
+        message: $t("app.auth.passkeys.enrollment_success"),
         scope: "auth",
       });
       await loadCredentials();
@@ -129,7 +129,7 @@
         }
         pushNotification({
           impact: "NONE",
-          message: $t("app.auth.passkeys.alreadyEnrolled"),
+          message: $t("app.auth.passkeys.already_enrolled"),
           scope: "auth",
         });
         await loadCredentials();
@@ -138,7 +138,7 @@
       console.error("[PasskeyEnrollment] Failed to add passkey:", error);
       pushNotification({
         impact: "HIGH",
-        message: $t("app.auth.passkeys.enrollmentError"),
+        message: $t("app.auth.passkeys.enrollment_error"),
         scope: "auth",
       });
     } finally {
@@ -163,7 +163,7 @@
       console.error("[PasskeyEnrollment] Failed to delete passkey:", error);
       pushNotification({
         impact: "HIGH",
-        message: $t("app.auth.passkeys.deleteError"),
+        message: $t("app.auth.passkeys.delete_error"),
         scope: "auth",
       });
     } finally {
@@ -182,7 +182,7 @@
     if (cred.label) return cred.label;
     const aaguidInfo = lookupAaguid(cred.aaguid);
     if (aaguidInfo.name) return aaguidInfo.name;
-    return $t("app.auth.passkeys.unknownPasskey");
+    return $t("app.auth.passkeys.unknown_passkey");
   }
 
   function deviceLine(cred: WebauthnCredentialInfo): string | null {
@@ -220,15 +220,15 @@
             <Fingerprint class="size-20 text-muted-foreground" />
           </div>
           <div class="text-sm font-medium text-muted-foreground">
-            {$t("app.auth.passkeys.notSupported")}
+            {$t("app.auth.passkeys.not_supported")}
           </div>
         </div>
       </div>
     {:else if loading}
       <LoadingWatermark
         icon={Fingerprint}
-        titleKey="app.auth.passkeys.loadingTitle"
-        hintKey="app.auth.passkeys.loadingHint"
+        titleKey="app.auth.passkeys.loading_title"
+        hintKey="app.auth.passkeys.loading_hint"
       />
     {:else if credentials.length === 0}
       <div class="grid min-h-56 place-items-center p-3" data-testid="passkey-enrollment-empty">
@@ -237,10 +237,10 @@
             <Fingerprint class="size-20 text-muted-foreground" />
           </div>
           <div class="text-sm font-medium text-muted-foreground">
-            {$t("app.auth.passkeys.emptyTitle")}
+            {$t("app.auth.passkeys.empty_title")}
           </div>
           <div class="text-xs text-muted-foreground">
-            {$t("app.auth.passkeys.emptyHint")}
+            {$t("app.auth.passkeys.empty_hint")}
           </div>
         </div>
       </div>
@@ -262,13 +262,13 @@
               <div class="flex flex-col min-w-0 gap-0.5">
                 <span class="text-sm font-medium truncate">{displayName(cred)}</span>
                 {#if created}
-                  <span class="text-xs text-muted-foreground">{$t("app.auth.passkeys.enrolledOn", { date: created })}</span>
+                  <span class="text-xs text-muted-foreground">{$t("app.auth.passkeys.enrolled_on", { date: created })}</span>
                 {/if}
                 <span class="text-xs text-muted-foreground">
                   {#if lastUsed}
-                    {$t("app.auth.passkeys.lastUsed", { date: lastUsed })}
+                    {$t("app.auth.passkeys.last_used", { date: lastUsed })}
                   {:else}
-                    {$t("app.auth.passkeys.neverUsed")}
+                    {$t("app.auth.passkeys.never_used")}
                   {/if}
                 </span>
                 {#if cred.transports && cred.transports.length > 0}
@@ -285,7 +285,7 @@
                   {#if device}
                     {device}
                   {:else}
-                    {$t("app.auth.passkeys.unknownDevice")}
+                    {$t("app.auth.passkeys.unknown_device")}
                   {/if}
                 </span>
               </div>

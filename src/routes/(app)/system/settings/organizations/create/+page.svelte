@@ -35,15 +35,15 @@
   const createSchema = z.object({
     display_name: displayNameSchema(z.string()),
     website_url: z.string()
-      .url({ message: 'app.common.validation.invalidUrl' })
+      .url({ message: 'app.common.validation.invalid_url' })
       .max(2048, { message: maxMsg(2048) })
-      .refine(startsAndEndsWithAlphanumeric, { message: 'app.common.validation.invalidFormat' })
+      .refine(startsAndEndsWithAlphanumeric, { message: 'app.common.validation.invalid_format' })
       .or(z.literal(''))
       .default(''),
     idp_owner: z.string()
       .min(1, { message: 'app.common.validation.required' })
       .max(255, { message: maxMsg(255) })
-      .refine(startsAndEndsWithAlphanumeric, { message: 'app.common.validation.invalidFormat' })
+      .refine(startsAndEndsWithAlphanumeric, { message: 'app.common.validation.invalid_format' })
       .default('admin'),
     idp_name: idpNameSchema(z.string()),
   });
@@ -155,7 +155,7 @@
 
   const { handleBeforeUnload, handleCancel } = useUnsavedChangesGuard(
     () => formGuard.hasChanges,
-    'system.settings.organizations.create.unsavedChanges',
+    'system.settings.organizations.create.unsaved_changes',
   );
 
   // Validation function for idp_name availability
@@ -212,12 +212,12 @@
               <FormControl>
                 {#snippet children({ props })}
                   <div class="space-y-2">
-                    <FormLabel for={props.id}>{$t('system.settings.organizations.create.displayName')}</FormLabel>
+                    <FormLabel for={props.id}>{$t('system.settings.organizations.create.display_name')}</FormLabel>
                     <TextInput
                       {...props}
                       bind:value={$form.display_name}
                       onblur={handleDisplayNameBlur}
-                      placeholder={$t('system.settings.organizations.create.displayNamePlaceholder')}
+                      placeholder={$t('system.settings.organizations.create.display_name_placeholder')}
                     />
                     <TranslatedFormFieldErrors />
                   </div>
@@ -229,7 +229,7 @@
               <FormControl>
                 {#snippet children({ props })}
                   <div class="space-y-2">
-                    <FormLabel for={props.id}>{$t('system.settings.organizations.create.websiteUrl')}</FormLabel>
+                    <FormLabel for={props.id}>{$t('system.settings.organizations.create.website_url')}</FormLabel>
                     <TextInput
                       {...props}
                       bind:value={$form.website_url}
@@ -246,25 +246,25 @@
           <div class="space-y-4">
             <div class="space-y-2">
               <label for="idp-code-display" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                {$t('system.settings.organizations.create.idpCode')}
+                {$t('system.settings.organizations.create.idp_code')}
               </label>
               <TextInput
                 id="idp-code-display"
                 value={idpCode}
                 readonly
-                copyTooltipLabel={$t('system.settings.organizations.create.copyIdpCode')}
+                copyTooltipLabel={$t('system.settings.organizations.create.copy_idp_code')}
               />
             </div>
 
             <div class="space-y-2">
               <label for="idp-owner-display" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                {$t('system.settings.organizations.create.idpOwner')}
+                {$t('system.settings.organizations.create.idp_owner')}
               </label>
               <TextInput
                 id="idp-owner-display"
                 value="admin"
                 readonly
-                copyTooltipLabel={$t('system.settings.organizations.create.copyIdpOwner')}
+                copyTooltipLabel={$t('system.settings.organizations.create.copy_idp_owner')}
               />
             </div>
 
@@ -273,7 +273,7 @@
                 {#snippet children({ props })}
                   {@const hasZodError = props['aria-invalid'] === 'true' || props['aria-invalid'] === true}
                   <div class="space-y-2">
-                    <FormLabel for={props.id}>{$t('system.settings.organizations.create.idpName')}</FormLabel>
+                    <FormLabel for={props.id}>{$t('system.settings.organizations.create.idp_name')}</FormLabel>
                     <AsyncValidatedInput
                       {...props}
                       bind:value={$form.idp_name}
@@ -288,7 +288,7 @@
                     <TranslatedFormFieldErrors />
                     {#if hasAsyncError && !hasZodError}
                       <div class="text-destructive text-xs font-medium">
-                        {$t('app.common.validation.nameTaken')}
+                        {$t('app.common.validation.name_taken')}
                       </div>
                     {/if}
                   </div>

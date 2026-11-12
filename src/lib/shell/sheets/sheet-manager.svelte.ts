@@ -19,7 +19,10 @@ export const SHEET_PANEL_IDS = [
   'entity.searchIn',
   'entity.columns',
   'entity.filters',
+  'entity.datetimeIana',
   'entity.versionHistory',
+  'entity.jsonViewer',
+  'entity.record',
   'config.currencySelect',
   'config.protocolSelect',
   'config.phonePrefixSelect',
@@ -29,6 +32,7 @@ export const SHEET_PANEL_IDS = [
   'json.aiChat',
   'config.badgeValueEdit',
   'shell.docs',
+  'i18n.translationEditor',
 ] as const;
 
 export type SheetPanelId = (typeof SHEET_PANEL_IDS)[number];
@@ -41,6 +45,14 @@ export type SheetOpenOptions = {
   keepMountedState?: boolean;
   /** When false, the sheet will not have a modal overlay (defaults true). */
   modal?: boolean;
+  /**
+   * Two-sheet stack (max 2 panes): when a sheet is already open, the
+   * current panel slides to the LEFT slot and the new one takes the
+   * right slot. Used by drill-down chrome (record → version history,
+   * ref-cell drill-through). A stacked `closeSheet` pops the right pane
+   * and the left one slides back — non-stacked opens clear the stack.
+   */
+  stack?: boolean;
 };
 
 export type SheetPanelPropsMap = {
@@ -63,7 +75,15 @@ export type SheetPanelPropsMap = {
     onReorderKeys?: (group: 'sticky' | 'data' | 'auditing', keys: string[]) => void;
     onResetColumnVisibility: () => void;
   };
+  'entity.datetimeIana': {
+    datetimeIanaColumns: import('$lib/entity-list/types').MetaColumn[];
+    modeByKey: Record<string, 'browser' | 'record'>;
+    onToggle: (col: import('$lib/entity-list/types').MetaColumn) => void;
+    disabled?: boolean;
+  };
   'entity.filters': {
+    /** Entity name — FiltersPanel resolves audit-actor options for audited columns. */
+    entity?: string;
     filterableColumns?: import('$lib/entity-list/types').MetaColumn[];
     filterValues?: Record<string, unknown>;
     onFilterValuesChange?: (values: Record<string, unknown>) => void;
@@ -81,6 +101,18 @@ export type SheetPanelPropsMap = {
     entities_ns?: string;
     rowUuid: string;
     columns?: MetaColumn[];
+  };
+  'entity.jsonViewer': {
+    /** The cell's parsed JSON value (null-prototype safe — read-only). */
+    value: unknown;
+  };
+  'entity.record': {
+    /** Target entity API name (from `column.ref.entity`). */
+    entity: string;
+    /** The cell's raw value — the target uid for uuid refs. */
+    value: unknown;
+    /** The column's ref contract — drives business-key resolution. */
+    ref?: import('$lib/entity-list/types').MetaColumn['ref'];
   };
   'config.currencySelect': {
     currentCurrency: string;
@@ -139,6 +171,15 @@ export type SheetPanelPropsMap = {
     builder: ReturnType<typeof import('$lib/config/type-config-builder.svelte').useTypeConfigBuilder>;
   };
   'shell.docs': Record<string, never>;
+  /**
+   * Per-key translation create editor — opened from a `*_key` cell's
+   * languages CTA. Writes queue into pending-translations and flush with
+   * the owning page's save (create-only; existing rows stay read-only).
+   */
+  'i18n.translationEditor': {
+    /** The i18n key being translated (e.g. `custom.entities.customer_type.rows.vip`). */
+    i18n_key: string;
+  };
 };
 
 type AnyPanelProps = SheetPanelPropsMap[SheetPanelId];
@@ -154,11 +195,27 @@ export function shouldSuppressSheetDialogClose(): boolean {
   return suppressDialogCloseFromHost;
 }
 
+/** A sheet pane slot — the right pane is `panelId/props`, the left
+ *  (secondary) is only populated through `stack` opens. */
+export type SheetSlot = {
+  /** Host registry key OR remote `<module>.<name>` decl key. */
+  panelId: string;
+  props: Record<string, unknown> | null;
+  /** Chrome captured at stack time — restored when the pane slides
+   *  back to the right slot. */
+  side: SheetSide;
+  contentClass: string;
+  modal: boolean;
+};
+
 type SheetState = {
   open: boolean;
   /** Host registry key OR remote `<module>.<name>` decl key. */
   panelId: string | null;
   props: Record<string, unknown> | null;
+  /** Left pane of the two-sheet stack — present only after a `stack`
+   *  open while another sheet was showing. */
+  secondary: SheetSlot | null;
   side: SheetSide;
   contentClass: string;
   keepMountedState: boolean;
@@ -170,6 +227,7 @@ export const sheetState = $state<SheetState>({
   open: false,
   panelId: null,
   props: null,
+  secondary: null,
   side: 'right',
   contentClass: 'p-0',
   keepMountedState: false,
@@ -215,6 +273,23 @@ export function openSheet(
     });
     return;
   }
+  // Two-sheet stack: the open panel slides left; the new one takes the
+  // right slot. A non-stacked open always clears the left pane. When a
+  // stack is already open, the ORIGINAL left pane is kept — re-stacking
+  // must not overwrite it (e.g. re-clicking the version badge inside the
+  // record pane would otherwise swap the record for a second copy of
+  // version history and lose the record slot).
+  const currentPanelId = sheetState.panelId;
+  const stacking = Boolean(options?.stack && sheetState.open && currentPanelId);
+  sheetState.secondary = stacking
+    ? (sheetState.secondary ?? {
+        panelId: currentPanelId as string,
+        props: sheetState.props,
+        side: sheetState.side,
+        contentClass: sheetState.contentClass,
+        modal: sheetState.modal
+      })
+    : null;
   // Declared chrome defaults — the caller's options always win.
   const defaults = remoteDecl?.default_options;
   sheetState.panelId = panelId;
@@ -254,6 +329,17 @@ export function replaceSheet(
 }
 
 export function closeSheet() {
+  // Stacked close pops the right pane — the left pane slides back to the
+  // right slot and the sheet stays open.
+  if (sheetState.secondary) {
+    sheetState.panelId = sheetState.secondary.panelId;
+    sheetState.props = sheetState.secondary.props;
+    sheetState.side = sheetState.secondary.side;
+    sheetState.contentClass = sheetState.secondary.contentClass;
+    sheetState.modal = sheetState.secondary.modal;
+    sheetState.secondary = null;
+    return;
+  }
   sheetState.open = false;
   sheetState.expanded = false;
   if (sheetState.keepMountedState) return;

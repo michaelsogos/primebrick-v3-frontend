@@ -13,10 +13,13 @@ export interface UserProfile {
   organization?: string;
   avatar_color?: string | null;
   avatar_initials?: string | null;
+  /** Primebrick admin (role_mappings-derived) — served top-level by GET /me. */
   is_admin?: boolean;
-  is_verified?: boolean;
-  email_verified?: boolean;
-  issuer?: string;
+  /** Casdoor-console admin mirror — display only, never an auth gate. */
+  idp_is_admin?: boolean;
+  idp_is_verified?: boolean;
+  idp_email_verified?: boolean;
+  idp_issuer?: string;
   roles?: string[];
   /** Expanded permission set emitted by `GET /api/v1/auth/me` (may contain `*` wildcards). */
   permissions?: string[];

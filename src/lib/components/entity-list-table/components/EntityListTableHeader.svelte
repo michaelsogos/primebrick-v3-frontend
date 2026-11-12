@@ -1,9 +1,8 @@
 <script lang="ts">
-  import { closeSheet, openSheet, sheetState } from '$lib/shell/sheets/sheet-manager.svelte';
-  import { EntityListToolbar } from '../toolbar';
-
-  import BulkActionsToolbar from './BulkActionsToolbar.svelte';
-  import type { MetaColumn, AdvancedFilter, FilterPreset } from '$lib/entity-list/types';
+  import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
+  import { EntityListToolbar, BulkActionsToolbar } from '../toolbar';
+  import type { MetaColumn, AdvancedFilter, BulkCustomAction, FilterPreset } from '$lib/entity-list/types';
+  import type { ActionChrome } from '../types';
 
   let {
     search,
@@ -21,8 +20,7 @@
     refreshDisabled,
     onRefresh,
     filterableColumns,
-    filtersOpen,
-    onFiltersOpenChange,
+    onToggleFilters,
     stickyColumnsGroup,
     nonAuditingColumns,
     auditingColumnsGroup,
@@ -50,7 +48,14 @@
     onBulkDuplicate,
     onBulkDelete,
     onBulkRestore,
-    bulkCapabilities
+    bulkCapabilities,
+    bulkCustomActions = [],
+    onBulkCustomAction,
+    bulkDeleteChrome,
+    bulkRestoreChrome,
+    selectAll,
+    sort,
+    ianaToggle
   }: EntityListTableHeaderProps = $props();
 
   type EntityListTableHeaderProps = {
@@ -69,8 +74,9 @@
     refreshDisabled: boolean;
     onRefresh: () => void;
     filterableColumns: MetaColumn[];
-    filtersOpen: boolean;
-    onFiltersOpenChange: (open: boolean) => void;
+    /** Funnel CTA handler — toggle semantics owned by the sheet-sync
+     *  composable (open/close + live props; no parallel boolean state). */
+    onToggleFilters: () => void;
     stickyColumnsGroup: MetaColumn[];
     nonAuditingColumns: MetaColumn[];
     auditingColumnsGroup: MetaColumn[];
@@ -99,6 +105,29 @@
     onBulkDelete: () => void;
     onBulkRestore: () => void;
     bulkCapabilities?: { export: boolean; htmlExport: boolean; duplicate: boolean; delete: boolean; restore: boolean };
+    bulkCustomActions?: BulkCustomAction[];
+    onBulkCustomAction?: (action: BulkCustomAction) => void;
+    bulkDeleteChrome?: ActionChrome;
+    bulkRestoreChrome?: ActionChrome;
+    /** Populated only for card/card_list views — the shared lower bar's
+     *  leading zones (select-all | sort builder | IANA CTA). Table view
+     *  passes none (its chrome lives in thead/th). */
+    selectAll?: { checked: boolean; indeterminate: boolean; onToggle: () => void; test_id?: string };
+    sort?: {
+      allColumns: MetaColumn[];
+      sortableColumns: MetaColumn[];
+      sortKey: string | null;
+      sortDir: 'asc' | 'desc';
+      onSortChange: (key: string | null, dir: 'asc' | 'desc') => void;
+      test_id?: string;
+    };
+    ianaToggle?: {
+      columns: MetaColumn[];
+      modeByKey: Record<string, 'browser' | 'record'>;
+      onToggle: (col: MetaColumn) => void;
+      disabled?: boolean;
+      test_id?: string;
+    };
   };
 </script>
 
@@ -118,34 +147,7 @@
   refreshDisabled={refreshDisabled}
   onRefresh={onRefresh}
   filterableColumns={filterableColumns}
-  filtersOpen={filtersOpen}
-  onFiltersOpenChange={(open) => {
-    if (open) {
-      if (sheetState.open && sheetState.panelId === 'entity.filters') {
-        closeSheet();
-        onFiltersOpenChange(false);
-        return;
-      }
-      onFiltersOpenChange(true);
-      openSheet(
-        'entity.filters',
-        {
-          filterableColumns,
-          filterValues: filterValues ?? {},
-          onFilterValuesChange,
-          onResetFilters,
-          advancedFilters: advancedFilters ?? [],
-          onAdvancedFiltersChange
-        },
-        {
-          modal: false
-        }
-      );
-    } else {
-      closeSheet();
-      onFiltersOpenChange(false);
-    }
-  }}
+  onToggleFilters={onToggleFilters}
   onColumnSelectorClick={() =>
     openSheet(
       'entity.columns',
@@ -184,4 +186,11 @@
   onBulkDelete={onBulkDelete}
   onBulkRestore={onBulkRestore}
   bulkCapabilities={bulkCapabilities}
+  bulkCustomActions={bulkCustomActions}
+  onBulkCustomAction={onBulkCustomAction}
+  bulkDeleteChrome={bulkDeleteChrome}
+  bulkRestoreChrome={bulkRestoreChrome}
+  selectAll={selectAll}
+  sort={sort}
+  ianaToggle={ianaToggle}
 />

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
   import { JsonCodeBlock, JsonEditor } from '@primebrick/ui';
-  import { AiIcon } from '$lib/components/ui/ai-icon';
+  import { AiIcon } from '@primebrick/ui';
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import { Pencil } from '@primebrick/ui/vendor/lucide';
   import { Eye } from '@primebrick/ui/vendor/lucide';
@@ -12,9 +12,12 @@
   let {
     type,
     builder,
+    pending_owner,
   }: {
     type: ConfigEntryType;
     builder: ReturnType<typeof useTypeConfigBuilder>;
+    /** Pending-translation queue owner forwarded to the AI chat sheet. */
+    pending_owner: string;
   } = $props();
 
   let previewOpen = $state(true);
@@ -56,6 +59,7 @@
       config_type: type,
       config_key: () => builder.state.configKey,
       current_json: () => builder.json,
+      pending_owner,
       on_apply_json: (json: string) => {
         builder.setRawJson(json);
         // Keep the raw editor in sync when advanced mode is visible.
@@ -86,14 +90,14 @@
       onclick={() => (previewOpen = !previewOpen)}
       data-testid="tcb-preview-toggle"
     >
-      {previewOpen ? '▼' : '▶'} {$t('system.settings.config.typeConfig.jsonPreview')}
+      {previewOpen ? '▼' : '▶'} {$t('system.settings.config.type_config.json_preview')}
     </button>
     <div class="flex items-center gap-2">
       <button
         type="button"
         class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
         onclick={() => setAdvanced(!builder.state.advancedMode)}
-        title={$t('system.settings.config.typeConfig.advancedMode')}
+        title={$t('system.settings.config.type_config.advanced_mode')}
         data-testid="tcb-advanced"
       >
         {#if builder.state.advancedMode}
@@ -108,8 +112,8 @@
         type="button"
         class="inline-flex items-center justify-center rounded-md p-1 text-muted-foreground hover:bg-accent transition-colors"
         onclick={openAiAssistant}
-        title={$t('app.smart.json.ai.brainCta')}
-        aria-label={$t('app.smart.json.ai.brainCta')}
+        title={$t('app.smart.json.ai.brain_cta')}
+        aria-label={$t('app.smart.json.ai.brain_cta')}
         data-testid="tcb-ai-assistant-cta"
       >
         <AiIcon size={16} />

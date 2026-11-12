@@ -8,7 +8,7 @@ if (!building) {
 	try {
 		// Verify PUBLIC_API_ORIGIN is a valid URL
 		new URL(PUBLIC_API_ORIGIN);
-	} catch (e) {
+	} catch {
 		const errorMessage = `
 ========================================================================
 🚨 CRITICAL CONFIGURATION ERROR

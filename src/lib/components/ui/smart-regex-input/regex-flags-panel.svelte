@@ -50,7 +50,7 @@
       bind:checked={flagG}
       onCheckedChange={handleToggle}
       label={$t('app.smart.regex.flags.global')}
-      tooltip={$t('app.smart.regex.flags.globalHelp')}
+      tooltip={$t('app.smart.regex.flags.global_help')}
       tooltipPriority="INFORMATION"
       data-testid="smart-regex-flag-g"
     />
@@ -59,8 +59,8 @@
     <SwitchField
       bind:checked={flagI}
       onCheckedChange={handleToggle}
-      label={$t('app.smart.regex.flags.ignoreCase')}
-      tooltip={$t('app.smart.regex.flags.ignoreCaseHelp')}
+      label={$t('app.smart.regex.flags.ignore_case')}
+      tooltip={$t('app.smart.regex.flags.ignore_case_help')}
       tooltipPriority="INFORMATION"
       data-testid="smart-regex-flag-i"
     />
@@ -71,7 +71,7 @@
         bind:checked={flagM}
         onCheckedChange={handleToggle}
         label={$t('app.smart.regex.flags.multiline')}
-        tooltip={$t('app.smart.regex.flags.multilineHelp')}
+        tooltip={$t('app.smart.regex.flags.multiline_help')}
         tooltipPriority="INFORMATION"
         data-testid="smart-regex-flag-m"
       />
