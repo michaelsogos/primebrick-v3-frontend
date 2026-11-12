@@ -33,7 +33,7 @@
   import { createClickHandlers } from './handlers/click-handlers';
   import type { MetaColumn } from '$lib/entity-list/types';
   import { isColumnFilterable, isColumnSearchable, isColumnSortable } from '$lib/entity-list/types';
-  import { setAuditColumnsContext, setEntitiesNsContext, setMetaUidContext } from './context';
+  import { setAuditColumnsContext, setEntitiesNsContext, setMetaUidContext, setTableEntityContext } from './context';
   import { setEntitiesNsContext as uiSetEntitiesNsContext } from '@primebrick/ui';
   import { claimDocsContext } from '$lib/shell/docs/docs-context.svelte';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
@@ -134,6 +134,17 @@
   // by it.
   $effect(() => {
     setMetaUidContext(uid);
+  });
+
+  // Table-entity context — the `version` cell's version-history badge
+  // opens the stacked sheet with the same payload row actions build.
+  $effect(() => {
+    setTableEntityContext({
+      entity,
+      translationKey: effectiveTranslationKey,
+      uid,
+      columns: allColumns,
+    });
   });
 
   // Docs context: every entity list claims it so the docs panel resolves the
