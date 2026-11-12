@@ -221,11 +221,6 @@ type SheetState = {
   keepMountedState: boolean;
   modal: boolean;
   expanded: boolean;
-  /** Transient choreography flag for the slide transition — set on every
-   *  state mutation that swaps the right pane: 'push' when a stack open
-   *  slides the old pane left, 'pop' when a close slides it back, null
-   *  for plain opens/closes (no animation). */
-  stackAnim: 'push' | 'pop' | null;
 };
 
 export const sheetState = $state<SheetState>({
@@ -237,8 +232,7 @@ export const sheetState = $state<SheetState>({
   contentClass: 'p-0',
   keepMountedState: false,
   modal: true,
-  expanded: false,
-  stackAnim: null
+  expanded: false
 });
 
 /**
@@ -287,7 +281,6 @@ export function openSheet(
   // version history and lose the record slot).
   const currentPanelId = sheetState.panelId;
   const stacking = Boolean(options?.stack && sheetState.open && currentPanelId);
-  sheetState.stackAnim = stacking ? 'push' : null;
   sheetState.secondary = stacking
     ? (sheetState.secondary ?? {
         panelId: currentPanelId as string,
@@ -339,7 +332,6 @@ export function closeSheet() {
   // Stacked close pops the right pane — the left pane slides back to the
   // right slot and the sheet stays open.
   if (sheetState.secondary) {
-    sheetState.stackAnim = 'pop';
     sheetState.panelId = sheetState.secondary.panelId;
     sheetState.props = sheetState.secondary.props;
     sheetState.side = sheetState.secondary.side;
@@ -348,7 +340,6 @@ export function closeSheet() {
     sheetState.secondary = null;
     return;
   }
-  sheetState.stackAnim = null;
   sheetState.open = false;
   sheetState.expanded = false;
   if (sheetState.keepMountedState) return;

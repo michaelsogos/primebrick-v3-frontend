@@ -32,8 +32,6 @@
   import BadgeValuePanel from '$lib/shell/sheets/panels/BadgeValuePanel.svelte';
   import DocsPanel from '$lib/shell/sheets/panels/DocsPanel.svelte';
   import TranslationEditorPanel from '$lib/shell/sheets/panels/TranslationEditorPanel.svelte';
-  import { cubicOut } from 'svelte/easing';
-
   /**
    * Heterogeneous panel registry — each panel declares its own props contract,
    * so a static `Component<Props>` union cannot type the dispatch. The
@@ -89,40 +87,41 @@
   const secondaryProps = $derived((sheetState.secondary?.props ?? {}) as Record<string, unknown>);
 
   /**
-   * Stack slide — pure translateX choreography, never a resize: panes are
-   * fixed-width halves of the (instantly widened) container, and only the
-   * transform animates.
+   * Stack choreography — a single driver, zero per-pane animations.
    *
-   *   PUSH  (secondary mounts): the record pane is born at +384px — its old
-   *         position — and slides LEFT into the left half, while the new
-   *         panel slides in from +384px (offscreen right). Both move the
-   *         same direction = "history pushes the record left".
-   *   POP   (secondary unmounts): instant — the primary swap carries the
-   *         motion: history slides out to +384px (offscreen right) while
-   *         the record slides back in from -384px (the left slot it came
-   *         from). Both move right = reverse push.
+   * The sheet is right-anchored, so a `max-width` transition grows the
+   * container toward the LEFT. The record pane sits at the container's
+   * left edge and simply rides it — it never animates, it just moves in
+   * tandem with the widening space. The new pane fills the right slot,
+   * which emerges from the screen's right edge as the container widens —
+   * visually identical to the standard `slide-in-from-right` (same
+   * duration-500 / ease-in-out as the normal sheet open).
    *
-   *   `dir:0` skips the animation (the outgoing record on push — the
-   *   secondary ghost already covers that move).
+   * POP is the mirror: keep both panes mounted while the container
+   * shrinks for 300ms (standard close duration) — the record rides the
+   * left edge back into the solo slot, the top pane's slot carries it
+   * off-screen to the right (a free slide-out). Only then does the state
+   * swap: the record becomes the primary pane at the exact screen
+   * position the shrink just delivered it to.
    */
-  const PANE_W = 384;
-  function paneSlide(
-    _node: HTMLElement,
-    { dir, duration = 300, abs = false }: { dir: number; duration?: number; abs?: boolean }
-  ) {
-    return {
-      duration: dir === 0 ? 0 : duration,
-      easing: cubicOut,
-      css: (t: number) =>
-        `${abs ? 'position:absolute;inset:0;' : ''}transform:translateX(${(1 - t) * dir}px);`
-    };
-  }
+  let popping = $state(false);
 
-  /** LIFO stack discipline: every close request pops the TOP pane first —
-   *  the left (secondary) pane can never outlive the right one. A close
-   *  affordance rendered inside the left pane also unwinds the top sheet;
-   *  the record only becomes closable once it is alone on the stack. */
+  /** LIFO stack discipline: every close request unwinds the TOP pane
+   *  first. While stacked the close plays the shrink animation for the
+   *  standard close duration, then mutates — the record lands exactly
+   *  where the solo pane should be. */
   function routeDialogClose() {
+    if (popping) return;
+    if (sheetState.secondary && !sheetState.expanded) {
+      popping = true;
+      const slot = sheetState.secondary;
+      setTimeout(() => {
+        popping = false;
+        // A re-stack during the pop abandons the deferred close.
+        if (sheetState.secondary === slot) closeSheet();
+      }, 300);
+      return;
+    }
     closeSheet();
   }
 
@@ -150,9 +149,9 @@
 </script>
 
 <Sheet.Root bind:open={sheetState.open} onOpenChange={onSheetOpenChange}>
-  <Sheet.Content showClose={false} side={sheetState.side} class={cn(sheetState.contentClass, sheetState.secondary && "sm:max-w-3xl", sheetState.expanded && "w-1/2 sm:max-w-none", "shadow-[4px_0_24px_-4px_rgba(0,0,0,0.3)]")} modal={sheetState.modal} onEscapeKeydown={(e) => {
+  <Sheet.Content showClose={false} side={sheetState.side} class={cn(sheetState.contentClass, sheetState.secondary && !popping && "sm:max-w-3xl", sheetState.expanded && "w-1/2 sm:max-w-none", "transition-[max-width] ease-in-out", popping ? "duration-300" : "duration-500", "shadow-[4px_0_24px_-4px_rgba(0,0,0,0.3)]")} modal={sheetState.modal} onEscapeKeydown={(e) => {
     // Stacked: Escape pops ONE pane — veto the internal close so the
-    // left pane slides back in place (pushPane outro).
+    // container shrink plays out first.
     if (!sheetState.secondary) return;
     e.preventDefault();
     routeDialogClose();
@@ -165,9 +164,10 @@
   }}>
     <div class="flex h-full min-h-0 overflow-hidden">
       {#if sheetState.secondary && !sheetState.expanded}
+        <!-- No animation of its own: the pane rides the container's left
+             edge as it widens/shrinks. -->
         <div
-          in:paneSlide={{ dir: PANE_W }}
-          class="h-full w-1/2 min-w-0 shrink-0 border-r border-border"
+          class="h-full w-96 shrink-0 border-r border-border"
           data-testid="sheet-secondary-pane"
         >
           {#if SecondaryPanel}
@@ -177,13 +177,9 @@
           {/if}
         </div>
       {/if}
-      <div class="relative h-full min-w-0 flex-1" data-testid="sheet-primary-pane">
+      <div class={cn("relative h-full", sheetState.secondary && !sheetState.expanded ? "w-96 shrink-0" : "min-w-0 flex-1")} data-testid="sheet-primary-pane">
         {#key sheetState.panelId}
-          <div
-            in:paneSlide={{ dir: sheetState.stackAnim === 'push' ? PANE_W : sheetState.stackAnim === 'pop' ? -PANE_W : 0, abs: true }}
-            out:paneSlide={{ dir: sheetState.stackAnim === 'pop' ? PANE_W : 0, abs: true }}
-            class="h-full"
-          >
+          <div class="h-full">
             {#if Panel}
               <Panel {...panelProps} modal={sheetState.modal} />
             {:else if remoteDecl}
