@@ -380,6 +380,25 @@
     {#if record && (versionValue !== undefined && versionValue !== null || editing)}
       <SheetPanelFooter>
         {#snippet start()}
+          {#if versionValue !== undefined && versionValue !== null}
+            <!-- Version badge doubles as the drill affordance into
+                 `entity.versionHistory` — canonical LEFT anatomy, same as
+                 FormPageLayout / ConfigListRow / VersionHistoryPanel. -->
+            <button
+              type="button"
+              onclick={openVersionHistory}
+              class="inline-flex"
+              title={$t('system.entities.version_history.title')}
+              data-testid="entity-record-sheet-version-badge"
+            >
+              <Badge
+                variant="outline"
+                class="text-xs font-semibold border border-primary cursor-pointer hover:bg-primary/10"
+              >
+                v{versionValue}
+              </Badge>
+            </button>
+          {/if}
           <!-- Lifecycle badge — destructive for soft-deleted records,
                emerald success-chip anatomy for suspended ones. -->
           {#if isDeleted}
@@ -396,27 +415,6 @@
             </Badge>
           {/if}
         {/snippet}
-        {#if versionValue !== undefined && versionValue !== null}
-          <!-- Version doubles as the drill affordance into
-               `entity.versionHistory` — an interactive control, so the
-               SheetPanelFooter contract seats it in the right-aligned CTA
-               group. Same button+outline/primary shape as FormPageLayout /
-               ConfigListRow / VersionHistoryPanel. -->
-          <button
-            type="button"
-            onclick={openVersionHistory}
-            class="inline-flex"
-            title={$t('system.entities.version_history.title')}
-            data-testid="entity-record-sheet-version-badge"
-          >
-            <Badge
-              variant="outline"
-              class="border border-primary cursor-pointer hover:bg-primary/10"
-            >
-              v{versionValue}
-            </Badge>
-          </button>
-        {/if}
         {#if editing}
           <Button
             variant="outline"
