@@ -221,6 +221,11 @@ type SheetState = {
   keepMountedState: boolean;
   modal: boolean;
   expanded: boolean;
+  /** Transient choreography flag for the slide transition — set on every
+   *  state mutation that swaps the right pane: 'push' when a stack open
+   *  slides the old pane left, 'pop' when a close slides it back, null
+   *  for plain opens/closes (no animation). */
+  stackAnim: 'push' | 'pop' | null;
 };
 
 export const sheetState = $state<SheetState>({
@@ -232,7 +237,8 @@ export const sheetState = $state<SheetState>({
   contentClass: 'p-0',
   keepMountedState: false,
   modal: true,
-  expanded: false
+  expanded: false,
+  stackAnim: null
 });
 
 /**
@@ -279,16 +285,18 @@ export function openSheet(
   // must not overwrite it (e.g. re-clicking the version badge inside the
   // record pane would otherwise swap the record for a second copy of
   // version history and lose the record slot).
-  sheetState.secondary =
-    options?.stack && sheetState.open && sheetState.panelId
-      ? (sheetState.secondary ?? {
-          panelId: sheetState.panelId,
-          props: sheetState.props,
-          side: sheetState.side,
-          contentClass: sheetState.contentClass,
-          modal: sheetState.modal
-        })
-      : null;
+  const currentPanelId = sheetState.panelId;
+  const stacking = Boolean(options?.stack && sheetState.open && currentPanelId);
+  sheetState.stackAnim = stacking ? 'push' : null;
+  sheetState.secondary = stacking
+    ? (sheetState.secondary ?? {
+        panelId: currentPanelId as string,
+        props: sheetState.props,
+        side: sheetState.side,
+        contentClass: sheetState.contentClass,
+        modal: sheetState.modal
+      })
+    : null;
   // Declared chrome defaults — the caller's options always win.
   const defaults = remoteDecl?.default_options;
   sheetState.panelId = panelId;
@@ -331,6 +339,7 @@ export function closeSheet() {
   // Stacked close pops the right pane — the left pane slides back to the
   // right slot and the sheet stays open.
   if (sheetState.secondary) {
+    sheetState.stackAnim = 'pop';
     sheetState.panelId = sheetState.secondary.panelId;
     sheetState.props = sheetState.secondary.props;
     sheetState.side = sheetState.secondary.side;
@@ -339,6 +348,7 @@ export function closeSheet() {
     sheetState.secondary = null;
     return;
   }
+  sheetState.stackAnim = null;
   sheetState.open = false;
   sheetState.expanded = false;
   if (sheetState.keepMountedState) return;

@@ -89,14 +89,32 @@
   const secondaryProps = $derived((sheetState.secondary?.props ?? {}) as Record<string, unknown>);
 
   /**
-   * Stack push transition — the left (secondary) pane grows 0→flex-1
-   * while the right pane's `flex-1` reflows in parallel: the new panel
-   * pushes the previous one left. Outro runs free on pop-back. */
-  function pushPane(_node: HTMLElement, { duration = 320 }: { duration?: number } = {}) {
+   * Stack slide — pure translateX choreography, never a resize: panes are
+   * fixed-width halves of the (instantly widened) container, and only the
+   * transform animates.
+   *
+   *   PUSH  (secondary mounts): the record pane is born at +384px — its old
+   *         position — and slides LEFT into the left half, while the new
+   *         panel slides in from +384px (offscreen right). Both move the
+   *         same direction = "history pushes the record left".
+   *   POP   (secondary unmounts): instant — the primary swap carries the
+   *         motion: history slides out to +384px (offscreen right) while
+   *         the record slides back in from -384px (the left slot it came
+   *         from). Both move right = reverse push.
+   *
+   *   `dir:0` skips the animation (the outgoing record on push — the
+   *   secondary ghost already covers that move).
+   */
+  const PANE_W = 384;
+  function paneSlide(
+    _node: HTMLElement,
+    { dir, duration = 300, abs = false }: { dir: number; duration?: number; abs?: boolean }
+  ) {
     return {
-      duration,
+      duration: dir === 0 ? 0 : duration,
       easing: cubicOut,
-      css: (t: number) => `flex-grow:${t};opacity:${Math.min(1, t * 2)};overflow:hidden;`
+      css: (t: number) =>
+        `${abs ? 'position:absolute;inset:0;' : ''}transform:translateX(${(1 - t) * dir}px);`
     };
   }
 
@@ -132,7 +150,7 @@
 </script>
 
 <Sheet.Root bind:open={sheetState.open} onOpenChange={onSheetOpenChange}>
-  <Sheet.Content showClose={false} side={sheetState.side} class={cn(sheetState.contentClass, sheetState.secondary && "sm:max-w-3xl", sheetState.expanded && "w-1/2 sm:max-w-none", "shadow-[4px_0_24px_-4px_rgba(0,0,0,0.3)] transition-[max-width] duration-300 ease-out")} modal={sheetState.modal} onEscapeKeydown={(e) => {
+  <Sheet.Content showClose={false} side={sheetState.side} class={cn(sheetState.contentClass, sheetState.secondary && "sm:max-w-3xl", sheetState.expanded && "w-1/2 sm:max-w-none", "shadow-[4px_0_24px_-4px_rgba(0,0,0,0.3)]")} modal={sheetState.modal} onEscapeKeydown={(e) => {
     // Stacked: Escape pops ONE pane — veto the internal close so the
     // left pane slides back in place (pushPane outro).
     if (!sheetState.secondary) return;
@@ -145,11 +163,11 @@
     e.preventDefault();
     routeDialogClose();
   }}>
-    <div class="flex h-full min-h-0">
+    <div class="flex h-full min-h-0 overflow-hidden">
       {#if sheetState.secondary && !sheetState.expanded}
         <div
-          transition:pushPane
-          class="h-full min-w-0 flex-1 border-r border-border"
+          in:paneSlide={{ dir: PANE_W }}
+          class="h-full w-1/2 min-w-0 shrink-0 border-r border-border"
           data-testid="sheet-secondary-pane"
         >
           {#if SecondaryPanel}
@@ -159,12 +177,20 @@
           {/if}
         </div>
       {/if}
-      <div class="h-full min-w-0 flex-1" data-testid="sheet-primary-pane">
-        {#if Panel}
-          <Panel {...panelProps} modal={sheetState.modal} />
-        {:else if remoteDecl}
-          <RemoteSheetMount decl={remoteDecl} props={panelProps} />
-        {/if}
+      <div class="relative h-full min-w-0 flex-1" data-testid="sheet-primary-pane">
+        {#key sheetState.panelId}
+          <div
+            in:paneSlide={{ dir: sheetState.stackAnim === 'push' ? PANE_W : sheetState.stackAnim === 'pop' ? -PANE_W : 0, abs: true }}
+            out:paneSlide={{ dir: sheetState.stackAnim === 'pop' ? PANE_W : 0, abs: true }}
+            class="h-full"
+          >
+            {#if Panel}
+              <Panel {...panelProps} modal={sheetState.modal} />
+            {:else if remoteDecl}
+              <RemoteSheetMount decl={remoteDecl} props={panelProps} />
+            {/if}
+          </div>
+        {/key}
       </div>
     </div>
   </Sheet.Content>
