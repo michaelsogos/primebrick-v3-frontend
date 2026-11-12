@@ -20,6 +20,11 @@
   runtime wiring, or behavior. Never report "verified" on type check
   alone; empirical verification means running the thing and looking at
   the output.
+- **The working plan is updated BEFORE every commit.** Whatever plan or
+  tracking file drives the work (`ai-plans/*.md` in the workspace, a
+  repo-local plan) reflects what was just done — items completed,
+  decisions taken, anomalies found — so the commit and the plan never
+  drift.
 - If the dev stack is required for verification and it is not running,
   start it (or ask the user) — never downgrade "verified" to
   "type-checked" silently.
