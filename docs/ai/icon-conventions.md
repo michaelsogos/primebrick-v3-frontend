@@ -52,6 +52,12 @@
    record-sheet uid badge carry the `file-key` glyph (amber accent where a
    color is declared). `fingerprint`/`fingerprint-pattern` belong to the
    passkey/WebAuthn domain only and are banned on entity-uuid surfaces.
+12. **Record surfaces use the SINGULAR icon variant** — a record sheet
+   shows ONE row, so the authored list icon maps through the canonical
+   pair table (`users`→`user`, `users-round`→`user-round` in
+   `EntityRecordSheet.svelte` `RECORD_ICON_VARIANTS`). Icons without a
+   declared pair render unchanged; extend the map when a new plural glyph
+   is authored, never guess variants.
 
 ## Deep dive
 

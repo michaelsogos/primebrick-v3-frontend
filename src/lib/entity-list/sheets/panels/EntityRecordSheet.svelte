@@ -89,6 +89,14 @@
     meta ? isEntityOpAllowed(meta.actions, 'update.single') : false,
   );
 
+  /** Record surfaces show ONE row — the authored list icon is mapped to
+   *  its canonical singular variant when a pair exists (`users`→`user`).
+   *  Icons without a record variant render the authored glyph unchanged. */
+  const RECORD_ICON_VARIANTS: Record<string, string> = {
+    users: 'user',
+    'users-round': 'user-round',
+  };
+
   /** Entity icon — ONE authored source: the nav leaf pointing at the
    *  entity's censused list route; the route's own declared `icon` when no
    *  leaf carries one. `null` for uncensused entities → no icon renders
@@ -98,15 +106,18 @@
       (r) => r.entity === entity && (r.kind === 'list' || r.kind === 'dict'),
     );
     if (!listRoute) return null;
+    let icon: string | null = null;
     for (const m of shellNav.modules) {
       const stack = [...(m.nav ?? [])];
       while (stack.length) {
         const leaf = stack.pop()!;
-        if (leaf.href === listRoute.route && leaf.icon) return leaf.icon;
+        if (leaf.href === listRoute.route && leaf.icon) { icon = leaf.icon; break; }
         if (leaf.children) stack.push(...leaf.children);
       }
+      if (icon) break;
     }
-    return listRoute.icon ?? null;
+    icon ??= listRoute.icon ?? null;
+    return icon ? (RECORD_ICON_VARIANTS[icon] ?? icon) : null;
   });
 
   const columnsMap = $derived.by<ReadonlyMap<string, MetaColumn>>(() => {

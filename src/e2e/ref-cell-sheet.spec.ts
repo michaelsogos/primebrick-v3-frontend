@@ -397,12 +397,11 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
     await expect(sheet).toBeVisible({ timeout: 15000 });
     await expect(sheet).not.toContainText("Record not found", { timeout: 15000 });
 
-    // user_profile's list route leaf declares icon "users" — the sheet
-    // must render THAT, never the generic fallback.
-    // user_profile's list route leaf declares icon "users" — the sheet
-    // must render THAT, never the generic fallback.
+    // user_profile's list route leaf declares icon "users" — the record
+    // sheet shows ONE row, so the canonical singular variant "user" must
+    // render (never the generic fallback, never the plural list glyph).
     const host = page.getByRole("dialog");
-    await expect(host.locator("[data-icon-name='users']")).toBeVisible();
+    await expect(host.locator("[data-icon-name='user']")).toBeVisible();
     await expect(host.locator("[data-icon-name='id-card']")).toHaveCount(0);
   });
 
