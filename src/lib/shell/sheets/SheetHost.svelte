@@ -33,6 +33,7 @@
   import BadgeValuePanel from '$lib/shell/sheets/panels/BadgeValuePanel.svelte';
   import DocsPanel from '$lib/shell/sheets/panels/DocsPanel.svelte';
   import TranslationEditorPanel from '$lib/shell/sheets/panels/TranslationEditorPanel.svelte';
+  import { cubicOut } from 'svelte/easing';
 
   /**
    * Heterogeneous panel registry — each panel declares its own props contract,
@@ -88,6 +89,18 @@
   );
   const secondaryProps = $derived((sheetState.secondary?.props ?? {}) as Record<string, unknown>);
 
+  /**
+   * Stack push transition — the left (secondary) pane grows 0→flex-1
+   * while the right pane's `flex-1` reflows in parallel: the new panel
+   * pushes the previous one left. Outro runs free on pop-back. */
+  function pushPane(_node: HTMLElement, { duration = 320 }: { duration?: number } = {}) {
+    return {
+      duration,
+      easing: cubicOut,
+      css: (t: number) => `flex-grow:${t};opacity:${Math.min(1, t * 2)};overflow:hidden;`
+    };
+  }
+
   /** Which pane the last pointer interaction happened in — set on
    *  pointerdown capture (fires before the pane's Sheet.Close click and
    *  before the dialog close request), consumed by onSheetOpenChange.
@@ -115,14 +128,28 @@
 </script>
 
 <Sheet.Root open={sheetState.open} onOpenChange={onSheetOpenChange}>
-  <Sheet.Content showClose={false} side={sheetState.side} class={cn(sheetState.contentClass, sheetState.secondary && "sm:max-w-3xl", sheetState.expanded && "w-1/2 sm:max-w-none", "shadow-[4px_0_24px_-4px_rgba(0,0,0,0.3)]")} modal={sheetState.modal}>
-    {#if sheetState.secondary && !sheetState.expanded}
-      <!-- svelte-ignore a11y_no_static_element_interactions — pointerdown
-           capture only records WHICH pane was last touched so the dialog
-           close can route to it; it is not itself an interaction. -->
-      <div class="flex h-full min-h-0" onpointerdowncapture={() => (closeTargetSecondary = false)}>
+  <Sheet.Content showClose={false} side={sheetState.side} class={cn(sheetState.contentClass, sheetState.secondary && "sm:max-w-3xl", sheetState.expanded && "w-1/2 sm:max-w-none", "shadow-[4px_0_24px_-4px_rgba(0,0,0,0.3)] transition-[max-width] duration-300 ease-out")} modal={sheetState.modal} onEscapeKeydown={(e) => {
+    // Stacked: Escape pops the RIGHT pane instead of closing the whole
+    // sheet — the left pane slides back in place (pushPane outro). The
+    // veto is required because the dialog's internal close unmounts the
+    // content even though `sheetState.open` stays true.
+    if (!sheetState.secondary) return;
+    e.preventDefault();
+    if (closeTargetSecondary) {
+      closeTargetSecondary = false;
+      closeSecondarySheet();
+    } else {
+      closeSheet();
+    }
+  }}>
+    <!-- svelte-ignore a11y_no_static_element_interactions — pointerdown
+         capture only records WHICH pane was last touched so the dialog
+         close can route to it; it is not itself an interaction. -->
+    <div class="flex h-full min-h-0" onpointerdowncapture={() => (closeTargetSecondary = false)}>
+      {#if sheetState.secondary && !sheetState.expanded}
         <div
-          class="min-w-0 flex-1 border-r border-border"
+          transition:pushPane
+          class="h-full min-w-0 flex-1 border-r border-border"
           onpointerdowncapture={() => (closeTargetSecondary = true)}
           data-testid="sheet-secondary-pane"
         >
@@ -132,19 +159,15 @@
             <RemoteSheetMount decl={secondaryRemoteDecl} props={secondaryProps} />
           {/if}
         </div>
-        <div class="min-w-0 flex-1" data-testid="sheet-primary-pane">
-          {#if Panel}
-            <Panel {...panelProps} modal={sheetState.modal} />
-          {:else if remoteDecl}
-            <RemoteSheetMount decl={remoteDecl} props={panelProps} />
-          {/if}
-        </div>
+      {/if}
+      <div class="h-full min-w-0 flex-1" data-testid="sheet-primary-pane">
+        {#if Panel}
+          <Panel {...panelProps} modal={sheetState.modal} />
+        {:else if remoteDecl}
+          <RemoteSheetMount decl={remoteDecl} props={panelProps} />
+        {/if}
       </div>
-    {:else if Panel}
-      <Panel {...panelProps} modal={sheetState.modal} />
-    {:else if remoteDecl}
-      <RemoteSheetMount decl={remoteDecl} props={panelProps} />
-    {/if}
+    </div>
   </Sheet.Content>
 </Sheet.Root>
 
