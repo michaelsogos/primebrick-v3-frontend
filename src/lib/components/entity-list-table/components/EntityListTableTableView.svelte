@@ -14,7 +14,7 @@
   import type { useRowRangeSelection } from '../composables/useRowRangeSelection.svelte';
 
   let {
-    tableRef,
+    tableRef = $bindable(),
     tableDensityClass,
     rowSelectionEnabled,
     stickyColumnsState,

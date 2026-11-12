@@ -785,7 +785,7 @@
     onEditRow={handleEditRow}
     rowActionsComposable={rowActionsComposable}
     onPreviewRow={handlePreviewRow}
-    tableRef={tableRef}
+    bind:tableRef
     tableDensityClass={tableDensityClass}
     stickyColumnsState={stickyColumnsState}
     rowChromeH={rowChromeH}

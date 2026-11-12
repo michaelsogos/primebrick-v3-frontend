@@ -54,7 +54,7 @@
     onEditRow,
     rowActionsComposable,
     onPreviewRow,
-    tableRef,
+    tableRef = $bindable(),
     tableDensityClass,
     stickyColumnsState,
     rowChromeH,
@@ -195,7 +195,7 @@
     />
     {#if viewMode === 'table'}
       <EntityListTableTableView
-        tableRef={tableRef}
+        bind:tableRef
         tableDensityClass={tableDensityClass}
         rowSelectionEnabled={rowSelectionEnabled}
         stickyColumnsState={stickyColumnsState}

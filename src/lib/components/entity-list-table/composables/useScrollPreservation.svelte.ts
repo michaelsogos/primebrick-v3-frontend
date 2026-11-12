@@ -51,7 +51,8 @@ export function useScrollPreservation(options: {
   /** Continuous persistence — a reload can happen at any scroll position,
    *  not just across a loading transition. rAF-throttled writes. */
   $effect(() => {
-    const host = tableScrollHost(options.tableRef());
+    const table = options.tableRef();
+    const host = tableScrollHost(table);
     if (!host || typeof window === 'undefined') return;
     let raf = 0;
     const onScroll = () => {
@@ -62,10 +63,26 @@ export function useScrollPreservation(options: {
     // Fresh page load: DOM starts at 0 while sessionStorage kept the
     // position — restore as soon as the host attaches.
     const stored = readStoredScrollLeft();
-    if (stored > 0 && host.scrollLeft === 0) restoreScroll(host, stored);
+    let restored = stored <= 0;
+    const tryRestore = () => {
+      if (restored || host.scrollWidth <= host.clientWidth) return;
+      host.scrollLeft = stored;
+      // Keep retrying while clamped below the stored position — the
+      // table's scrollWidth still grows as columns/cells lay out. Once
+      // no more resizes fire, the clamped max is the honest position.
+      if (host.scrollLeft >= stored) restored = true;
+    };
+    tryRestore();
+    // The table mounts EMPTY (no overflow) before rows render — the
+    // one-shot restore is clamped to 0. Retry on every content-width
+    // growth until the position sticks.
+    const ro = new ResizeObserver(tryRestore);
+    if (table) ro.observe(table);
+    ro.observe(host);
     return () => {
       host.removeEventListener('scroll', onScroll);
       cancelAnimationFrame(raf);
+      ro.disconnect();
     };
   });
 
