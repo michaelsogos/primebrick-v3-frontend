@@ -114,7 +114,7 @@
         type="button"
         onclick={handleCopy}
         tabindex={-1}
-        class={cn(inputTrailingIconButtonClasses, "text-foreground")}
+        class={inputTrailingIconButtonClasses}
         aria-label={$t('app.common.copy')}
         title={$t('app.common.copy')}
         data-testid="email-input-copy"
