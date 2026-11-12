@@ -33,7 +33,7 @@
   import { useCensusSubjectOptions } from '$lib/entity-form/use-census-subject-options.svelte';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
   import { t } from '$lib/i18n';
-  import { Badge, Separator, Label, DynamicIcon, colorCssFromToken } from '@primebrick/ui';
+  import { Accordion, Badge, Label, DynamicIcon, colorCssFromToken } from '@primebrick/ui';
   import { Copy, Check } from '@primebrick/ui/vendor/lucide';
   import { orderedColumns } from '$lib/entity-list/types';
   import type { MetaColumn, EntityMeta } from '$lib/entity-list/types';
@@ -207,23 +207,33 @@
   {/if}
 
   {#if auditColumns.length}
-    <Separator />
-    <section
-      aria-label={$t('system.common.sections.audit')}
-      data-testid="entity-record-sheet-audit-section"
-    >
-      <!-- gap-y-2 = the FormPageLayout audit-foot leading; values ellipse
-           (never wrap, never horizontal scroll). -->
-      <dl class="grid grid-cols-1 gap-y-2 text-xs">
-        {#each auditColumns as col (col.key)}
-          <div class="flex items-baseline gap-x-2">
-            <dt class="shrink-0 text-primary">{$t(col.label_key)}:</dt>
-            <dd class="min-w-0 truncate italic text-muted-foreground" title={auditBox.formatValue(record[col.key], col)}>
-              {auditBox.formatValue(record[col.key], col)}
-            </dd>
-          </div>
-        {/each}
-      </dl>
-    </section>
+    <!-- Audit fields live behind a collapsed accordion — the separator-line
+         affordance is the canonical Accordion trigger. -->
+    <Accordion.Root type="single" class="w-full">
+      <Accordion.Item value="audit">
+        <Accordion.Trigger class="text-xs font-normal text-muted-foreground hover:no-underline">
+          {$t('system.common.sections.audit')}
+        </Accordion.Trigger>
+        <Accordion.Content class="pb-0">
+          <section
+            aria-label={$t('system.common.sections.audit')}
+            data-testid="entity-record-sheet-audit-section"
+          >
+            <!-- gap-y-2 = the FormPageLayout audit-foot leading; values
+                 ellipse (never wrap, never horizontal scroll). -->
+            <dl class="grid grid-cols-1 gap-y-2 text-xs">
+              {#each auditColumns as col (col.key)}
+                <div class="flex items-baseline gap-x-2">
+                  <dt class="shrink-0 text-primary">{$t(col.label_key)}:</dt>
+                  <dd class="min-w-0 truncate italic text-muted-foreground" title={auditBox.formatValue(record[col.key], col)}>
+                    {auditBox.formatValue(record[col.key], col)}
+                  </dd>
+                </div>
+              {/each}
+            </dl>
+          </section>
+        </Accordion.Content>
+      </Accordion.Item>
+    </Accordion.Root>
   {/if}
 </div>
