@@ -34,7 +34,7 @@
   import { isEntityOpAllowed } from '$lib/permissions.svelte';
   import { findActionEndpoint, fillActionPath } from '$lib/entity-list/action-endpoints';
   import { extJsonStringify } from '$lib/api-ext';
-  import { Check, ExternalLink, History, Pencil, X } from '@primebrick/ui/vendor/lucide';
+  import { Check, ExternalLink, Pencil, X } from '@primebrick/ui/vendor/lucide';
   import { LoadingBar } from '$lib/components/ui/loading-bar';
   import type { MetaColumn, EntityMeta } from '$lib/entity-list/types';
   import type { FormFieldPlacement } from '@primebrick/ui';
@@ -360,25 +360,23 @@
           {#if versionValue !== undefined && versionValue !== null}
             <!-- Version is record META content (the `start` slot's contract —
                  legend/meta, not commit CTAs) that doubles as the drill
-                 affordance into `entity.versionHistory`. role/tabindex keep
-                 the keyboard contract a plain Badge lacks. -->
-            <Badge
-              variant="secondary"
-              role="button"
-              tabindex={0}
-              title={$t('system.common.fields.version')}
+                 affordance into `entity.versionHistory`. Canonical anatomy:
+                 real <button> wrapping the outline/primary Badge — same shape
+                 as FormPageLayout / ConfigListRow / VersionHistoryPanel. -->
+            <button
+              type="button"
               onclick={openVersionHistory}
-              onkeydown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  openVersionHistory();
-                }
-              }}
+              class="inline-flex"
+              title={$t('system.entities.version_history.title')}
               data-testid="entity-record-sheet-version-badge"
             >
-              <History class="mr-1 size-3" />
-              v{versionValue}
-            </Badge>
+              <Badge
+                variant="outline"
+                class="text-xs font-semibold border border-primary cursor-pointer hover:bg-primary/10"
+              >
+                v{versionValue}
+              </Badge>
+            </button>
           {/if}
         {/snippet}
         {#if editing}
