@@ -32,6 +32,7 @@
   import { t } from '$lib/i18n';
   import { Badge, Separator, Label } from '@primebrick/ui';
   import { Copy, Check } from '@primebrick/ui/vendor/lucide';
+  import { orderedColumns } from '$lib/entity-list/types';
   import type { MetaColumn, EntityMeta } from '$lib/entity-list/types';
   import type { FormFieldPlacement } from '@primebrick/ui';
 
@@ -63,7 +64,10 @@
   // svelte-ignore state_referenced_locally
   setMetaUidContext(uidKey);
 
-  const allColumns = $derived((meta?.columns ?? []).filter((c) => !c.hidden));
+  // Canonical display order (sticky → normal → audited, each by `order`;
+  // absent `order` degrades to array index) — array position MUST NOT
+  // matter, same contract the table consumes via `orderedColumns`.
+  const allColumns = $derived(orderedColumns(meta?.columns).filter((c) => !c.hidden));
   /** Immutable audit facts — pinned to the bottom section, rendered as
    *  values (`TableCell`), never as widgets. `version` is audited too but
    *  its surface is the footer badge — never duplicated here. */
