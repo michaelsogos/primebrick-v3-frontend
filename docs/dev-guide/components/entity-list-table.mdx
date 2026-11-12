@@ -186,6 +186,26 @@ The default "all fields" search covers **visible ∩ searchable ∩ `text`
 columns**: hidden-by-default columns (e.g. `uuid`) are excluded until the
 user shows them or picks them explicitly in the search-scope selector.
 
+## Built-in cell drifts
+
+Two cell behaviors are **by construction**, not authored per table:
+
+- **`version` column → version-history badge.** `TableCell` renders the
+  canonical `v<N>` badge-drill (the same anatomy as the record-sheet
+  footer badge — `text-xs font-semibold border-primary`) instead of the
+  raw number. Clicking opens the stacked `entity.versionHistory` sheet
+  with the same payload row actions build (`TableEntityContext`: entity,
+  translationKey, uid, columns).
+- **Actor ref → `entity.record` sheet with hero states.** `type:"ref"`
+  cells resolve the actor link; the opened sheet classifies the target
+  before fetching (`isUUID` from `@primebrick/ui`):
+  - **non-uuid value** (`system`, seed aliases) → warning `StateHero`
+    ("fictitious {entity_singular}"), never hits the API;
+  - **uuid-shaped but 404** → destructive `StateHero`
+    ("no longer available");
+  - **other load failure** → destructive `StateHero` with the generic
+    load-error key.
+
 ## Route-level usage — EntityTablePage
 
 `EntityTablePage` (`src/lib/components/entity-table-page/`) is the
