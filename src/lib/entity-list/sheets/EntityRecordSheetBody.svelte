@@ -213,11 +213,13 @@
       aria-label={$t('system.common.sections.audit')}
       data-testid="entity-record-sheet-audit-section"
     >
-      <dl class="grid grid-cols-1 gap-y-1.5 text-xs">
+      <!-- gap-y-2 = the FormPageLayout audit-foot leading; values ellipse
+           (never wrap, never horizontal scroll). -->
+      <dl class="grid grid-cols-1 gap-y-2 text-xs">
         {#each auditColumns as col (col.key)}
           <div class="flex items-baseline gap-x-2">
             <dt class="shrink-0 text-primary">{$t(col.label_key)}:</dt>
-            <dd class="min-w-0 italic text-muted-foreground">
+            <dd class="min-w-0 truncate italic text-muted-foreground" title={auditBox.formatValue(record[col.key], col)}>
               {auditBox.formatValue(record[col.key], col)}
             </dd>
           </div>

@@ -159,6 +159,10 @@
     return v === undefined || v === null ? null : String(v);
   });
   const versionValue = $derived(record?.version);
+  /** Lifecycle state — `deleted_at` (soft-delete) wins over `suspended_at`:
+   *  the footer badge and the destructive title follow the same record. */
+  const isDeleted = $derived(Boolean(record?.deleted_at));
+  const isSuspended = $derived(Boolean(record?.suspended_at));
 
   /** Keys the PUT is allowed to carry — the SAME partition the body
    *  renders: declared placements when present, else served non-audit,
@@ -308,7 +312,7 @@
     {/if}
   {/snippet}
   {#snippet title()}
-    {titleText}
+    <span class={isDeleted ? 'text-destructive' : undefined}>{titleText}</span>
   {/snippet}
   {#snippet actions()}
     {#if canUpdate}
@@ -388,6 +392,21 @@
                 v{versionValue}
               </Badge>
             </button>
+          {/if}
+          <!-- Lifecycle badge — destructive for soft-deleted records,
+               emerald success-chip anatomy for suspended ones. -->
+          {#if isDeleted}
+            <Badge variant="destructive" class="text-xs font-semibold" data-testid="entity-record-sheet-status-badge">
+              {$t('system.common.status.deleted')}
+            </Badge>
+          {:else if isSuspended}
+            <Badge
+              variant="outline"
+              class="text-xs font-semibold border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+              data-testid="entity-record-sheet-status-badge"
+            >
+              {$t('system.common.status.suspended')}
+            </Badge>
           {/if}
         {/snippet}
         {#if editing}
