@@ -66,6 +66,12 @@
    entity uses — vary the family (`users` vs `users-round`) rather than
    the wrapper. Non-entity leaves (module root, pipelines, dashboards)
    may repeat glyphs freely: they never feed `RECORD_ICON_VARIANTS`.
+14. **Violet = clone/duplicate** — `ActionColor` in `@primebrick/core` binds
+   the `violet` semantic to cloning: `duplicate.bulk` serves
+   `color:"violet"` + `icon:"copy"` by default (overridable via
+   `actions_overrides`), and the same hue marks `CLONE` rows in the
+   version-history trail. Never spend `violet` on unrelated actions and
+   never recolor clone surfaces to another semantic.
 
 ## Deep dive
 

@@ -33,12 +33,15 @@ So "secondary button with the primary gradient border" is
 ## Tones
 
 `tone` selects the semantic gradient: `primary` (default), `destructive`,
-`warning`, `success`, `info`.
+`warning`, `success`, `info`, `violet`.
 
 - `outline` + tone → `border-{tone}-gradient` (solid gradient border, neutral bg)
 - `soft` + tone → `border-{tone}-gradient-soft` (soft gradient border + tinted bg)
 - The solid- gradient-bg semantic roles are standalone **variants**
-  (`destructive`, `warning`, `success`, `info`) — they already carry their tone.
+  (`destructive`, `warning`, `success`, `info`, `violet`) — they already carry their tone.
+- **`violet` is the clone/duplicate semantic** (`ActionColor` contract in
+  `@primebrick/core`): `duplicate.bulk` CTAs and the duplicate confirm
+  button carry it — never reuse it for unrelated actions.
 
 ## Recipes
 

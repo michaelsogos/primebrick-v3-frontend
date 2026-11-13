@@ -134,13 +134,18 @@
             </DropdownMenu.Item>
           {/if}
           {#if entityRowActions?.duplicate !== false}
+            {@const chrome = entityRowActions?.duplicate_chrome}
             <DropdownMenu.Item
               onclick={(e) => { e.stopPropagation(); if (rowDeleted) return; onDuplicateRow(row); }}
-              class={rowDeleted ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}
+              class={rowDeleted ? 'opacity-50 cursor-not-allowed pointer-events-none' : (actionColorClass(chrome?.color) || 'text-violet')}
             >
               <div class="flex items-center gap-2">
-                <Copy class="size-4" />
-                <span>{$t('app.common.duplicate')}</span>
+                {#if chrome?.icon}
+                  <DynamicIcon name={chrome.icon} class="size-4" />
+                {:else}
+                  <Copy class="size-4" />
+                {/if}
+                <span>{$t(chrome?.label_key ?? 'app.common.duplicate')}</span>
               </div>
             </DropdownMenu.Item>
           {/if}

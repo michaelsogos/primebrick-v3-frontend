@@ -40,6 +40,7 @@
     onBulkCustomAction,
     bulkDeleteChrome,
     bulkRestoreChrome,
+    bulkDuplicateChrome,
     bulkExtraActions,
     selectAll,
     sort,
@@ -71,6 +72,9 @@
      *  (`meta.actions["delete.bulk"]` / `["restore.bulk"]`). */
     bulkDeleteChrome?: ActionChrome;
     bulkRestoreChrome?: ActionChrome;
+    /** `meta.actions["duplicate.bulk"]` chrome — violet by contract
+     *  (`ActionColor`: violet IS the clone semantic). */
+    bulkDuplicateChrome?: ActionChrome;
     /** Host-specific bulk CTAs rendered after the standard + meta-declared
      *  set (e.g. the dict page's local revert — a page-state op, not an
      *  `entity_op` route, so it cannot ride `bulkCustomActions`). */
@@ -218,13 +222,17 @@
       {/if}
       {#if bulkCapabilities.duplicate}
         <Button
-          variant="default"
+          variant={bulkDuplicateChrome?.color ? actionColorButtonVariant(bulkDuplicateChrome.color) : 'violet'}
           size="xs"
           onclick={onBulkDuplicate}
           disabled={selectedKeys.length < 2}
         >
-          <Copy class="size-3.5" />
-          {$t('system.entities.list.bulk_actions.duplicate')}
+          {#if bulkDuplicateChrome?.icon}
+            <DynamicIcon name={bulkDuplicateChrome.icon} size={14} />
+          {:else}
+            <Copy class="size-3.5" />
+          {/if}
+          {$t(bulkDuplicateChrome?.label_key ?? 'system.entities.list.bulk_actions.duplicate')}
         </Button>
       {/if}
       {#if bulkCapabilities.delete}

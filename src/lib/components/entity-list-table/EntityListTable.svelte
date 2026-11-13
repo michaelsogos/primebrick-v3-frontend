@@ -499,7 +499,8 @@
     custom_actions: entityCustomActions?.filter((a) => hasRequiredPermission(a.required_permission)),
     edit_chrome: opChrome('update.single'),
     delete_chrome: opChrome('delete.single'),
-    restore_chrome: opChrome('restore.single')
+    restore_chrome: opChrome('restore.single'),
+    duplicate_chrome: opChrome('duplicate.bulk')
   }));
 
   /** Bulk-bar custom CTAs — declared permission gate (endpoint dispatch
@@ -543,6 +544,7 @@
    *  contract as the row chrome: icon+label+color travel together. */
   const bulkDeleteChrome = $derived(opChrome('delete.bulk'));
   const bulkRestoreChrome = $derived(opChrome('restore.bulk'));
+  const bulkDuplicateChrome = $derived(opChrome('duplicate.bulk'));
 
   const rowActionsComposable = useRowActions<TRow>({
     entity: () => entity,
@@ -747,6 +749,7 @@
     onBulkCustomAction={(a) => bulkActions.handleBulkCustomAction(a)}
     bulkDeleteChrome={bulkDeleteChrome}
     bulkRestoreChrome={bulkRestoreChrome}
+    bulkDuplicateChrome={bulkDuplicateChrome}
     selectAll={cardSelectAllZone}
     sort={cardSortZone}
     ianaToggle={cardIanaZone}
@@ -861,6 +864,7 @@
     restoreChrome={opChrome('restore.single')}
     {bulkDeleteChrome}
     {bulkRestoreChrome}
+    duplicateChrome={effectiveRowActions.duplicate_chrome}
   />
 
   <!-- Step-up MFA — row/bulk endpoint actions with a declared mfa spec on

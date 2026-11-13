@@ -53,6 +53,7 @@
     onBulkCustomAction,
     bulkDeleteChrome,
     bulkRestoreChrome,
+    bulkDuplicateChrome,
     selectAll,
     sort,
     ianaToggle
@@ -109,6 +110,7 @@
     onBulkCustomAction?: (action: BulkCustomAction) => void;
     bulkDeleteChrome?: ActionChrome;
     bulkRestoreChrome?: ActionChrome;
+    bulkDuplicateChrome?: ActionChrome;
     /** Populated only for card/card_list views — the shared lower bar's
      *  leading zones (select-all | sort builder | IANA CTA). Table view
      *  passes none (its chrome lives in thead/th). */
@@ -190,6 +192,7 @@
   onBulkCustomAction={onBulkCustomAction}
   bulkDeleteChrome={bulkDeleteChrome}
   bulkRestoreChrome={bulkRestoreChrome}
+  bulkDuplicateChrome={bulkDuplicateChrome}
   selectAll={selectAll}
   sort={sort}
   ianaToggle={ianaToggle}

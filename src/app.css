@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-@source inline("{border-primary-gradient,border-primary-gradient-popover,border-primary-gradient-soft,border-readonly,border-disabled,border-destructive-gradient,border-destructive-gradient-soft,border-warning-gradient,border-warning-gradient-soft,border-warning-gradient-popover,border-info-gradient,border-info-gradient-popover,border-info-gradient-soft,border-success-gradient,border-success-gradient-popover,border-success-gradient-soft,border-destructive-gradient-popover,border-neutral-gradient-popover,dialog-bump,hover-border-primary-gradient-soft,bg-primary-gradient-soft,border-left-primary-gradient-soft,divider-primary-gradient,text-primary-gradient,hr-primary-gradient,border-primary-gradient-bottom,border-primary-gradient-tl,bg-range-primary-gradient,bg-range-destructive-gradient,bg-range-warning-gradient,bg-range-info-gradient,bg-range-success-gradient,shadow-selected-primary}");
+@source inline("{border-primary-gradient,border-primary-gradient-popover,border-primary-gradient-soft,border-readonly,border-disabled,border-destructive-gradient,border-destructive-gradient-soft,border-warning-gradient,border-warning-gradient-soft,border-warning-gradient-popover,border-info-gradient,border-info-gradient-popover,border-info-gradient-soft,border-success-gradient,border-success-gradient-popover,border-success-gradient-soft,border-destructive-gradient-popover,border-neutral-gradient-popover,border-violet-gradient,border-violet-gradient-soft,border-violet-gradient-popover,dialog-bump,hover-border-primary-gradient-soft,bg-primary-gradient-soft,border-left-primary-gradient-soft,divider-primary-gradient,text-primary-gradient,hr-primary-gradient,border-primary-gradient-bottom,border-primary-gradient-tl,bg-range-primary-gradient,bg-range-destructive-gradient,bg-range-warning-gradient,bg-range-info-gradient,bg-range-success-gradient,shadow-selected-primary}");
 
 /* Meta-driven `fill-*` utilities: entity-meta `sparkline.series[].color`
    declares Tailwind classes that live ONLY in the DB — the content scan can
@@ -58,6 +58,8 @@
   --color-warning-foreground: hsl(var(--warning-foreground));
   --color-info: hsl(var(--info));
   --color-info-foreground: hsl(var(--info-foreground));
+  --color-violet: hsl(var(--violet));
+  --color-violet-foreground: hsl(var(--violet-foreground));
   
   --color-muted: hsl(var(--muted));
   --color-muted-foreground: hsl(var(--muted-foreground));
@@ -539,6 +541,40 @@
 }
 
 /**
+ * Violet (clone/duplicate semantic) gradient border — violet-400→purple-600,
+ * the same stops as the filled `violet` Button variant.
+ * Used by outline-tone violet buttons.
+ */
+@utility border-violet-gradient {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(hsl(var(--background)), hsl(var(--background))) padding-box,
+    linear-gradient(to bottom right, #a78bfa, #9333ea) border-box;
+}
+
+/**
+ * Soft variant: violet gradient border + tenue violet/purple fill.
+ * Used by soft-violet buttons.
+ */
+@utility border-violet-gradient-soft {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(to bottom right, #ddd6fe, #e9d5ff) padding-box,
+    linear-gradient(to bottom right, #a78bfa, #9333ea) border-box;
+}
+
+/**
+ * Dialog variant: uses --popover as the fill color.
+ * Used by BorderedDialog with severity="violet" tone="soft".
+ */
+@utility border-violet-gradient-popover {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(hsl(var(--popover)), hsl(var(--popover))) padding-box,
+    linear-gradient(to bottom right, #a78bfa, #9333ea) border-box;
+}
+
+/**
  * Bump animation for persistent dialogs — triggered when the user
  * clicks outside the dialog to signal it can't be dismissed that way.
  * A single quick scale pulse (not a shake). Only animates `scale` —
@@ -778,6 +814,9 @@ select:-webkit-autofill:focus {
     --warning-foreground: 222.2 84% 4.9%;
     --info: 199 89% 48%;
     --info-foreground: 210 40% 98%;
+    /* Violet — the clone/duplicate semantic (ActionColor contract). */
+    --violet: 262 83% 58%; /* violet-600 */
+    --violet-foreground: 210 40% 98%;
 
     --border: 214.3 31.8% 91.4%;
     /* Form controls (`border-input`, `bg-input/30` in dark): sky-tinted, aligned with product primary. */
@@ -840,6 +879,9 @@ select:-webkit-autofill:focus {
     --warning-foreground: 222.2 84% 4.9%;
     --info: 199 89% 60%;
     --info-foreground: 222.2 84% 4.9%;
+    /* Violet lifted for dark — still the clone/duplicate semantic. */
+    --violet: 258 90% 66%; /* violet-500 */
+    --violet-foreground: 210 40% 98%;
 
     --border: 217.2 32.6% 17.5%;
     /* Dark counterpart to light `sky-200` input border (~sky-800); also feeds `dark:bg-input/30` on inputs & outline buttons. */

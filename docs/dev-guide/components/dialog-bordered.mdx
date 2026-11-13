@@ -63,7 +63,7 @@ bits-ui `Dialog.Content` props.
 | Prop | Type | Default | Description |
 |---|---|---|---|
 | `open` | `boolean` (bindable) | — | Dialog visibility |
-| `severity` | `'primary' \| 'info' \| 'success' \| 'warning' \| 'destructive' \| 'neutral'` | `'primary'` | Accent color. `warning`/`destructive` animate the gradient. |
+| `severity` | `'primary' \| 'info' \| 'success' \| 'warning' \| 'destructive' \| 'violet' \| 'neutral'` | `'primary'` | Accent color. `warning`/`destructive` animate the gradient. `violet` is the clone/duplicate semantic. |
 | `tone` | `'' \| 'soft'` | `''` | `''` = colored top strip; `'soft'` = full-around gradient border. |
 | `showCloseButton` | `boolean` | `true` | Forwarded to `Dialog.Content` |
 | `class` | `string` | `''` | Extra classes on `Dialog.Content` |
@@ -79,6 +79,7 @@ bits-ui `Dialog.Content` props.
 | `success` | emerald-400 → emerald-600 gradient strip |
 | `warning` | animated yellow gradient strip |
 | `destructive` | animated rose→red gradient strip |
+| `violet` | violet-400 → purple-600 gradient strip (clone/duplicate semantic) |
 | `neutral` | solid neutral-500 strip |
 
 ## When to use which dialog
