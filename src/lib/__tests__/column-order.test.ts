@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { parseColumnOrderState } from "../components/entity-list-table/composables/useColumnOrder.svelte";
+import {
+  parseColumnOrderState,
+  pinAuditTail,
+} from "../components/entity-list-table/composables/useColumnOrder.svelte";
+import type { MetaColumn } from "../entity-list/types";
+
+const auditCol = (key: string): MetaColumn => ({ key }) as MetaColumn;
 
 describe("parseColumnOrderState", () => {
   it("returns {} for null raw", () => {
@@ -52,5 +58,48 @@ describe("parseColumnOrderState", () => {
   it("accepts payloads with extra unknown keys", () => {
     const raw = JSON.stringify({ sticky: ["a"], somethingElse: { deep: 1 } });
     expect(parseColumnOrderState(raw).sticky).toEqual(["a"]);
+  });
+});
+
+describe("pinAuditTail", () => {
+  it("moves a mid-block version column to the end of the audit group", () => {
+    // A persisted order captured before the canonical audit rank shipped:
+    // `version` sat between updated_* and deleted_* in the injected array.
+    const stale = [
+      "created_by",
+      "created_at",
+      "updated_by",
+      "updated_at",
+      "version",
+      "deleted_by",
+      "deleted_at",
+      "cloned_from",
+      "cloned_at",
+      "cloned_by",
+    ].map(auditCol);
+    const pinned = pinAuditTail(stale);
+    expect(pinned.at(-1)?.key).toBe("version");
+    expect(pinned.map((c) => c.key)).toEqual([
+      "created_by",
+      "created_at",
+      "updated_by",
+      "updated_at",
+      "deleted_by",
+      "deleted_at",
+      "cloned_from",
+      "cloned_at",
+      "cloned_by",
+      "version",
+    ]);
+  });
+
+  it("is a no-op when version is already last", () => {
+    const cols = ["created_by", "version"].map(auditCol);
+    expect(pinAuditTail(cols)).toBe(cols);
+  });
+
+  it("is a no-op when the group has no version column", () => {
+    const cols = ["created_by", "created_at"].map(auditCol);
+    expect(pinAuditTail(cols)).toBe(cols);
   });
 });

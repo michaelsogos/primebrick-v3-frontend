@@ -15,7 +15,7 @@
     useKeyboardNavigation,
     useSheetPanels
   } from './composables';
-  import { useColumnOrder } from './composables/useColumnOrder.svelte';
+  import { useColumnOrder, pinAuditTail } from './composables/useColumnOrder.svelte';
   import { useViewMode } from './composables';
   import {
     isRowDeleted as isRowDeletedUtil,
@@ -192,7 +192,9 @@
   );
 
   const auditingColumnsGroup = $derived(
-    columnOrder.applyKeyOrder(allColumns.filter((c) => c.audited === true), orderState.auditing)
+    pinAuditTail(
+      columnOrder.applyKeyOrder(allColumns.filter((c) => c.audited === true), orderState.auditing)
+    )
   );
   const hasSoftDelete = $derived(
     auditingColumnsGroup.some((c) => c.key === 'deleted_at' || c.key === 'deleted_by')

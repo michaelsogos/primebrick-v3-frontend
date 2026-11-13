@@ -30,6 +30,20 @@ export function parseColumnOrderState(raw: string | null): ColumnOrderState {
   }
 }
 
+/** `version` is the canonical audit tail (DAL rank 900 = unconditional last,
+ *  same contract the record sheet honors via `c.key !== 'version'`). A stale
+ *  persisted group order — written before the canonical rank shipped, or by
+ *  an earlier drag — must not displace it: pin it last unconditionally; every
+ *  other audit column stays user-reorderable. */
+export function pinAuditTail(cols: MetaColumn[]): MetaColumn[] {
+  const idx = cols.findIndex((c) => c.key === 'version');
+  if (idx < 0 || idx === cols.length - 1) return cols;
+  const next = cols.slice();
+  const [v] = next.splice(idx, 1);
+  next.push(v);
+  return next;
+}
+
 export function useColumnOrder(getColumnOrderStorageKey: () => string | undefined) {
   const _state = $state<ColumnOrderState>({});
 
