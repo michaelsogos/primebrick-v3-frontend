@@ -135,8 +135,12 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
 
     const sheet = page.getByTestId("entity-record-sheet");
     await expect(sheet).toBeVisible({ timeout: 15000 });
-    await expect(sheet).toContainText(name, { timeout: 15000 });
-    await expect(sheet).not.toContainText("Record not found");
+    // display_name renders as a readonly input — its value lives on the
+    // `value` attribute, never in innerText.
+    await expect(sheet.locator("input#record-sheet-field-display_name")).toHaveValue(name, {
+      timeout: 15000,
+    });
+    await expect(sheet.getByTestId("entity-record-sheet-missing-hero")).toHaveCount(0);
     // FORM-READONLY contract: the record renders as the entity's form
     // widgets — every control present but readonly/disabled (the pencil
     // toggle will later flip them to edit).
@@ -172,9 +176,11 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
     await expect(sheet).toContainText("Onboarding Completed");
     await expect(sheet).toContainText("Auth Method Enforcer Dismissed");
 
-    // Audit section: last block, divider above, labels translated,
-    // values rendered as TableCell formatting — ZERO form controls by
-    // construction (EntityFormField throws on audited columns).
+    // Audit section: last block, labels translated, values rendered as
+    // TableCell formatting — ZERO form controls by construction
+    // (EntityFormField throws on audited columns). It lives inside a
+    // single-item Accordion collapsed by default — expand first.
+    await sheet.getByRole("button", { name: "Audit" }).click();
     const audit = sheet.getByTestId("entity-record-sheet-audit-section");
     await expect(audit).toBeVisible();
     await expect(audit).toContainText("Created");
@@ -254,7 +260,11 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
     await page.getByTestId("ref-cell-created_by-text").nth(i).click();
     const sheet = page.getByTestId("entity-record-sheet");
     await expect(sheet).toBeVisible({ timeout: 15000 });
-    await expect(sheet).toContainText(/not found/i, { timeout: 15000 });
+    // The honest empty state is the StateHero — pin its testid, not the
+    // translated copy.
+    await expect(page.getByTestId("entity-record-sheet-missing-hero")).toBeVisible({
+      timeout: 15000,
+    });
   });
 
   test("external-link CTA opens the filtered target list in a new tab — sheet stays closed", async ({
