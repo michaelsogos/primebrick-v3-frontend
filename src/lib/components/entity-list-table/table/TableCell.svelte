@@ -173,7 +173,7 @@
     >
       <Badge
         variant="outline"
-        class="text-xs font-semibold border border-primary cursor-pointer hover:bg-primary/10"
+        class="text-xs font-semibold border border-primary bg-white dark:bg-black cursor-pointer hover:bg-primary/10"
       >
         v{toDisplayString(value)}
       </Badge>
