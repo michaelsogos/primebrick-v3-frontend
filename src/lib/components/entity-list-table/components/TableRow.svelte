@@ -16,7 +16,8 @@
     entityListDestructiveScrollInteractionClass,
     datetimeIanaCellHighlightClass,
     isDatetimeIanaRecordMode,
-    entityListDataCellValignClass
+    entityListDataCellValignClass,
+    entityListDataCellAlignClass
   } from '../utils/cell-styling';
   import { MoreVertical } from '@primebrick/ui/vendor/lucide'
   import { Pencil } from '@primebrick/ui/vendor/lucide'
@@ -151,7 +152,8 @@
               : (rowDeleted
                 ? entityListDestructiveBandStickyInteractionClass(rowSelected)
                 : entityListGrayBandStickyInteractionClass(rowSelected)),
-            entityListDataCellValignClass(col)
+            entityListDataCellValignClass(col),
+            entityListDataCellAlignClass(col)
           )}
         >
           <div use:stickyColumnsState.stickyRef={{ key: col.key, isHead: false }}>
@@ -176,7 +178,8 @@
               : (rowDeleted
                 ? entityListDestructiveBandStickyInteractionClass(rowSelected)
                 : entityListGrayBandStickyInteractionClass(rowSelected)),
-            entityListDataCellValignClass(col)
+            entityListDataCellValignClass(col),
+            entityListDataCellAlignClass(col)
           )}
         >
           <CellRenderer
@@ -199,7 +202,8 @@
             : (rowDeleted
               ? entityListDestructiveScrollInteractionClass(rowSelected)
               : entityListDefaultScrollInteractionClass(rowSelected)),
-          entityListDataCellValignClass(col)
+          entityListDataCellValignClass(col),
+          entityListDataCellAlignClass(col)
         )}
       >
         <CellRenderer
