@@ -361,3 +361,50 @@ test.describe("entity-list-table interactions", () => {
     await tab.close();
   });
 });
+
+/**
+ * Card-view toolbar zones — the L3 CardViewRenderer sub-bar died when
+ * select-all / sort / IANA moved into BulkActionsToolbar's optional leading
+ * zones. Table view passes undefined → identical chrome; cards/cards_list
+ * populate all three inside L2. /crm/customers is the pinned surface: its
+ * meta carries an IANA-toggle column (onboarding_at), so the bounded IANA
+ * CTA renders too and opens the entity.datetimeIana sheet.
+ */
+test.describe("card-view toolbar zones (/crm/customers)", () => {
+  test.beforeEach(async ({ page }) => {
+    await loginAsTestAdmin(page);
+  });
+
+  test("cards view mounts select-all | sort | IANA inside L2 — no third bar", async ({ page }) => {
+    await page.goto("/crm/customers", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("table tbody tr[data-row-index]").first()).toBeVisible({ timeout: 30000 });
+
+    const toolbar = page.getByTestId("bulk-actions-toolbar");
+    // Table view → no leading zones (chrome identical to before).
+    for (const id of ["entity-list-card-select-all", "entity-list-card-sort", "entity-list-iana"]) {
+      await expect(toolbar.getByTestId(id)).toHaveCount(0);
+    }
+
+    await page.getByTestId("elt-view-mode-cards").click();
+
+    // Zones land inside L2 — each exactly once page-wide (no L3 remnant).
+    for (const id of ["entity-list-card-select-all", "entity-list-card-sort", "entity-list-iana"]) {
+      await expect(toolbar.getByTestId(id)).toBeVisible();
+      await expect(page.getByTestId(id)).toHaveCount(1);
+    }
+
+    // The IANA CTA is the bounded surface: one click opens the
+    // entity.datetimeIana sheet with one row per toggleable column.
+    await toolbar.getByTestId("entity-list-iana").click();
+    const sheet = page.getByTestId("sheet-primary-pane");
+    await expect(sheet.getByTestId("iana-field-onboarding_at")).toBeVisible({ timeout: 10000 });
+    await page.keyboard.press("Escape");
+
+    // Back to table → the zones leave again.
+    await page.getByTestId("elt-view-mode-table").click();
+    await expect(page.locator("table tbody tr[data-row-index]").first()).toBeVisible({ timeout: 30000 });
+    for (const id of ["entity-list-card-select-all", "entity-list-card-sort", "entity-list-iana"]) {
+      await expect(toolbar.getByTestId(id)).toHaveCount(0);
+    }
+  });
+});
