@@ -58,6 +58,7 @@
     "components/dialog-bordered",
     "components/entity-confirm-dialogs",
     "components/sheet-panel",
+    "components/entity-record-sheet",
     "components/rfc-error-dialog",
     "components/login-form",
     "components/passkey-button",
