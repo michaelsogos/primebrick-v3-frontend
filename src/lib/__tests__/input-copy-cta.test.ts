@@ -90,6 +90,37 @@ describe("UrlInput copy CTA", () => {
   });
 });
 
+// 3-state chrome contract: readonly vs disabled vs editable are three
+// visually and semantically distinct states — readonly keeps the muted
+// `border-readonly` chrome and the HTML readonly attribute (value locked,
+// still readable/focusable); disabled carries the HTML disabled attribute
+// (inert); editable carries neither.
+describe("TextInput 3-state chrome", () => {
+  it("readonly carries border-readonly chrome + readonly attribute", () => {
+    const { container } = render(TextInput, { props: { value: "abc", readonly: true } });
+    const input = container.querySelector("input")!;
+    expect(input.readOnly).toBe(true);
+    expect(input.disabled).toBe(false);
+    expect(input.className).toContain("border-readonly");
+  });
+
+  it("disabled carries the disabled attribute and no readonly chrome", () => {
+    const { container } = render(TextInput, { props: { value: "abc", disabled: true } });
+    const input = container.querySelector("input")!;
+    expect(input.disabled).toBe(true);
+    expect(input.readOnly).toBe(false);
+    expect(input.className).not.toContain("border-readonly");
+  });
+
+  it("editable carries neither attribute nor muted chrome", () => {
+    const { container } = render(TextInput, { props: { value: "abc" } });
+    const input = container.querySelector("input")!;
+    expect(input.disabled).toBe(false);
+    expect(input.readOnly).toBe(false);
+    expect(input.className).not.toContain("border-readonly");
+  });
+});
+
 describe("PhoneInput copy CTA", () => {
   it("shows the copy CTA in readonly mode with a value", () => {
     render(PhoneInput, { props: { value: "+393331234567", readonly: true } });

@@ -20,7 +20,7 @@
   import JsonCellViewer from './JsonCellViewer.svelte';
   import { Tooltip } from '@primebrick/ui';
   import { getAuditFieldValue } from '../utils/cell-formatting';
-  import { getAuditColumnsContext, getMetaUidContext, getEntitiesNsContext, getTableEntityContext } from '../context';
+  import { getAuditColumnsContext, getActiveRolesContext, getMetaUidContext, getEntitiesNsContext, getTableEntityContext } from '../context';
   import { SparklineBars } from '@primebrick/ui';
   import { MetaAvatar } from '$lib/components/ui/avatar-preview';
 
@@ -69,6 +69,17 @@
    *  `entity.versionHistory` with the same payload row actions build. */
   const entityCtx = getTableEntityContext();
   const cellEntitiesNs = getEntitiesNsContext();
+  /** Shared active-roles lookup (`options_source:"system.roles"` columns)
+   *  — one lazy fetch per list, `idp_role` → label_key → `$t`. */
+  const activeRoles = getActiveRolesContext();
+  /** Role badge label — translated `label_key` when the role resolves,
+   *  the raw `idp_role` code otherwise (unknown/inactive code or the
+   *  fetch hasn't landed yet — the badge re-renders when it does). */
+  const roleLabel = (code: unknown): string => {
+    const raw = toDisplayString(code);
+    const labelKey = activeRoles?.().get(raw)?.label_key;
+    return labelKey ? $t(labelKey) : raw;
+  };
   /** `column.color` is a TailwindColorToken (canonical: `colorCssFromToken`
    *  → inline style) — meta strings are invisible to the FE content scan,
    *  so class-based colors silently dead-render. Same mechanism as the
@@ -363,6 +374,30 @@
       color={column.avatar?.color_field ? (row[column.avatar.color_field] as string | undefined) : undefined}
       size="sm"
     />
+  {:else}
+    <span class="min-w-0 truncate">-</span>
+  {/if}
+{:else if column.options_source === 'system.roles' && Array.isArray(value)}
+  <!-- `options_source:"system.roles"` — one `Badge secondary` per role
+       code (user-key icon + translated label), same anatomy family as
+       the `nats_subject` source/destination badges. Tooltip keeps the
+       raw `idp_role` code. -->
+  {#if value.length > 0}
+    <div class="flex min-w-0 flex-wrap gap-1" data-testid={`roles-cell-${column.key}`}>
+      {#each value as code (code)}
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            <Badge variant="secondary" class="gap-1 shadow-none">
+              <DynamicIcon name="user-key" size={12} class="shrink-0" />
+              <span class="truncate text-xs">{roleLabel(code)}</span>
+            </Badge>
+          </Tooltip.Trigger>
+          <Tooltip.Content>
+            <p class="font-mono text-xs">{toDisplayString(code)}</p>
+          </Tooltip.Content>
+        </Tooltip.Root>
+      {/each}
+    </div>
   {:else}
     <span class="min-w-0 truncate">-</span>
   {/if}

@@ -33,7 +33,8 @@
   import { createClickHandlers } from './handlers/click-handlers';
   import type { MetaColumn } from '$lib/entity-list/types';
   import { isColumnFilterable, isColumnSearchable, isColumnSortable } from '$lib/entity-list/types';
-  import { setAuditColumnsContext, setEntitiesNsContext, setMetaUidContext, setTableEntityContext } from './context';
+  import { setAuditColumnsContext, setActiveRolesContext, setEntitiesNsContext, setMetaUidContext, setTableEntityContext } from './context';
+  import { useActiveRoles } from '$lib/composables/useActiveRoles.svelte';
   import { setEntitiesNsContext as uiSetEntitiesNsContext } from '@primebrick/ui';
   import { claimDocsContext } from '$lib/shell/docs/docs-context.svelte';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
@@ -145,6 +146,17 @@
       uid,
       columns: allColumns,
     });
+  });
+
+  // Active-roles lookup — ONE lazy fetch per list, gated on a
+  // `options_source:"system.roles"` column actually being served
+  // (`roles` on user_profile today). Cells resolve `idp_role` →
+  // role record through the context — no per-cell fetches.
+  const activeRoles = useActiveRoles({
+    enabled: () => columns.some((c) => c.options_source === 'system.roles'),
+  });
+  $effect(() => {
+    setActiveRolesContext(() => activeRoles.rolesByCode);
   });
 
   // Docs context: every entity list claims it so the docs panel resolves the

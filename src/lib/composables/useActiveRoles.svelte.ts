@@ -53,12 +53,19 @@ export function useActiveRoles(options?: {
 
   const roleNames = $derived(_state.roles.map((r) => r.idp_role));
 
+  /** `idp_role` → role record — the list-cell badge resolver looks labels
+   *  up here (`label_key` → `$t` at render, `idp_role` as fallback). */
+  const rolesByCode = $derived(new Map(_state.roles.map((r) => [r.idp_role, r])));
+
   return {
     get state(): DeepReadonly<typeof _state> {
       return _state as DeepReadonly<typeof _state>;
     },
     get roleNames() {
       return roleNames;
+    },
+    get rolesByCode() {
+      return rolesByCode;
     },
   };
 }

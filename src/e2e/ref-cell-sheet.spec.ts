@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { loginAsTestAdmin } from "./helpers/admin-login";
+import { loginAsCollabAdmin, loginAsTestAdmin } from "./helpers/admin-login";
 
 /**
  * ref-cell-sheet — the DECIDED `type:"ref"` "link" anatomy (POC: audit
@@ -163,18 +163,23 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
     await expect(sheet).not.toContainText("Record not found", { timeout: 15000 });
 
     // uid → badge at the very top of the record surface (mono text, the
-    // uuid itself), never a form field.
+    // uuid itself), never a form field. Anatomy: secondary pill +
+    // file-key icon + the mono uuid + an inner copy CTA.
     const badge = page.getByTestId("entity-record-sheet-uid-badge");
     await expect(badge).toBeVisible();
     await expect(badge).toHaveAttribute("title", UUID_RE);
+    await expect(badge.locator("svg").first()).toBeVisible();
+    await expect(page.getByTestId("entity-record-sheet-uid-copy")).toBeVisible();
     await expect(sheet.locator("input#record-sheet-field-uuid")).toHaveCount(0);
 
     // No raw i18n keys anywhere — every label resolved through the dict.
     await expect(sheet).not.toContainText(/system\.entities\./);
     await expect(sheet).not.toContainText(/\.fields\./);
-    // The newly-declared internal flags render with translated labels.
+    // `onboarding_completed` renders with a translated label;
+    // `auth_method_enforcer_dismissed` is `hidden:true` — suppressed from
+    // the served meta entirely, so the sheet must NOT render it.
     await expect(sheet).toContainText("Onboarding Completed");
-    await expect(sheet).toContainText("Auth Method Enforcer Dismissed");
+    await expect(sheet).not.toContainText("Auth Method Enforcer Dismissed");
 
     // Audit section: last block, labels translated, values rendered as
     // TableCell formatting — ZERO form controls by construction
@@ -432,5 +437,90 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
     const ext = card.getByTestId("ref-cell-created_by-ext").first();
     await card.hover();
     await expect(ext).toHaveCSS("opacity", "1", { timeout: 3000 });
+  });
+
+  test("lifecycle status badge — a suspended actor's record sheet carries the suspended status chip", async ({
+    page,
+    browser,
+  }) => {
+    // e2e_collab_admin — the second admin actor global-setup mints —
+    // creates a customer in its own session: that row's `created_by` is
+    // the ref target pointing AT the user we suspend (audited refs on
+    // user_profile rows all point to the actor, never at the row's own
+    // user — a list row can never open its own record).
+    const marker = `e2e-susp-${Date.now()}`;
+    const userCtx = await browser.newContext();
+    const userPage = await userCtx.newPage();
+    let suspendedUuid: string | undefined;
+    let customerUuid: string | undefined;
+    try {
+      await loginAsCollabAdmin(userPage);
+      const res = await userPage.request.post("/svc/crm/api/v1/entities/customer", {
+        data: {
+          entity: {
+            code: `S${Date.now().toString(36).toUpperCase()}`,
+            status: "ACTIVE",
+            display_name: marker,
+          },
+        },
+      });
+      expect(res.ok()).toBeTruthy();
+      const body = await res.json();
+      suspendedUuid = (body?.created_by ?? body?.row?.created_by ?? body?.entity?.created_by) as
+        | string
+        | undefined;
+      customerUuid = (body?.uuid ?? body?.row?.uuid ?? body?.entity?.uuid) as string | undefined;
+    } finally {
+      await userCtx.close();
+    }
+    expect(suspendedUuid).toMatch(UUID_RE);
+
+    // Suspend the actor via the admin session — suspend/reactivate are
+    // guarded by ?version= like every lifecycle transition.
+    const profileOf = async () => {
+      const res = await page.request.get(
+        `/api/v1/entities/user_profile/list?filters[0][field]=uuid&filters[0][op]=%3D&filters[0][value]=${suspendedUuid}`,
+      );
+      const j = await res.json();
+      return j?.rows?.[0] as { uuid: string; version: number } | undefined;
+    };
+    const before = await profileOf();
+    expect(before?.version).toBeTruthy();
+    const suspendRes = await page.request.post(
+      `/api/v1/auth/users/${suspendedUuid}/suspend?version=${before?.version}`,
+    );
+    expect(suspendRes.ok()).toBeTruthy();
+
+    try {
+      // Suspended actors still resolve the join (suspended ≠ deleted) —
+      // the marker row's ref opens the record sheet carrying the badge.
+      await page.getByTestId("entity-search").locator("input").fill(marker);
+      await expect
+        .poll(() => listRows.some((r) => r.display_name === marker), { timeout: 15000 })
+        .toBe(true);
+      await page.getByTestId("ref-cell-created_by-text").first().click();
+      const badge = page.getByTestId("entity-record-sheet-status-badge");
+      await expect(badge).toBeVisible({ timeout: 15000 });
+      await expect(badge).toContainText(/suspend/i);
+    } finally {
+      // Cleanup: reactivate the actor and soft-delete the marker customer.
+      const after = await profileOf();
+      if (after) {
+        await page.request.post(
+          `/api/v1/auth/users/${suspendedUuid}/reactivate?version=${after.version}`,
+        );
+      }
+      if (customerUuid) {
+        const custRes = await page.request.get(
+          `/svc/crm/api/v1/entities/customer/list?filters[0][field]=uuid&filters[0][op]=%3D&filters[0][value]=${customerUuid}`,
+        );
+        const cust = (await custRes.json())?.rows?.[0] as { version: number } | undefined;
+        if (cust) {
+          await page.request.delete(
+            `/svc/crm/api/v1/entities/customer/${customerUuid}?version=${cust.version}`,
+          );
+        }
+      }
+    }
   });
 });

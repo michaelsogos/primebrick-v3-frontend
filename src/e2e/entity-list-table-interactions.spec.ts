@@ -407,4 +407,76 @@ test.describe("card-view toolbar zones (/crm/customers)", () => {
       await expect(toolbar.getByTestId(id)).toHaveCount(0);
     }
   });
+
+  /**
+   * `options_source:"system.roles"` cell renderer — the `user_profile.roles`
+   * column (jsonb array of idp_role codes) must render ONE secondary badge
+   * per code with the user-key icon and the translated role label, never
+   * the raw JSON array. The e2e admin itself carries the `administrators`
+   * role, so at least one row is guaranteed populated.
+   * Surface: /system/settings/users — canonical EntityTablePage list.
+   */
+  test("roles column renders one badge per role code", async ({ page }) => {
+    await page.goto("/system/settings/users", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("table tbody tr[data-row-index]").first()).toBeVisible({ timeout: 30000 });
+
+    // `roles` is default_visible:false → enable it via the columns sheet.
+    await page.getByRole("button", { name: "Columns" }).click();
+    await page.getByTestId("columns-toggle-roles").click();
+    await page.keyboard.press("Escape");
+
+    const rolesCells = page.getByTestId("roles-cell-roles");
+    await expect(rolesCells.first()).toBeVisible({ timeout: 15000 });
+
+    // At least one row must carry badges — every badge keeps the
+    // destination-event anatomy (icon + translated label, secondary variant).
+    const badges = rolesCells.first().locator("[data-slot='badge']");
+    const badgeCount = await badges.count();
+    expect(badgeCount).toBeGreaterThanOrEqual(1);
+    for (const badge of await badges.all()) {
+      await expect(badge.locator("svg").first()).toBeVisible();
+      await expect(badge).not.toHaveText(/^\s*$/);
+    }
+  });
+
+  /**
+   * `type:"avatar"` list cell — `user_profile.avatar_initials` renders the
+   * MetaAvatar hex (stored initials + sibling `avatar_color`), never the raw
+   * string. `avatar_initials` is immutable server-derived data, so at least
+   * one real user row is guaranteed populated.
+   * Surface: /system/settings/users.
+   */
+  test("avatar_initials column renders the hex avatar cell", async ({ page }) => {
+    await page.goto("/system/settings/users", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("table tbody tr[data-row-index]").first()).toBeVisible({ timeout: 30000 });
+
+    // `avatar_initials` is default_visible:false → enable it via the columns sheet.
+    await page.getByRole("button", { name: "Columns" }).click();
+    await page.getByTestId("columns-toggle-avatar_initials").click();
+    await page.keyboard.press("Escape");
+
+    // At least one row renders the avatar hex with a non-empty seed
+    // ('??' is the honest empty-initials fallback — still a rendered avatar).
+    const avatarCell = page.locator("table tbody td .avatar-hex").first();
+    await expect(avatarCell).toBeVisible({ timeout: 15000 });
+    await expect(avatarCell).not.toHaveText(/^\s*$/);
+  });
+
+  /**
+   * `/api/v1/system/organizations/active` — the sidebar org switcher's only
+   * data source. Pin the transport contract on a plain authenticated page:
+   * 200 + `{organizations: [...]}` envelope. A regression here degrades the
+   * whole app shell silently (switcher stays empty).
+   */
+  test("organizations/active answers 200 with the organizations envelope", async ({ page }) => {
+    const respPromise = page.waitForResponse(
+      (r) => r.url().includes("/api/v1/system/organizations/active") && r.request().method() === "GET",
+      { timeout: 30000 },
+    );
+    await page.goto("/system/settings/users", { waitUntil: "domcontentloaded" });
+    const resp = await respPromise;
+    expect(resp.status()).toBe(200);
+    const body = (await resp.json()) as { organizations?: unknown };
+    expect(Array.isArray(body.organizations)).toBe(true);
+  });
 });

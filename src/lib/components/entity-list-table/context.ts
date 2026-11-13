@@ -1,5 +1,6 @@
 import { getContext, setContext } from 'svelte';
 import type { MetaColumn } from '$lib/entity-list/types';
+import type { ActiveRole } from '$lib/composables/useActiveRoles.svelte';
 
 const AUDIT_COLUMNS_KEY = Symbol('auditColumns');
 const ENTITIES_NS_KEY = Symbol('entitiesNs');
@@ -75,4 +76,21 @@ export function setTableEntityContext(ctx: TableEntityContext) {
 
 export function getTableEntityContext(): TableEntityContext | undefined {
   return getContext(TABLE_ENTITY_KEY);
+}
+
+const ACTIVE_ROLES_KEY = Symbol('activeRoles');
+
+export type ActiveRolesContext = () => ReadonlyMap<string, ActiveRole>;
+
+/** Set the shared active-roles lookup for the table subtree — one lazy
+ *  `useActiveRoles` fetch per list (gated on a `system.roles` column),
+ *  cells resolve `idp_role` → role record for label translation. */
+export function setActiveRolesContext(get: ActiveRolesContext) {
+  setContext(ACTIVE_ROLES_KEY, get);
+}
+
+/** `idp_role` → `ActiveRole` map getter — undefined when the table has no
+ *  `options_source:"system.roles"` column (the fetch never fired). */
+export function getActiveRolesContext(): ActiveRolesContext | undefined {
+  return getContext(ACTIVE_ROLES_KEY);
 }
