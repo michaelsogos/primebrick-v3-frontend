@@ -58,6 +58,14 @@
    `EntityRecordSheet.svelte` `RECORD_ICON_VARIANTS`). Icons without a
    declared pair render unchanged; extend the map when a new plural glyph
    is authored, never guess variants.
+13. **Entity list icons are UNIQUE per entity family** — the record sheet
+   resolves its header icon from the authored list/nav icon, so two
+   entities sharing one glyph render indistinguishable ref sheets
+   (`customers`+`users` both `users`→`user` was the first collision).
+   When authoring a nav/route icon for an entity, pick a glyph no other
+   entity uses — vary the family (`users` vs `users-round`) rather than
+   the wrapper. Non-entity leaves (module root, pipelines, dashboards)
+   may repeat glyphs freely: they never feed `RECORD_ICON_VARIANTS`.
 
 ## Deep dive
 

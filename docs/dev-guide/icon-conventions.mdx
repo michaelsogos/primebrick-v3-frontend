@@ -34,6 +34,14 @@ icon (or the component that owns it).
 | UUID / record identity | `FileKey` | `format:"uuid"` fields and the record-sheet uid badge. `Fingerprint`/`FingerprintPattern` are the passkey/WebAuthn domain — banned on entity-uuid surfaces |
 | Record sheet entity icon | singular variant of the authored list icon | A record shows ONE row: `users`→`user`, `users-round`→`user-round` via `RECORD_ICON_VARIANTS` in `EntityRecordSheet.svelte`. Icons without a declared pair render the authored glyph unchanged — extend the map, never guess |
 
+**Entity list icons must be unique per entity family.** The record sheet
+derives its header icon from the authored list/nav icon — two entities
+sharing a glyph produce indistinguishable ref sheets. Vary the icon
+family (`users` for `user_profile`, `users-round` for `customer`), never
+two entities on the same glyph. Non-entity leaves (module roots,
+pipelines, dashboards) may reuse icons freely — they never feed the
+singular-variant map.
+
 ## RefreshButton
 
 `src/lib/components/ui/refresh-button/`
