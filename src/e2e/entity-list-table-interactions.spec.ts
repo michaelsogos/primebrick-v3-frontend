@@ -437,6 +437,34 @@ test.describe("card-view toolbar zones (/crm/customers)", () => {
       await expect(badge.locator("svg").first()).toBeVisible();
       await expect(badge).not.toHaveText(/^\s*$/);
     }
+
+    // Badge drill: click opens the role_mapping record in the stacked
+    // entity.record sheet — the business-key ref (filter_field=idp_role)
+    // resolves the code through a /list lookup (captured: the request
+    // carries the clicked code) then the record fetch. No error heroes.
+    const roleLookup = page.waitForResponse(
+      (r) =>
+        r.url().includes("/entities/role_mapping/list") &&
+        r.url().includes("filters%5B0%5D%5Bfield%5D=idp_role"),
+      { timeout: 15000 },
+    );
+    await badges.first().click();
+    const lookupResp = await roleLookup;
+    expect(lookupResp.status()).toBe(200);
+    const clickedCode = new URL(lookupResp.url()).searchParams.get("filters[0][value]");
+    expect(clickedCode).toBeTruthy();
+
+    const sheet = page.getByTestId("entity-record-sheet");
+    await expect(sheet).toBeVisible({ timeout: 15000 });
+    await expect(page.getByTestId("entity-record-sheet-missing-hero")).toHaveCount(0);
+    await expect(page.getByTestId("entity-record-sheet-failed-hero")).toHaveCount(0);
+    // The resolved record carries the clicked role's own code.
+    await expect(sheet.locator("#record-sheet-field-idp_role")).toHaveValue(clickedCode!, {
+      timeout: 15000,
+    });
+    // Escape pops the stacked sheet — the table survives underneath.
+    await page.keyboard.press("Escape");
+    await expect(sheet).toHaveCount(0);
   });
 
   /**

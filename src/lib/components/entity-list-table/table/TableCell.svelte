@@ -379,18 +379,37 @@
   {/if}
 {:else if column.options_source === 'system.roles' && Array.isArray(value)}
   <!-- `options_source:"system.roles"` — one `Badge secondary` per role
-       code (user-key icon + translated label), same anatomy family as
-       the `nats_subject` source/destination badges. Tooltip keeps the
-       raw `idp_role` code. -->
+       code (icon + translated label via the active-roles resolver,
+       icon/color authored on the column like every other badge branch).
+       The badge is a drill affordance: click opens the `role_mapping`
+       record in a stacked `entity.record` sheet — the business-key ref
+       (`filter_field:"idp_role"`) resolves the code through `/list`.
+       Tooltip keeps the raw `idp_role` code. -->
   {#if value.length > 0}
     <div class="flex min-w-0 flex-wrap gap-1" data-testid={`roles-cell-${column.key}`}>
       {#each value as code (code)}
         <Tooltip.Root>
           <Tooltip.Trigger>
-            <Badge variant="secondary" class="gap-1 shadow-none">
-              <DynamicIcon name="user-key" size={12} class="shrink-0" />
-              <span class="truncate text-xs">{roleLabel(code)}</span>
-            </Badge>
+            {#snippet child({ props })}
+              <button
+                {...props}
+                type="button"
+                class="inline-flex max-w-full rounded-sm cursor-pointer"
+                onclick={(e) => {
+                  e.stopPropagation();
+                  openSheet('entity.record', {
+                    entity: 'role_mapping',
+                    value: code,
+                    ref: { entity: 'role_mapping', filter_field: 'idp_role' },
+                  }, { stack: true });
+                }}
+              >
+                <Badge variant="secondary" class="gap-1 shadow-none">
+                  <DynamicIcon name={column.icon ?? 'user-key'} size={12} class="shrink-0" style={iconStyle} />
+                  <span class="truncate text-xs">{roleLabel(code)}</span>
+                </Badge>
+              </button>
+            {/snippet}
           </Tooltip.Trigger>
           <Tooltip.Content>
             <p class="font-mono text-xs">{toDisplayString(code)}</p>
