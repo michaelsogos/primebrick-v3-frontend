@@ -529,4 +529,30 @@ test.describe("/system/job/* pages (module-owned)", () => {
     });
     await expect(page.getByTestId("service-record-panel")).toHaveCount(0);
   });
+
+  test("job_name = authored identity, armed_by = live armer — they diverge on orphaned mirrors", async ({
+    page,
+  }) => {
+    await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
+
+    // `service_code` is hidden by default — `armed_by` owns the resolved
+    // service display (name + drill); the raw code stays togglable only.
+    await expect(page.locator("th", { hasText: /^service$/i })).toHaveCount(0);
+
+    // Orphaned mirror (soft-deleted e2e-gate trigger): Job Name keeps the
+    // authored identity — the deleted trigger's name — while Armed By
+    // falls back to the owning service (Process Manager). Same row,
+    // honestly divergent truths.
+    const orphanRow = page.locator("tr", { hasText: "e2e-gate-1793665359607" }).first();
+    await expect(orphanRow).toBeVisible({ timeout: 15000 });
+    await expect(orphanRow).toContainText("Process Manager");
+    const orphanArmed = orphanRow.getByTestId("ref-cell-armed_by-text");
+    await expect(orphanArmed).toContainText("Process Manager");
+
+    // Live trigger row: Job Name and Armed By intentionally share the
+    // trigger's display — identity (plain text) vs drillable ref.
+    const liveRow = page.locator("tr", { hasText: "e2e-callable-dispatch" }).first();
+    await expect(liveRow).toBeVisible({ timeout: 15000 });
+  });
 });
