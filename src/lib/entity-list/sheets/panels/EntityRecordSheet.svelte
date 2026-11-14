@@ -30,6 +30,7 @@
   import { filteredEntityListHref } from '$lib/entity-list/entity-links';
   import { Badge, Button, DynamicIcon, SheetPanelFooter, SheetPanelLayout, toDisplayString } from '@primebrick/ui';
   import EntityRecordSheetBody from '../EntityRecordSheetBody.svelte';
+  import EntityRecordUid from '../EntityRecordUid.svelte';
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import { isEntityOpAllowed } from '$lib/permissions.svelte';
   import { findActionEndpoint, fillActionPath } from '$lib/entity-list/action-endpoints';
@@ -79,6 +80,12 @@
   /** Pseudo-actor ref (`system`, seed aliases): the target is not a uuid —
    *  never reaches the API, renders a warning hero instead. */
   let pseudoRef = $state(false);
+  /** The uid the sheet resolved — business-key refs land on their target's
+   *  uuid before GET; heroes keep showing it above the error state.
+   *  Initial value = the cell's raw stored value (same prop-stability
+   *  contract as `basePath` — the panel remounts per open). */
+  // svelte-ignore state_referenced_locally
+  let heroUid = $state<unknown>(value);
 
   /** Edit mode — gated on `meta.actions`: the pencil renders iff the
    *  `update.single` op is enabled AND the user satisfies its declared
@@ -311,6 +318,7 @@
         }
         uuid = String(hit[uid]);
       }
+      heroUid = uuid;
       const res = await apiFetch(`${basePath}/${uuid}`);
       if (res.status === 404) {
         notFound = true;
@@ -380,7 +388,9 @@
     {#if loading}
       <LoadingBar />
     {:else if pseudoRef}
-      <!-- Pseudo-actor ref (non-uuid): the subject was never censused. -->
+      <!-- Pseudo-actor ref (non-uuid): the subject was never censused.
+           Identity stays visible — the stored value IS the ref we hold. -->
+      <EntityRecordUid {meta} value={heroUid} />
       <StateHero
         severity="warning"
         icon="ghost"
@@ -390,6 +400,7 @@
         test_id="entity-record-sheet-pseudo-hero"
       />
     {:else if notFound}
+      <EntityRecordUid {meta} value={heroUid} />
       <StateHero
         severity="destructive"
         icon="user-x"
@@ -399,6 +410,7 @@
         test_id="entity-record-sheet-missing-hero"
       />
     {:else if failed || !record}
+      <EntityRecordUid {meta} value={heroUid} />
       <StateHero
         severity="destructive"
         icon="circle-alert"

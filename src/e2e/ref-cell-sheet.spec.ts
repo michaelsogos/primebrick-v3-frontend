@@ -270,6 +270,10 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
     await expect(page.getByTestId("entity-record-sheet-missing-hero")).toBeVisible({
       timeout: 15000,
     });
+    // Identity stays visible above the hero: "{entity} ID" label + the
+    // uid badge carry what the sheet DOES know (type + stored value).
+    await expect(page.getByTestId("entity-record-sheet-uid-badge")).toBeVisible();
+    await expect(sheet.locator("label[for='record-sheet-uid-badge']")).toHaveText(/ID$/);
   });
 
   test("external-link CTA opens the filtered target list in a new tab — sheet stays closed", async ({
