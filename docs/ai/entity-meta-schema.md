@@ -72,6 +72,10 @@ type EntityMeta = {
     `@primebrick/ui` schedule-spec i18n).
   - `nats_subject` → badge + link; known module/service subjects link to the
     module page (`/system/settings/modules/[code]` via census resolution).
+  - `service_code` → module badge + link: the code resolves against
+    `shellNav.modules` and renders the module's own icon (uncolored) +
+    translated name, linking to `/system/settings/modules`; unresolved
+    codes render the raw value.
   - `json` → human-readable chips/prose where the shape is known
     (`job_trigger.filter` conditions), else safe stringified preview.
   - `identifier`/`display_name` → standard text affordances.
