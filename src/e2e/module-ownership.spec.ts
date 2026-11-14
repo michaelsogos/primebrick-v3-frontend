@@ -54,6 +54,9 @@ type ModuleInfo = {
   is_default?: boolean;
   /** i18n key for the module's localized display name (module's own dict). */
   label_key?: string;
+  /** Virtual siblings carry the declaring service's dict module
+   *  (`crm-settings` → `crm`) — dict endpoints key on THIS, not `id`. */
+  translations_module?: string;
   /** Declared nav — embedded in the single /modules discovery payload,
    *  already access-filtered server-side. */
   nav?: NavLink[];
@@ -155,10 +158,32 @@ async function launcherClickApp(page: Page, root: string) {
  * raw `name` as fallback. Dict fetch goes through the same endpoint the
  * shell uses, so the assertion tracks the real data path.
  */
+/**
+ * The DICT module serving the module's translations — mirrors the shell
+ * `resolveDictModuleFromRoute` contract: virtual siblings
+ * (`crm-settings`) translate under the declaring service's schema
+ * (`crm`), so dict endpoints key on `translations_module ?? id`.
+ */
+function dictModuleOf(m: ModuleInfo): string {
+  return m.translations_module ?? m.id;
+}
+
+/**
+ * The module's URL code — the second route segment in `/{part_of}/{code}`.
+ * Discovery emits virtual siblings with a synthetic id
+ * `{parentCode}-{siblingId}` (`crm-settings`) whose URL code is the
+ * sibling id (`settings` → `/crm/settings/*`), not the synthetic id.
+ */
+function urlCodeOf(m: ModuleInfo): string {
+  return m.id !== m.part_of && m.id.startsWith(`${m.part_of}-`)
+    ? m.id.slice(m.part_of.length + 1)
+    : m.id;
+}
+
 async function expectedModuleLabel(page: Page, m: ModuleInfo): Promise<string> {
   if (!m.label_key) return m.name;
   const res = await page.request.get(
-    `/api/v1/system/translations/${m.id}/en-GB`
+    `/api/v1/system/translations/${dictModuleOf(m)}/en-GB`
   );
   if (!res.ok()) return m.name;
   const dict: Record<string, string> = await res.json();
@@ -288,7 +313,9 @@ test.describe("module ownership — observable contract", () => {
       // The primary prefix is derived: /{part_of}/{code}, collapsing to
       // /{code} when part_of === code. Extras may only add /{root}/{code}
       // — the code stays the URL's second segment under every root.
-      const expectedPrimary = m.part_of === m.id ? `/${m.id}` : `/${m.part_of}/${m.id}`;
+      const urlCode = urlCodeOf(m);
+      const expectedPrimary =
+        m.part_of === urlCode ? `/${urlCode}` : `/${m.part_of}/${urlCode}`;
       const prefixes = m.route_prefixes ?? [];
       // Headless services (ai, emailsender, webhook) declare no nav/prefixes
       // — the primary-prefix contract only applies to page-owning modules.
@@ -301,8 +328,8 @@ test.describe("module ownership — observable contract", () => {
       for (const p of prefixes) {
         const segs = p.split("/").filter(Boolean);
         expect(
-          segs.length === 1 ? segs[0] === m.id : segs[1] === m.id,
-          `module '${m.id}' prefix '${p}' must keep '${m.id}' as its last declared segment`
+          segs.length === 1 ? segs[0] === urlCode : segs[1] === urlCode,
+          `module '${m.id}' prefix '${p}' must keep '${urlCode}' as its last declared segment`
         ).toBeTruthy();
       }
       // Every nav href lives under SOME declared prefix. Modules without
@@ -359,15 +386,16 @@ test.describe("module ownership — observable contract", () => {
     }
 
     // Parity: every enabled module must serve a non-empty dict in the
-    // current UI language.
-    for (const m of modules) {
+    // current UI language — keyed on the DICT module (virtual siblings
+    // share the declaring service's schema; dedupe the shared fetch).
+    for (const dictId of new Set(modules.map(dictModuleOf))) {
       const res = await page.request.get(
-        `/api/v1/system/translations/${m.id}/en-GB`
+        `/api/v1/system/translations/${dictId}/en-GB`
       );
-      expect(res.ok(), `dict endpoint for '${m.id}' must succeed`).toBeTruthy();
+      expect(res.ok(), `dict endpoint for '${dictId}' must succeed`).toBeTruthy();
       const dict = await res.json();
       const size = Object.keys(dict?.dict ?? dict ?? {}).length;
-      expect(size, `module '${m.id}' dictionary must not be empty`).toBeGreaterThan(0);
+      expect(size, `module '${dictId}' dictionary must not be empty`).toBeGreaterThan(0);
     }
   });
 
@@ -462,7 +490,7 @@ test.describe("module ownership — observable contract", () => {
     for (const m of pageModules(modules)) {
       const nav = await fetchModuleNav(page, m.id);
       const moduleLabel = await expectedModuleLabel(page, m);
-      const dictRes = await page.request.get(`/api/v1/system/translations/${m.id}/en-GB`);
+      const dictRes = await page.request.get(`/api/v1/system/translations/${dictModuleOf(m)}/en-GB`);
       const dict: Record<string, string> = dictRes.ok() ? await dictRes.json() : {};
 
       // One probe per root slice — the first declared nav link of each
