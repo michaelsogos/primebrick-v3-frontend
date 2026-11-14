@@ -471,4 +471,62 @@ test.describe("/system/job/* pages (module-owned)", () => {
       .toBe(true);
     await expect(errorPanel).toHaveCount(0);
   });
+
+  test("armed_by lazy ref: service_registry → service.record, job_trigger → entity.record", async ({
+    page,
+  }) => {
+    await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
+
+    // Service-armed row (infra schedule): the armed_by cell label is the
+    // service's registry name; the lazy ref's entity_field resolves to
+    // `service_registry` and the key_field carries the service code.
+    const serviceRow = page.locator("tr", { hasText: "AI Assistants Manager" }).first();
+    const armedCell = serviceRow.getByTestId("ref-cell-armed_by-text");
+    await expect(armedCell).toBeVisible({ timeout: 15000 });
+
+    // Universal '-' contract — the schedule is disarmed, so the gated
+    // `next_run_at` calc renders the null placeholder (the physical
+    // mirror value never leaks through the served truth).
+    const dashCells = serviceRow.locator("td", { hasText: /^-$/ });
+    await expect(dashCells.first()).toBeVisible();
+
+    // Text affordance → the `service.record` panel (registry RPC record,
+    // not an entity sheet). The panel shows the service detail plus the
+    // arming triple carried by the source row.
+    await armedCell.click();
+    const panel = page.getByTestId("service-record-panel");
+    await expect(panel).toBeVisible({ timeout: 15000 });
+    await expect(page.getByTestId("service-record-arming")).toBeVisible();
+    await expect(page.getByTestId("service-record-arming-job")).toContainText("partition-maintenance");
+    await expect(page.getByTestId("service-record-arming-run-as")).toBeVisible();
+    await expect(page.getByTestId("service-record-info")).toBeVisible();
+    await expect(page.getByTestId("service-record-panel-module-cta")).toHaveAttribute(
+      "href",
+      "/system/settings/modules/ai",
+    );
+    // The single global sheet host served it — no parallel dialog.
+    await expect(page.getByTestId("entity-record-sheet")).toHaveCount(0);
+    // Visual contract artifact — the anatomy is reviewed, not just asserted.
+    // Settle past the 500ms slide-in so the capture shows the open pane.
+    await page.waitForTimeout(700);
+    await page.screenshot({ path: "test-results/service-record-panel.png" });
+    await page.keyboard.press("Escape");
+    await expect(panel).toHaveCount(0, { timeout: 10000 });
+
+    // Trigger-armed row: the same column resolves to `job_trigger` — the
+    // canonical entity.record sheet opens on the trigger's uuid.
+    const triggerRow = page.locator("tr", { hasText: "e2e-callable-dispatch" }).first();
+    const triggerCell = triggerRow.getByTestId("ref-cell-armed_by-text");
+    await expect(triggerCell).toBeVisible({ timeout: 15000 });
+    await triggerCell.click();
+    const recordSheet = page.getByTestId("entity-record-sheet");
+    await expect(recordSheet).toBeVisible({ timeout: 15000 });
+    // The trigger record loaded through the lazy-ref key — the served
+    // `armed_ref_key` (the trigger's uuid) IS the sheet's record uid.
+    await expect(recordSheet).toContainText("01a1cbe9-3464-77b8-a85b-9b236aa66f4e", {
+      timeout: 15000,
+    });
+    await expect(page.getByTestId("service-record-panel")).toHaveCount(0);
+  });
 });

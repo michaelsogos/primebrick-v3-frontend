@@ -23,6 +23,7 @@ export const SHEET_PANEL_IDS = [
   'entity.versionHistory',
   'entity.jsonViewer',
   'entity.record',
+  'service.record',
   'config.currencySelect',
   'config.protocolSelect',
   'config.phonePrefixSelect',
@@ -113,6 +114,16 @@ export type SheetPanelPropsMap = {
     value: unknown;
     /** The column's ref contract — drives business-key resolution. */
     ref?: import('$lib/entity-list/types').MetaColumn['ref'];
+  };
+  'service.record': {
+    /** `service_registry` business key — the service code. */
+    code: string;
+    /**
+     * The source wire row that opened the drill (lazy-ref context) — the
+     * panel surfaces the arming triple it carries (`job_name`,
+     * `schedule_spec`, `run_as`) when present.
+     */
+    context_row?: Record<string, unknown>;
   };
   'config.currencySelect': {
     currentCurrency: string;
