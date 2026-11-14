@@ -115,10 +115,19 @@
     return col.type === 'datetime' && !!col.datetime_iana_toggle && (modeByKey[col.key] ?? 'browser') === 'record';
   }
 
-  /** `format:"nats_subject"` drill-down — the module list is the canonical
-   *  subject destination until the planned capabilities/events page lands
-   *  (keep in sync with the `ref` column contract when it ships). */
-  const NATS_SUBJECT_HREF = '/system/settings/modules';
+  /** Module-list drill-down — the canonical destination for module-owned
+   *  concepts (`nats_subject` subjects, `service_code` owners) until the
+   *  planned capabilities/events page lands. */
+  const MODULES_HREF = '/system/settings/modules';
+
+  /** `format:"service_code"` — the code resolves against the module census
+   *  to the owning service's entry (icon + translated name); unresolved
+   *  (offline/unregistered service) renders the raw code. */
+  const serviceModule = $derived(
+    column.format === 'service_code' && typeof value === 'string' && value !== ''
+      ? shellNav.modules.find((m) => m.id === value)
+      : undefined,
+  );
 
   type JsonCondition = { field: string; op?: string; value?: unknown };
   /** Trigger/filter `{field,op,value}` DSL vocabulary → canonical
@@ -243,7 +252,7 @@
       {#snippet child({ props })}
         <a
           {...props}
-          href={resolve(NATS_SUBJECT_HREF)}
+          href={resolve(MODULES_HREF)}
           target="_blank"
           rel="noopener noreferrer"
           class="inline-flex max-w-full rounded-sm"
@@ -259,6 +268,34 @@
       <p class="font-mono text-xs">{toDisplayString(value)}</p>
     </Tooltip.Content>
   </Tooltip.Root>
+{:else if column.format === 'service_code' && value}
+  <!-- Module badge — the census carries the service's icon + translated
+       name; the raw code stays in the tooltip. -->
+  {#if serviceModule}
+    <Tooltip.Root>
+      <Tooltip.Trigger>
+        {#snippet child({ props })}
+          <a
+            {...props}
+            href={resolve(MODULES_HREF)}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex max-w-full rounded-sm"
+          >
+            <Badge variant="secondary" class="gap-1 shadow-none">
+              {#if serviceModule.icon}<DynamicIcon name={serviceModule.icon} size={12} class="shrink-0" />{/if}
+              <span class="truncate text-xs">{serviceModule.label_key ? $t(serviceModule.label_key) : serviceModule.name}</span>
+            </Badge>
+          </a>
+        {/snippet}
+      </Tooltip.Trigger>
+      <Tooltip.Content>
+        <p class="font-mono text-xs">{toDisplayString(value)}</p>
+      </Tooltip.Content>
+    </Tooltip.Root>
+  {:else}
+    <span class="font-mono text-[11px]">{toDisplayString(value)}</span>
+  {/if}
 {:else if column.format === 'json'}
   {@const json = jsonCellContent(value)}
   {#if json.kind === 'conditions'}
