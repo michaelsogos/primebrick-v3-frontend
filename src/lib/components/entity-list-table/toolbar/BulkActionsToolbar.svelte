@@ -260,7 +260,7 @@
           {#if bulkRestoreChrome?.icon}
             <DynamicIcon name={bulkRestoreChrome.icon} size={14} />
           {:else}
-            <DynamicIcon name="trash-restore" size={14} />
+            <DynamicIcon name="trash-arrow-up" size={14} />
           {/if}
           {$t(bulkRestoreChrome?.label_key ?? 'system.entities.list.bulk_actions.restore')}
         </Button>

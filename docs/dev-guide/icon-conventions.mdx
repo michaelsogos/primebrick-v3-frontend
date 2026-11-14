@@ -1,6 +1,6 @@
 ---
 title: Icon Conventions
-description: Canonical icon per semantic action — refresh uses the RefreshButton component, clear/reset is Eraser, close/remove is X, restore-from-deleted is the authored `trash-restore` glyph.
+description: Canonical icon per semantic action — refresh uses the RefreshButton component, clear/reset is Eraser, close/remove is X, restore-from-deleted is the authored `trash-arrow-up` glyph.
 ---
 
 # Icon Conventions
@@ -16,7 +16,7 @@ icon (or the component that owns it).
 | Refresh / reload | `RefreshCw` | Via the `RefreshButton` component — never hand-rolled |
 | Clear / reset | `Eraser` | Clear an input value, reset filters — **not** close |
 | Close / dismiss / remove | `X` | Sheet close, chip remove — **not** clear |
-| Restore deleted | `trash-restore` | Undo soft-delete — authored glyph in `CUSTOM_ICONS` (`@primebrick/ui`), rendered via `DynamicIcon name="trash-restore"` on every restore surface. `RotateCcw` stays the **local revert/undo** glyph (dict row revert, sheet head reset) |
+| Restore deleted | `trash-arrow-up` | Undo soft-delete — authored glyph in `CUSTOM_ICONS` (`@primebrick/ui`), rendered via `DynamicIcon name="trash-arrow-up"` on every restore surface. `RotateCcw` stays the **local revert/undo** glyph (dict row revert, sheet head reset) |
 | Local revert / undo | `RotateCcw` | In-place reverts that are NOT soft-delete restores (dict row revert, sheet-head reset) |
 | Delete | `Trash2` | |
 | Edit | `Pencil` | |

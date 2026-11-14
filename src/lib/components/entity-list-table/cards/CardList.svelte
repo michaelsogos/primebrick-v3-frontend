@@ -199,7 +199,7 @@
               {#if rowDeleted}
                 <DropdownMenu.Item onclick={() => onRestoreRow?.(r)} class="text-warning">
                   <div class="flex items-center gap-2">
-                    <DynamicIcon name="trash-restore" class="size-4 text-warning/70" />
+                    <DynamicIcon name="trash-arrow-up" class="size-4 text-warning/70" />
                     <span>{$t('app.common.restore')}</span>
                   </div>
                 </DropdownMenu.Item>

@@ -13,8 +13,8 @@
    refresh button (`Toolbar.refresh` prop for toolbars, `compact` variant
    inside cards).
 3. **Clear/reset = `Eraser`**, close/remove = `X`, **restore-from-deleted =
-   `trash-restore`** (authored glyph — `CUSTOM_ICONS` in `@primebrick/ui`,
-   consumed via `DynamicIcon name="trash-restore"` on every restore surface),
+   `trash-arrow-up`** (authored glyph — `CUSTOM_ICONS` in `@primebrick/ui`,
+   consumed via `DynamicIcon name="trash-arrow-up"` on every restore surface),
    **local revert/undo = `RotateCcw`**, refresh = `RefreshCw`. Do not cross
    these semantics.
 4. **Booleans**: `CircleCheck` / `CircleX` — never `CheckCircle`/`XCircle`.

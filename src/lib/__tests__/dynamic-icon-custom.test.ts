@@ -3,7 +3,7 @@ import { render, waitFor } from "@testing-library/svelte";
 import { DynamicIcon } from "@primebrick/ui";
 
 // CUSTOM_ICONS resolution: authored lucide-vocabulary glyphs (e.g.
-// trash-restore) resolve synchronously through DynamicIcon before the
+// trash-arrow-up) resolve synchronously through DynamicIcon before the
 // lucide glob — every restore surface (bulk CTA, row/card actions, state
 // renderer, preview panel) renders this ONE glyph instead of the retired
 // two-icon Trash+ArrowUpFromLine compound.
@@ -16,9 +16,9 @@ const TRASH_RESTORE_PATHS = [
   "M12 12v10",
 ];
 
-describe("DynamicIcon — CUSTOM_ICONS (trash-restore)", () => {
+describe("DynamicIcon — CUSTOM_ICONS (trash-arrow-up)", () => {
   it("renders the authored glyph with the lucide chrome contract", async () => {
-    const { container } = render(DynamicIcon, { props: { name: "trash-restore", size: 14 } });
+    const { container } = render(DynamicIcon, { props: { name: "trash-arrow-up", size: 14 } });
     await waitFor(() => expect(container.querySelector("svg")).toBeInTheDocument());
     const svg = container.querySelector("svg")!;
     expect(svg).toHaveAttribute("width", "14");
@@ -28,7 +28,7 @@ describe("DynamicIcon — CUSTOM_ICONS (trash-restore)", () => {
   });
 
   it("inherits host color classes (warning restore surfaces)", async () => {
-    const { container } = render(DynamicIcon, { props: { name: "trash-restore", class: "size-4 text-warning/70" } });
+    const { container } = render(DynamicIcon, { props: { name: "trash-arrow-up", class: "size-4 text-warning/70" } });
     await waitFor(() => expect(container.querySelector("svg")).toBeInTheDocument());
     expect(container.querySelector("svg")!.getAttribute("class")).toContain("text-warning/70");
   });

@@ -25,7 +25,7 @@ first use.
 1. **Resolution order** — every name passes an ordered lookup, and the first
    hit wins. Registries resolve synchronously (no async import):
    `SEMANTIC_ICONS` (self-colored `exec-*` glyphs) → `CUSTOM_ICONS` (authored
-   lucide-vocabulary node tuples, e.g. `trash-restore`) → `COMPOSED_ICONS`
+   lucide-vocabulary node tuples, e.g. `trash-arrow-up`) → `COMPOSED_ICONS`
    (masked base+overlay mashups) → the Lucide™ glob.
 2. A module-level `import.meta.glob` over `@lucide/svelte/dist/icons/*.svelte`
    produces a map of path → lazy import function that Vite can statically

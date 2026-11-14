@@ -100,7 +100,7 @@ hand). Authored entries are presentation overrides on top of the class.
 | `hidden` | `true` = **the only way to suppress a physical column** — the column is dropped from the served meta entirely (no cell, picker entry, filter, or form field). Everything not explicitly hidden is served |
 | `hideable` | `false` = cannot be hidden |
 | `sortable` / `searchable` / `filterable` | Capability flags — default `true`, set `false` explicitly to disable |
-| `icon` | Field icon name (lucide or authored `CUSTOM_ICONS` glyph, e.g. `trash-restore`) — consumed by form labels, column headers, and cell badges. Optional: absent icon renders nothing and reserves no space |
+| `icon` | Field icon name (lucide or authored `CUSTOM_ICONS` glyph, e.g. `trash-arrow-up`) — consumed by form labels, column headers, and cell badges. Optional: absent icon renders nothing and reserves no space |
 | `badge` | `{ values: Record<string, { label_key?, label_text?, color? }> }` |
 | `datetime_iana_toggle` | `{ record_iana_field }` — browser-local vs record-timezone header toggle |
 | `sparkline` | `type:"sparkline"` virtual column — `{ endpoint, request_field, row_key, response_field?, series }`; the list engine batch-POSTs row keys after every load (no per-page wiring) and `TableCell` renders `SparklineBars` in every view mode (`table`, `cards_list`, `cards`) |

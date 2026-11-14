@@ -170,7 +170,7 @@
                   {#if chrome?.icon}
                     <DynamicIcon name={chrome.icon} class="size-4" />
                   {:else}
-                    <DynamicIcon name="trash-restore" class="size-4" />
+                    <DynamicIcon name="trash-arrow-up" class="size-4" />
                   {/if}
                   <span>{$t(chrome?.label_key ?? 'app.common.restore')}</span>
                 </div>
