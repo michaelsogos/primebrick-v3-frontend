@@ -12,8 +12,11 @@
 2. **Refresh CTAs are MANDATORY `<RefreshButton>`** — never hand-roll a
    refresh button (`Toolbar.refresh` prop for toolbars, `compact` variant
    inside cards).
-3. **Clear/reset = `Eraser`**, close/remove = `X`, restore = `RotateCcw`,
-   refresh = `RefreshCw`. Do not cross these semantics.
+3. **Clear/reset = `Eraser`**, close/remove = `X`, **restore-from-deleted =
+   `trash-restore`** (authored glyph — `CUSTOM_ICONS` in `@primebrick/ui`,
+   consumed via `DynamicIcon name="trash-restore"` on every restore surface),
+   **local revert/undo = `RotateCcw`**, refresh = `RefreshCw`. Do not cross
+   these semantics.
 4. **Booleans**: `CircleCheck` / `CircleX` — never `CheckCircle`/`XCircle`.
    **Warnings**: `TriangleAlert` — never the legacy `AlertTriangle` alias.
 5. Icons import ONLY from `@primebrick/ui/vendor/lucide` (named imports) —

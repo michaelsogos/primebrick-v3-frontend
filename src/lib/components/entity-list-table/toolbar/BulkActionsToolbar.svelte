@@ -14,8 +14,6 @@
   import { Download } from '@primebrick/ui/vendor/lucide'
   import { Copy } from '@primebrick/ui/vendor/lucide'
   import { Trash2 } from '@primebrick/ui/vendor/lucide'
-  import { Trash } from '@primebrick/ui/vendor/lucide'
-  import { ArrowUpFromLine } from '@primebrick/ui/vendor/lucide';
 
   let {
     toolbarMode,
@@ -262,10 +260,7 @@
           {#if bulkRestoreChrome?.icon}
             <DynamicIcon name={bulkRestoreChrome.icon} size={14} />
           {:else}
-            <span class="relative flex items-center justify-center">
-              <Trash class="size-3.5" />
-              <ArrowUpFromLine class="absolute bottom-px size-2" />
-            </span>
+            <DynamicIcon name="trash-restore" size={14} />
           {/if}
           {$t(bulkRestoreChrome?.label_key ?? 'system.entities.list.bulk_actions.restore')}
         </Button>

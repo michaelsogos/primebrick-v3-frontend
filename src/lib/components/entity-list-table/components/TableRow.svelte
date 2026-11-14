@@ -25,7 +25,6 @@
   import { FileClock } from '@primebrick/ui/vendor/lucide'
   import { Eye } from '@primebrick/ui/vendor/lucide'
   import { Trash2 } from '@primebrick/ui/vendor/lucide'
-  import { ArrowUpFromLine } from '@primebrick/ui/vendor/lucide';
   import { DynamicIcon, actionColorClass } from '@primebrick/ui';
   import type { CellArgs, EntityRowActions } from '../types';
   import type { RowCustomAction } from '$lib/entity-list/types';
@@ -301,10 +300,7 @@
                       {#if chrome?.icon}
                         <DynamicIcon name={chrome.icon} class="size-4" />
                       {:else}
-                        <span class="relative flex items-center justify-center">
-                          <Trash2 class="size-4" />
-                          <ArrowUpFromLine class="absolute -bottom-[1px] size-3" />
-                        </span>
+                        <DynamicIcon name="trash-restore" class="size-4" />
                       {/if}
                       <span>{$t(chrome?.label_key ?? 'app.common.restore')}</span>
                     </div>

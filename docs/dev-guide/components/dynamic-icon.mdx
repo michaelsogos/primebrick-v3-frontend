@@ -5,15 +5,15 @@ description: Render any Lucide™ icon by name at runtime, with build-time glob 
 
 # DynamicIcon
 
-`src/lib/components/ui/dynamic-icon/DynamicIcon.svelte`
+`@primebrick/ui` — `src/lib/components/dynamic-icon/DynamicIcon.svelte`
 
 ## Purpose
 
-Renders any Lucide™ icon by name at runtime. The icon name is not known at
-build time (e.g. it comes from module configuration), so a static import is
-not possible. `DynamicIcon` solves this by pre-registering every icon module
-under `@lucide/svelte/dist/icons/*.svelte` via `import.meta.glob`, then
-lazy-loading and caching the requested icon on first use.
+Renders any icon by name at runtime — Lucide™ glyphs **and** Primebrick-authored
+registries. The icon name is not known at build time (e.g. it comes from module
+configuration), so a static import is not possible. `DynamicIcon` resolves the
+name through an ordered lookup, then lazy-loads and caches Lucide™ chunks on
+first use.
 
 ## Origin
 
@@ -22,16 +22,21 @@ lazy-loading and caching the requested icon on first use.
 
 ## How it works
 
-1. A module-level `import.meta.glob('/node_modules/@lucide/svelte/dist/icons/*.svelte')`
-   call produces a map of path → lazy import function that Vite can statically
+1. **Resolution order** — every name passes an ordered lookup, and the first
+   hit wins. Registries resolve synchronously (no async import):
+   `SEMANTIC_ICONS` (self-colored `exec-*` glyphs) → `CUSTOM_ICONS` (authored
+   lucide-vocabulary node tuples, e.g. `trash-restore`) → `COMPOSED_ICONS`
+   (masked base+overlay mashups) → the Lucide™ glob.
+2. A module-level `import.meta.glob` over `@lucide/svelte/dist/icons/*.svelte`
+   produces a map of path → lazy import function that Vite can statically
    analyze. This is required because Vite cannot resolve dynamic `import()`
    with template literals.
-2. On each name change, an `$effect` calls `loadIcon(name)` which looks up the
-   loader for `/node_modules/@lucide/svelte/dist/icons/${name}.svelte`, invokes
-   it, and caches the resolved component in a `Map`.
-3. While the chunk loads, a placeholder `<span>` of the icon's `size` keeps
+3. On each name change, an `$effect` calls `loadIcon(name)` which invokes the
+   matched loader and caches the resolved component in a `Map`.
+4. While the chunk loads, a placeholder `<span>` of the icon's `size` keeps
    layout stable.
-4. If the name is not found, a warning is logged and nothing renders.
+5. If the name resolves nowhere, a warning is logged and a dashed `?` marker
+   renders at the icon's `size` — a declaration bug stays visible.
 
 ## Usage
 
