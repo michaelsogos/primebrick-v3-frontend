@@ -405,7 +405,7 @@
                 }}
               >
                 <Badge variant="secondary" class="gap-1 shadow-none">
-                  <DynamicIcon name={column.icon ?? 'user-key'} size={12} class="shrink-0" style={iconStyle} />
+                  {#if column.icon}<DynamicIcon name={column.icon} size={12} class="shrink-0" style={iconStyle} />{/if}
                   <span class="truncate text-xs">{roleLabel(code)}</span>
                 </Badge>
               </button>
