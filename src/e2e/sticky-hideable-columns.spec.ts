@@ -72,4 +72,20 @@ test.describe("identity column contract — job_schedule", () => {
     await expect(subjectToggle).toContainText("Source Queue");
     await page.keyboard.press("Escape");
   });
+
+  /* run_stats sparkline — the zero-filled grid contract: the server
+   * emits every bucket in the span (position = time, current bucket
+   * last) and every slot draws at least one rect — a colored segment
+   * when the bucket has runs, the baseline tick when empty. The frame
+   * therefore exists even for never-ran schedules. */
+  test("sparkline renders a fixed 10-slot frame, current bucket last", async ({ page }) => {
+    await loginAsTestAdmin(page);
+    await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 30000 });
+
+    const svg = page.locator("table tbody svg[aria-label='sparkline']").first();
+    await expect(svg).toBeVisible({ timeout: 15000 });
+    // ≥10 rects: every one of the 10 slots draws ≥1 rect (colored or tick).
+    await expect.poll(async () => svg.locator("rect").count(), { timeout: 15000 }).toBeGreaterThanOrEqual(10);
+  });
 });
