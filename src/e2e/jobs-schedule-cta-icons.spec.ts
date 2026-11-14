@@ -1,0 +1,75 @@
+import { test, expect } from "@playwright/test";
+import { loginAsTestAdmin } from "./helpers/admin-login";
+
+/**
+ * /system/job/job-schedules — `:filled` icon qualifier on lifecycle CTAs.
+ *
+ * The entity_op `cta.icon` carries DynamicIcon's `:filled` name
+ * qualifier (`icon:"pause:filled"`/`"play:filled"` on the pause/resume
+ * row ops and the pause_all/resume_all bulk ops). The FE strips the
+ * qualifier, loads the bare lucide glyph, and renders
+ * `fill="currentColor"` with the 2px stroke kept.
+ *
+ * Asserted end-to-end at two layers:
+ *  1. wire — the served meta carries the qualified names verbatim
+ *     (a regression to plain "pause"/"play" fails here, not on pixels);
+ *  2. DOM — the bulk toolbar renders the synthesized CTAs with the
+ *     filled svgs, while `disarm_all` ("power") keeps `fill="none"` as
+ *     the negative control: an unqualified name must never fill.
+ */
+
+interface CtaRow {
+  action_name: string;
+  icon?: string;
+}
+
+test.describe("job_schedule lifecycle CTAs — :filled icons", () => {
+  test.beforeEach(async ({ page }) => {
+    await loginAsTestAdmin(page);
+  });
+
+  test("meta carries qualified names; bulk toolbar renders filled svgs", async ({
+    page,
+  }) => {
+    await page.goto("/system/job/job-schedules", {
+      waitUntil: "domcontentloaded",
+    });
+    await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
+
+    // Wire contract — synthesized row/bulk custom actions in served meta.
+    const meta = await page.evaluate(async () => {
+      const res = await fetch("/svc/job/api/v1/entities/job_schedule/meta");
+      const body = await res.json();
+      return {
+        row: (body.table?.row_custom_actions ?? []) as CtaRow[],
+        bulk: (body.table?.bulk_custom_actions ?? []) as CtaRow[],
+      };
+    });
+    expect(meta.row).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ action_name: "pause", icon: "pause:filled" }),
+        expect.objectContaining({ action_name: "resume", icon: "play:filled" }),
+      ]),
+    );
+    expect(meta.bulk).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ action_name: "pause_all", icon: "pause:filled" }),
+        expect.objectContaining({ action_name: "resume_all", icon: "play:filled" }),
+        expect.objectContaining({ action_name: "disarm_all", icon: "power" }),
+      ]),
+    );
+
+    // DOM contract — selecting a row auto-switches the L2 bar to bulk
+    // mode (useToolbarMode derives the mode from selection vs filter
+    // timestamps; a manual toggle click gets reverted on this page since
+    // the Recurring schedule-type filter is applied by default).
+    await page.getByRole("checkbox", { name: "select row" }).first().click();
+    const toolbar = page.getByTestId("bulk-actions-toolbar");
+    await expect(toolbar.locator("svg.lucide-pause")).toBeVisible();
+    await expect(toolbar.locator("svg.lucide-pause")).toHaveAttribute("fill", "currentColor");
+    await expect(toolbar.locator("svg.lucide-play")).toBeVisible();
+    await expect(toolbar.locator("svg.lucide-play")).toHaveAttribute("fill", "currentColor");
+    // Negative control — power is unqualified, must stay stroke-only.
+    await expect(toolbar.locator("svg.lucide-power")).toHaveAttribute("fill", "none");
+  });
+});
