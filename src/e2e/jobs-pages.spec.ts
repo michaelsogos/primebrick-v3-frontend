@@ -530,15 +530,52 @@ test.describe("/system/job/* pages (module-owned)", () => {
     await expect(page.getByTestId("service-record-panel")).toHaveCount(0);
   });
 
+  test("created_by audit actor lazy ref: system:* → service name + service.record", async ({
+    page,
+  }) => {
+    await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
+
+    // `created_by` is an audited column — hidden by default, togglable.
+    // The DAL resolves `system:<code>` writers through service_registry:
+    // the cell carries the service NAME and a lazy ref (ref_entity=
+    // service_registry, ref_key=code) — the same canonical cell anatomy
+    // every audited entity now gets for free.
+    await page.getByRole("button", { name: "Columns" }).click();
+    const toggle = page.getByTestId("columns-toggle-created_by");
+    await expect(toggle).toBeVisible({ timeout: 15000 });
+    await toggle.click();
+    await page.keyboard.press("Escape");
+
+    const cell = page.getByTestId("ref-cell-created_by-text").first();
+    await expect(cell).toBeVisible({ timeout: 15000 });
+    await expect(cell).toContainText(/Process Manager|AI Assistants Manager/);
+    await cell.click();
+
+    // Service actor → the service.record panel (registry RPC record) —
+    // never an entity sheet, exactly like the armed_by service branch.
+    const panel = page.getByTestId("service-record-panel");
+    await expect(panel).toBeVisible({ timeout: 15000 });
+    await expect(page.getByTestId("service-record-info")).toBeVisible();
+    await expect(page.getByTestId("entity-record-sheet")).toHaveCount(0);
+    await page.keyboard.press("Escape");
+    await expect(panel).toHaveCount(0, { timeout: 10000 });
+  });
+
   test("job_name = authored identity, armed_by = live armer — they diverge on orphaned mirrors", async ({
     page,
   }) => {
     await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
 
-    // `service_code` is hidden by default — `armed_by` owns the resolved
-    // service display (name + drill); the raw code stays togglable only.
+    // `service_code` is fully suppressed (`hidden:true`) — `created_by`
+    // owns service provenance (registry name + drill), `armed_by` the
+    // armer. The column must not exist in the picker either.
     await expect(page.locator("th", { hasText: /^service$/i })).toHaveCount(0);
+    await page.getByRole("button", { name: "Columns" }).click();
+    await expect(page.getByTestId("columns-toggle-service_code")).toHaveCount(0);
+    await expect(page.getByTestId("columns-toggle-trigger_uuid")).toBeVisible({ timeout: 15000 });
+    await page.keyboard.press("Escape");
 
     // Orphaned mirror (soft-deleted e2e-gate trigger): Job Name keeps the
     // authored identity — the deleted trigger's name — while Armed By

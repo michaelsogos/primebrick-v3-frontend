@@ -110,7 +110,14 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
     );
 
   test("ref cell is text anatomy — font-medium, not a badge", async ({ page }) => {
-    const cell = page.getByTestId("ref-cell-created_by-text").first();
+    const i = resolvedIndex();
+    test.skip(i < 0, "no row with a resolved actor on this page");
+    // Row-scoped: unresolved actors carry no ref-cell testid, so a bare
+    // .first()/.nth() would drift off the intended row.
+    const cell = page
+      .locator("table tbody tr")
+      .nth(i)
+      .getByTestId("ref-cell-created_by-text");
     await expect(cell).toHaveClass(/font-medium/);
     await expect(cell.locator("..")).not.toHaveClass(/badge/);
   });
@@ -118,20 +125,26 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
   test("external-link affordance is hidden at rest, revealed on row hover", async ({
     page,
   }) => {
-    const ext = page.getByTestId("ref-cell-created_by-ext").first();
+    const i = resolvedIndex();
+    test.skip(i < 0, "no row with a resolved actor on this page");
+    const row = page.locator("table tbody tr").nth(i);
+    const ext = row.getByTestId("ref-cell-created_by-ext");
     // Hidden at rest — computed style, not DOM presence.
     await expect(ext).toHaveCSS("opacity", "0");
-    await page.locator("table tbody tr").first().hover();
+    await row.hover();
     await expect(ext).toHaveCSS("opacity", "1", { timeout: 3000 });
   });
 
   test("text click opens the entity.record sheet with the live record — display-only widgets", async ({
     page,
   }) => {
-    const i = resolvedIndex();
-    test.skip(i < 0, "no row with a resolved actor on this page");
-    const name = listRows[i].created_by_name!;
-    await page.getByTestId("ref-cell-created_by-text").nth(i).click();
+    // Order-independent: the first ref-cell testid IS a resolved actor by
+    // construction (unresolved rows render plain text), and its text IS
+    // the join-resolved display name — no listRows/DOM index alignment.
+    const cell = page.getByTestId("ref-cell-created_by-text").first();
+    await expect(cell).toBeVisible({ timeout: 15000 });
+    const name = (await cell.textContent())!.trim();
+    await cell.click();
 
     const sheet = page.getByTestId("entity-record-sheet");
     await expect(sheet).toBeVisible({ timeout: 15000 });
@@ -156,7 +169,7 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
   }) => {
     const i = resolvedIndex();
     test.skip(i < 0, "no row with a resolved actor on this page");
-    await page.getByTestId("ref-cell-created_by-text").nth(i).click();
+    await page.locator("table tbody tr").nth(i).getByTestId("ref-cell-created_by-text").click();
 
     const sheet = page.getByTestId("entity-record-sheet");
     await expect(sheet).toBeVisible({ timeout: 15000 });
@@ -201,7 +214,7 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
   }) => {
     const i = resolvedIndex();
     test.skip(i < 0, "no row with a resolved actor on this page");
-    await page.getByTestId("ref-cell-created_by-text").nth(i).click();
+    await page.locator("table tbody tr").nth(i).getByTestId("ref-cell-created_by-text").click();
 
     const sheet = page.getByTestId("entity-record-sheet");
     await expect(sheet).toBeVisible({ timeout: 15000 });
@@ -233,7 +246,7 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
   }) => {
     const i = resolvedIndex();
     test.skip(i < 0, "no row with a resolved actor on this page");
-    await page.getByTestId("ref-cell-created_by-text").nth(i).click();
+    await page.locator("table tbody tr").nth(i).getByTestId("ref-cell-created_by-text").click();
 
     const sheet = page.getByTestId("entity-record-sheet");
     await expect(sheet).toBeVisible({ timeout: 15000 });
@@ -257,31 +270,28 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
     await expect(sheet.locator("input#record-sheet-field-avatar_color")).toHaveCount(0);
   });
 
-  test("unresolved actor — raw value text, sheet shows honest not-found state", async ({
-    page,
-  }) => {
+  test("unresolved actor — raw value text, NO drill affordance", async ({ page }) => {
     const i = unresolvedIndex();
     test.skip(i < 0, "no row with an unresolved actor on this page");
-    await page.getByTestId("ref-cell-created_by-text").nth(i).click();
-    const sheet = page.getByTestId("entity-record-sheet");
-    await expect(sheet).toBeVisible({ timeout: 15000 });
-    // The honest empty state is the StateHero — pin its testid, not the
-    // translated copy.
-    await expect(page.getByTestId("entity-record-sheet-missing-hero")).toBeVisible({
-      timeout: 15000,
-    });
-    // Identity stays visible above the hero: "{entity} ID" label + the
-    // uid badge carry what the sheet DOES know (type + stored value).
-    await expect(page.getByTestId("entity-record-sheet-uid-badge")).toBeVisible();
-    await expect(sheet.locator("label[for='record-sheet-uid-badge']")).toHaveText(/ID$/);
+    // Match-driven lazy ref: the join found no user_profile/service row,
+    // so ref_entity comes back NULL — the cell renders the raw actor as
+    // plain text with NO ref-cell affordance and nothing to click.
+    const row = page.locator("table tbody tr").nth(i);
+    await expect(row.getByTestId("ref-cell-created_by-text")).toHaveCount(0);
+    await expect(row.getByTestId("ref-cell-created_by-ext")).toHaveCount(0);
+    await expect(row).toContainText(String(listRows[i].created_by));
+    // The cell is inert — no record sheet can open for a non-target.
+    await expect(page.getByTestId("entity-record-sheet")).toHaveCount(0);
   });
 
   test("external-link CTA opens the filtered target list in a new tab — sheet stays closed", async ({
     page,
   }) => {
-    const row = page.locator("table tbody tr").first();
+    const i = resolvedIndex();
+    test.skip(i < 0, "no row with a resolved actor on this page");
+    const row = page.locator("table tbody tr").nth(i);
     await row.hover();
-    const ext = page.getByTestId("ref-cell-created_by-ext").first();
+    const ext = row.getByTestId("ref-cell-created_by-ext");
     await expect(ext).toHaveCSS("opacity", "1", { timeout: 3000 });
 
     const [newTab] = await Promise.all([page.context().waitForEvent("page"), ext.click()]);
@@ -298,7 +308,7 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
   test("sheet header CTA opens the filtered target list in a new tab", async ({ page }) => {
     const i = resolvedIndex();
     test.skip(i < 0, "no row with a resolved actor on this page");
-    await page.getByTestId("ref-cell-created_by-text").nth(i).click();
+    await page.locator("table tbody tr").nth(i).getByTestId("ref-cell-created_by-text").click();
     const sheet = page.getByTestId("entity-record-sheet");
     await expect(sheet).toBeVisible({ timeout: 15000 });
     const cta = page.getByTestId("entity-record-sheet-list-cta");
@@ -315,7 +325,7 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
   }) => {
     const i = resolvedIndex();
     test.skip(i < 0, "no row with a resolved actor on this page");
-    await page.getByTestId("ref-cell-created_by-text").nth(i).click();
+    await page.locator("table tbody tr").nth(i).getByTestId("ref-cell-created_by-text").click();
 
     const sheet = page.getByTestId("entity-record-sheet");
     await expect(sheet).toBeVisible({ timeout: 15000 });
@@ -355,7 +365,7 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
   }) => {
     const i = resolvedIndex();
     test.skip(i < 0, "no row with a resolved actor on this page");
-    await page.getByTestId("ref-cell-created_by-text").nth(i).click();
+    await page.locator("table tbody tr").nth(i).getByTestId("ref-cell-created_by-text").click();
 
     const sheet = page.getByTestId("entity-record-sheet");
     await expect(sheet).toBeVisible({ timeout: 15000 });
@@ -410,7 +420,7 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
   }) => {
     const i = resolvedIndex();
     test.skip(i < 0, "no row with a resolved actor on this page");
-    await page.getByTestId("ref-cell-created_by-text").nth(i).click();
+    await page.locator("table tbody tr").nth(i).getByTestId("ref-cell-created_by-text").click();
 
     const sheet = page.getByTestId("entity-record-sheet");
     await expect(sheet).toBeVisible({ timeout: 15000 });
@@ -432,8 +442,12 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
   });
 
   test("card view shares the same ref anatomy + hover reveal", async ({ page }) => {
+    const i = resolvedIndex();
+    test.skip(i < 0, "no row with a resolved actor on this page");
     await page.getByRole("button", { name: "Cards (grid)" }).click();
-    const card = page.locator(".group.rounded-md.border").first();
+    // Cards mirror row order — pick the resolved row's card so the
+    // ref-cell testid exists (unresolved actors render plain text).
+    const card = page.locator(".group.rounded-md.border").nth(i);
     await expect(card).toBeVisible({ timeout: 15000 });
     const cell = card.getByTestId("ref-cell-created_by-text").first();
     await expect(cell).toBeVisible();
