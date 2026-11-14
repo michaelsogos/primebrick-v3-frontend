@@ -99,19 +99,26 @@ describe('buildEntityFormSchema — column constraints drive the zod shape', () 
 
 		const { schema } = buildEntityFormSchema(
 			meta([
-				col({ key: 'execution_context', type: 'badge', nullable: false }),
+				col({ key: 'run_as', type: 'badge', nullable: false }),
 				col({ key: 'target_subject', format: 'nats_subject', nullable: false }),
 			]),
 			{
-				fields: [{ key: 'execution_context' }, { key: 'target_subject' }],
+				fields: [{ key: 'run_as' }, { key: 'target_subject' }],
 				validators: ['target_matches_lane'],
 			},
 		);
+		// originator/author both dispatch on the user lane; system on system.
 		expect(
-			schema.safeParse({ execution_context: 'user', target_subject: 'jobs.due.user.ai.run' }).success,
+			schema.safeParse({ run_as: 'originator', target_subject: 'jobs.due.user.ai.run' }).success,
 		).toBe(true);
 		expect(
-			schema.safeParse({ execution_context: 'user', target_subject: 'jobs.due.system.ai.run' }).success,
+			schema.safeParse({ run_as: 'author', target_subject: 'jobs.due.user.ai.run' }).success,
+		).toBe(true);
+		expect(
+			schema.safeParse({ run_as: 'system', target_subject: 'jobs.due.system.ai.run' }).success,
+		).toBe(true);
+		expect(
+			schema.safeParse({ run_as: 'originator', target_subject: 'jobs.due.system.ai.run' }).success,
 		).toBe(false);
 	});
 });

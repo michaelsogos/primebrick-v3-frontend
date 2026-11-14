@@ -264,7 +264,7 @@ test.describe("/system/job/* pages (module-owned)", () => {
       "event_subject",
       "target_subject",
       "schedule_spec",
-      "execution_context",
+      "run_as",
       "filter",
       "payload_map",
     ]) {
@@ -410,7 +410,7 @@ test.describe("/system/job/* pages (module-owned)", () => {
     await expect(trigger).toContainText(/settings/i, { timeout: 15000 });
 
     // App launcher → select System (module column descends) → click Job
-    // Handler's goto CTA: nav[0].href (/system/job/job-schedules) is the
+    // Handler's goto CTA: nav[0].href (/system/job/triggers) is the
     // module home.
     await trigger.click();
     await page
@@ -423,7 +423,7 @@ test.describe("/system/job/* pages (module-owned)", () => {
       .locator("[data-testid='launcher-cta']")
       .click();
 
-    await page.waitForURL("**/system/job/job-schedules", { timeout: 10000 });
+    await page.waitForURL("**/system/job/triggers", { timeout: 10000 });
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
   });
 
