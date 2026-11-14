@@ -88,4 +88,26 @@ test.describe("identity column contract — job_schedule", () => {
     // ≥10 rects: every one of the 10 slots draws ≥1 rect (colored or tick).
     await expect.poll(async () => svg.locator("rect").count(), { timeout: 15000 }).toBeGreaterThanOrEqual(10);
   });
+
+  /* Slot tooltips are the canonical bits-ui channel: a transparent
+   * trigger overlays each slot (DOM sibling of the svg), hover opens the
+   * styled Content through the portal — asserted on a real element, not
+   * a painted-rect proxy. */
+  test("sparkline slot hover opens the standard tooltip with bucket data", async ({ page }) => {
+    await loginAsTestAdmin(page);
+    await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 30000 });
+
+    const svg = page.locator("table tbody svg[aria-label='sparkline']").first();
+    await expect(svg).toBeVisible({ timeout: 15000 });
+    // The overlay trigger is a button sibling of the svg carrying the
+    // composed bucket text as aria-label.
+    const trigger = svg.locator("xpath=following-sibling::button[1]");
+    const label = await trigger.getAttribute("aria-label", { timeout: 15000 });
+    expect(label).toBeTruthy();
+    await trigger.hover();
+    const tooltip = page.locator("[data-tooltip-content]").first();
+    await expect(tooltip).toBeVisible({ timeout: 5000 });
+    await expect(tooltip).toContainText(label!);
+  });
 });
