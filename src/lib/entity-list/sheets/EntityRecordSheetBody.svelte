@@ -87,6 +87,16 @@
   );
   const uidValue = $derived(record[uidKey]);
 
+  /** Translated entity singular — the `<ns>.entities.<tk>.singular`
+   *  convention shared with `entityPageTitle`; the uid badge label is
+   *  `{entity} ID`, naming the record's type without a dedicated key. */
+  const entitySingular = $derived.by(() => {
+    const ns = meta?.entities_ns ?? 'system';
+    const tk = meta?.translation_key ?? meta?.entity ?? '';
+    const resolved = $t(`${ns}.entities.${tk}.singular`);
+    return resolved && !resolved.includes('.singular') ? resolved : (meta?.entity ?? '');
+  });
+
   /** Audit values use the CANONICAL form-page formatter
    *  (`useAuditBox.formatValue` — datetime/badge/ref `_name` resolution,
    *  `-` for nulls), rendered as plain `label: value` text — the same
@@ -157,7 +167,10 @@
 </script>
 
 {#snippet field(col: MetaColumn, p?: FormFieldPlacement)}
-  <div class="space-y-2" style={p ? placementStyle(p) : undefined}>
+  <div
+    class="space-y-2 @max-xl:col-start-auto! @max-xl:col-end-auto!"
+    style={p ? placementStyle(p) : undefined}
+  >
     <EntityFormField
       column={col}
       placement={p}
@@ -172,12 +185,18 @@
   </div>
 {/snippet}
 
-<div class="flex h-full flex-col gap-4">
+<!-- `@container` — the sheet measures its OWN width, not the viewport:
+     a standard sheet counts as an xs surface, so declared 2-column form
+     layouts collapse to one column here and only re-expand if the panel
+     itself ever grows past the `@xl` container breakpoint. Placed fields
+     carry inline `grid-column-*` from `placementStyle` — the `@max-xl`
+     important resets win over them exactly like an xs media query. -->
+<div class="@container flex h-full flex-col gap-4">
   {#if uidValue !== undefined && uidValue !== null}
     <!-- Same field anatomy as EntityFormField — label row, then the
          "control" slot below it (here the uid badge, never a widget). -->
     <div class="space-y-2">
-      <Label for="record-sheet-uid-badge">{$t('system.common.fields.uuid')}</Label>
+      <Label for="record-sheet-uid-badge">{entitySingular} ID</Label>
       <Badge
         id="record-sheet-uid-badge"
         variant="secondary"
@@ -206,7 +225,7 @@
   {/if}
 
   {#if formPlacements.length}
-    <div class="grid gap-4 {formTwoCol ? 'grid-cols-2' : 'grid-cols-1'}">
+    <div class="grid gap-4 {formTwoCol ? '@xl:grid-cols-2' : 'grid-cols-1'}">
       {#each formPlacements as { col, p } (col.key)}
         {@render field(col, p)}
       {/each}
