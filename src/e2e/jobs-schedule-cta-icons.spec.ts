@@ -71,5 +71,11 @@ test.describe("job_schedule lifecycle CTAs — :filled icons", () => {
     await expect(toolbar.locator("svg.lucide-play")).toHaveAttribute("fill", "currentColor");
     // Negative control — power is unqualified, must stay stroke-only.
     await expect(toolbar.locator("svg.lucide-power")).toHaveAttribute("fill", "none");
+    // Icons render at full opacity on every variant — colored or default
+    // (the uncolored-CTA `opacity-70` softening was dropped: it read as
+    // "washed out" next to opaque severity icons, esp. with :filled glyphs).
+    for (const cls of ["lucide-pause", "lucide-play", "lucide-power"]) {
+      await expect(toolbar.locator(`svg.${cls}`)).not.toHaveClass(/opacity-70/);
+    }
   });
 });

@@ -277,7 +277,7 @@
           onclick={() => onBulkCustomAction?.(action)}
           disabled={action.requires_selection !== false && selectedKeys.length === 0}
         >
-          {#if action.icon}<DynamicIcon name={action.icon} size={14} class={action.color ? '' : 'opacity-70'} />{/if}
+          {#if action.icon}<DynamicIcon name={action.icon} size={14} />{/if}
           {$t(action.translation_key)}
         </Button>
       {/each}
