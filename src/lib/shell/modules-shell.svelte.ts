@@ -1,6 +1,6 @@
 import { SvelteSet } from 'svelte/reactivity';
 import { get } from 'svelte/store';
-import { fetchModules, ApiUnreachableError, type ModuleInfo, type ModuleNav, type ModuleNavLink } from '$lib/api';
+import { fetchModules, registerEntityServices, ApiUnreachableError, type ModuleInfo, type ModuleNav, type ModuleNavLink } from '$lib/api';
 import { uiLang } from '$lib/i18n/store.svelte';
 import { mergeModuleDict } from '$lib/i18n';
 import type { ModuleSheetDecl } from '@primebrick/ui';
@@ -240,7 +240,22 @@ if (typeof window !== 'undefined') {
   });
 }
 
-async function loadShellNav(): Promise<void> {
+/**
+ * Concurrent callers share one census fetch — the (app) layout gate,
+ * AppShell's onMount and resolveSafePage can all fire during the first
+ * load. A settled in-flight clears itself so language re-census and
+ * error retries always start a real fetch.
+ */
+let _censusInflight: Promise<void> | null = null;
+
+function loadShellNav(): Promise<void> {
+  _censusInflight ??= _loadShellNav().finally(() => {
+    _censusInflight = null;
+  });
+  return _censusInflight;
+}
+
+async function _loadShellNav(): Promise<void> {
   _state.loading = true;
   _state.error = null;
   try {
@@ -251,6 +266,11 @@ async function loadShellNav(): Promise<void> {
     mergeModuleDict(lang, doc.labels);
     _censusLang = lang;
     _state.modules = doc.modules;
+    // The entity→service map is census-derived (module.entities) — the
+    // ref-sheet/api-prefix resolution reads it from the first fetch.
+    registerEntityServices(
+      doc.modules.flatMap((m) => (m.entities ?? []).map((e) => [e, m.id] as const)),
+    );
     _state.unreachable = false;
   } catch (e) {
     if (e instanceof ApiUnreachableError) {

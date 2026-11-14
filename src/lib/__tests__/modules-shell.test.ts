@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock('$lib/api', () => ({
   fetchModules: mocks.fetchModules,
   ApiUnreachableError: class ApiUnreachableError extends Error {},
+  registerEntityServices: vi.fn(),
 }));
 
 import { loadShellNav, shellNav } from '$lib/shell/modules-shell.svelte';

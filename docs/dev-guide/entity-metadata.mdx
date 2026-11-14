@@ -168,7 +168,9 @@ from the row's `uid` field). The frontend dispatches write ops to the
 declared endpoint, not to a guessed `/entities/{entity}/{uuid}` convention —
 this is how `user_profile` keeps read-only entity routes while its writes
 live under `/api/v1/auth/users/*`. Ops without a declared endpoint fall back
-to the entity convention base (`entityApiBase`).
+to the entity convention base (`entityApiBase` — entity→service resolved
+from `module.entities` in the `/api/v1/modules` census; unmapped entities
+use the direct `/api/v1/entities/<e>` path).
 
 This is the single capability/visibility mechanism — there are no parallel
 row-action boolean flags in the schema.

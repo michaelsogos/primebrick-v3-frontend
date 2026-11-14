@@ -76,6 +76,13 @@ export type ModuleInfo = {
    */
   sheets?: ModuleSheetDecl[];
   /**
+   * Entity names the module's service owns (the same declarations that
+   * produce its `/entities/*` routes). The entity→service resolution
+   * (`/svc/<code>` prefix, ref-sheet drill-through) derives from this —
+   * never a hand-maintained map.
+   */
+  entities?: string[];
+  /**
    * The module's emitted-event vocabulary (`events.emits` — NATS subjects
    * the module publishes, wildcards allowed). Served verbatim like
    * `route_prefixes` — module metadata, never access-filtered. Domain

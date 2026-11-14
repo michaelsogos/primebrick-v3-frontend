@@ -6,6 +6,7 @@ import type { ModuleInfo } from '$lib/api-types';
 vi.mock('$lib/api', () => ({
   fetchModules: vi.fn(),
   ApiUnreachableError: class ApiUnreachableError extends Error {},
+  registerEntityServices: vi.fn(),
 }));
 
 import { fetchModules } from '$lib/api';

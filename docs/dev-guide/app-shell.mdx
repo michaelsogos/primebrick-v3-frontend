@@ -81,11 +81,18 @@ Module loading and selection is centralized in
 
 | Function | Purpose |
 |----------|---------|
-| `loadShellNav()` | Fetches the access-filtered `GET /api/v1/modules` payload — every record embeds `nav`, `routes` and per-root `home` |
+| `loadShellNav()` | Fetches the access-filtered `GET /api/v1/modules` payload — every record embeds `nav`, `routes`, per-root `home` and `entities` (the service's owned entity names). `entities` feeds the entity→service map behind `entityApiBase`/`serviceApiPrefix` — `/svc/<code>` proxies are census-derived, never hand-mapped |
 | `selectModule(id)` | Selects a module — navigation comes from the already-loaded `ModuleInfo`, no second request |
 | `reloadModuleNav()` | Rebuilds the current module's navigation from the loaded payload |
 | `syncModuleFromRoute(pathname)` | Auto-selects the module that owns the current route via `route_prefixes` |
 | `getLastRoute()` / `saveLastRoute(pathname)` | localStorage persistence of the last visited route |
+
+The `(app)` layout holds page children until the **first** census settles
+(`shellNav.loading && modules.length === 0` gates `{@render children()}`) —
+entity pages read the entity→service map once at component init, so the
+map must be populated before any page mounts. A failed census still mounts
+children (their own error surfaces take over); session-expired dialogs
+live outside this gate.
 
 When the user navigates to a route, `syncModuleFromRoute` matches the
 pathname against each module's `route_prefixes` and switches module
