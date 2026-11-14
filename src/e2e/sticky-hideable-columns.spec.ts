@@ -91,8 +91,10 @@ test.describe("identity column contract — job_schedule", () => {
 
   /* Slot tooltips are the canonical bits-ui channel: a transparent
    * trigger overlays each slot (DOM sibling of the svg), hover opens the
-   * styled Content through the portal — asserted on a real element, not
-   * a painted-rect proxy. */
+   * styled Content through the portal. The content has the canonical
+   * anatomy — a full localized date/range header (always carries the
+   * 4-digit year) and one vertically stacked row per series (dot +
+   * "N Label"), derived locale-proof from the trigger's aria-label. */
   test("sparkline slot hover opens the standard tooltip with bucket data", async ({ page }) => {
     await loginAsTestAdmin(page);
     await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
@@ -108,6 +110,16 @@ test.describe("identity column contract — job_schedule", () => {
     await trigger.hover();
     const tooltip = page.locator("[data-tooltip-content]").first();
     await expect(tooltip).toBeVisible({ timeout: 5000 });
-    await expect(tooltip).toContainText(label!);
+
+    // Header: full date or range — a 4-digit year is present in every
+    // bucket_unit variant (day, week range, hour range, month).
+    await expect(tooltip).toContainText(/\d{4}/);
+    // Series rows: the aria-label flattens "MM-DD: N Label, M Label, …" —
+    // each "N Label" entry must render as its own tooltip row.
+    const rows = label!.split(":").slice(1).join(":").split(",").map((s) => s.trim()).filter(Boolean);
+    expect(rows.length).toBeGreaterThanOrEqual(3);
+    for (const row of rows) await expect(tooltip).toContainText(row);
+    // One colored dot per series row.
+    await expect.poll(async () => tooltip.locator("svg circle").count()).toBe(rows.length);
   });
 });
