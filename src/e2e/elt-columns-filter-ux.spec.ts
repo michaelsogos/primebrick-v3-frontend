@@ -71,6 +71,19 @@ test.describe("ELT columns/filter UX — job_schedule", () => {
     await expect(page.locator("table tbody tr").first()).toBeVisible();
   });
 
+  test("reload strip stays perceptible on a sub-frame reload (min display time)", async ({ page }) => {
+    await loginAsTestAdmin(page);
+    // NO route delay — localhost responses finish well under one paint.
+    // Without the min-duration hold the strip never becomes visible.
+    await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 30000 });
+
+    const bar = page.getByTestId("elt-reload-strip").locator('[data-slot="loading-bar"]');
+    await page.getByRole("button", { name: /refresh/i }).click();
+    await expect(bar).toBeVisible();           // instant reload → still perceptible
+    await expect(bar).not.toBeVisible();       // …then it releases
+  });
+
   test("stale persisted filters/search_in are dropped before the first list call", async ({ page }) => {
     await loginAsTestAdmin(page);
     // Poison BOTH legacy-readable media — bogus field (never existed) +

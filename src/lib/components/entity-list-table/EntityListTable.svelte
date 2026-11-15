@@ -164,6 +164,31 @@
   // entity's user-guide doc. Cleanup releases it on unmount / entity change.
   $effect(() => claimDocsContext({ entity, mode: 'list' }));
 
+  // Reload-strip visibility — `rowsLoading` can toggle true→false inside a
+  // single paint on fast localhost responses (filter apply ≈15ms), which
+  // would leave the strip imperceptible. Once turned on it stays visible
+  // for a minimum duration so the reload is always perceptible.
+  const RELOAD_STRIP_MIN_MS = 250;
+  let reloadStripVisible = $state(false);
+  let reloadStripOnAt = 0;
+  $effect(() => {
+    if (rowsLoading) {
+      if (!reloadStripVisible) {
+        reloadStripVisible = true;
+        reloadStripOnAt = Date.now();
+      }
+      return;
+    }
+    if (!reloadStripVisible) return;
+    const wait = RELOAD_STRIP_MIN_MS - (Date.now() - reloadStripOnAt);
+    if (wait <= 0) {
+      reloadStripVisible = false;
+      return;
+    }
+    const t = setTimeout(() => (reloadStripVisible = false), wait);
+    return () => clearTimeout(t);
+  });
+
   // Census-module dictionaries — `nats_subject`/ref cells resolve subject
   // `label_key`s (`crm.events.*` lives in the `crm` dict, not the current
   // route's). The SAME loading the create-form combobox does
@@ -785,7 +810,7 @@
        reload (sort, filters, presets, pagination, refresh), not just the
        empty-state first load. -->
   <div class="h-0.5 w-full shrink-0" data-testid="elt-reload-strip">
-    {#if rowsLoading}
+    {#if reloadStripVisible}
       <LoadingBar size="xs" />
     {/if}
   </div>
