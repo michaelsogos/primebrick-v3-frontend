@@ -24,6 +24,7 @@ vi.mock("$lib/entity-form/EntityFormField.svelte", async () => {
 
 import EntityRecordSheetBody from "../entity-list/sheets/EntityRecordSheetBody.svelte";
 import type { EntityMeta, MetaColumn } from "$lib/entity-list/types";
+import type { FormFieldPlacement } from "@primebrick/ui";
 
 const col = (key: string, order: number, over: Partial<MetaColumn> = {}): MetaColumn =>
 	({ key, label_key: `fields.${key}`, type: "text", order, ...over }) as MetaColumn;
@@ -100,5 +101,54 @@ describe("EntityRecordSheetBody fallback — meta.columns order contract", () =>
 			dt.textContent!.replace(":", "").replace("fields.", ""),
 		);
 		expect(auditKeys).toEqual(["audited1", "audited2"]);
+	});
+});
+
+describe("EntityRecordSheetBody formPlacements — collapse order contract", () => {
+	const renderPlaced = (
+		placements: { key: string; p?: Partial<FormFieldPlacement>; order?: number }[],
+	) =>
+		render(EntityRecordSheetBody, {
+			props: {
+				meta: metaOf(placements.map(({ key, order }, i) => col(key, order ?? i))),
+				record: { uuid: "u-1" },
+				formTwoCol: placements.some(({ p }) => (p?.col ?? 1) > 1),
+				formPlacements: placements.map(({ key, p, order }, i) => ({
+					col: col(key, order ?? i),
+					p: { key, ...p } as FormFieldPlacement,
+				})),
+				draft: {},
+			},
+		});
+
+	it("follows placement declaration order, never the column meta `order`", () => {
+		// Meta ranks payload_map first, the form declaration puts it last —
+		// page form and record sheet share the declaration, so the sheet
+		// must keep the declaration's sequence (name first).
+		const { container } = renderPlaced([
+			{ key: "name", order: 60 },
+			{ key: "event_subject", order: 50 },
+			{ key: "payload_map", order: 1, p: { col: 2, row: 1, row_span: 7 } },
+		]);
+		expect(fieldKeys(container)).toEqual(["name", "event_subject", "payload_map"]);
+	});
+
+	it("resets row/col pinning on the collapse breakpoint (col-2/row-1 field)", () => {
+		// Regression: `grid-row-start:1` survived the @max-xl reset and pinned
+		// payload_map above every auto-flowed field in the collapsed sheet.
+		// The wrapper must neutralize BOTH axes below @xl so the single-column
+		// layout flows in DOM order.
+		const { container } = renderPlaced([
+			{ key: "name" },
+			{ key: "payload_map", p: { col: 2, row: 1, row_span: 7 } },
+		]);
+		const wrapper = container.querySelector("#record-sheet-field-payload_map")!
+			.parentElement as HTMLElement;
+		// The pin is still emitted for the @xl two-column surface…
+		expect(wrapper.getAttribute("style")).toContain("grid-row-start: 1");
+		// …and the @max-xl important resets disarm it on collapse.
+		expect(wrapper.className).toContain("row-start-auto");
+		expect(wrapper.className).toContain("row-end-auto");
+		expect(wrapper.className).toContain("col-start-auto");
 	});
 });

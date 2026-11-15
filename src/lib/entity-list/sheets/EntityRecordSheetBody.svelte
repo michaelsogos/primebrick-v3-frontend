@@ -147,7 +147,7 @@
 
 {#snippet field(col: MetaColumn, p?: FormFieldPlacement)}
   <div
-    class="space-y-2 @max-xl:col-start-auto! @max-xl:col-end-auto!"
+    class="space-y-2 @max-xl:col-start-auto! @max-xl:col-end-auto! @max-xl:row-start-auto! @max-xl:row-end-auto!"
     style={p ? placementStyle(p) : undefined}
   >
     <EntityFormField
@@ -168,8 +168,9 @@
      a standard sheet counts as an xs surface, so declared 2-column form
      layouts collapse to one column here and only re-expand if the panel
      itself ever grows past the `@xl` container breakpoint. Placed fields
-     carry inline `grid-column-*` from `placementStyle` — the `@max-xl`
-     important resets win over them exactly like an xs media query. -->
+     carry inline `grid-column-*`/`grid-row-*` from `placementStyle` — the
+     `@max-xl` important resets win over them exactly like an xs media
+     query, so collapsed fields flow in declaration (DOM) order. -->
 <div class="@container flex h-full flex-col gap-4">
   {#if uidBlock}
     <EntityRecordUid {meta} value={uidValue} />
