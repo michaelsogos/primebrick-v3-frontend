@@ -235,6 +235,36 @@ test.describe("/system/job/* pages (module-owned)", () => {
     }
   });
 
+  test("/system/job/triggers renders columns in meta order — destination after source, filters after schedule", async ({
+    page,
+  }) => {
+    await page.goto("/system/job/triggers", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("table tbody tr[data-row-index]").first()).toBeVisible({ timeout: 30000 });
+
+    // Wire contract — meta `order` values: event_subject(source) <
+    // target_subject(destination) < schedule_spec < filter. The served
+    // array stays in declaration order; orderedColumns sorts by `order`.
+    const meta = await page.evaluate(async () => {
+      const res = await fetch("/svc/job/api/v1/entities/job_trigger/meta");
+      const body = await res.json();
+      return (body.columns ?? []) as { key: string; order: number }[];
+    });
+    const ord = (k: string) => meta.find((c) => c.key === k)?.order ?? -1;
+    expect(ord("event_subject")).toBeGreaterThan(-1);
+    expect(ord("target_subject")).toBeGreaterThan(ord("event_subject"));
+    expect(ord("target_subject")).toBeLessThan(ord("schedule_spec"));
+    expect(ord("schedule_spec")).toBeLessThan(ord("filter"));
+
+    // DOM contract — the visible thead mirrors meta order (filter is
+    // default_visible:false, so only the first three can appear as th).
+    const headers = await page.locator("table thead th").allTextContents();
+    const hIdx = (re: RegExp) => headers.findIndex((h) => re.test(h));
+    const srcIdx = hIdx(/listening|sorgente|source|ereignisquelle|origen|origem/i);
+    const dstIdx = hIdx(/destination|destinazione|destino|ereignisziel/i);
+    expect(srcIdx).toBeGreaterThan(-1);
+    expect(dstIdx).toBe(srcIdx + 1);
+  });
+
   test("/system/job/triggers create CTA → NEW TAB archetype EntityFormPage (no remote mount)", async ({
     page,
     context,

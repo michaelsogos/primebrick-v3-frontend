@@ -245,9 +245,10 @@ test.describe("entity-list-table interactions", () => {
 
   /**
    * Footer keyboard legend — must document the REAL bindings, nothing else.
-   * ↑↓ move the row cursor, Space selects, Enter opens the row menu, ←→ scroll
-   * horizontally (native, unbound — the preview pane they used to navigate is
-   * gone), esc closes; Pag.↑/Pag.↓ and Home/End page. Chips are
+   * ↑↓ move the row cursor, Space selects, Enter opens the row menu,
+   * esc closes; Pag.↑/Pag.↓ and Home/End page. ←→ are gone — the preview
+   * pane they navigated was removed, and native horizontal scroll is not
+   * a command worth advertising. Chips are
    * language-neutral text → assert them directly; a legend advertising a
    * binding that does not exist is a contract bug.
    */
@@ -269,20 +270,25 @@ test.describe("entity-list-table interactions", () => {
     const panel = page.getByTestId("elt-kbd-legend-panel");
     await expect(panel).toBeVisible({ timeout: 5000 });
     const text = await panel.innerText();
-    for (const chip of ["↑", "↓", "←", "→", "Enter", "Esc", "Pag.", "Home", "End", "↖", "↘"]) {
+    for (const chip of ["↑", "↓", "Enter", "Esc", "Pag.", "Home", "End", "↖", "↘"]) {
       expect(text, `legend shows ${chip}`).toContain(chip);
+    }
+    // ←/→ are NOT advertised — they lost their only binding when the
+    // preview pane was removed (horizontal scroll is native, not a command).
+    for (const chip of ["←", "→"]) {
+      expect(text, `legend must not show ${chip}`).not.toContain(chip);
     }
     // Pag. chips come in a pair (up + down).
     expect((text.match(/Pag\./g) ?? []).length, "Pag. ↑ and Pag. ↓").toBe(2);
-    // The four arrows render as ONE hint group under "Move selector" —
-    // nothing but whitespace and glyphs may sit between ↓ and →.
+    // ↑↓ are the only move-selector chips — nothing but whitespace may
+    // sit between them.
+    const iUp = text.indexOf("↑");
     const iDown = text.indexOf("↓");
-    const iRight = text.indexOf("→");
     expect(
-      text.slice(iDown + 1, iRight).replace(/[\s←]/g, ""),
-      "arrows merged — no label between ↓ and →",
+      text.slice(iUp + 1, iDown).replace(/\s/g, ""),
+      "↑↓ merged — no label between them",
     ).toBe("");
-    expect(text.indexOf("→"), "arrow group before Space").toBeLessThan(text.indexOf("Space"));
+    expect(iDown, "arrow group before Space").toBeLessThan(text.indexOf("Space"));
     // A missing translation renders the raw i18n key — none may leak.
     expect(text).not.toContain("keys.");
     expect(text).not.toContain("system.entities.list");
