@@ -127,6 +127,12 @@
 		 *  (the persisted currency/UoM code) is read and written through it.
 		 *  Filter surfaces have no record: uom renders display-only there. */
 		record?: Record<string, unknown>;
+		/** The served entity row (detail/update surfaces) — merged UNDER
+		 *  `record` for `depends_on` gates so a NON-form physical column
+		 *  (e.g. `system_key`, which never enters `page_props.form`) still
+		 *  drives `disabled_when`. `record` wins on shared keys: the live
+		 *  edit is the truth for form-field pivots. */
+		served_record?: Record<string, unknown>;
 		/** Sibling column map for `depends_on` resolution — the form page
 		 *  owns the served `meta.columns`. Absent on the filter surface:
 		 *  the edge is form-scope by contract and filter columns never
@@ -151,6 +157,7 @@
 		timezone = $bindable(),
 		filterEntity,
 		record = $bindable(),
+		served_record,
 		columns,
 	}: Props = $props();
 
@@ -463,10 +470,16 @@
 	/** Scope conditions for the dependent's ref-options fetch —
 	 *  `filters[0][country]=<pivot>` while the pivot carries a value. */
 	const depFilters = $derived(dep ? depOptionsFilter(dep, record) : undefined);
+	/** The gate record — served row under live form values, so `disabled_when`
+	 *  can pivot on columns that are NOT form fields (calculated, or
+	 *  unplaced physical keys like `system_key`). */
+	const depRecord = $derived(
+		served_record !== undefined ? { ...served_record, ...record } : record,
+	);
 	/** Gate: pivot-until-value (`filter_field`/`control_prop`) plus
 	 *  `disabled_when` — fail-closed while a prop comparison can't
 	 *  evaluate yet. */
-	const depOff = $derived(dep ? depDisabled(dep, record, pivotRow.state.row) : false);
+	const depOff = $derived(dep ? depDisabled(dep, depRecord, pivotRow.state.row) : false);
 	/** Two distinct states, two distinct chromes: `readonly` (placement
 	 *  policy — grey border + white bg) vs `disabled` (surface /
 	 *  dependency gating — grey border + muted bg). `effectiveLocked`

@@ -81,8 +81,9 @@ export function depDisabled(
 
 function conditionMatches(
 	actual: unknown,
-	w: { equals?: unknown; not?: unknown; values?: readonly unknown[] },
+	w: { equals?: unknown; not?: unknown; values?: readonly unknown[]; set?: boolean },
 ): boolean {
+	if (w.set !== undefined) return w.set ? !isEmptyPivot(actual) : isEmptyPivot(actual);
 	if (w.equals !== undefined) return actual === w.equals;
 	if (w.not !== undefined) return actual !== w.not;
 	if (w.values !== undefined) return w.values.some((v) => v === actual);

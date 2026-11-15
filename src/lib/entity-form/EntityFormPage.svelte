@@ -592,6 +592,7 @@
 													: undefined}
 												readonly={collab.isConflicted(placement.key)}
 											mode={isDetail ? 'update' : 'create'}
+												served_record={record ?? undefined}
 												bind:value={$form[placement.key]}
 												bind:record={$form}
 											/>

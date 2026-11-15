@@ -139,3 +139,28 @@ describe('pivot-row need + reset coupling', () => {
 		expect(depPivotSignature(dep, {})).toBe('');
 	});
 });
+
+describe('disabled_when.set — presence gating', () => {
+	// `set` is the NON-form-column facet: a system trigger gates its
+	// code-owned fields on `system_key` — a physical column that never
+	// enters page_props.form, readable only via the served row.
+	const dep = { field: 'system_key', disabled_when: { set: true } };
+
+	it('disables when the pivot carries a value (system row)', () => {
+		expect(depDisabled(dep, { system_key: 'ai.partition-maintenance' }, undefined)).toBe(true);
+	});
+
+	it('stays enabled while the pivot is empty (user row / create)', () => {
+		expect(depDisabled(dep, { system_key: null }, undefined)).toBe(false);
+		expect(depDisabled(dep, { system_key: undefined }, undefined)).toBe(false);
+		expect(depDisabled(dep, {}, undefined)).toBe(false);
+		expect(depDisabled(dep, { system_key: '' }, undefined)).toBe(false);
+	});
+
+	it('set:false inverts — disabled while the pivot is empty', () => {
+		const inv = { field: 'key', disabled_when: { set: false } };
+		expect(depDisabled(inv, { key: 'x' }, undefined)).toBe(false);
+		expect(depDisabled(inv, { key: null }, undefined)).toBe(true);
+		expect(depDisabled(inv, {}, undefined)).toBe(true);
+	});
+});
