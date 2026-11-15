@@ -13,7 +13,7 @@
  *     created by `helpers/shield-identity.ts` through the BE admin API so
  *     consumers reload it via the `client_shield_registry.changed`
  *     broadcast.
- *   - `jobs.ctl.schedule.request` is a governed nats-req route: plain
+ *   - `jobs.ctl.triggers.materialize` is a governed nats-req route: plain
  *     `nc.request` with shield headers reaches it; the reply comes back on
  *     the inbox subject.
  *   - Schedule declaration read-back = JetStream `getMessage(stream,
@@ -131,31 +131,6 @@ export async function jsPublish(
     { headers: buildHeaders(shieldHeaders(shield, extra)) },
   );
   return BigInt(ack.seq);
-}
-
-/**
- * Governed arm — `jobs.ctl.schedule.request` nats-req route. Shield
- * headers carry the `primebrick-e2e` identity; the service derives
- * `caller_service = "e2e"` from the UA.
- */
-export async function scheduleRequest(
-  req: {
-    schedule_subject: string;
-    schedule: string;
-    target: string;
-    payload?: unknown;
-    source?: string;
-    ttl?: string;
-  },
-  shield: ShieldIdentity,
-): Promise<{ armed?: boolean; seq?: string; skipped?: string }> {
-  const conn = await getNats();
-  const res = await conn.request(
-    "jobs.ctl.schedule.request",
-    new TextEncoder().encode(extJsonStringify(req)),
-    { headers: buildHeaders(shieldHeaders(shield)), timeout: 10_000 },
-  );
-  return extJsonParse(new TextDecoder().decode(res.data));
 }
 
 /** Declared schedule read-back — `last_by_subj` direct-get on JOBS. */

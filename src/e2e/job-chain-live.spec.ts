@@ -418,9 +418,9 @@ test.describe("job-chain-live — engine semantics end to end", () => {
     expect(sResumed!.armed_at!.getTime()).toBeGreaterThan(armedAtBefore!.getTime());
     expect(await getScheduleDecl(t1Subject)).not.toBeNull(); // decl restored
 
-    // DISABLE (canonical) — trigger-kind schedules soft-delete their owner
-    // trigger: the engine disarms and the mirror ROW IS DROPPED (the
-    // `disarmed` hold applies only to infra-derived schedules).
+    // DISABLE (canonical) — schedules are all trigger-owned: disable
+    // soft-deletes the owning trigger, the engine disarms and the mirror
+    // ROW IS DROPPED.
     const disable = await postJobAction(req, "disable-schedule", { schedule_subject: t1Subject });
     expect(disable.status).toBe(200);
     await waitForSchedule(t1Subject, (r) => r === null);

@@ -10,9 +10,9 @@ import { loginAsTestAdmin } from "./helpers/admin-login";
  * needles) and asserts the strict fail-closed verdict.
  *
  * Data anchor (dev seed, empirically read):
- *   5 rows — 3 kind=trigger (job_name≈"e2e-*"), 2 kind=infra_derived;
- *   target_subject: crm.emit_fake_event ×2, emailsender.send, jobs.due… ×2;
- *   status: disarmed ×5; schedule_type: recurring ×4, once ×1.
+ *   6 rows — every mirror is trigger-owned (job_name≈"e2e-*" ×5 +
+ *   "AI partition maintenance"); status: armed ×3, disarmed ×3;
+ *   run_as: user ×5, system ×1; schedule_type: recurring ×6.
  * Assertions stay relational where data may grow, exact-0 where disjoint.
  */
 
@@ -99,7 +99,7 @@ test.describe("wire attack — job_schedule list", () => {
       ["search_in=schedule_type", "schedule_type"],// filterable ≠ searchable
       ["search_in=job_name,bogus", "bogus"],
       ["search_in=job_name, job_name", " job_name"],// no trim → space poisons key
-      ["search_in=kind", "kind"],                  // badge — not a text surface
+      ["search_in=status", "status"],              // badge — not a text surface
       ["search_in=version", "version"],
     ];
     for (const [si, frag] of bad) {
@@ -117,10 +117,10 @@ test.describe("wire attack — job_schedule list", () => {
   // ── C. filters: per-type ops, typed values, rejections ──
   test("C — filters per type and operator contract", async ({ page }) => {
     const ok: Array<[string, (t: number | null) => void]> = [
-      [F(0, "kind", "=", "trigger"), (t) => expect(t).toBeGreaterThanOrEqual(3)],
-      [F(0, "kind", "!=", "trigger"), (t) => expect(t).toBeGreaterThanOrEqual(2)],
-      [F(0, "status", "=", "armed"), (t) => expect(t).toBe(0)],
-      [F(0, "schedule_type", "=", "once"), (t) => expect(t).toBe(1)],
+      [F(0, "status", "=", "armed"), (t) => expect(t).toBeGreaterThanOrEqual(3)],
+      [F(0, "status", "!=", "armed"), (t) => expect(t).toBeGreaterThanOrEqual(3)],
+      [F(0, "status", "=", "stopped"), (t) => expect(t).toBe(0)],
+      [F(0, "schedule_type", "=", "once"), (t) => expect(t).toBe(0)],
       [F(0, "target_subject", "=", "crm.emit_fake_event"), (t) => expect(t).toBe(2)],
       // Wire ops are SQL-ish — `contains`/`startsWith`/`endsWith` are
       // UI-level ops the FE translates to ILIKE patterns BEFORE the wire.
@@ -140,7 +140,7 @@ test.describe("wire attack — job_schedule list", () => {
 
     // IN via bracket array value.
     const inArr = await wire(page,
-      "filters[0][field]=kind&filters[0][op]=IN&filters[0][value][]=trigger&filters[0][value][]=infra_derived&filters[0][connector]=AND");
+      "filters[0][field]=status&filters[0][op]=IN&filters[0][value][]=armed&filters[0][value][]=disarmed&filters[0][connector]=AND");
     expect(inArr.status).toBe(200);
     expect(inArr.total).toBe(allRows);
 
@@ -151,8 +151,8 @@ test.describe("wire attack — job_schedule list", () => {
       F(0, "created_at", ">", "not-a-date"),    // unparseable datetime → 400
       F(0, "version", "=", "not-a-number"),     // typed value → 400
       F(0, "uuid", "=", "not-a-uuid"),          // pgType:uuid declared → 400
-      F(0, "kind", "DROP", "x"),                // unknown op
-      F(0, "kind", "contains", "x"),            // UI-level op raw on wire
+      F(0, "status", "DROP", "x"),              // unknown op
+      F(0, "status", "contains", "x"),          // UI-level op raw on wire
       "filters[0][op]==&filters[0][value]=x",   // field missing
       "filters[0][field]=status",               // op+value missing
     ];
@@ -166,10 +166,10 @@ test.describe("wire attack — job_schedule list", () => {
   test("D — search × filters × scope × sort × paging combined", async ({ page }) => {
     const cases: Array<[string, (t: number | null) => void]> = [
       // search + standard filter, intersecting
-      [`search=e2e&${F(0, "kind", "=", "trigger")}`, (t) => expect(t).toBeGreaterThanOrEqual(1)],
+      [`search=e2e&${F(0, "status", "=", "armed")}`, (t) => expect(t).toBeGreaterThanOrEqual(1)],
       // search + standard filter, disjoint → legal 0, NOT an error
-      [`search=e2e&${F(0, "kind", "=", "infra_derived")}`, (t) => expect(t).toBe(0)],
-      [`search=e2e&${F(0, "status", "=", "armed")}`, (t) => expect(t).toBe(0)],
+      [`search=e2e&${F(0, "run_as", "=", "system")}`, (t) => expect(t).toBe(0)],
+      [`search=e2e&${F(0, "status", "=", "stopped")}`, (t) => expect(t).toBe(0)],
       // search scoped + quick filter on the SAME column
       [`search=fake&search_in=target_subject&${F(0, "target_subject", "ILIKE", "%emit%")}`, (t) => expect(t).toBe(2)],
       // scoped-empty vs unscoped: "emit" lives in target_subject only
@@ -184,15 +184,15 @@ test.describe("wire attack — job_schedule list", () => {
       // gate resolves the search to 1=0 → AND with the filter → 0.
       [`search=%5C*&${F(0, "schedule_type", "=", "once")}`, (t) => expect(t).toBe(0)],
       // anchored wildcard DOES search → e2e\* hits the trigger rows.
-      [`search=e2e%5C*&${F(0, "kind", "=", "trigger")}`, (t) => expect(t).toBeGreaterThanOrEqual(1)],
+      [`search=e2e%5C*&${F(0, "status", "=", "armed")}`, (t) => expect(t).toBeGreaterThanOrEqual(1)],
       // IN-filter + search + sort + paging, all at once
-      [`search=e2e&sort_key=schedule_subject&sort_dir=DESC&page=1&page_size=1&filters[0][field]=kind&filters[0][op]=IN&filters[0][value][]=trigger&filters[0][value][]=manual&filters[0][connector]=AND`,
+      [`search=e2e&sort_key=schedule_subject&sort_dir=DESC&page=1&page_size=1&filters[0][field]=status&filters[0][op]=IN&filters[0][value][]=armed&filters[0][value][]=stopped&filters[0][connector]=AND`,
         (t) => expect(t).toBeGreaterThanOrEqual(1)],
       // deleted_records wire vocabulary is EXCLUDED/INCLUDED/ONLY —
       // the UI-mode names (`deleted`/`all`) are rejected like any bogus value.
       [`search=e2e&deleted_records=ONLY`, (t) => expect(t).not.toBeNull()],
-      [`deleted_records=INCLUDED&${F(0, "kind", "=", "trigger")}`, (t) => expect(t).toBeGreaterThanOrEqual(3)],
-      [`deleted_records=only&${F(0, "kind", "=", "trigger")}`, (t) => expect(t).toBeGreaterThanOrEqual(3)], // case-normalized
+      [`deleted_records=INCLUDED&${F(0, "status", "=", "armed")}`, (t) => expect(t).toBeGreaterThanOrEqual(3)],
+      [`deleted_records=only&${F(0, "status", "=", "armed")}`, (t) => expect(t).toBeGreaterThanOrEqual(3)], // case-normalized
     ];
     for (const [qs, check] of cases) {
       const r = await wire(page, qs);
@@ -204,10 +204,10 @@ test.describe("wire attack — job_schedule list", () => {
     // `connector` is a TOP-LEVEL param joining all conditions uniformly;
     // the per-condition `connector` field is wire-compat noise (ignored).
     const or_ = await wire(page,
-      `${F(0, "kind", "=", "trigger")}&filters[1][field]=schedule_type&filters[1][op]=%3D&filters[1][value]=once&connector=OR`);
-    const and_ = await wire(page, `${F(0, "kind", "=", "trigger")}`);
+      `${F(0, "status", "=", "armed")}&filters[1][field]=run_as&filters[1][op]=%3D&filters[1][value]=user&connector=OR`);
+    const and_ = await wire(page, `${F(0, "status", "=", "armed")}`);
     expect(or_.status).toBe(200);
-    expect(or_.total!).toBeGreaterThanOrEqual(and_.total!); // trigger ∪ once ⊇ trigger
+    expect(or_.total!).toBeGreaterThan(and_.total!); // armed ∪ user ⊋ armed (disarmed e2e rows join)
   });
 
   // ── E. sort / paging / envelope edges ──

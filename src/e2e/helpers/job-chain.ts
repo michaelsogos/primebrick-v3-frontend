@@ -18,8 +18,7 @@
  */
 import { expect, type APIRequestContext, type TestInfo } from "@playwright/test";
 import { getPool } from "./db";
-import { getNats, scheduleRequest, purgeScheduleDecl, extJsonStringify, type ShieldIdentity } from "./nats";
-import { headers as natsHeaders, type NatsConnection } from "@nats-io/transport-node";
+import { purgeScheduleDecl, extJsonStringify } from "./nats";
 
 export const JOB_API = "/svc/job/api/v1";
 export const TRIGGER_SCHEDULE_PREFIX = "jobs.schedule.job.";
@@ -107,7 +106,7 @@ export async function waitForSchedule(
     .poll(async () => {
       last = await readSchedule(subject);
       // pred sees `null` too — the mirror-drop transition (disable on a
-      // trigger-kind schedule) is a state the test must be able to await.
+      // trigger-owned schedule) is a state the test must be able to await.
       return pred(last) ? "hit" : "miss";
     }, { timeout: timeoutMs, intervals: [200, 400, 800, 1500] })
     .toBe("hit");
@@ -183,28 +182,6 @@ export async function postJobAction(
   return { status: res.status(), body: parsed };
 }
 
-/** Governed disarm — `jobs.ctl.schedule.cancel` nats-req route. */
-export async function scheduleCancel(
-  scheduleSubject: string,
-  shield: ShieldIdentity,
-): Promise<unknown> {
-  const conn: NatsConnection = await getNats();
-  const res = await conn.request(
-    "jobs.ctl.schedule.cancel",
-    new TextEncoder().encode(extJsonStringify({ schedule_subject: scheduleSubject })),
-    {
-      headers: (() => {
-        const h = natsHeaders();
-        h.set("User-Agent", shield.uaPrefix);
-        h.set("x-primebrick-client-shield-key", shield.clientKey);
-        return h;
-      })(),
-      timeout: 10_000,
-    },
-  );
-  return JSON.parse(new TextDecoder().decode(res.data));
-}
-
 // ─── Latency collector — the measured-data store ─────────────────────────
 
 export interface FireMeasurement {
@@ -268,4 +245,4 @@ export class JobChainMetrics {
   }
 }
 
-export { scheduleRequest, purgeScheduleDecl };
+export { purgeScheduleDecl };
