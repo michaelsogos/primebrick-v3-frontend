@@ -122,6 +122,10 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
   const legacyMedium: PersistMedium | null =
     opts.legacyPersist === undefined ? 'local' : opts.legacyPersist;
 
+  // The FE never asks for more than 100 rows per page — the wire
+  // tolerates ≤250; beyond that the API rejects with a 400 anyway.
+  const PAGE_SIZE_MAX = 100;
+
   const _state = $state({
     meta: null as EntityMeta | null,
     rows: [] as TRow[],
@@ -303,7 +307,7 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
       if (psz) {
         const n = Number(JSON.parse(psz));
         if (Number.isInteger(n) && n >= 1) {
-          _state.pageSize = n;
+          _state.pageSize = Math.min(n, PAGE_SIZE_MAX);
           pageSizeRestored = true;
         }
       }
@@ -388,7 +392,7 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
       _state.sortDir = defSort?.dir ?? 'asc';
     }
     if (!pageSizeRestored) {
-      _state.pageSize = _state.meta?.table?.default_page_size ?? _state.pageSize;
+      _state.pageSize = Math.min(_state.meta?.table?.default_page_size ?? _state.pageSize, PAGE_SIZE_MAX);
     }
     ensureVisibleKeys();
   }
@@ -428,7 +432,7 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
     if (effSortKey || _state.sortKey) qs.set('sort_dir', effSortDir);
 
     qs.set('page', String(_state.page));
-    qs.set('page_size', String(_state.pageSize));
+    qs.set('page_size', String(Math.min(_state.pageSize, PAGE_SIZE_MAX)));
 
     // Fixed scope filters + ACTIVE filter-preset conditions occupy
     // filters[0..n-1] — the preset where ANDs into every call (refresh,
@@ -828,7 +832,7 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
       void refreshRows();
     },
     onPageSizeChange(ps: number) {
-      _state.pageSize = ps;
+      _state.pageSize = Math.min(ps, PAGE_SIZE_MAX);
       _state.page = 1;
       void refreshRows({ clampPage: true });
     },

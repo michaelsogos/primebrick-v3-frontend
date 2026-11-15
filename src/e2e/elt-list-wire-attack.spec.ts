@@ -217,6 +217,7 @@ test.describe("wire attack — job_schedule list", () => {
       ["sort_key=version&sort_dir=DESC", (t) => expect(t).toBe(allRows)],
       ["sort_key=next_run_at&sort_dir=ASC", (t) => expect(t).toBe(allRows)],
       ["page_size=1&page=1", (t) => expect(t).toBe(allRows)],
+      ["page_size=250&page=1", (t) => expect(t).toBe(allRows)], // wire ceiling — accepted
     ];
     for (const [qs, check] of ok) {
       const r = await wire(page, qs);
@@ -255,6 +256,8 @@ test.describe("wire attack — job_schedule list", () => {
       "page_size=abc",
       "page_size=0",
       "page_size=-5",
+      "page_size=251",           // above the 250 wire ceiling → 400, not a resource drain
+      "page_size=99999",
       "deleted_records=BOGUS",     // enum — fail closed, no silent default
       "deleted_records=deleted",   // UI-mode name on the wire → 400
       "deleted_records=all",       // UI-mode name on the wire → 400
