@@ -224,10 +224,11 @@ test.describe("job-chain-live — engine semantics end to end", () => {
     await loginAsTestAdmin(page);
     const req = page.request;
 
-    // A1 — schedule-only trigger, @every 10s, author lane.
+    // A1 — schedule-only trigger, @every 1m (the floor — nothing faster
+    // is a legal spec), author lane.
     const t1 = await declareTrigger(req, {
       name: TN("interval"),
-      schedule_spec: "@every 10s",
+      schedule_spec: "@every 1m",
       target_subject: "emailsender.send",
       run_as: "author",
       payload_map: baseSendMap({
@@ -262,18 +263,18 @@ test.describe("job-chain-live — engine semantics end to end", () => {
     expect(s1!.armed_at).not.toBeNull();
     // NATS declaration exists — the mirror is a mirror of something real.
     const decl = await getScheduleDecl(t1.schedule_subject);
-    expect(decl?.schedule).toBe("@every 10s");
+    expect(decl?.schedule).toBe("@every 1m");
     expect(decl?.target).toBe(`${FORWARD_PREFIX}${t1.uuid}`);
 
     const s2 = await waitForSchedule(t2.schedule_subject, (r) => r?.status === "armed", 15_000);
     expect(s2!.schedule_type).toBe("once");
 
-    // ≥2 interval fires within ~35s — states + seq + datetime coherence.
+    // ≥2 interval fires within ~2.5min — states + seq + datetime coherence.
     const runs = await waitForRuns(
       t1.schedule_subject,
       2,
       (r) => r.filter((x) => x.status === "succeeded").length >= 2,
-      45_000,
+      150_000,
     );
     const succeeded = runs.filter((x) => x.status === "succeeded");
     expect(succeeded.length).toBeGreaterThanOrEqual(2);
@@ -436,12 +437,31 @@ test.describe("job-chain-live — engine semantics end to end", () => {
     await loginAsTestAdmin(page);
     const req = page.request;
 
+    // B0 — the minute floor is enforced at the write path: a sub-minute
+    // recurring spec must be refused at declaration time and never reach
+    // the stream. The verdict key is the same `checkFieldValue` the form
+    // runs — wire and UI share the floor.
+    const below = await req.post(`${SVC}/entities/job_trigger`, {
+      data: {
+        entity: {
+          name: TN("floor"),
+          schedule_spec: "@every 30s",
+          target_subject: "emailsender.send",
+          run_as: "author",
+          payload_map: baseSendMap(),
+        },
+      },
+    });
+    expect(below.status()).toBe(400);
+    const belowBody = JSON.stringify(await below.json());
+    expect(belowBody).toContain("schedule_spec_min_interval");
+
     // B1 — run_as:"system" → permissioned callable: no user context exists
     // on the system lane, so emailsender.send must refuse. The run records
     // the outcome — `failed` is the honest terminal state.
     const tSys = await declareTrigger(req, {
       name: TN("system"),
-      schedule_spec: "@every 10s",
+      schedule_spec: "@every 1m",
       target_subject: "emailsender.send",
       run_as: "system",
       payload_map: baseSendMap(),
@@ -452,7 +472,7 @@ test.describe("job-chain-live — engine semantics end to end", () => {
       tSys.schedule_subject,
       1,
       (r) => r.length >= 1,
-      30_000,
+      75_000, // first @every 1m fire lands ≤60s after arm
     );
     expect(sysRuns[0]!.run_as).toBe("system");
     // failed = auth denial reported; dispatched-until-lost = the gap case.
@@ -469,7 +489,7 @@ test.describe("job-chain-live — engine semantics end to end", () => {
     const tAnon = await declareTrigger(req, {
       name: TN("anon"),
       event_subject: `${EV}.anon`,
-      schedule_spec: "@every 10s",
+      schedule_spec: "@every 1h", // never arms — spec is inert here
       target_subject: "emailsender.send",
       run_as: "originator",
       payload_map: baseSendMap(),
@@ -487,7 +507,7 @@ test.describe("job-chain-live — engine semantics end to end", () => {
     const tGhost = await declareTrigger(req, {
       name: TN("ghost"),
       event_subject: `${EV}.ghost`,
-      schedule_spec: "@every 10s",
+      schedule_spec: "@every 1m",
       target_subject: "emailsender.send",
       run_as: "originator",
       payload_map: baseSendMap(),
@@ -500,7 +520,7 @@ test.describe("job-chain-live — engine semantics end to end", () => {
       tGhost.schedule_subject,
       1,
       (r) => r.some((x) => x.status === "failed"),
-      30_000,
+      75_000, // armed by the event — first fire ≤60s after arm
     );
     expect(ghostRuns[0]!.error_code).toBe("AUTH_ACTOR_UNRESOLVABLE");
     await postJobAction(req, "disable-schedule", { schedule_subject: tGhost.schedule_subject });
@@ -509,7 +529,7 @@ test.describe("job-chain-live — engine semantics end to end", () => {
     const tGate = await declareTrigger(req, {
       name: TN("gate"),
       event_subject: `${EV}.gate`,
-      schedule_spec: "@every 10s",
+      schedule_spec: "@every 1h", // arm-only assertion — no fire needed
       target_subject: "emailsender.send",
       run_as: "originator",
       filter: [{ field: "amount", op: "gt", value: 100000 }],
@@ -602,7 +622,7 @@ test.describe("job-chain-live — engine semantics end to end", () => {
 
     const tDrift = await declareTrigger(req, {
       name: TN("drift"),
-      schedule_spec: "@every 15s",
+      schedule_spec: "@every 1h", // drift is decl-vs-mirror, not fires
       target_subject: "emailsender.send",
       run_as: "author",
       payload_map: baseSendMap(),
@@ -637,7 +657,7 @@ test.describe("job-chain-live — engine semantics end to end", () => {
     // D3 — inverse divergence: purge the DECL, leave the mirror → missing.
     const tMissing = await declareTrigger(req, {
       name: TN("missing"),
-      schedule_spec: "@every 15s",
+      schedule_spec: "@every 1h",
       target_subject: "emailsender.send",
       run_as: "author",
       payload_map: baseSendMap(),
