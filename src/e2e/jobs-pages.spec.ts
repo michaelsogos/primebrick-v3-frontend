@@ -577,6 +577,10 @@ test.describe("/system/job/* pages (module-owned)", () => {
     await expect(page.getByTestId("columns-toggle-trigger_uuid")).toBeVisible({ timeout: 15000 });
     await page.keyboard.press("Escape");
 
+    // `target_subject` (Destination Event) is default-visible — the event
+    // the schedule fires is a first-class fact of what it does.
+    await expect(page.getByRole("columnheader", { name: "Destination Event" })).toBeVisible();
+
     // Orphaned mirror (soft-deleted e2e-gate trigger): Job Name keeps the
     // authored identity — the deleted trigger's name — while Armed By
     // falls back to the owning service (Process Manager). Same row,
