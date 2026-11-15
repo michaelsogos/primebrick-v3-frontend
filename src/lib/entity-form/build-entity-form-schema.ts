@@ -72,12 +72,14 @@ const CROSS_FIELD_VALIDATORS: Record<
 	string,
 	(data: Record<string, unknown>, ctx: z.RefinementCtx, env: EntityFormEnv) => void
 > = {
-	/** `target_subject` must be `jobs.due.<execution_context>.<seg>+` — the
-	 *  rule's lane is derived from execution_context, never free. */
+	/** `target_subject` must be `jobs.due.<lane>.<seg>+` — the rule's lane
+	 *  is derived from `run_as` (`originator`/`author` both dispatch on the
+	 *  user lane), never free. */
 	target_matches_lane: (data, ctx) => {
 		const target = data.target_subject;
-		const lane = data.execution_context;
-		if (typeof target !== 'string' || typeof lane !== 'string' || !lane) return;
+		const runAs = data.run_as;
+		if (typeof target !== 'string' || typeof runAs !== 'string' || !runAs) return;
+		const lane = runAs === 'system' ? 'system' : 'user';
 		const prefix = `jobs.due.${lane}.`;
 		if (!target.startsWith(prefix) || target.length <= prefix.length) {
 			ctx.addIssue({
@@ -88,8 +90,9 @@ const CROSS_FIELD_VALIDATORS: Record<
 		}
 	},
 	/** `job_trigger` shape — `event_subject`/`schedule_spec` are mutually
-	 *  mandatory (at least one); `execution_context:"user"` needs an event
-	 *  source to forward auth headers from (schedule-only uses `me`/`system`).
+	 *  mandatory (at least one); `run_as:"originator"` needs an event
+	 *  source to forward auth headers from (schedule-only uses
+	 *  `author`/`system`).
 	 *  Shares the core `jobTriggerShapeIssues` predicate with the service-side
 	 *  `assertTriggerShape` hook — one rule, two surfaces. */
 	job_trigger_shape: (data, ctx) => {

@@ -1,4 +1,5 @@
 <script lang="ts" generics="TRow extends Record<string, unknown>">
+  import { tick } from 'svelte';
   import { t } from '$lib/i18n';
   import { checkboxInteractiveClass } from '@primebrick/ui';
   import EntityListTableHeader from './components/EntityListTableHeader.svelte';
@@ -15,7 +16,7 @@
     useKeyboardNavigation,
     useSheetPanels
   } from './composables';
-  import { useColumnOrder } from './composables/useColumnOrder.svelte';
+  import { useColumnOrder, pinAuditTail } from './composables/useColumnOrder.svelte';
   import { useViewMode } from './composables';
   import {
     isRowDeleted as isRowDeletedUtil,
@@ -33,7 +34,8 @@
   import { createClickHandlers } from './handlers/click-handlers';
   import type { MetaColumn } from '$lib/entity-list/types';
   import { isColumnFilterable, isColumnSearchable, isColumnSortable } from '$lib/entity-list/types';
-  import { setAuditColumnsContext, setEntitiesNsContext, setMetaUidContext } from './context';
+  import { setAuditColumnsContext, setActiveRolesContext, setEntitiesNsContext, setMetaUidContext, setTableEntityContext } from './context';
+  import { useActiveRoles } from '$lib/composables/useActiveRoles.svelte';
   import { setEntitiesNsContext as uiSetEntitiesNsContext } from '@primebrick/ui';
   import { claimDocsContext } from '$lib/shell/docs/docs-context.svelte';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
@@ -42,6 +44,7 @@
   import { get } from 'svelte/store';
   import { useMfaStepUp } from '$lib/composables/useMfaStepUp.svelte';
   import MfaStepUpDialog from '$lib/components/auth/MfaStepUpDialog.svelte';
+  import { LoadingBar } from '$lib/components/ui/loading-bar';
 
   import type { EntityListTableProps, ActionChrome } from './types';
 
@@ -136,9 +139,69 @@
     setMetaUidContext(uid);
   });
 
+  // Table-entity context — the `version` cell's version-history badge
+  // opens the stacked sheet with the same payload row actions build.
+  $effect(() => {
+    setTableEntityContext({
+      entity,
+      translationKey: effectiveTranslationKey,
+      uid,
+      columns: allColumns,
+    });
+  });
+
+  // Active-roles lookup — ONE lazy fetch per list, gated on a
+  // `options_source:"system.roles"` column actually being served
+  // (`roles` on user_profile today). Cells resolve `idp_role` →
+  // role record through the context — no per-cell fetches.
+  const activeRoles = useActiveRoles({
+    enabled: () => columns.some((c) => c.options_source === 'system.roles'),
+  });
+  $effect(() => {
+    setActiveRolesContext(() => activeRoles.rolesByCode);
+  });
+
   // Docs context: every entity list claims it so the docs panel resolves the
   // entity's user-guide doc. Cleanup releases it on unmount / entity change.
   $effect(() => claimDocsContext({ entity, mode: 'list' }));
+
+  // Reload-strip visibility — two guards around the raw flag:
+  //   on : `rowsLoading` can flip inside a single paint on fast localhost
+  //        responses (filter apply ≈15ms) → min ON-duration or the strip
+  //        is imperceptible.
+  //   off: `loading=false` lands in the same flush that commits the new
+  //        rows, but painting them (sparkline/datetime/badge cells) can
+  //        take real time — the strip holds until the new tbody is
+  //        actually painted (tick + a full frame), never before.
+  const RELOAD_STRIP_MIN_MS = 250;
+  let reloadStripVisible = $state(false);
+  let reloadStripOnAt = 0;
+  $effect(() => {
+    if (rowsLoading) {
+      if (!reloadStripVisible) {
+        reloadStripVisible = true;
+        reloadStripOnAt = Date.now();
+      }
+      return;
+    }
+    if (!reloadStripVisible) return;
+    const onAt = reloadStripOnAt;
+    let cancelled = false;
+    void (async () => {
+      await tick();
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+      if (cancelled) return;
+      const wait = RELOAD_STRIP_MIN_MS - (Date.now() - onAt);
+      if (wait <= 0) reloadStripVisible = false;
+      else
+        setTimeout(() => {
+          if (!cancelled) reloadStripVisible = false;
+        }, wait);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  });
 
   // Census-module dictionaries — `nats_subject`/ref cells resolve subject
   // `label_key`s (`crm.events.*` lives in the `crm` dict, not the current
@@ -175,13 +238,25 @@
   const searchableColumns = $derived(
     allColumns.filter((c) => isColumnSearchable(c) && c.type === 'text')
   );
-  const filterableColumns = $derived(allColumns.filter((c) => isColumnFilterable(c)));
+  // Fields governed by a declared filter preset (their `where[].field`) are
+  // owned by the toolbar preset control — exposing them again in the filters
+  // panel would create a second source of truth for the same predicate.
+  const presetOwnedFields = $derived(
+    new Set(
+      filterPresets.flatMap((p) => p.options.flatMap((o) => (o.where ?? []).map((w) => w.field)))
+    )
+  );
+  const filterableColumns = $derived(
+    allColumns.filter((c) => isColumnFilterable(c) && !presetOwnedFields.has(c.key))
+  );
   const stickyColumnsGroup = $derived(
     columnOrder.applyKeyOrder(allColumns.filter((c) => c.sticky === true), orderState.sticky)
   );
 
   const auditingColumnsGroup = $derived(
-    columnOrder.applyKeyOrder(allColumns.filter((c) => c.audited === true), orderState.auditing)
+    pinAuditTail(
+      columnOrder.applyKeyOrder(allColumns.filter((c) => c.audited === true), orderState.auditing)
+    )
   );
   const hasSoftDelete = $derived(
     auditingColumnsGroup.some((c) => c.key === 'deleted_at' || c.key === 'deleted_by')
@@ -488,7 +563,8 @@
     custom_actions: entityCustomActions?.filter((a) => hasRequiredPermission(a.required_permission)),
     edit_chrome: opChrome('update.single'),
     delete_chrome: opChrome('delete.single'),
-    restore_chrome: opChrome('restore.single')
+    restore_chrome: opChrome('restore.single'),
+    duplicate_chrome: opChrome('duplicate.bulk')
   }));
 
   /** Bulk-bar custom CTAs — declared permission gate (endpoint dispatch
@@ -532,6 +608,7 @@
    *  contract as the row chrome: icon+label+color travel together. */
   const bulkDeleteChrome = $derived(opChrome('delete.bulk'));
   const bulkRestoreChrome = $derived(opChrome('restore.bulk'));
+  const bulkDuplicateChrome = $derived(opChrome('duplicate.bulk'));
 
   const rowActionsComposable = useRowActions<TRow>({
     entity: () => entity,
@@ -736,10 +813,21 @@
     onBulkCustomAction={(a) => bulkActions.handleBulkCustomAction(a)}
     bulkDeleteChrome={bulkDeleteChrome}
     bulkRestoreChrome={bulkRestoreChrome}
+    bulkDuplicateChrome={bulkDuplicateChrome}
     selectAll={cardSelectAllZone}
     sort={cardSortZone}
     ianaToggle={cardIanaZone}
   />
+
+  <!-- Persistent reload strip — the h-0.5 slot keeps its height even when
+       idle (no layout shift); the bar renders on EVERY populated-table
+       reload (sort, filters, presets, pagination, refresh), not just the
+       empty-state first load. -->
+  <div class="h-0.5 w-full shrink-0" data-testid="elt-reload-strip">
+    {#if reloadStripVisible}
+      <LoadingBar size="xs" />
+    {/if}
+  </div>
 
   <EntityListTableContent
     metaLoading={metaLoading}
@@ -850,6 +938,7 @@
     restoreChrome={opChrome('restore.single')}
     {bulkDeleteChrome}
     {bulkRestoreChrome}
+    duplicateChrome={effectiveRowActions.duplicate_chrome}
   />
 
   <!-- Step-up MFA — row/bulk endpoint actions with a declared mfa spec on

@@ -38,6 +38,7 @@
 		columns,
 		value = $bindable(),
 		record = $bindable(),
+		served_record,
 		readonly = false,
 		disabled = false,
 		mode = 'update',
@@ -57,6 +58,9 @@
 		columns: ReadonlyMap<string, MetaColumn>;
 		value?: unknown;
 		record?: Record<string, unknown>;
+		/** The served entity row — merged under `record` for `depends_on`
+		 *  gates pivoting on non-form columns (see FormFieldDispatcher). */
+		served_record?: Record<string, unknown>;
 		/** Placement-level read-only (white-bg readonly chrome) — a field
 		 *  locked inside an otherwise-editable form. */
 		readonly?: boolean;
@@ -187,6 +191,7 @@ const fieldReadonly = $derived(readonly || placement?.readonly === true);
 		{disabledBadgeValues}
 		disabled={fieldDisabled}
 		readonly={fieldReadonly}
+		{served_record}
 		bind:value
 		bind:record
 	/>

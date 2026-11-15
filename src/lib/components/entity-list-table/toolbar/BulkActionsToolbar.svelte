@@ -14,8 +14,6 @@
   import { Download } from '@primebrick/ui/vendor/lucide'
   import { Copy } from '@primebrick/ui/vendor/lucide'
   import { Trash2 } from '@primebrick/ui/vendor/lucide'
-  import { Trash } from '@primebrick/ui/vendor/lucide'
-  import { ArrowUpFromLine } from '@primebrick/ui/vendor/lucide';
 
   let {
     toolbarMode,
@@ -40,6 +38,7 @@
     onBulkCustomAction,
     bulkDeleteChrome,
     bulkRestoreChrome,
+    bulkDuplicateChrome,
     bulkExtraActions,
     selectAll,
     sort,
@@ -71,6 +70,9 @@
      *  (`meta.actions["delete.bulk"]` / `["restore.bulk"]`). */
     bulkDeleteChrome?: ActionChrome;
     bulkRestoreChrome?: ActionChrome;
+    /** `meta.actions["duplicate.bulk"]` chrome — violet by contract
+     *  (`ActionColor`: violet IS the clone semantic). */
+    bulkDuplicateChrome?: ActionChrome;
     /** Host-specific bulk CTAs rendered after the standard + meta-declared
      *  set (e.g. the dict page's local revert — a page-state op, not an
      *  `entity_op` route, so it cannot ride `bulkCustomActions`). */
@@ -218,13 +220,17 @@
       {/if}
       {#if bulkCapabilities.duplicate}
         <Button
-          variant="default"
+          variant={bulkDuplicateChrome?.color ? actionColorButtonVariant(bulkDuplicateChrome.color) : 'violet'}
           size="xs"
           onclick={onBulkDuplicate}
           disabled={selectedKeys.length < 2}
         >
-          <Copy class="size-3.5" />
-          {$t('system.entities.list.bulk_actions.duplicate')}
+          {#if bulkDuplicateChrome?.icon}
+            <DynamicIcon name={bulkDuplicateChrome.icon} size={14} />
+          {:else}
+            <Copy class="size-3.5" />
+          {/if}
+          {$t(bulkDuplicateChrome?.label_key ?? 'system.entities.list.bulk_actions.duplicate')}
         </Button>
       {/if}
       {#if bulkCapabilities.delete}
@@ -254,10 +260,7 @@
           {#if bulkRestoreChrome?.icon}
             <DynamicIcon name={bulkRestoreChrome.icon} size={14} />
           {:else}
-            <span class="relative flex items-center justify-center">
-              <Trash class="size-3.5" />
-              <ArrowUpFromLine class="absolute bottom-px size-2" />
-            </span>
+            <DynamicIcon name="trash-arrow-up" size={14} />
           {/if}
           {$t(bulkRestoreChrome?.label_key ?? 'system.entities.list.bulk_actions.restore')}
         </Button>
@@ -269,7 +272,7 @@
           onclick={() => onBulkCustomAction?.(action)}
           disabled={action.requires_selection !== false && selectedKeys.length === 0}
         >
-          {#if action.icon}<DynamicIcon name={action.icon} size={14} class={action.color ? '' : 'opacity-70'} />{/if}
+          {#if action.icon}<DynamicIcon name={action.icon} size={14} />{/if}
           {$t(action.translation_key)}
         </Button>
       {/each}

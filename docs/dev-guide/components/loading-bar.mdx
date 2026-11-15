@@ -1,6 +1,6 @@
 ---
 title: LoadingBar
-description: Indeterminate top-style loading bar with a custom pb-loading-bar animation.
+description: Indeterminate loading bar — KITT-style scanner comet over a dim brand-gradient underlay.
 ---
 
 # LoadingBar
@@ -9,15 +9,34 @@ description: Indeterminate top-style loading bar with a custom pb-loading-bar an
 
 ## Purpose
 
-Indeterminate loading indicator that animates a short bar across a track. Use
-it for in-progress async operations that have no determinate progress value —
-e.g. route transitions, lazy module loads, or while a fetch is in flight. The
-animation is driven by the `pb-loading-bar` keyframe and exposes CSS variables
-for duration and easing.
+Indeterminate loading indicator for async operations with no progress
+value — entity-list reloads, sheet loads, route transitions. It renders a
+**scanner-comet** animation: a ~25%-wide luminous blob sweeping
+left→right→left across a muted track (the "Larson scanner" made famous by
+Knight Rider's KITT).
+
+## Effect anatomy
+
+Two stacked layers inside the `rounded-full` muted track:
+
+- **Underlay** — the original full-width brand gradient
+  (`#38bdf8 → #6366f1 → #8b5cf6`) panning via `animate-gradient-pan`, at
+  `opacity: .15`: ambient motion, never the primary signal.
+- **Comet** — `.kitt-comet`: a symmetric gradient blob
+  (`transparent → sky → indigo → violet → transparent`) with an indigo
+  `box-shadow` glow. It sweeps via `translateX` +
+  `animation: kitt-scan .85s cubic-bezier(.45,0,.55,1) infinite alternate`
+  — `alternate` produces the ping-pong and the symmetric ease-in-out
+  produces KITT's signature deceleration at both edges. The same
+  "bright head + soft wings" technique used by the animated destructive
+  input border, transposed from a 2D perimeter to a 1D track.
+
+`prefers-reduced-motion` collapses both animations and renders the comet
+as a static full-width gradient.
 
 ## Origin
 
-**Custom** — Primebrick-built primitive. Variants are defined with
+**Custom** — Primebrick-built primitive. Variants via
 `tailwind-variants` (`loadingBarVariants`).
 
 ## Usage
@@ -32,16 +51,10 @@ for duration and easing.
 <LoadingBar />
 ```
 
-### Larger size with custom duration
+### Larger size
 
 ```svelte
-<LoadingBar size="sm" duration="2s" easing="linear" />
-```
-
-### Custom bar color
-
-```svelte
-<LoadingBar barClass="bg-success" />
+<LoadingBar size="sm" />
 ```
 
 ### Inline at the top of a card
@@ -61,14 +74,19 @@ Key props:
 
 - `size` (`"xs" | "sm"`, default `"xs"`) — track height.
 - `variant` (`"muted"`, default `"muted"`) — track background.
-- `duration` (`string`, default `"1.2s"`) — CSS var `--pb-loading-bar-duration`.
-- `easing` (`string`, default `"ease-in-out"`) — CSS var `--pb-loading-bar-easing`.
-- `barClass` (`string`) — extra classes for the animated bar (e.g. `bg-success`).
+- `barClass` (`string`) — extra classes for the gradient underlay layer.
 - `class` — extra classes for the track.
+
+## Consumers
+
+- Entity-list reload strip (`data-testid="elt-reload-strip"`) — see
+  [Entity list table — reload UX](/docs/dev-guide/components/entity-list-table#reload-ux)
+- `EntityRecordSheet`, `ServiceRecordPanel`, `TableBody`, `CardViewRenderer`,
+  `EntityDictPage` — inline loading slots.
 
 ## Next steps
 
+- [Entity list table](/docs/dev-guide/components/entity-list-table)
 - [MetadataLoading](/docs/dev-guide/components/metadata-loading)
 - [Component catalog](/docs/dev-guide/components)
-- [UI stack](/docs/dev-guide/ui-stack)
 - [API reference](/docs/dev-guide/api-reference#loadingbar)

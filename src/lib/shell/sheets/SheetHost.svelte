@@ -31,6 +31,7 @@
   import GuideAiChatPanel from '$lib/components/ui/smart-guide/guide-ai-chat-panel.svelte';
   import BadgeValuePanel from '$lib/shell/sheets/panels/BadgeValuePanel.svelte';
   import DocsPanel from '$lib/shell/sheets/panels/DocsPanel.svelte';
+  import ServiceRecordPanel from '$lib/shell/sheets/panels/ServiceRecordPanel.svelte';
   import TranslationEditorPanel from '$lib/shell/sheets/panels/TranslationEditorPanel.svelte';
   /**
    * Heterogeneous panel registry — each panel declares its own props contract,
@@ -50,6 +51,7 @@
     'entity.versionHistory': VersionHistoryPanel,
     'entity.jsonViewer': JsonViewerPanel,
     'entity.record': EntityRecordSheet,
+    'service.record': ServiceRecordPanel,
     'config.currencySelect': CurrencySelectPanel,
     'config.protocolSelect': ProtocolSelectPanel,
     'config.phonePrefixSelect': PhonePrefixSelectPanel,

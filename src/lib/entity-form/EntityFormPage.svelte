@@ -13,7 +13,6 @@
 	 * `page_props.form`, same dispatchers, optimistic locking on `version`.
 	 */
 	import { tick, untrack } from 'svelte';
-	import { get } from 'svelte/store';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
@@ -368,21 +367,22 @@
 	});
 
 	// `job_trigger_shape` (closed-vocab validator) — live policy: with no
-	// event source the `user` lane is invalid, so its badge option disables
-	// and a selected "user" coerces to "me" (the schedule-only default).
-	// With a source present nothing is forced — "me" stays a valid choice.
+	// event source `run_as:"originator"` is invalid, so its badge option
+	// disables and a selected "originator" coerces to "author" (the
+	// schedule-only default). With a source present nothing is forced —
+	// "author" stays a valid choice.
 	const triggerShape = $derived(formDecl?.validators?.includes('job_trigger_shape') ?? false);
 	$effect(() => {
 		if (!triggerShape || !formObj) return;
 		const data = $form as Record<string, unknown>;
 		const hasSource = typeof data.event_subject === 'string' && data.event_subject.length > 0;
-		if (!hasSource && data.execution_context === 'user') {
+		if (!hasSource && data.run_as === 'originator') {
 			// Machine coercion — `taint:'untaint'` declares it NOT a user
 			// edit; the `bind:value` widget echo re-marks the flag, so the
 			// clear lands once more after the binding tick settles.
-			void form.update((d) => ({ ...d, execution_context: 'me' }), { taint: 'untaint' });
+			void form.update((d) => ({ ...d, run_as: 'author' }), { taint: 'untaint' });
 			void tick().then(() => {
-				if ($tainted) ($tainted as Record<string, boolean>)['execution_context'] = false;
+				if ($tainted) ($tainted as Record<string, boolean>)['run_as'] = false;
 			});
 		}
 	});
@@ -453,14 +453,16 @@
 		ready: () => formObj !== null,
 		fieldKeys: () => (formDecl?.fields ?? []).map((f) => f.key),
 		baseVersion: () => recordVersion,
-		data: () => (formObj ? (get(form) as Record<string, unknown>) : {}),
-		tainted: () => (formObj ? ((get(tainted) as Record<string, boolean>) ?? {}) : {}),
+		data: () => (formObj ? ($form as Record<string, unknown>) : {}),
+		tainted: () => (formObj ? (($tainted as Record<string, boolean>) ?? {}) : {}),
 		// Same diff-semantics the form guard uses: `isTainted($tainted)`
 		// compares CURRENT values against the taint baseline — undoing an
 		// edit back to its original is "clean" again (no ghost drafts).
+		// `$form`/`$tainted` (not get()) — the persist $effect must TRACK
+		// these reads or it runs once at mount and starves forever.
 		hasTainted: () =>
 			formObj
-				? (((isTainted as (p?: unknown) => boolean)(get(tainted) as unknown)) ?? false)
+				? (((isTainted as (p?: unknown) => boolean)($tainted as unknown)) ?? false)
 				: false,
 		setField: (k, v) => {
 			($form as Record<string, unknown>)[k] = v;
@@ -584,12 +586,13 @@
 												{targetCallable}
 												{sourceEmit}
 												disabledBadgeValues={triggerShape &&
-												col.key === 'execution_context' &&
+												col.key === 'run_as' &&
 												!($form['event_subject'] as string)?.length
-													? ['user']
+													? ['originator']
 													: undefined}
 												readonly={collab.isConflicted(placement.key)}
 											mode={isDetail ? 'update' : 'create'}
+												served_record={record ?? undefined}
 												bind:value={$form[placement.key]}
 												bind:record={$form}
 											/>

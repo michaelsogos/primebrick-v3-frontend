@@ -102,7 +102,9 @@ export function useEntityRefOptions(
 				typeof raw === 'string' || typeof raw === 'number' || typeof raw === 'boolean'
 					? String(raw)
 					: '';
-			const label = row[labelKey];
+			// relation entities serve no display_field — the ref option falls
+			// back to the uid (the only uniform label an edge row has).
+			const label = labelKey !== undefined ? row[labelKey] : undefined;
 			return {
 				value,
 				label:

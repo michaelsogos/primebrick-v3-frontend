@@ -106,6 +106,33 @@ is stored in sessionStorage under `{columnOrderStorageKey}:viewMode`
 switches between them. Rendering is handled by `EntityListTableTableView`
 and `EntityListTableCardView`.
 
+## Reload UX
+
+An `h-0.5` slot under the toolbar (`data-testid="elt-reload-strip"`)
+always reserves its height — the table never reflows when the indicator
+appears. Inside it the [LoadingBar](/docs/dev-guide/components/loading-bar)
+renders the KITT scanner comet. The contract is **stale-while-revalidate
+with a render barrier**:
+
+- Old rows stay mounted during every reload — no empty flash, no layout
+  jump.
+- The strip holds for a minimum perceptible duration (~250ms) so even a
+  sub-frame localhost response produces a visible signal.
+- Release is deferred past `loading=false`: the strip stays up through
+  `tick()` + two animation frames, i.e. until the **new** row set is
+  committed and painted — the old rows never sit there under a vanished
+  indicator.
+
+Two guards live in `useEntityList` behind the same lifecycle:
+
+- **`PAGE_OUT_OF_RANGE` self-heal** — when stale state points past the
+  last page (e.g. another writer deleted rows), the API answers a
+  hard `400` with `{page, last_page, total}` in `extra`; the composable
+  clamps to `last_page` and retries once, silently for the user.
+- **`pageSize` ceiling 100** — persisted restores, `default_page_size`
+  from meta, the page-size setter and the wire emission all clamp;
+  the API rejects `>250` regardless.
+
 ## Selection model
 
 Two complementary models:
@@ -186,6 +213,26 @@ The default "all fields" search covers **visible ∩ searchable ∩ `text`
 columns**: hidden-by-default columns (e.g. `uuid`) are excluded until the
 user shows them or picks them explicitly in the search-scope selector.
 
+## Built-in cell drifts
+
+Two cell behaviors are **by construction**, not authored per table:
+
+- **`version` column → version-history badge.** `TableCell` renders the
+  canonical `v<N>` badge-drill (the same anatomy as the record-sheet
+  footer badge — `text-xs font-semibold border-primary`) instead of the
+  raw number. Clicking opens the stacked `entity.versionHistory` sheet
+  with the same payload row actions build (`TableEntityContext`: entity,
+  translationKey, uid, columns).
+- **Actor ref → `entity.record` sheet with hero states.** `type:"ref"`
+  cells resolve the actor link; the opened sheet classifies the target
+  before fetching (`isUUID` from `@primebrick/ui`):
+  - **non-uuid value** (`system`, seed aliases) → warning `StateHero`
+    ("fictitious {entity_singular}"), never hits the API;
+  - **uuid-shaped but 404** → destructive `StateHero`
+    ("no longer available");
+  - **other load failure** → destructive `StateHero` with the generic
+    load-error key.
+
 ## Route-level usage — EntityTablePage
 
 `EntityTablePage` (`src/lib/components/entity-table-page/`) is the
@@ -244,6 +291,7 @@ then orphaned — never rewritten.
 
 ## Next steps
 
+- [ELT case study: job_schedule](/docs/dev-guide/elt-case-study-job-schedules) — the canonical worked example: every declaration → wire → chrome feature on the richest list in the system
 - [Component catalog](/docs/dev-guide/components) — every custom/wrapped component
 - [System settings](/docs/dev-guide/settings) — where `EntityListTable` is used for the users list
 - [UI components](/docs/dev-guide/ui-components) — custom components on top of Shadcn-Svelte™

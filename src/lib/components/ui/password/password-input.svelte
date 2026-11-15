@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { cn } from '$lib/utils.js';
 	import { box, mergeProps } from 'svelte-toolbelt';
-	import { usePasswordInput } from './password.svelte.js';
+	import { usePasswordInput } from './password-context.svelte.js';
 	import type { PasswordInputProps } from './types.js';
 	import { Input } from '@primebrick/ui';
 

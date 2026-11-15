@@ -9,6 +9,21 @@
 
 ## Mandatory conventions
 
+### Final specs only — no temporary probes
+- E2E specs are deliverables, not scratchpads. The FIRST spec written
+  for a behavior must be the FINAL persistent spec in its canonical
+  location (`src/e2e/<feature>.spec.ts`), obeying every convention in
+  this doc — then refined incrementally as evidence arrives.
+- NEVER write a throwaway probe spec and delete it after it passes.
+  A deleted probe deletes its own proof: the behavior it verified is
+  unverified the moment the file is gone, and the real spec must then
+  be written a second time. Write it once, write it right, keep it.
+- Exploratory checks run INSIDE the final spec while it is being
+  developed — assertions sharpen as you learn; the file never starts
+  disposable.
+- Any behavior only ever verified by a since-deleted temporary probe
+  counts as UNVERIFIED until a persistent spec covers it.
+
 ### Browser session — reuse over relaunch
 - Attach to the shared Edge debug session via `chromium.connectOverCDP(
   "http://127.0.0.1:9333")` first; only launch `launchPersistentContext(
@@ -133,6 +148,8 @@ session shapes — the shape is part of the product contract under test:
 - Testid convention: `.devin/rules/e2e-testid-convention.md`
 
 ## Enforcement
+- AI agent MUST write final persistent E2E specs from the first run —
+  temporary probe specs destined for deletion are forbidden.
 - AI agent MUST NOT add `sleep`/`waitForTimeout` outside the 5s poll slots.
 - AI agent MUST NOT modify production components to make a test pass — fix
   the test against the existing DOM contract.

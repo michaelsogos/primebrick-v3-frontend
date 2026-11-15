@@ -118,11 +118,10 @@ test.describe("job_trigger entity-form archetype lifecycle", () => {
       .locator('[role="option"]:visible')
       .filter({ hasText: "crm.customer_changed" })
       .first()
-      .click();
+      .click({ force: true });
     await popup.keyboard.press("Escape");
 
-    // execution_context — badge ComboSelect, default.
-    // enabled — SwitchField, default true. Both left at defaults.
+    // run_as — badge ComboSelect, left at its served default.
     await expect(popup.getByTestId("entity-form-submit")).toBeEnabled();
 
     // 3. Submit → the child broadcasts 'refresh' and CLOSES itself.
@@ -323,7 +322,7 @@ test.describe("schedule_spec assist — choicebox mode cards", () => {
     await popup.close();
   });
 
-  test("once mode: date wheel picker — sliding tab pill translates on tab switch", async ({
+  test("once mode: date wheel picker — segmented date/time tabs + wheel keyboard contract", async ({
     page,
     context,
   }) => {
@@ -341,17 +340,23 @@ test.describe("schedule_spec assist — choicebox mode cards", () => {
     await schedField.locator('[data-testid$="-assist"]').click();
     await popup.locator('[data-testid$="-mode-once"]').click();
 
-    // Open the canonical DateWheelPicker — single pill element owns the
-    // active-tab highlight and translates on switch.
+    // Open the canonical DateWheelPicker — the DATA/TIME mode toggle is the
+    // segmented ButtonGroup anatomy (ghost buttons + aria-pressed), not Tabs.
     await popup.locator('[data-testid$="-at-local"]').click();
-    const pill = popup.locator('[data-slot="tabs-pill"]:visible');
-    await expect(pill).toBeVisible();
+    // The assist popover stays open around the nested wheel-picker popover —
+    // discriminate by content.
+    const popContent = popup.locator('[data-slot="popover-content"]:visible', {
+      has: popup.locator('[data-slot="wheel-picker"]'),
+    });
+    await expect(popContent).toBeVisible();
+    const dateTab = popup.locator('[data-testid$="-at-local-date-tab"]');
+    const timeTab = popup.locator('[data-testid$="-at-local-time-tab"]');
+    await expect(dateTab).toHaveAttribute("aria-pressed", "true");
+    await expect(timeTab).toHaveAttribute("aria-pressed", "false");
 
     // The footer (keybind legend + CTAs) must fit the popover width AND keep
     // real air between the legend and the buttons.
-    const footer = popup.locator('[data-slot="tabs-pill"]:visible').locator(
-      'xpath=ancestor::*[contains(@class,"overflow-hidden")][1]'
-    ).locator('div.border-t').last();
+    const footer = popContent.locator('div.border-t').last();
     const footerFit = await footer.evaluate((el) => {
       // KeyboardHints renders N hint spans + the `end` snippet (ms-auto CTAs):
       // the real air is between the LAST hint group and the button row.
@@ -366,14 +371,15 @@ test.describe("schedule_spec assist — choicebox mode cards", () => {
     expect(footerFit.fits).toBeTruthy();
     expect(footerFit.air).toBeGreaterThanOrEqual(16);
 
-    const before = await pill.getAttribute("style");
-    await popup.getByRole("tab", { name: /time|ora/i }).click();
-    await expect(pill).not.toHaveAttribute("style", before ?? "", { timeout: 5000 });
+    // Tab switch flips aria-pressed on the segmented pair.
+    await timeTab.click();
+    await expect(timeTab).toHaveAttribute("aria-pressed", "true");
+    await expect(dateTab).toHaveAttribute("aria-pressed", "false");
 
     // Keyboard contract: the FIRST arrow from anywhere (e.g. focus still on
-    // the DATA/TIME tab) must focus AND roll the first wheel — not navigate
-    // among tabs. ↑↓ step the focused wheel, ←→ move between columns (or
-    // jump back to wheels), Enter submits, Esc closes.
+    // the DATA/TIME buttons) must focus AND roll the first wheel — not
+    // navigate among the mode buttons. ↑↓ step the focused wheel, ←→ move
+    // between columns (or jump back to wheels), Enter submits, Esc closes.
     const hourWheel = popup
       .locator('[data-slot="wheel-picker"] [data-slot="wheel-picker-group"]')
       .first();

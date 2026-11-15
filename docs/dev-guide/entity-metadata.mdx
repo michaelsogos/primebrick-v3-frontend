@@ -11,6 +11,9 @@ supports. The backend owns the canonical type (`EntityMeta` in
 `src/http/entity-meta.types.ts`); the frontend mirrors the response shape
 in `src/lib/entity-list/types.ts`. All fields are snake_case end to end.
 
+For a worked example that exercises nearly every feature of this schema, see
+the [ELT case study: job_schedule](./elt-case-study-job-schedules).
+
 ## Anatomy
 
 ```json
@@ -100,13 +103,14 @@ hand). Authored entries are presentation overrides on top of the class.
 | `hidden` | `true` = **the only way to suppress a physical column** — the column is dropped from the served meta entirely (no cell, picker entry, filter, or form field). Everything not explicitly hidden is served |
 | `hideable` | `false` = cannot be hidden |
 | `sortable` / `searchable` / `filterable` | Capability flags — default `true`, set `false` explicitly to disable |
-| `icon` | Field icon name (lucide) — consumed by form labels, column headers, and cell badges. Optional: absent icon renders nothing and reserves no space |
+| `icon` | Field icon name (lucide or authored `CUSTOM_ICONS` glyph, e.g. `trash-arrow-up`) — consumed by form labels, column headers, and cell badges. Optional: absent icon renders nothing and reserves no space |
 | `badge` | `{ values: Record<string, { label_key?, label_text?, color? }> }` |
 | `datetime_iana_toggle` | `{ record_iana_field }` — browser-local vs record-timezone header toggle |
 | `sparkline` | `type:"sparkline"` virtual column — `{ endpoint, request_field, row_key, response_field?, series }`; the list engine batch-POSTs row keys after every load (no per-page wiring) and `TableCell` renders `SparklineBars` in every view mode (`table`, `cards_list`, `cards`) |
 | `format` | Semantic renderer discriminator — `TableCell` switches on it **before** `type`: `schedule_spec` → badge + localized prose (`@primebrick/ui` schedule-spec i18n), `nats_subject` → badge + link to the owning module page (census-resolved), `json` → readable chips/prose for known shapes (e.g. trigger filter conditions) else safe preview, `identifier`/`display_name` → text affordances. Closed additive union in `MetaColumnFormat` |
 | `virtual` | `true` = no physical column backing — value arrives via service-side decoration (e.g. trigger `last_run`/`next_run`) or batch endpoints (`sparkline`). `type:"sparkline"`/`"ref_count"` imply it |
-| `ref` | `type:"ref"` — `{ entity }`; the cell links to the target entity's detail page (route resolved through the module census — no hardcoded paths) |
+| `immutable` | `true` = set once at creation OR derived by a process — editable on `kind:"create"` forms, rendered disabled on update/detail surfaces, excluded from update payloads. Distinct from `managed` (DB-filled key — derived by `withColumnConstraints`, never authored) and `audited` (lifecycle facts) |
+| `ref` | `type:"ref"` — `{ entity, entity_field?, key_field?, route?, filter_field?, value_field?, presentation? }`. `presentation:"link"` (DEFAULT) renders the two-affordance anatomy: text click opens the target record in the stacked `entity.record` sheet; the trailing ExternalLink opens the target `/list` filtered to this row in a new tab. `"badge"` is the legacy single-link pill — explicit opt-in only. Routes resolve through the module census (no hardcoded paths); a target with `route:"none"` degrades to a plain label. **Lazy ref**: `entity_field` (XOR with `entity`) names a row column carrying the target entity per row — one column, 2+ drill targets (e.g. `job_schedule.armed_by` → `job_trigger` \| `service_registry`); `key_field` names the row column holding the drill key (default: the cell value). The cell value is the display label — no `_name` join can decorate N entities — and the sheet is picked by the resolved entity (`entity.record` for entity-served targets, the panel map for registered non-entity targets like `service_registry` → `service.record`) |
 | `reverse_ref` | `type:"ref_count"` — `{ entity, filter_field, value_template }`; badge count + link to the children list filtered via `filters[0][field|op|value]` URL params. `filter_field` must be in the target service's `filterableKeys` or the link renders plain |
 | `tooltip`, `tooltip_priority`, `tooltip_title` | Tooltip content, severity, title keys |
 | `show_form_tooltip`, `show_list_tooltip` | Tooltip visibility per context |
@@ -167,7 +171,9 @@ from the row's `uid` field). The frontend dispatches write ops to the
 declared endpoint, not to a guessed `/entities/{entity}/{uuid}` convention —
 this is how `user_profile` keeps read-only entity routes while its writes
 live under `/api/v1/auth/users/*`. Ops without a declared endpoint fall back
-to the entity convention base (`entityApiBase`).
+to the entity convention base (`entityApiBase` — entity→service resolved
+from `module.entities` in the `/api/v1/modules` census; unmapped entities
+use the direct `/api/v1/entities/<e>` path).
 
 This is the single capability/visibility mechanism — there are no parallel
 row-action boolean flags in the schema.

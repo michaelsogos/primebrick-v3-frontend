@@ -33,6 +33,7 @@
       class={cn(active && 'bg-foreground/10 text-foreground shadow-xs')}
       aria-pressed={active}
       title={$t(mode.titleKey)}
+      data-testid="elt-view-mode-{mode.key}"
       onclick={() => onViewModeChange(mode.key)}
     >
       <mode.icon class="size-4" />

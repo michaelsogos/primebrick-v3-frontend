@@ -45,6 +45,7 @@ export type EntityRowActions = {
   edit_chrome?: ActionChrome;
   delete_chrome?: ActionChrome;
   restore_chrome?: ActionChrome;
+  duplicate_chrome?: ActionChrome;
 };
 
 export type ActionChrome = Pick<EntityAction, 'label_key' | 'icon' | 'color' | 'confirm_key' | 'busy_key'>;

@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { loginAsTestAdmin } from "./helpers/admin-login";
+import { loginAsCollabAdmin, loginAsTestAdmin } from "./helpers/admin-login";
 
 /**
  * ref-cell-sheet — the DECIDED `type:"ref"` "link" anatomy (POC: audit
@@ -110,7 +110,14 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
     );
 
   test("ref cell is text anatomy — font-medium, not a badge", async ({ page }) => {
-    const cell = page.getByTestId("ref-cell-created_by-text").first();
+    const i = resolvedIndex();
+    test.skip(i < 0, "no row with a resolved actor on this page");
+    // Row-scoped: unresolved actors carry no ref-cell testid, so a bare
+    // .first()/.nth() would drift off the intended row.
+    const cell = page
+      .locator("table tbody tr")
+      .nth(i)
+      .getByTestId("ref-cell-created_by-text");
     await expect(cell).toHaveClass(/font-medium/);
     await expect(cell.locator("..")).not.toHaveClass(/badge/);
   });
@@ -118,25 +125,35 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
   test("external-link affordance is hidden at rest, revealed on row hover", async ({
     page,
   }) => {
-    const ext = page.getByTestId("ref-cell-created_by-ext").first();
+    const i = resolvedIndex();
+    test.skip(i < 0, "no row with a resolved actor on this page");
+    const row = page.locator("table tbody tr").nth(i);
+    const ext = row.getByTestId("ref-cell-created_by-ext");
     // Hidden at rest — computed style, not DOM presence.
     await expect(ext).toHaveCSS("opacity", "0");
-    await page.locator("table tbody tr").first().hover();
+    await row.hover();
     await expect(ext).toHaveCSS("opacity", "1", { timeout: 3000 });
   });
 
   test("text click opens the entity.record sheet with the live record — display-only widgets", async ({
     page,
   }) => {
-    const i = resolvedIndex();
-    test.skip(i < 0, "no row with a resolved actor on this page");
-    const name = listRows[i].created_by_name!;
-    await page.getByTestId("ref-cell-created_by-text").nth(i).click();
+    // Order-independent: the first ref-cell testid IS a resolved actor by
+    // construction (unresolved rows render plain text), and its text IS
+    // the join-resolved display name — no listRows/DOM index alignment.
+    const cell = page.getByTestId("ref-cell-created_by-text").first();
+    await expect(cell).toBeVisible({ timeout: 15000 });
+    const name = (await cell.textContent())!.trim();
+    await cell.click();
 
     const sheet = page.getByTestId("entity-record-sheet");
     await expect(sheet).toBeVisible({ timeout: 15000 });
-    await expect(sheet).toContainText(name, { timeout: 15000 });
-    await expect(sheet).not.toContainText("Record not found");
+    // display_name renders as a readonly input — its value lives on the
+    // `value` attribute, never in innerText.
+    await expect(sheet.locator("input#record-sheet-field-display_name")).toHaveValue(name, {
+      timeout: 15000,
+    });
+    await expect(sheet.getByTestId("entity-record-sheet-missing-hero")).toHaveCount(0);
     // FORM-READONLY contract: the record renders as the entity's form
     // widgets — every control present but readonly/disabled (the pencil
     // toggle will later flip them to edit).
@@ -152,29 +169,36 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
   }) => {
     const i = resolvedIndex();
     test.skip(i < 0, "no row with a resolved actor on this page");
-    await page.getByTestId("ref-cell-created_by-text").nth(i).click();
+    await page.locator("table tbody tr").nth(i).getByTestId("ref-cell-created_by-text").click();
 
     const sheet = page.getByTestId("entity-record-sheet");
     await expect(sheet).toBeVisible({ timeout: 15000 });
     await expect(sheet).not.toContainText("Record not found", { timeout: 15000 });
 
     // uid → badge at the very top of the record surface (mono text, the
-    // uuid itself), never a form field.
+    // uuid itself), never a form field. Anatomy: secondary pill +
+    // file-key icon + the mono uuid + an inner copy CTA.
     const badge = page.getByTestId("entity-record-sheet-uid-badge");
     await expect(badge).toBeVisible();
     await expect(badge).toHaveAttribute("title", UUID_RE);
+    await expect(badge.locator("svg").first()).toBeVisible();
+    await expect(page.getByTestId("entity-record-sheet-uid-copy")).toBeVisible();
     await expect(sheet.locator("input#record-sheet-field-uuid")).toHaveCount(0);
 
     // No raw i18n keys anywhere — every label resolved through the dict.
     await expect(sheet).not.toContainText(/system\.entities\./);
     await expect(sheet).not.toContainText(/\.fields\./);
-    // The newly-declared internal flags render with translated labels.
+    // `onboarding_completed` renders with a translated label;
+    // `auth_method_enforcer_dismissed` is `hidden:true` — suppressed from
+    // the served meta entirely, so the sheet must NOT render it.
     await expect(sheet).toContainText("Onboarding Completed");
-    await expect(sheet).toContainText("Auth Method Enforcer Dismissed");
+    await expect(sheet).not.toContainText("Auth Method Enforcer Dismissed");
 
-    // Audit section: last block, divider above, labels translated,
-    // values rendered as TableCell formatting — ZERO form controls by
-    // construction (EntityFormField throws on audited columns).
+    // Audit section: last block, labels translated, values rendered as
+    // TableCell formatting — ZERO form controls by construction
+    // (EntityFormField throws on audited columns). It lives inside a
+    // single-item Accordion collapsed by default — expand first.
+    await sheet.getByRole("button", { name: "Audit" }).click();
     const audit = sheet.getByTestId("entity-record-sheet-audit-section");
     await expect(audit).toBeVisible();
     await expect(audit).toContainText("Created");
@@ -190,7 +214,7 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
   }) => {
     const i = resolvedIndex();
     test.skip(i < 0, "no row with a resolved actor on this page");
-    await page.getByTestId("ref-cell-created_by-text").nth(i).click();
+    await page.locator("table tbody tr").nth(i).getByTestId("ref-cell-created_by-text").click();
 
     const sheet = page.getByTestId("entity-record-sheet");
     await expect(sheet).toBeVisible({ timeout: 15000 });
@@ -217,12 +241,80 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
     await expect(page.getByTestId("entity-record-sheet")).toBeVisible();
   });
 
+  test("version history title is prose — translated action + actor drill opens the user record", async ({
+    page,
+  }) => {
+    const i = resolvedIndex();
+    test.skip(i < 0, "no row with a resolved actor on this page");
+
+    // Intercept the audit feed — assertions target real wire entries
+    // (action + changed_by), never assumed fixture data.
+    const auditRows: {
+      id: string | number;
+      action: string;
+      changed_by: string | null;
+      changed_by_name: string | null;
+    }[] = [];
+    page.on("response", (res) => {
+      if (/\/entities\/user_profile\/[^/]+\/audit/.test(res.url())) {
+        void res
+          .json()
+          .then((j) => {
+            if (Array.isArray(j?.data)) auditRows.push(...j.data);
+          })
+          .catch(() => {});
+      }
+    });
+
+    await page.locator("table tbody tr").nth(i).getByTestId("ref-cell-created_by-text").click();
+    const sheet = page.getByTestId("entity-record-sheet");
+    await expect(sheet).toBeVisible({ timeout: 15000 });
+    await page.getByTestId("entity-record-sheet-version-badge").click();
+
+    const primary = page.getByTestId("sheet-primary-pane");
+    const firstTitle = primary.locator("h3").first();
+    await expect(firstTitle).toBeVisible({ timeout: 15000 });
+    await expect.poll(() => auditRows.length, { timeout: 15000 }).toBeGreaterThan(0);
+
+    // The title is prose "{action} by {actor}" — EVERY timeline title
+    // must match the translated-participle shape; a raw enum action
+    // (INSERT/UPDATE/…) or "(uuid)" tail means the lookup regressed.
+    const titles = (await primary.locator("h3").allTextContents()).map((t) =>
+      t.trim().replace(/\s+/g, " "),
+    );
+    expect(titles.length).toBeGreaterThan(0);
+    for (const t of titles) {
+      expect(t).toMatch(/^(Created|Updated|Deleted|Permanently deleted|Restored|Cloned)( by .+)?$/);
+    }
+    // Only the action carries the semaphoric color — the connector and
+    // the actor drill stay neutral (font-normal text-foreground).
+    const actorBtn = firstTitle.locator("button[data-testid^='version-history-actor-']");
+    await expect(actorBtn).toHaveClass(/font-normal/);
+
+    // Actor drill — a uuid actor opens the canonical entity.record sheet
+    // on user_profile (stacked right pane). The uid badge always carries
+    // the target uuid — on a live record AND on the notFound hero for
+    // ghost actors (join miss → raw uuid, the honest error state).
+    const uuidRow = auditRows.find((r) => r.changed_by && UUID_RE.test(r.changed_by));
+    test.skip(!uuidRow, "no audit row with a uuid actor on this page");
+    const drill = primary.getByTestId(`version-history-actor-${uuidRow!.id}`);
+    await drill.click();
+    // Stack contract: the original record stays pinned on the left pane;
+    // the actor's record sheet takes the right slot.
+    const recordSheet = primary.getByTestId("entity-record-sheet");
+    await expect(recordSheet).toBeVisible({ timeout: 15000 });
+    await expect(recordSheet.getByTestId("entity-record-sheet-uid-badge")).toHaveAttribute(
+      "title",
+      uuidRow!.changed_by!,
+    );
+  });
+
   test("sheet uses the shared form builder — avatar_color renders the ColorSelector, not a text input", async ({
     page,
   }) => {
     const i = resolvedIndex();
     test.skip(i < 0, "no row with a resolved actor on this page");
-    await page.getByTestId("ref-cell-created_by-text").nth(i).click();
+    await page.locator("table tbody tr").nth(i).getByTestId("ref-cell-created_by-text").click();
 
     const sheet = page.getByTestId("entity-record-sheet");
     await expect(sheet).toBeVisible({ timeout: 15000 });
@@ -246,23 +338,28 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
     await expect(sheet.locator("input#record-sheet-field-avatar_color")).toHaveCount(0);
   });
 
-  test("unresolved actor — raw value text, sheet shows honest not-found state", async ({
-    page,
-  }) => {
+  test("unresolved actor — raw value text, NO drill affordance", async ({ page }) => {
     const i = unresolvedIndex();
     test.skip(i < 0, "no row with an unresolved actor on this page");
-    await page.getByTestId("ref-cell-created_by-text").nth(i).click();
-    const sheet = page.getByTestId("entity-record-sheet");
-    await expect(sheet).toBeVisible({ timeout: 15000 });
-    await expect(sheet).toContainText(/not found/i, { timeout: 15000 });
+    // Match-driven lazy ref: the join found no user_profile/service row,
+    // so ref_entity comes back NULL — the cell renders the raw actor as
+    // plain text with NO ref-cell affordance and nothing to click.
+    const row = page.locator("table tbody tr").nth(i);
+    await expect(row.getByTestId("ref-cell-created_by-text")).toHaveCount(0);
+    await expect(row.getByTestId("ref-cell-created_by-ext")).toHaveCount(0);
+    await expect(row).toContainText(String(listRows[i].created_by));
+    // The cell is inert — no record sheet can open for a non-target.
+    await expect(page.getByTestId("entity-record-sheet")).toHaveCount(0);
   });
 
   test("external-link CTA opens the filtered target list in a new tab — sheet stays closed", async ({
     page,
   }) => {
-    const row = page.locator("table tbody tr").first();
+    const i = resolvedIndex();
+    test.skip(i < 0, "no row with a resolved actor on this page");
+    const row = page.locator("table tbody tr").nth(i);
     await row.hover();
-    const ext = page.getByTestId("ref-cell-created_by-ext").first();
+    const ext = row.getByTestId("ref-cell-created_by-ext");
     await expect(ext).toHaveCSS("opacity", "1", { timeout: 3000 });
 
     const [newTab] = await Promise.all([page.context().waitForEvent("page"), ext.click()]);
@@ -279,7 +376,7 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
   test("sheet header CTA opens the filtered target list in a new tab", async ({ page }) => {
     const i = resolvedIndex();
     test.skip(i < 0, "no row with a resolved actor on this page");
-    await page.getByTestId("ref-cell-created_by-text").nth(i).click();
+    await page.locator("table tbody tr").nth(i).getByTestId("ref-cell-created_by-text").click();
     const sheet = page.getByTestId("entity-record-sheet");
     await expect(sheet).toBeVisible({ timeout: 15000 });
     const cta = page.getByTestId("entity-record-sheet-list-cta");
@@ -296,7 +393,7 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
   }) => {
     const i = resolvedIndex();
     test.skip(i < 0, "no row with a resolved actor on this page");
-    await page.getByTestId("ref-cell-created_by-text").nth(i).click();
+    await page.locator("table tbody tr").nth(i).getByTestId("ref-cell-created_by-text").click();
 
     const sheet = page.getByTestId("entity-record-sheet");
     await expect(sheet).toBeVisible({ timeout: 15000 });
@@ -336,7 +433,7 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
   }) => {
     const i = resolvedIndex();
     test.skip(i < 0, "no row with a resolved actor on this page");
-    await page.getByTestId("ref-cell-created_by-text").nth(i).click();
+    await page.locator("table tbody tr").nth(i).getByTestId("ref-cell-created_by-text").click();
 
     const sheet = page.getByTestId("entity-record-sheet");
     await expect(sheet).toBeVisible({ timeout: 15000 });
@@ -391,7 +488,7 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
   }) => {
     const i = resolvedIndex();
     test.skip(i < 0, "no row with a resolved actor on this page");
-    await page.getByTestId("ref-cell-created_by-text").nth(i).click();
+    await page.locator("table tbody tr").nth(i).getByTestId("ref-cell-created_by-text").click();
 
     const sheet = page.getByTestId("entity-record-sheet");
     await expect(sheet).toBeVisible({ timeout: 15000 });
@@ -413,8 +510,12 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
   });
 
   test("card view shares the same ref anatomy + hover reveal", async ({ page }) => {
+    const i = resolvedIndex();
+    test.skip(i < 0, "no row with a resolved actor on this page");
     await page.getByRole("button", { name: "Cards (grid)" }).click();
-    const card = page.locator(".group.rounded-md.border").first();
+    // Cards mirror row order — pick the resolved row's card so the
+    // ref-cell testid exists (unresolved actors render plain text).
+    const card = page.locator(".group.rounded-md.border").nth(i);
     await expect(card).toBeVisible({ timeout: 15000 });
     const cell = card.getByTestId("ref-cell-created_by-text").first();
     await expect(cell).toBeVisible();
@@ -422,5 +523,90 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
     const ext = card.getByTestId("ref-cell-created_by-ext").first();
     await card.hover();
     await expect(ext).toHaveCSS("opacity", "1", { timeout: 3000 });
+  });
+
+  test("lifecycle status badge — a suspended actor's record sheet carries the suspended status chip", async ({
+    page,
+    browser,
+  }) => {
+    // e2e_collab_admin — the second admin actor global-setup mints —
+    // creates a customer in its own session: that row's `created_by` is
+    // the ref target pointing AT the user we suspend (audited refs on
+    // user_profile rows all point to the actor, never at the row's own
+    // user — a list row can never open its own record).
+    const marker = `e2e-susp-${Date.now()}`;
+    const userCtx = await browser.newContext();
+    const userPage = await userCtx.newPage();
+    let suspendedUuid: string | undefined;
+    let customerUuid: string | undefined;
+    try {
+      await loginAsCollabAdmin(userPage);
+      const res = await userPage.request.post("/svc/crm/api/v1/entities/customer", {
+        data: {
+          entity: {
+            code: `S${Date.now().toString(36).toUpperCase()}`,
+            status: "ACTIVE",
+            display_name: marker,
+          },
+        },
+      });
+      expect(res.ok()).toBeTruthy();
+      const body = await res.json();
+      suspendedUuid = (body?.created_by ?? body?.row?.created_by ?? body?.entity?.created_by) as
+        | string
+        | undefined;
+      customerUuid = (body?.uuid ?? body?.row?.uuid ?? body?.entity?.uuid) as string | undefined;
+    } finally {
+      await userCtx.close();
+    }
+    expect(suspendedUuid).toMatch(UUID_RE);
+
+    // Suspend the actor via the admin session — suspend/reactivate are
+    // guarded by ?version= like every lifecycle transition.
+    const profileOf = async () => {
+      const res = await page.request.get(
+        `/api/v1/entities/user_profile/list?filters[0][field]=uuid&filters[0][op]=%3D&filters[0][value]=${suspendedUuid}`,
+      );
+      const j = await res.json();
+      return j?.rows?.[0] as { uuid: string; version: number } | undefined;
+    };
+    const before = await profileOf();
+    expect(before?.version).toBeTruthy();
+    const suspendRes = await page.request.post(
+      `/api/v1/auth/users/${suspendedUuid}/suspend?version=${before?.version}`,
+    );
+    expect(suspendRes.ok()).toBeTruthy();
+
+    try {
+      // Suspended actors still resolve the join (suspended ≠ deleted) —
+      // the marker row's ref opens the record sheet carrying the badge.
+      await page.getByTestId("entity-search").locator("input").fill(marker);
+      await expect
+        .poll(() => listRows.some((r) => r.display_name === marker), { timeout: 15000 })
+        .toBe(true);
+      await page.getByTestId("ref-cell-created_by-text").first().click();
+      const badge = page.getByTestId("entity-record-sheet-status-badge");
+      await expect(badge).toBeVisible({ timeout: 15000 });
+      await expect(badge).toContainText(/suspend/i);
+    } finally {
+      // Cleanup: reactivate the actor and soft-delete the marker customer.
+      const after = await profileOf();
+      if (after) {
+        await page.request.post(
+          `/api/v1/auth/users/${suspendedUuid}/reactivate?version=${after.version}`,
+        );
+      }
+      if (customerUuid) {
+        const custRes = await page.request.get(
+          `/svc/crm/api/v1/entities/customer/list?filters[0][field]=uuid&filters[0][op]=%3D&filters[0][value]=${customerUuid}`,
+        );
+        const cust = (await custRes.json())?.rows?.[0] as { version: number } | undefined;
+        if (cust) {
+          await page.request.delete(
+            `/svc/crm/api/v1/entities/customer/${customerUuid}?version=${cust.version}`,
+          );
+        }
+      }
+    }
   });
 });

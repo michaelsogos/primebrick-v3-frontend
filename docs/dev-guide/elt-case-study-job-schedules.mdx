@@ -1,0 +1,359 @@
+---
+title: "ELT case study: job_schedule"
+description: "The job schedules page as the canonical worked example — every entity-class and entity-meta feature that produces a complex EntityListTable, traced from declaration to wire to chrome."
+---
+
+# ELT case study: `job_schedule`
+
+`job.job_schedule` is the richest declarative entity list in the system. This
+page traces each feature it uses through the full pipeline — declaration,
+served wire, rendered chrome, consuming surface, and the test that locks it —
+so it can be read as a recipe: *"I want an ELT that does X — this is how
+schedules does it."*
+
+The generic schema reference is [Entity metadata](./entity-metadata); the
+component contract is [EntityListTable](./components/entity-list-table). This
+page is the worked example that exercises both.
+
+## The pipeline
+
+Every feature below travels the same path:
+
+<Mermaid chart={`flowchart LR
+  A[Entity class<br/>@Entity / mixins<br/>@Column / @Ref / @Calculated] --> D
+  B[Entity meta<br/>columns / table<br/>actions_overrides] --> D
+  C[Route decls<br/>permissions + entity_op.cta] --> D
+  D[makeServiceRoutes<br/>meta + routers + OpenAPI] --> E[GET meta + list]
+  E --> F[EntityListTable + useEntityList]
+  F --> G[chrome: toolbar, columns,<br/>cells, CTAs, sheets]`} />
+
+One declaration set produces routes, metadata, OpenAPI and page behavior —
+there is no second source of truth anywhere in the chain.
+
+## Baseline vs declarative
+
+A near-autogen entity (e.g. `crm.customers`) ships a working ELT — columns,
+search, filters, sort, paging, standard CRUD CTAs — by declaring almost
+nothing. `job_schedule` shows everything the declarative layer adds on top:
+
+| Capability | Baseline | `job_schedule` |
+|---|---|---|
+| Columns from entity | derived | derived **+ authored** (badges, calcs, virtuals, hidden) |
+| Column order/visibility | canonical | explicit bands, audited extras band |
+| Actions | standard CRUD | none — read-only mirror, lifecycle CTAs from routes |
+| Toolbar scope | none | `filter_presets` button_group |
+| Cell types | text/number/date | badge, ref, lazy-ref, sparkline, ref_count |
+| Row data | DB only | DB + live JetStream decoration + batch stats POST |
+| Filter vocabulary | column options | `options_source` vocabularies + audit-actors |
+| Provenance | audit columns | hidden writer + resolved armer + authored identity |
+
+## Entity class → what the ELT earns
+
+### `Auditable` vs `Deletable` mixins
+
+- **DECLARATION** — `JobScheduleEntity extends Auditable(EntityBase)`
+  (`job_schedule_entity.ts:24`), `JobRunEntity` the same;
+  `JobTriggerEntity extends Deletable(Auditable(EntityBase))`
+  (`job_trigger_entity.ts:55`).
+- **WIRE** — `Auditable` derives `created_by/updated_by` columns (searchable
+  and filterable via `deriveListWireSets`); `Deletable` adds
+  `deleted_at/deleted_by` plus the `deleted_records` scope parameter.
+  `Auditable` alone also makes the `auditActors` capability exist on the
+  service — the router registers `GET /:entity/audit-actors` on its
+  *presence*, so an entity with audit columns but no `@AuditTrail` history
+  table still serves actor options.
+- **CHROME** — the trigger list shows deleted rows via the deletion-scope
+  group and gets Enable/Disable lifecycle; schedules and runs have no
+  deletion chrome at all (no `Deletable` mixin → no scope toggle, no restore
+  CTA).
+- **CONSUMPTION** — `use-audit-actor-options.svelte.ts` fetches
+  `/entities/:entity/audit-actors` for `options_source:"audit.actors"`
+  filter fields (`FormFieldDispatcher.svelte:514`).
+- **LOCK** — `elt-list-wire-attack.spec.ts` case F asserts
+  `GET job_schedule/audit-actors → 200`; `job-triggers-deletion-filter.spec.ts`
+  locks the deletion scope; `jobs-pages.spec.ts:279` locks `job_run` having
+  no audit endpoint.
+
+### `@Calculated` SQL projections
+
+`job_schedule` declares four distinct calculated species
+(`job_schedule_entity.ts`):
+
+| Column | SQL shape | Purpose |
+|---|---|---|
+| `fired_at` (:81) | `max(job_runs.created_at) WHERE status<>'skipped'` | cross-table aggregate — "last actual execution" |
+| `next_run_at` (:103) | `CASE WHEN status='armed' THEN next_fire_mirror_at` | served field **gating** a shadow column |
+| `job_name` (:117) | `COALESCE(trigger.name, subject-tail)` | authored identity — survives trigger deletion |
+| `armed_by` (:132) | 3-way `COALESCE` trigger→service_registry→service_code | resolved armer, rename-proof |
+| `armed_ref_entity/_key` (:145,:154) | `CASE`/`COALESCE` discriminators | lazy-ref drill target per row |
+
+- **WIRE** — calculated columns travel as real row fields; sortable and
+  filterable like physical ones (trigger `last_run`, `next_run` are declared
+  the same way on `JobTriggerEntity`).
+- **CHROME** — normal cells; `armed_by` additionally renders the lazy-ref
+  link (below). `job_name` is the `display_field` → pin column and record
+  title.
+- **LOCK** — `jobs-pages.spec.ts:565` *"job_name = authored identity,
+  armed_by = live armer — they diverge on orphaned mirrors"*.
+
+### `@Ref` display joins
+
+- **DECLARATION** — `@Ref("job_trigger") trigger_uuid`
+  (`job_schedule_entity.ts:64`) joins `job_triggers.name` into the row;
+  `job_run.schedule_subject` declares `ref: { entity: "job_schedule",
+  route: "list", filter_field: "schedule_subject" }` (`job.meta.ts:370`) — a
+  ref whose target is a *filtered list*, not a detail page.
+- **WIRE** — the display field rides the row (`trigger_uuid_name`); the
+  run's ref carries routing data, not a fetch.
+- **CHROME** — link cells: trigger → entity sheet, run's schedule →
+  schedules list pre-filtered.
+- **LOCK** — `jobs-pages.spec.ts` ref-cell coverage; `elt-list-wire-attack`
+  filters on `trigger_uuid` (uuid-typed, `pgType:"uuid"` on the entity).
+
+### `pgType` → typed wire validation
+
+- **DECLARATION** — `@Column({ pgType: "uuid" })` on `uuid`, `trigger_uuid`;
+  `timestamptz` on every calc above.
+- **WIRE** — filter values are validated in memory against the declared type
+  before SQL: `filters[0][value]=not-a-date` on `created_at` → RFC 400, never
+  a Postgres 500. No extra query — pure pre-flight coercion.
+- **LOCK** — `elt-list-wire-attack.spec.ts` cases C/E;
+  `entity-service-meta-derivation.test.ts`.
+
+## Meta → wire → chrome
+
+All meta citations are `job-handler/src/modules/jobs/job.meta.ts`.
+
+### `display_field` on a calculated column
+
+`display_field: "job_name"` (:181) points at a `@Calculated`, not a physical
+column — the pin column and record-sheet title derive from the computed
+identity. **LOCK** `jobs-pages.spec.ts:66`.
+
+### Column order bands
+
+Business columns rank `0–100`, the entity's **audited extras band** ranks
+`2000–2030` (`fired_at` → `armed_by` → `armed_at` → `disarmed_at`, :290–306),
+canonical audit columns land at `2100+`, `version` at `2900`. Declaration
+order inside the band *is* the visual order. `audited: true` on the extras is
+what groups them under the audit tail — `pinAuditTail` +
+`auditingColumnsGroup` (`EntityListTable.svelte:256`).
+
+### `hidden: true` — three different shadows
+
+One flag, three distinct reasons (:197, :259, :266–270):
+
+- `service_code` — physical and queryable (filterable/searchable), never a
+  column: the provenance UX is `created_by` + `armed_by`.
+- `next_fire_mirror_at` — the NATS shadow; its only readers are SQL-level
+  (the `next_run_at` gate) and the live/drift decorator.
+- `armed_ref_entity`, `armed_ref_key` — lazy-ref wire helpers: they ride the
+  row so the cell can resolve its drill, but must never appear standalone —
+  `hidden` drops them from served meta, picker included.
+
+### `default_visible` vs derived-hide
+
+Audit columns are hidden by the derived default; an authored column opts
+back in with `default_visible: true`. `job_run` goes further — it **relabels**
+the canonical pair instead of adding new fields: `created_at` → "Started at",
+`updated_at` → "Finished at" (:366, :374), because on a run the audit
+timestamps *are* the business timestamps.
+
+### Badge vocabularies
+
+`badge.values` closes the value→(label,color) map at declaration: `status`
+(6 values incl. `fired`/`expired` terminal greys, :213), `kind`, `schedule_type`,
+`run_as` (`system` is deliberately `#000000`), `drift` (`stale`/`missing`,
+:220). No value is rendered untyped — an undeclared value shows the raw key,
+which is why the vocab must cover the full enum.
+
+### `kind: "virtual"` — non-DB columns
+
+`live` and `drift` (:217–225) carry no table field: the service decorates
+each row at list time from the *live JetStream enumeration* — external truth,
+never queryable. `run_stats` is virtual for a different reason: its data
+arrives by side-channel POST, not the row payload.
+
+### The `sparkline` contract — one batch POST per page
+
+```ts
+sparkline: {
+  endpoint: "/actions/job-run-stats",
+  request_field: "schedule_subjects",
+  row_key: "schedule_subject",
+  series: [ { field: "succeeded", color: "fill-emerald-500", … }, … ]
+}
+```
+
+(:229–243) — `loadSparklines` (`useEntityList.svelte.ts:505`) collects every
+visible row's `row_key` and issues **one** POST; the endpoint returns
+`{key: buckets[]}` and the column renders stacked svg cells. The six series
+include `lost`/`dispatched`/`missed` — statuses that exist in runs but are
+easy to silently drop from a hand-written histogram. **LOCK**
+`jobs-pages.spec.ts:186` *"builtin — batch stats fetch + svg cells"*.
+
+### Lazy ref — `ref.entity_field`/`key_field`
+
+`armed_by` (:300–303) declares no fixed target: each row's own
+`armed_ref_entity`/`armed_ref_key` decide the drill — a trigger-owned mirror
+opens the trigger's entity sheet, a module-owned one opens the
+`service_registry` record panel. **LOCK** `jobs-pages.spec.ts:475`
+*"`service_registry` → service.record, `job_trigger` → entity.record"*.
+
+### `null_label` — contextual empty states
+
+`job_trigger.next_run` (:134–135) renders the "disabled" label only when the
+row says so — `when: { field: "deleted_at", not: null }`. The empty state is
+data-conditioned, not a generic dash (`TableCell.svelte:47`).
+
+### `options_source` vocabularies
+
+Four governed option sources appear across the job entities:
+
+| Source | Consumer | Surface |
+|---|---|---|
+| `census.emits` | `FormFieldDispatcher` | event-subject combobox in the trigger form |
+| `census.callables` | `FormFieldDispatcher` | target-subject combobox |
+| `audit.actors` | `useAuditActorOptions` | `created_by`/`updated_by` filter options |
+| `system.roles` | `TableCell` | badge-per-role cells (elsewhere) |
+
+The filter-panel actor combo is what exposed the `audit-actors` capability
+bug — the control mounted from derived filterable columns before the route
+was capability-gated.
+
+### Authoring-only columns — `filterable: false`, `widget`, `json_schema`
+
+`filter`, `payload_map`, `schedule_spec` (:88–113) declare
+`filterable: false` — *"a writer, not a matcher"*. `payload_map` adds
+`widget: "payload_map"` + `json_schema`, which the entity-form archetype
+turns into the structured map editor with lint/validation. They are form
+fields that happen to be storable columns, not list fields.
+
+### `actions_overrides` — domain language on standard ops
+
+`delete.single/bulk` → **Disable** (`exec-stop`, destructive),
+`restore.*` → **Enable** (`exec-start`, success) (:166–171). Same operations,
+domain chrome — soft-delete *is* the disable for triggers, so the button says
+so. `exec-*` icons are semantic: icon↔color agreement is enforced.
+
+### `filter_presets` — toolbar-owned scope
+
+```ts
+filter_presets: [{
+  id: "schedule_kind", display: "button_group", default_option: "recurring",
+  options: [
+    { id: "recurring", icon: "repeat", where: [{ field: "schedule_type", op: "=", value: "recurring" }] },
+    { id: "once", icon: "zap", where: [ … "once" ] },
+    { id: "all", icon: "list-clock", where: [] },
+  ],
+}]
+```
+
+(:319–349) — a mutually-exclusive scope in the toolbar, AND-ed into every
+list call. The preset **owns** `schedule_type`: `presetOwnedFields`
+(`EntityListTable.svelte:241`) subtracts preset-governed fields from the
+filters panel so no second source of truth can contradict it.
+`default_option` + persisted-selection sanitization means exactly one option
+is always active. **LOCK** `jobs-pages.spec.ts:83`.
+
+### `reverse_ref` — `ref_count` children
+
+`job_trigger.runs` (:118–119) is a `ref_count` computed from
+`reverse_ref: { entity: "job_run", filter_field: "schedule_subject",
+value_template: "…{uuid}" }` — the count links to the runs list filtered by
+this trigger's mirror subject.
+
+### `table` defaults
+
+`default_sort: updated_at desc` is served from meta (:310) — never hardcoded
+FE-side. `page_size_options` are clamped by the wire contract (FE ≤100, API
+≤250 — see below).
+
+## Routes → capabilities → chrome
+
+### Read-only mirror by permission declaration
+
+`job_schedule` and `job_run` declare **only** `meta/list/get` permissions
+(`entities-route.ts:46–55,62–66`): no write routes exist, so no create/edit/
+delete CTAs exist — the page's action surface is the permission declaration,
+not an FE flag. The comment is the contract: *"CRUD writes would flip the
+mirror without touching JetStream"*. `job_run` additionally has no
+`/:uuid/audit` — the run row *is* the audit trail (**LOCK**
+`jobs-pages.spec.ts:279`).
+
+### Lifecycle CTAs from `entity_op.cta`
+
+The schedule's row/bulk actions are declared on the action routes
+(`actions-route.ts:388–526`), and `makeServiceRoutes` synthesizes them into
+served meta — *"the route owns the op and its chrome"*:
+
+```ts
+entity_op: { entity: "job_schedule", op: "pause",
+  cta: { icon: "pause:filled", row_key: "schedule_subject",
+         translation_key: "job.jobs.actions.pause",
+         visible_on: { field: "status", values: ["armed"] } } }
+```
+
+`visible_on` gates each CTA by row state (pause only on `armed`, resume only
+on `paused`, enable only on `disarmed|stopped|paused`) — the menu is a
+function of the row, declared once. `:filled` icon variants render the solid
+play/pause/stop glyphs (**LOCK** `jobs-schedule-cta-icons.spec.ts:31`).
+
+## The list wire contract — derived, strict
+
+`deriveListWireSets` (`entity-service.ts:359`) computes
+searchable/filterable/sortable sets from the served meta — no parallel
+hand-maintained arrays. Around those sets, the contract enforced on
+`job_schedule` (all locked in `elt-list-wire-attack.spec.ts`, ~60 live
+cases):
+
+- **`search_in`** — comma-joined keys split at the DAL boundary; unknown key
+  → 400 per key (fail-closed).
+- **`connector`** — top-level only (`AND|OR`); a per-filter `connector` is
+  wire-compat noise, ignored.
+- **Typed values** — validated against `pgType` pre-query → RFC 400.
+- **`deleted_records`** — strict enum `EXCLUDED|ONLY|INCLUDED`; UI-mode names
+  (`deleted`/`all`) on the wire → 400.
+- **`PAGE_OUT_OF_RANGE`** — empty page beyond the last → RFC 400 with
+  `extra {page,last_page,total}`; the FE self-heals (clamp + one retry)
+  instead of displaying a phantom `total:0`.
+- **`page_size`** — FE never asks >100; API rejects >250 with RFC 400.
+
+## The reload UX the page owns
+
+The `elt-reload-strip` KITT comet — `LoadingBar` over the table, held by a
+render barrier (`tick()` + two RAFs) until the *new* rows are painted, with a
+~250 ms minimum display so instant localhost responses still flash feedback.
+Full contract in [EntityListTable → Reload UX](./components/entity-list-table)
+and [LoadingBar](./components/loading-bar). **LOCK**
+`elt-columns-filter-ux.spec.ts`.
+
+## Known gaps and deliberate divergences
+
+Documented, not smoothed over:
+
+- **Provenance triad** — three representations coexist on purpose:
+  `created_by` (audit writer, hidden column, lazy-ref to actor/service),
+  `armed_by` (the live armer, resolved through trigger→service→code),
+  `job_name` (the authored job identity — survives trigger deletion). On an
+  orphaned mirror they diverge; `jobs-pages.spec.ts:565` locks the
+  divergence as intended semantics.
+- **`dispatched` runs** — real but transient (usually inside the bucket
+  window); counted in the sparkline series but rarely visible.
+- **Drift detection vs heal** — `live`/`drift` decoration is real-time
+  (JetStream enumeration at list); healing is an explicit action
+  (`POST /actions/schedule-drift`), never automatic on the read path.
+- **`datetime_iana_toggle` unused** — every job timestamp is an engine UTC
+  stamp; no column carries a per-row IANA zone, so the toggle is declared in
+  the schema but not exercised here.
+- **`expires_at`/`expires` vocabulary** — `expires_at` is physical but
+  undeclared in meta columns (internal TTL bookkeeping).
+
+## Next steps
+
+- [Entity metadata](./entity-metadata) — the generic schema every column key
+  above conforms to
+- [EntityListTable](./components/entity-list-table) — the component contract
+  (views, selection, reload UX)
+- [Entity record sheet](./components/entity-record-sheet) — where lazy-ref
+  drills land

@@ -87,15 +87,15 @@ test.describe("elt filters widget parity", () => {
     await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 30_000 });
     await openFiltersSheet(page);
 
-    // execution_context ("Process Executor") — badge multi ComboSelect.
-    const { control } = await labeledControl(page, /process.?executor/i);
+    // run_as ("Run As") — badge multi ComboSelect.
+    const { control } = await labeledControl(page, /run.?as/i);
     await expect(control).toHaveAttribute("role", "combobox");
     await control.click();
     const popover = page.locator("[data-popover-content], [cmdk-list]").last();
     await expect(popover).toBeVisible({ timeout: 10_000 });
-    // execution_context badge vocab: system / user / me — pick two.
+    // run_as badge vocab: system / originator / author — pick two.
     await popover.getByText(/^System$/i).first().click();
-    await popover.getByText(/^Me$/i).first().click();
+    await popover.getByText(/^Author$/i).first().click();
     await page.keyboard.press("Escape");
     urls.length = 0;
     await page.getByTestId("filters-apply").click();
@@ -117,8 +117,8 @@ test.describe("elt filters widget parity", () => {
     await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 30_000 });
     await openFiltersSheet(page);
 
-    // auth_method_enforcer_dismissed — the boolean tri-state group.
-    const { control } = await labeledControl(page, /\bauth method enforcer\b/i);
+    // suspended — the boolean tri-state group.
+    const { control } = await labeledControl(page, /\bsuspended\b/i);
     // Tri-state group — the combobox/text input would both be wrong here.
     await expect(control.getByRole("button", { name: "Any" })).toBeVisible();
     await control.getByRole("button", { name: "Yes" }).click();
@@ -229,9 +229,9 @@ test.describe("elt filters widget parity", () => {
     await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 30_000 });
     await openFiltersSheet(page);
 
-    // auth_method_enforcer_dismissed: no tooltip metadata → NO help control
+    // suspended: no tooltip metadata → NO help control
     // (ghost-icon regression).
-    const bare = await labeledControl(page, /\bauth method enforcer\b/i);
+    const bare = await labeledControl(page, /\bsuspended\b/i);
     await expect(bare.label.getByLabel("Help")).toHaveCount(0);
     // idp_is_admin ("Admin"): tooltip + show_list_tooltip → help renders.
     const hinted = await labeledControl(page, /\badmin\b/i);
@@ -244,7 +244,7 @@ test.describe("elt filters widget parity", () => {
     await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 30_000 });
     await openFiltersSheet(page);
 
-    const { control } = await labeledControl(page, /schedule.?subject/i);
+    const { control } = await labeledControl(page, /\bschedule\b/i);
     await expect(control).toHaveAttribute("role", "combobox");
     // The delegate fetches the referenced entity's first page when the
     // control mounts — a static/closed option list would never hit the wire.

@@ -30,6 +30,7 @@
   import { filteredEntityListHref } from '$lib/entity-list/entity-links';
   import { Badge, Button, DynamicIcon, SheetPanelFooter, SheetPanelLayout, toDisplayString } from '@primebrick/ui';
   import EntityRecordSheetBody from '../EntityRecordSheetBody.svelte';
+  import EntityRecordUid from '../EntityRecordUid.svelte';
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import { isEntityOpAllowed } from '$lib/permissions.svelte';
   import { findActionEndpoint, fillActionPath } from '$lib/entity-list/action-endpoints';
@@ -38,6 +39,7 @@
   import { LoadingBar } from '$lib/components/ui/loading-bar';
   import type { MetaColumn, EntityMeta } from '$lib/entity-list/types';
   import type { FormFieldPlacement } from '@primebrick/ui';
+  import { isUUID, StateHero } from '@primebrick/ui';
 
   let {
     entity,
@@ -75,6 +77,15 @@
   let loading = $state(true);
   let notFound = $state(false);
   let failed = $state(false);
+  /** Pseudo-actor ref (`system`, seed aliases): the target is not a uuid —
+   *  never reaches the API, renders a warning hero instead. */
+  let pseudoRef = $state(false);
+  /** The uid the sheet resolved — business-key refs land on their target's
+   *  uuid before GET; heroes keep showing it above the error state.
+   *  Initial value = the cell's raw stored value (same prop-stability
+   *  contract as `basePath` — the panel remounts per open). */
+  // svelte-ignore state_referenced_locally
+  let heroUid = $state<unknown>(value);
 
   /** Edit mode — gated on `meta.actions`: the pencil renders iff the
    *  `update.single` op is enabled AND the user satisfies its declared
@@ -88,6 +99,18 @@
   const canUpdate = $derived(
     meta ? isEntityOpAllowed(meta.actions, 'update.single') : false,
   );
+
+  /** Translated entity singular — the `<ns>.entities.<tk>.singular`
+   *  convention shared with `entityPageTitle`; interpolated into hero
+   *  messages (`{entity_singular}`). Raw key fallback keeps the sheet
+   *  readable when a dict entry is missing. */
+  const entitySingular = $derived.by(() => {
+    if (!meta) return entity;
+    const ns = meta.entities_ns ?? 'system';
+    const tk = meta.translation_key ?? entity;
+    const resolved = $t(`${ns}.entities.${tk}.singular`);
+    return resolved && !resolved.includes('.singular') ? resolved : entity;
+  });
 
   /** Record surfaces show ONE row — the authored list icon is mapped to
    *  its canonical singular variant when a pair exists (`users`→`user`).
@@ -268,6 +291,14 @@
       const uid = meta.uid ?? 'uuid';
       let uuid = String(value);
       const ff = ref?.filter_field;
+      // uid-keyed refs resolve `value` straight to `GET /record/<uuid>` — a
+      // non-uuid target is a pseudo-actor ref (`system`, seed aliases):
+      // warning hero, no API call. Business-key refs (`ff !== uid`) keep
+      // their list lookup — `system` is a legit filter value there.
+      if ((!ff || ff === uid) && !isUUID(uuid)) {
+        pseudoRef = true;
+        return;
+      }
       if (ff && ff !== uid) {
         const params = new URLSearchParams();
         params.set('filters[0][field]', ff);
@@ -287,6 +318,7 @@
         }
         uuid = String(hit[uid]);
       }
+      heroUid = uuid;
       const res = await apiFetch(`${basePath}/${uuid}`);
       if (res.status === 404) {
         notFound = true;
@@ -355,10 +387,37 @@
   <div class="h-full overflow-auto p-4" data-testid="entity-record-sheet">
     {#if loading}
       <LoadingBar />
+    {:else if pseudoRef}
+      <!-- Pseudo-actor ref (non-uuid): the subject was never censused.
+           Identity stays visible — the stored value IS the ref we hold. -->
+      <EntityRecordUid {meta} value={heroUid} />
+      <StateHero
+        severity="warning"
+        icon="ghost"
+        animation="pulse"
+        title_key="system.entities.record.pseudo_subject"
+        params={{ entity_singular: entitySingular }}
+        test_id="entity-record-sheet-pseudo-hero"
+      />
     {:else if notFound}
-      <p class="text-sm text-muted-foreground">{$t('app.common.not_found')}</p>
+      <EntityRecordUid {meta} value={heroUid} />
+      <StateHero
+        severity="destructive"
+        icon="user-x"
+        animation="pulse"
+        title_key="system.entities.record.unavailable"
+        params={{ entity_singular: entitySingular }}
+        test_id="entity-record-sheet-missing-hero"
+      />
     {:else if failed || !record}
-      <p class="text-sm text-muted-foreground">{$t('app.common.load_error')}</p>
+      <EntityRecordUid {meta} value={heroUid} />
+      <StateHero
+        severity="destructive"
+        icon="circle-alert"
+        animation="none"
+        title_key="app.common.load_error"
+        test_id="entity-record-sheet-failed-hero"
+      />
     {:else if record && meta}
       <EntityRecordSheetBody
         {meta}
@@ -381,11 +440,9 @@
       <SheetPanelFooter>
         {#snippet start()}
           {#if versionValue !== undefined && versionValue !== null}
-            <!-- Version is record META content (the `start` slot's contract —
-                 legend/meta, not commit CTAs) that doubles as the drill
-                 affordance into `entity.versionHistory`. Canonical anatomy:
-                 real <button> wrapping the outline/primary Badge — same shape
-                 as FormPageLayout / ConfigListRow / VersionHistoryPanel. -->
+            <!-- Version badge doubles as the drill affordance into
+                 `entity.versionHistory` — canonical LEFT anatomy, same as
+                 FormPageLayout / ConfigListRow / VersionHistoryPanel. -->
             <button
               type="button"
               onclick={openVersionHistory}
@@ -404,13 +461,13 @@
           <!-- Lifecycle badge — destructive for soft-deleted records,
                emerald success-chip anatomy for suspended ones. -->
           {#if isDeleted}
-            <Badge variant="destructive" class="text-xs font-semibold" data-testid="entity-record-sheet-status-badge">
+            <Badge variant="destructive" data-testid="entity-record-sheet-status-badge">
               {$t('system.common.status.deleted')}
             </Badge>
           {:else if isSuspended}
             <Badge
               variant="outline"
-              class="text-xs font-semibold border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+              class="border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
               data-testid="entity-record-sheet-status-badge"
             >
               {$t('system.common.status.suspended')}

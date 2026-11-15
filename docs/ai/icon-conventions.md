@@ -12,8 +12,11 @@
 2. **Refresh CTAs are MANDATORY `<RefreshButton>`** — never hand-roll a
    refresh button (`Toolbar.refresh` prop for toolbars, `compact` variant
    inside cards).
-3. **Clear/reset = `Eraser`**, close/remove = `X`, restore = `RotateCcw`,
-   refresh = `RefreshCw`. Do not cross these semantics.
+3. **Clear/reset = `Eraser`**, close/remove = `X`, **restore-from-deleted =
+   `trash-arrow-up`** (authored glyph — `CUSTOM_ICONS` in `@primebrick/ui`,
+   consumed via `DynamicIcon name="trash-arrow-up"` on every restore surface),
+   **local revert/undo = `RotateCcw`**, refresh = `RefreshCw`. Do not cross
+   these semantics.
 4. **Booleans**: `CircleCheck` / `CircleX` — never `CheckCircle`/`XCircle`.
    **Warnings**: `TriangleAlert` — never the legacy `AlertTriangle` alias.
 5. Icons import ONLY from `@primebrick/ui/vendor/lucide` (named imports) —
@@ -58,6 +61,20 @@
    `EntityRecordSheet.svelte` `RECORD_ICON_VARIANTS`). Icons without a
    declared pair render unchanged; extend the map when a new plural glyph
    is authored, never guess variants.
+13. **Entity list icons are UNIQUE per entity family** — the record sheet
+   resolves its header icon from the authored list/nav icon, so two
+   entities sharing one glyph render indistinguishable ref sheets
+   (`customers`+`users` both `users`→`user` was the first collision).
+   When authoring a nav/route icon for an entity, pick a glyph no other
+   entity uses — vary the family (`users` vs `users-round`) rather than
+   the wrapper. Non-entity leaves (module root, pipelines, dashboards)
+   may repeat glyphs freely: they never feed `RECORD_ICON_VARIANTS`.
+14. **Violet = clone/duplicate** — `ActionColor` in `@primebrick/core` binds
+   the `violet` semantic to cloning: `duplicate.bulk` serves
+   `color:"violet"` + `icon:"copy"` by default (overridable via
+   `actions_overrides`), and the same hue marks `CLONE` rows in the
+   version-history trail. Never spend `violet` on unrelated actions and
+   never recolor clone surfaces to another semantic.
 
 ## Deep dive
 

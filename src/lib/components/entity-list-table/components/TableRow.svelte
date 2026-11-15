@@ -16,7 +16,8 @@
     entityListDestructiveScrollInteractionClass,
     datetimeIanaCellHighlightClass,
     isDatetimeIanaRecordMode,
-    entityListDataCellValignClass
+    entityListDataCellValignClass,
+    entityListDataCellAlignClass
   } from '../utils/cell-styling';
   import { MoreVertical } from '@primebrick/ui/vendor/lucide'
   import { Pencil } from '@primebrick/ui/vendor/lucide'
@@ -24,7 +25,6 @@
   import { FileClock } from '@primebrick/ui/vendor/lucide'
   import { Eye } from '@primebrick/ui/vendor/lucide'
   import { Trash2 } from '@primebrick/ui/vendor/lucide'
-  import { ArrowUpFromLine } from '@primebrick/ui/vendor/lucide';
   import { DynamicIcon, actionColorClass } from '@primebrick/ui';
   import type { CellArgs, EntityRowActions } from '../types';
   import type { RowCustomAction } from '$lib/entity-list/types';
@@ -151,7 +151,8 @@
               : (rowDeleted
                 ? entityListDestructiveBandStickyInteractionClass(rowSelected)
                 : entityListGrayBandStickyInteractionClass(rowSelected)),
-            entityListDataCellValignClass(col)
+            entityListDataCellValignClass(col),
+            entityListDataCellAlignClass(col)
           )}
         >
           <div use:stickyColumnsState.stickyRef={{ key: col.key, isHead: false }}>
@@ -176,7 +177,8 @@
               : (rowDeleted
                 ? entityListDestructiveBandStickyInteractionClass(rowSelected)
                 : entityListGrayBandStickyInteractionClass(rowSelected)),
-            entityListDataCellValignClass(col)
+            entityListDataCellValignClass(col),
+            entityListDataCellAlignClass(col)
           )}
         >
           <CellRenderer
@@ -199,7 +201,8 @@
             : (rowDeleted
               ? entityListDestructiveScrollInteractionClass(rowSelected)
               : entityListDefaultScrollInteractionClass(rowSelected)),
-          entityListDataCellValignClass(col)
+          entityListDataCellValignClass(col),
+          entityListDataCellAlignClass(col)
         )}
       >
         <CellRenderer
@@ -260,13 +263,18 @@
                 </DropdownMenu.Item>
               {/if}
               {#if entityRowActions?.duplicate !== false}
+                {@const chrome = entityRowActions?.duplicate_chrome}
                 <DropdownMenu.Item
                   onclick={(e) => { e.stopPropagation(); if (isRowDeleted(row)) return; onDuplicateRow(row); }}
-                  class={isRowDeleted(row) ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}
+                  class={isRowDeleted(row) ? 'opacity-50 cursor-not-allowed pointer-events-none' : (actionColorClass(chrome?.color) || 'text-violet')}
                 >
                   <div class="flex items-center gap-2">
-                    <Copy class="size-4" />
-                    <span>{$t('app.common.duplicate')}</span>
+                    {#if chrome?.icon}
+                      <DynamicIcon name={chrome.icon} class="size-4" />
+                    {:else}
+                      <Copy class="size-4" />
+                    {/if}
+                    <span>{$t(chrome?.label_key ?? 'app.common.duplicate')}</span>
                   </div>
                 </DropdownMenu.Item>
               {/if}
@@ -292,10 +300,7 @@
                       {#if chrome?.icon}
                         <DynamicIcon name={chrome.icon} class="size-4" />
                       {:else}
-                        <span class="relative flex items-center justify-center">
-                          <Trash2 class="size-4" />
-                          <ArrowUpFromLine class="absolute -bottom-[1px] size-3" />
-                        </span>
+                        <DynamicIcon name="trash-arrow-up" class="size-4" />
                       {/if}
                       <span>{$t(chrome?.label_key ?? 'app.common.restore')}</span>
                     </div>

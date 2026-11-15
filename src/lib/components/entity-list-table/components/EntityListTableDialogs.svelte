@@ -20,7 +20,8 @@
     deleteChrome,
     restoreChrome,
     bulkDeleteChrome,
-    bulkRestoreChrome
+    bulkRestoreChrome,
+    duplicateChrome
   }: EntityListTableDialogsProps = $props();
 
   type EntityListTableDialogsProps = {
@@ -41,6 +42,7 @@
     restoreChrome?: ActionChrome;
     bulkDeleteChrome?: ActionChrome;
     bulkRestoreChrome?: ActionChrome;
+    duplicateChrome?: ActionChrome;
   };
 
   async function confirmDeleteRow() {
@@ -229,6 +231,7 @@
   selectedCount={selectedKeys.length}
   entity={translationKey ?? entity}
   entities_ns={entities_ns}
+  chrome={duplicateChrome}
   isDuplicating={rowActionsComposable.state.isDuplicating}
   onConfirm={confirmDuplicate}
   onCancel={cancelDuplicate}

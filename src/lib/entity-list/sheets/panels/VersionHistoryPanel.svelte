@@ -18,11 +18,13 @@
   import { Badge } from '@primebrick/ui';
   import { badgeClassesFromToken } from '@primebrick/ui';
   import { cn } from "$lib/utils";
+  import { openSheet } from "$lib/shell/sheets/sheet-manager.svelte";
   import * as Timeline from "$lib/components/ui/timeline";
   import { Tooltip } from '@primebrick/ui';
   import { JsonCodeBlock } from '@primebrick/ui';
   import type { MetaColumn } from '$lib/entity-list/types';
   import { tryParseJsonObject } from '$lib/utils/json-object';
+  import { auditActionKey, changedBySheetTarget } from './version-history-title';
 
   interface Props {
     entity: string;
@@ -194,10 +196,20 @@
     return entry.changed_by || '';
   }
 
+  /** Translated action label — `auditActionKey` owns the key contract
+   *  (generic block, lowercase); unresolved keys fall back to the raw
+   *  wire action so a missing translation never hides the entry. */
   function getAuditActionLabel(action: string): string {
-    const key = `system.entities.versionHistory.actions.${action.toUpperCase()}`;
+    const key = auditActionKey(action);
     const translated = $t(key);
     return translated === key ? action : translated;
+  }
+
+  /** Drill into the writer behind an audit row — `changedBySheetTarget`
+   *  owns the routing; error states are owned by the target sheets. */
+  function openChangedByRecord(entry: VersionHistoryEntry) {
+    const target = changedBySheetTarget(entry.changed_by ?? '');
+    openSheet(target.panel, target.props, { stack: true });
   }
 
   function formatAuditDelta(delta: Record<string, AuditDeltaChange>, action: string): Array<{
@@ -461,8 +473,20 @@
                   </Badge>
                   <Timeline.Date>{formatUiDateTime(entry.changed_at, $uiLang)}</Timeline.Date>
                 </div>
-                <Timeline.Title class={colorClass}>
-                  {getAuditActionLabel(entry.action)} {#if entry.changed_by}({getChangedByDisplay(entry)}){/if}
+                <Timeline.Title>
+                  <!-- Prose contract: "{action} {by} {actor}" — only the
+                       action carries the semaphoric color; the connector
+                       and the actor link stay neutral. -->
+                  <span class={colorClass}>{getAuditActionLabel(entry.action)}</span>
+                  {#if entry.changed_by}
+                    {' '}<span class="font-normal text-foreground">{$t('system.entities.version_history.by')}</span>{' '}
+                    <button
+                      type="button"
+                      class="font-normal text-foreground underline-offset-2 rounded-sm px-0.5 hover:bg-accent hover:underline cursor-pointer"
+                      onclick={() => openChangedByRecord(entry)}
+                      data-testid={`version-history-actor-${entry.id}`}
+                    >{getChangedByDisplay(entry)}</button>
+                  {/if}
                 </Timeline.Title>
                 {#if isUpdate}
                   <div class="mt-1">

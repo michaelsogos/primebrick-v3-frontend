@@ -26,6 +26,7 @@
    * The uid/audited/version partition applies to both paths — a declared
    * form never places system fields anyway.
    */
+  import EntityRecordUid from './EntityRecordUid.svelte';
   import EntityFormField from '$lib/entity-form/EntityFormField.svelte';
   import { useAuditBox } from '$lib/composables/useAuditBox';
   import type { AuditData } from '$lib/utils/audit-data';
@@ -33,8 +34,7 @@
   import { useCensusSubjectOptions } from '$lib/entity-form/use-census-subject-options.svelte';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
   import { t } from '$lib/i18n';
-  import { Accordion, Badge, Label, DynamicIcon, colorCssFromToken } from '@primebrick/ui';
-  import { Copy, Check } from '@primebrick/ui/vendor/lucide';
+  import { Accordion } from '@primebrick/ui';
   import { orderedColumns } from '$lib/entity-list/types';
   import { computeInitials } from '$lib/utils/avatar-initials';
   import type { MetaColumn, EntityMeta } from '$lib/entity-list/types';
@@ -87,6 +87,8 @@
   );
   const uidValue = $derived(record[uidKey]);
 
+  const uidBlock = $derived(uidValue !== undefined && uidValue !== null);
+
   /** Audit values use the CANONICAL form-page formatter
    *  (`useAuditBox.formatValue` — datetime/badge/ref `_name` resolution,
    *  `-` for nulls), rendered as plain `label: value` text — the same
@@ -102,19 +104,6 @@
     }),
   );
 
-  /** uid copy affordance — the badge's inner right icon. Transient check
-   *  swap confirms the copy without a toast (field-level, low-impact). */
-  let uidCopied = $state(false);
-  async function copyUid() {
-    if (uidValue === undefined || uidValue === null) return;
-    try {
-      await navigator.clipboard.writeText(String(uidValue));
-      uidCopied = true;
-      setTimeout(() => (uidCopied = false), 1500);
-    } catch {
-      /* clipboard denied — silent, the badge still shows the value */
-    }
-  }
 
   /** Same census vocabulary the form page feeds the dispatcher —
    *  `census.emits`/`census.callables` columns get their options here
@@ -157,7 +146,10 @@
 </script>
 
 {#snippet field(col: MetaColumn, p?: FormFieldPlacement)}
-  <div class="space-y-2" style={p ? placementStyle(p) : undefined}>
+  <div
+    class="space-y-2 @max-xl:col-start-auto! @max-xl:col-end-auto! @max-xl:row-start-auto! @max-xl:row-end-auto!"
+    style={p ? placementStyle(p) : undefined}
+  >
     <EntityFormField
       column={col}
       placement={p}
@@ -172,41 +164,20 @@
   </div>
 {/snippet}
 
-<div class="flex h-full flex-col gap-4">
-  {#if uidValue !== undefined && uidValue !== null}
-    <!-- Same field anatomy as EntityFormField — label row, then the
-         "control" slot below it (here the uid badge, never a widget). -->
-    <div class="space-y-2">
-      <Label for="record-sheet-uid-badge">{$t('system.common.fields.uuid')}</Label>
-      <Badge
-        id="record-sheet-uid-badge"
-        variant="secondary"
-        class="h-9 w-full max-w-full justify-start gap-2 truncate px-3 font-mono shadow-none [&>svg]:size-4"
-        title={String(uidValue)}
-        data-testid="entity-record-sheet-uid-badge"
-      >
-        <DynamicIcon name="file-key" size={16} class="shrink-0" style="color:{colorCssFromToken('amber-500')}" />
-        <span class="truncate">{uidValue}</span>
-        <button
-          type="button"
-          class="ml-auto inline-flex shrink-0 items-center text-muted-foreground transition-colors hover:text-foreground"
-          title={$t('app.common.copy')}
-          aria-label={$t('app.common.copy')}
-          onclick={copyUid}
-          data-testid="entity-record-sheet-uid-copy"
-        >
-          {#if uidCopied}
-            <Check class="size-4" />
-          {:else}
-            <Copy class="size-4" />
-          {/if}
-        </button>
-      </Badge>
-    </div>
+<!-- `@container` — the sheet measures its OWN width, not the viewport:
+     a standard sheet counts as an xs surface, so declared 2-column form
+     layouts collapse to one column here and only re-expand if the panel
+     itself ever grows past the `@xl` container breakpoint. Placed fields
+     carry inline `grid-column-*`/`grid-row-*` from `placementStyle` — the
+     `@max-xl` important resets win over them exactly like an xs media
+     query, so collapsed fields flow in declaration (DOM) order. -->
+<div class="@container flex h-full flex-col gap-4">
+  {#if uidBlock}
+    <EntityRecordUid {meta} value={uidValue} />
   {/if}
 
   {#if formPlacements.length}
-    <div class="grid gap-4 {formTwoCol ? 'grid-cols-2' : 'grid-cols-1'}">
+    <div class="grid gap-4 {formTwoCol ? '@xl:grid-cols-2' : 'grid-cols-1'}">
       {#each formPlacements as { col, p } (col.key)}
         {@render field(col, p)}
       {/each}

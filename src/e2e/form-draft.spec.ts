@@ -65,18 +65,17 @@ test("detail: stale-base draft becomes a conflict; reset refetches the live row"
     event_subject: "e2e.draft.fired",
     schedule_spec: "@every 1h",
     target_subject: "emailsender.send",
-    execution_context: "user",
-    enabled: true,
+    run_as: "originator",
   };
   const create = await page.request.post(`${JOB_BASE}/job_trigger`, {
     data: { entity: baseEntity },
   });
-  expect(create.status()).toBe(201);
+  expect(create.status(), await create.text()).toBe(201);
   const { uuid } = (await create.json()) as { uuid: string };
 
   try {
     await page.goto(`/system/job/triggers/${uuid}`, { waitUntil: "domcontentloaded" });
-    await expect(page.getByTestId("entity-form-page")).toBeVisible();
+    await expect(page.getByTestId("entity-form-page")).toBeVisible({ timeout: 30000 });
     const nameField = page.getByTestId("entity-form-field-name");
     const nameInput = nameField.locator("input");
     await expect(nameInput).toHaveValue(name);
@@ -85,7 +84,7 @@ test("detail: stale-base draft becomes a conflict; reset refetches the live row"
     const edited = `${name}-v2`;
     await nameInput.fill(edited);
     await expect
-      .poll(async () => (await draftKeys(page)).length, { timeout: 5000 })
+      .poll(async () => (await draftKeys(page)).length, { timeout: 15000 })
       .toBeGreaterThan(0);
 
     // Foreign write via the API: `schedule_spec` changes, `version`

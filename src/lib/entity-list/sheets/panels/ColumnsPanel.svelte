@@ -19,6 +19,10 @@
     toggleColumnKey: (key: string) => void;
     onReorderKeys?: (group: 'sticky' | 'data' | 'auditing', keys: string[]) => void;
     onResetColumnVisibility: () => void;
+    /** Show every rendered column (always-on stay visible by construction). */
+    onSelectAll: () => void;
+    /** Restore the declared default visibility (NOT "hide everything"). */
+    onDeselectAll: () => void;
   }
 
   let {
@@ -28,8 +32,15 @@
     visibleKeys,
     toggleColumnKey,
     onReorderKeys,
-    onResetColumnVisibility
+    onResetColumnVisibility,
+    onSelectAll,
+    onDeselectAll
   }: Props = $props();
+
+  const renderedColumns = $derived([...stickyColumns, ...nonAuditingColumns, ...auditingColumns]);
+  const selectedCount = $derived(renderedColumns.filter((c) => visibleKeys.includes(c.key)).length);
+  const allSelected = $derived(renderedColumns.length > 0 && selectedCount === renderedColumns.length);
+  const someSelected = $derived(selectedCount > 0 && !allSelected);
 </script>
 
 {#snippet columnRows(columns: ColumnLike[], group: 'sticky' | 'data' | 'auditing')}
@@ -83,6 +94,28 @@
     <SheetHeaderAction title={$t('app.common.reset')} onclick={() => onResetColumnVisibility()}>
       <Eraser class="size-4" />
     </SheetHeaderAction>
+  {/snippet}
+  {#snippet toolbar()}
+    <div class="flex items-center gap-2">
+      <Checkbox
+        checked={allSelected}
+        indeterminate={someSelected}
+        onCheckedChange={() => (allSelected ? onDeselectAll() : onSelectAll())}
+        aria-label={$t('system.entities.list.select_all')}
+        data-testid="columns-select-all"
+      />
+      <button
+        type="button"
+        class="text-xs font-medium text-muted-foreground select-none"
+        onclick={() => (allSelected ? onDeselectAll() : onSelectAll())}
+        data-testid="columns-select-all-label"
+      >
+        {allSelected ? $t('system.entities.list.deselect_all') : $t('system.entities.list.select_all')}
+      </button>
+      <span class="ml-auto text-xs text-muted-foreground" data-testid="columns-visible-count">
+        {selectedCount}/{renderedColumns.length}
+      </span>
+    </div>
   {/snippet}
 
   {#if stickyColumns.length > 0}

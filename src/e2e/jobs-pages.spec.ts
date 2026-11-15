@@ -264,7 +264,7 @@ test.describe("/system/job/* pages (module-owned)", () => {
       "event_subject",
       "target_subject",
       "schedule_spec",
-      "execution_context",
+      "run_as",
       "filter",
       "payload_map",
     ]) {
@@ -410,7 +410,7 @@ test.describe("/system/job/* pages (module-owned)", () => {
     await expect(trigger).toContainText(/settings/i, { timeout: 15000 });
 
     // App launcher → select System (module column descends) → click Job
-    // Handler's goto CTA: nav[0].href (/system/job/job-schedules) is the
+    // Handler's goto CTA: nav[0].href (/system/job/triggers) is the
     // module home.
     await trigger.click();
     await page
@@ -423,7 +423,7 @@ test.describe("/system/job/* pages (module-owned)", () => {
       .locator("[data-testid='launcher-cta']")
       .click();
 
-    await page.waitForURL("**/system/job/job-schedules", { timeout: 10000 });
+    await page.waitForURL("**/system/job/triggers", { timeout: 10000 });
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
   });
 
@@ -470,5 +470,112 @@ test.describe("/system/job/* pages (module-owned)", () => {
       )
       .toBe(true);
     await expect(errorPanel).toHaveCount(0);
+  });
+
+  test("armed_by lazy ref: trigger-owned row → job_trigger entity.record", async ({
+    page,
+  }) => {
+    await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
+
+    // Every schedule is trigger-owned (trigger_uuid NOT NULL) — armed_by
+    // is a static ref to `job_trigger` keyed by the row's own
+    // `trigger_uuid` and drills to the canonical entity.record sheet.
+    const triggerRow = page.locator("tr", { hasText: "e2e-callable-dispatch" }).first();
+    const triggerCell = triggerRow.getByTestId("ref-cell-armed_by-text");
+    await expect(triggerCell).toBeVisible({ timeout: 15000 });
+    await triggerCell.click();
+    const recordSheet = page.getByTestId("entity-record-sheet");
+    await expect(recordSheet).toBeVisible({ timeout: 15000 });
+    // The trigger record loaded through the ref key — the row's own
+    // `trigger_uuid` IS the sheet's record uid.
+    await expect(recordSheet).toContainText("01a1cbe9-3464-77b8-a85b-9b236aa66f4e", {
+      timeout: 15000,
+    });
+    // Collapse contract: the shared trigger form pins payload_map at
+    // col:2/row:1 — below the sheet's @xl breakpoint the row pin must be
+    // neutralized so fields flow in declaration order. Assert VISUAL
+    // order (bounding-box top): DOM order alone never caught the bug.
+    const tops = await recordSheet.evaluate((sheet) =>
+      Array.from(sheet.querySelectorAll('[id^="record-sheet-field-"]')).map((el) => ({
+        key: el.id.replace("record-sheet-field-", ""),
+        top: el.getBoundingClientRect().top,
+      })),
+    );
+    const visualOrder = tops
+      .slice()
+      .sort((a, b) => a.top - b.top)
+      .map((f) => f.key);
+    expect(visualOrder).toEqual(tops.map((f) => f.key));
+    expect(visualOrder.indexOf("name")).toBeLessThan(visualOrder.indexOf("payload_map"));
+    await expect(page.getByTestId("service-record-panel")).toHaveCount(0);
+  });
+
+  test("created_by audit actor lazy ref: system:* → service name + service.record", async ({
+    page,
+  }) => {
+    await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
+
+    // `created_by` is an audited column — hidden by default, togglable.
+    // The DAL resolves `system:<code>` writers through service_registry:
+    // the cell carries the service NAME and a lazy ref (ref_entity=
+    // service_registry, ref_key=code) — the same canonical cell anatomy
+    // every audited entity now gets for free.
+    await page.getByRole("button", { name: "Columns" }).click();
+    const toggle = page.getByTestId("columns-toggle-created_by");
+    await expect(toggle).toBeVisible({ timeout: 15000 });
+    await toggle.click();
+    await page.keyboard.press("Escape");
+
+    const cell = page.getByTestId("ref-cell-created_by-text").first();
+    await expect(cell).toBeVisible({ timeout: 15000 });
+    await expect(cell).toContainText(/Process Manager|AI Assistants Manager/);
+    await cell.click();
+
+    // Service actor → the service.record panel (registry RPC record) —
+    // never an entity sheet.
+    const panel = page.getByTestId("service-record-panel");
+    await expect(panel).toBeVisible({ timeout: 15000 });
+    await expect(page.getByTestId("service-record-info")).toBeVisible();
+    await expect(page.getByTestId("entity-record-sheet")).toHaveCount(0);
+    await page.keyboard.press("Escape");
+    await expect(panel).toHaveCount(0, { timeout: 10000 });
+  });
+
+  test("job_name/armed_by share the owning trigger's identity — even past its deletion", async ({
+    page,
+  }) => {
+    await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
+
+    // `service_code` is physically retired — the subject carries the
+    // namespace (`jobs.schedule.<owner>.*`). No header, no picker entry.
+    await expect(page.locator("th", { hasText: /^service$/i })).toHaveCount(0);
+    await page.getByRole("button", { name: "Columns" }).click();
+    await expect(page.getByTestId("columns-toggle-service_code")).toHaveCount(0);
+    await expect(page.getByTestId("columns-toggle-trigger_uuid")).toBeVisible({ timeout: 15000 });
+    await page.keyboard.press("Escape");
+
+    // `target_subject` (Destination Event) is default-visible — the event
+    // the schedule fires is a first-class fact of what it does.
+    await expect(page.getByRole("columnheader", { name: "Destination Event" })).toBeVisible();
+
+    // Orphaned mirror (soft-deleted e2e-gate trigger): Armed By keeps the
+    // deleted trigger's name — the armer IS that trigger, its deletion
+    // does not rewrite provenance. Job Name and Armed By converge on the
+    // same identity (plain text vs drillable ref).
+    const orphanRow = page.locator("tr", { hasText: "e2e-gate-1793665359607" }).first();
+    await expect(orphanRow).toBeVisible({ timeout: 15000 });
+    const orphanArmed = orphanRow.getByTestId("ref-cell-armed_by-text");
+    await expect(orphanArmed).toContainText("e2e-gate-1793665359607");
+    await orphanArmed.click();
+    await expect(page.getByTestId("entity-record-sheet")).toBeVisible({ timeout: 15000 });
+    await page.keyboard.press("Escape");
+
+    // Live trigger row: Job Name and Armed By intentionally share the
+    // trigger's display — identity (plain text) vs drillable ref.
+    const liveRow = page.locator("tr", { hasText: "e2e-callable-dispatch" }).first();
+    await expect(liveRow).toBeVisible({ timeout: 15000 });
   });
 });

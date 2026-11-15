@@ -20,7 +20,7 @@
   import JsonCellViewer from './JsonCellViewer.svelte';
   import { Tooltip } from '@primebrick/ui';
   import { getAuditFieldValue } from '../utils/cell-formatting';
-  import { getAuditColumnsContext, getMetaUidContext } from '../context';
+  import { getAuditColumnsContext, getActiveRolesContext, getMetaUidContext, getEntitiesNsContext, getTableEntityContext } from '../context';
   import { SparklineBars } from '@primebrick/ui';
   import { MetaAvatar } from '$lib/components/ui/avatar-preview';
 
@@ -63,7 +63,52 @@
   /** Module route census — resolves `ref`/`reverse_ref` entity names to
    *  real declared routes (FE-owned URLs, never hardcoded in meta). */
   const routeCensus = $derived(routesCensusFromModules(shellNav.modules));
+
+  /** Lazy `ref` resolution (ref contract in `@primebrick/core`): the
+   *  target entity is `ref.entity` when declared statically, else the
+   *  per-row value of `ref.entity_field`; the drill key is the row's
+   *  `ref.key_field` when declared, else the cell value itself (the
+   *  normal uuid-ref case). A missing `entity_field` value or a null
+   *  declared `key_field` means the target cannot be addressed — the
+   *  cell renders its label without a drill affordance. */
+  const refEntity = $derived(
+    column.type === 'ref' && column.ref
+      ? (column.ref.entity ??
+          (column.ref.entity_field ? toDisplayString(row[column.ref.entity_field]) : undefined))
+      : undefined,
+  );
+  const refKey = $derived(
+    column.type === 'ref' && column.ref
+      ? column.ref.key_field
+        ? row[column.ref.key_field]
+        : value
+      : value,
+  );
+  /** Ref-target entity → record panel: `service_registry` is RPC-served
+   *  (`/api/v1/system/services/:code`, never entity-served), so lazy refs
+   *  resolving to it open the service record sheet; every other entity
+   *  drills through the canonical `entity.record`. */
+  const REF_PANEL_FOR_ENTITY: Record<string, 'service.record' | 'entity.record'> = {
+    service_registry: 'service.record',
+  };
+  const refPanel = $derived(refEntity ? (REF_PANEL_FOR_ENTITY[refEntity] ?? 'entity.record') : 'entity.record');
   const metaUid = getMetaUidContext();
+  /** Table-entity + namespace contexts — resolved once at init (context is
+   *  stable for the cell's lifetime); the `version` branch opens
+   *  `entity.versionHistory` with the same payload row actions build. */
+  const entityCtx = getTableEntityContext();
+  const cellEntitiesNs = getEntitiesNsContext();
+  /** Shared active-roles lookup (`options_source:"system.roles"` columns)
+   *  — one lazy fetch per list, `idp_role` → label_key → `$t`. */
+  const activeRoles = getActiveRolesContext();
+  /** Role badge label — translated `label_key` when the role resolves,
+   *  the raw `idp_role` code otherwise (unknown/inactive code or the
+   *  fetch hasn't landed yet — the badge re-renders when it does). */
+  const roleLabel = (code: unknown): string => {
+    const raw = toDisplayString(code);
+    const labelKey = activeRoles?.().get(raw)?.label_key;
+    return labelKey ? $t(labelKey) : raw;
+  };
   /** `column.color` is a TailwindColorToken (canonical: `colorCssFromToken`
    *  → inline style) — meta strings are invisible to the FE content scan,
    *  so class-based colors silently dead-render. Same mechanism as the
@@ -99,10 +144,19 @@
     return col.type === 'datetime' && !!col.datetime_iana_toggle && (modeByKey[col.key] ?? 'browser') === 'record';
   }
 
-  /** `format:"nats_subject"` drill-down — the module list is the canonical
-   *  subject destination until the planned capabilities/events page lands
-   *  (keep in sync with the `ref` column contract when it ships). */
-  const NATS_SUBJECT_HREF = '/system/settings/modules';
+  /** Module-list drill-down — the canonical destination for module-owned
+   *  concepts (`nats_subject` subjects, `service_code` owners) until the
+   *  planned capabilities/events page lands. */
+  const MODULES_HREF = '/system/settings/modules';
+
+  /** `format:"service_code"` — the code resolves against the module census
+   *  to the owning service's entry (icon + translated name); unresolved
+   *  (offline/unregistered service) renders the raw code. */
+  const serviceModule = $derived(
+    column.format === 'service_code' && typeof value === 'string' && value !== ''
+      ? shellNav.modules.find((m) => m.id === value)
+      : undefined,
+  );
 
   type JsonCondition = { field: string; op?: string; value?: unknown };
   /** Trigger/filter `{field,op,value}` DSL vocabulary → canonical
@@ -145,6 +199,37 @@
 
 {#if cellSnippet}
   {@render cellSnippet({ row, column })}
+{:else if column.key === 'version' && value !== undefined && value !== null}
+  <!-- The `version` column is a badge-affordance by construction — the
+       canonical version-history badge drilling into the stacked sheet,
+       same anatomy + payload as the sheet footer / row menu action. -->
+  {#if entityCtx}
+    <button
+      type="button"
+      class="inline-flex"
+      title={$t('system.entities.version_history.title')}
+      onclick={(e) => {
+        e.stopPropagation();
+        openSheet('entity.versionHistory', {
+          entity: entityCtx.entity,
+          translationKey: entityCtx.translationKey,
+          entities_ns: cellEntitiesNs,
+          rowUuid: String(row[entityCtx.uid]),
+          columns: entityCtx.columns,
+        });
+      }}
+      data-testid="version-cell-badge"
+    >
+      <Badge
+        variant="outline"
+        class="text-xs font-semibold border border-primary bg-white dark:bg-black cursor-pointer hover:bg-primary/10"
+      >
+        v{toDisplayString(value)}
+      </Badge>
+    </button>
+  {:else}
+    <span class="min-w-0 truncate">{toDisplayString(value)}</span>
+  {/if}
 {:else if column.type === 'boolean'}
   <div class="flex w-full justify-center">
     {#if value === true}
@@ -170,12 +255,19 @@
     {/if}
   </div>
 {:else if column.type === 'sparkline' && column.sparkline}
-  <SparklineBars
-    buckets={sparklineBuckets}
-    bucketUnit={sparklineData?.[column.key]?.bucket_unit}
-    series={sparklineSeries}
-    bucketField={column.sparkline.bucket_field ?? 'bucket_start'}
-  />
+  {#if sparklineBuckets === undefined}
+    <!-- No stats row for this key (or the batch fetch hasn't landed) —
+         the universal null contract, not an empty frame. -->
+    <span class="min-w-0 truncate">-</span>
+  {:else}
+    <SparklineBars
+      buckets={sparklineBuckets}
+      bucketUnit={sparklineData?.[column.key]?.bucket_unit}
+      series={sparklineSeries}
+      bucketField={column.sparkline.bucket_field ?? 'bucket_start'}
+      noRunsLabel={$t('system.entities.list.no_runs')}
+    />
+  {/if}
 {:else if column.badge?.values && value}
   {@const badgeValue = value as string}
   {@const badgeColors = badgeClassesFromToken(column.badge.values[badgeValue]?.color ?? null)}
@@ -196,7 +288,7 @@
       {#snippet child({ props })}
         <a
           {...props}
-          href={resolve(NATS_SUBJECT_HREF)}
+          href={resolve(MODULES_HREF)}
           target="_blank"
           rel="noopener noreferrer"
           class="inline-flex max-w-full rounded-sm"
@@ -212,7 +304,35 @@
       <p class="font-mono text-xs">{toDisplayString(value)}</p>
     </Tooltip.Content>
   </Tooltip.Root>
-{:else if column.format === 'json'}
+{:else if column.format === 'service_code' && value}
+  <!-- Module badge — the census carries the service's icon + translated
+       name; the raw code stays in the tooltip. -->
+  {#if serviceModule}
+    <Tooltip.Root>
+      <Tooltip.Trigger>
+        {#snippet child({ props })}
+          <a
+            {...props}
+            href={resolve(MODULES_HREF)}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex max-w-full rounded-sm"
+          >
+            <Badge variant="secondary" class="gap-1 shadow-none">
+              {#if serviceModule.icon}<DynamicIcon name={serviceModule.icon} size={12} class="shrink-0" />{/if}
+              <span class="truncate text-xs">{serviceModule.label_key ? $t(serviceModule.label_key) : serviceModule.name}</span>
+            </Badge>
+          </a>
+        {/snippet}
+      </Tooltip.Trigger>
+      <Tooltip.Content>
+        <p class="font-mono text-xs">{toDisplayString(value)}</p>
+      </Tooltip.Content>
+    </Tooltip.Root>
+  {:else}
+    <span class="font-mono text-[11px]">{toDisplayString(value)}</span>
+  {/if}
+{:else if column.format === 'json' && value !== null && value !== undefined && value !== ''}
   {@const json = jsonCellContent(value)}
   {#if json.kind === 'conditions'}
     <div class="flex min-w-0 flex-wrap gap-1">
@@ -241,7 +361,7 @@
 {:else if column.type === 'ref' && column.ref && value}
   {#if column.ref.presentation === 'badge'}
     <!-- Opt-in legacy anatomy — badge pill as a single `_blank` link. -->
-    {@const href = entityRefHref(routeCensus, column.ref, toDisplayString(value))}
+    {@const href = entityRefHref(routeCensus, { ...column.ref, entity: refEntity ?? '' }, toDisplayString(refKey))}
     {#if href}
       <a
         href={resolve(href as '/')}
@@ -261,22 +381,39 @@
     <span class="min-w-0 truncate">{toDisplayString(displayValue)}</span>
   {:else}
     <!-- Default "link" anatomy: medium text (underline on hover) opens
-         the record sheet; trailing ExternalLink → filtered /list _blank. -->
-    {@const iconHref = filteredEntityListHref(routeCensus, column.ref.entity, [
-      { field: column.ref.filter_field ?? metaUid, op: '=', value: toDisplayString(value) },
-    ])}
-    <CellAffordance
-      text={toDisplayString(displayValue)}
-      ontextclick={() =>
-        openSheet('entity.record', { entity: column.ref!.entity, value, ref: column.ref }, { stack: true })}
-      href={iconHref ?? undefined}
-      icon_title={$t('app.common.open_in_new_tab')}
-      test_id={`ref-cell-${column.key}`}
-    >
-      {#snippet icon()}
-        <ExternalLink class="size-3.5" />
-      {/snippet}
-    </CellAffordance>
+         the record sheet; trailing ExternalLink → filtered /list _blank
+         (the canonical module page for non-entity-served targets). -->
+    {@const iconHref = refEntity === 'service_registry'
+      ? resolve('/(app)/system/settings/modules/[code]', { code: toDisplayString(refKey) })
+      : refEntity
+        ? filteredEntityListHref(routeCensus, refEntity, [
+            { field: column.ref.filter_field ?? metaUid, op: '=', value: toDisplayString(refKey) },
+          ])
+        : null}
+    {#if refEntity && refKey !== undefined && refKey !== null && refKey !== ''}
+      <CellAffordance
+        text={toDisplayString(displayValue)}
+        ontextclick={() => {
+          if (refPanel === 'service.record') {
+            openSheet('service.record', { code: toDisplayString(refKey), context_row: row as Record<string, unknown> }, { stack: true });
+          } else {
+            openSheet('entity.record', { entity: refEntity, value: refKey, ref: column.ref }, { stack: true });
+          }
+        }}
+        href={iconHref ?? undefined}
+        icon_title={$t('app.common.open_in_new_tab')}
+        test_id={`ref-cell-${column.key}`}
+      >
+        {#snippet icon()}
+          <ExternalLink class="size-3.5" />
+        {/snippet}
+      </CellAffordance>
+    {:else}
+      <!-- Lazy-ref row whose entity/key fields came back empty — the
+           target cannot be addressed, so the label renders plainly
+           (same contract as `route:"none"`). -->
+      <span class="min-w-0 truncate">{toDisplayString(displayValue) || '-'}</span>
+    {/if}
   {/if}
 {:else if column.type === 'ref_count' && column.reverse_ref}
   {@const href = reverseRefHref(routeCensus, column.reverse_ref, metaUid, row)}
@@ -309,14 +446,14 @@
   )}
   {#if isDatetimeIanaRecordMode(column, datetimeIanaModeByKey) && parts.iana}
     <div class="flex min-w-0 flex-col gap-1">
-      <span class="min-w-0 truncate">{parts.text}</span>
+      <span class="min-w-0 truncate">{parts.text || '-'}</span>
       <Badge
         variant="outline"
         class="w-fit max-w-full shrink truncate border-amber-300/90 bg-amber-100 px-1.5 py-0 text-[10px] font-medium leading-tight text-amber-950 shadow-none dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200"
       >{parts.iana}</Badge>
     </div>
   {:else}
-    <span class="min-w-0 truncate">{parts.text}</span>
+    <span class="min-w-0 truncate">{parts.text || '-'}</span>
   {/if}
 {:else if column.type === 'avatar'}
   <!-- `type:"avatar"` — initials from the column's own value, color from
@@ -330,6 +467,51 @@
   {:else}
     <span class="min-w-0 truncate">-</span>
   {/if}
+{:else if column.options_source === 'system.roles' && Array.isArray(value)}
+  <!-- `options_source:"system.roles"` — one `Badge secondary` per role
+       code (icon + translated label via the active-roles resolver,
+       icon/color authored on the column like every other badge branch).
+       The badge is a drill affordance: click opens the `role_mapping`
+       record in a stacked `entity.record` sheet — the business-key ref
+       (`filter_field:"idp_role"`) resolves the code through `/list`.
+       Tooltip keeps the raw `idp_role` code. -->
+  {#if value.length > 0}
+    <div class="flex min-w-0 flex-wrap gap-1" data-testid={`roles-cell-${column.key}`}>
+      {#each value as code (code)}
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            {#snippet child({ props })}
+              <button
+                {...props}
+                type="button"
+                class="inline-flex max-w-full rounded-sm cursor-pointer"
+                onclick={(e) => {
+                  e.stopPropagation();
+                  openSheet('entity.record', {
+                    entity: 'role_mapping',
+                    value: code,
+                    ref: { entity: 'role_mapping', filter_field: 'idp_role' },
+                  }, { stack: true });
+                }}
+              >
+                <Badge variant="secondary" class="gap-1 shadow-none">
+                  {#if column.icon}<DynamicIcon name={column.icon} size={12} class="shrink-0" style={iconStyle} />{/if}
+                  <span class="truncate text-xs">{roleLabel(code)}</span>
+                </Badge>
+              </button>
+            {/snippet}
+          </Tooltip.Trigger>
+          <Tooltip.Content>
+            <p class="font-mono text-xs">{toDisplayString(code)}</p>
+          </Tooltip.Content>
+        </Tooltip.Root>
+      {/each}
+    </div>
+  {:else}
+    <span class="min-w-0 truncate">-</span>
+  {/if}
 {:else}
-  <span class="min-w-0 truncate">{displayValue !== value ? toDisplayString(displayValue) : getAuditFieldValue(row, column, $uiLang, formatListCellValue, getAuditColumnsContext())}</span>
+  <!-- Universal null contract: every value-less cell renders `-`
+       (contextual `column.null_label` is the only declared override). -->
+  <span class="min-w-0 truncate">{(displayValue !== value ? toDisplayString(displayValue) : getAuditFieldValue(row, column, $uiLang, formatListCellValue, getAuditColumnsContext())) || '-'}</span>
 {/if}

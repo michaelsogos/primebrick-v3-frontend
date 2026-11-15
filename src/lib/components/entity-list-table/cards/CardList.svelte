@@ -11,7 +11,7 @@
   import { Eye } from '@primebrick/ui/vendor/lucide'
   import { Pencil } from '@primebrick/ui/vendor/lucide'
   import { Trash2 } from '@primebrick/ui/vendor/lucide'
-  import { ArrowUpFromLine } from '@primebrick/ui/vendor/lucide'
+  import { DynamicIcon } from '@primebrick/ui';
   import { Copy } from '@primebrick/ui/vendor/lucide'
   import { FileClock } from '@primebrick/ui/vendor/lucide';
   import CardField from './CardField.svelte';
@@ -199,10 +199,7 @@
               {#if rowDeleted}
                 <DropdownMenu.Item onclick={() => onRestoreRow?.(r)} class="text-warning">
                   <div class="flex items-center gap-2">
-                    <span class="relative flex items-center justify-center">
-                      <Trash2 class="size-4 text-warning/70" />
-                      <ArrowUpFromLine class="absolute -bottom-[1px] size-3 text-warning/70" />
-                    </span>
+                    <DynamicIcon name="trash-arrow-up" class="size-4 text-warning/70" />
                     <span>{$t('app.common.restore')}</span>
                   </div>
                 </DropdownMenu.Item>

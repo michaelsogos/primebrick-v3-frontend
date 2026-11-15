@@ -24,7 +24,7 @@ export interface FakeBrevoServer {
   url: string;
   close: () => Promise<void>;
   /** All requests received by the server, in order. */
-  receivedRequests: Array<{ headers: Record<string, string>; body: unknown }>;
+  receivedRequests: Array<{ headers: Record<string, string>; body: unknown; received_at: number }>;
 }
 
 /**
@@ -37,9 +37,18 @@ export interface FakeBrevoServer {
  */
 export async function startFakeBrevoServer(fixedPort?: number): Promise<FakeBrevoServer> {
   const requestedPort = fixedPort ?? Number(process.env.FAKE_BREVO_PORT ?? 0);
-  const receivedRequests: Array<{ headers: Record<string, string>; body: unknown }> = [];
+  const receivedRequests: Array<{ headers: Record<string, string>; body: unknown; received_at: number }> = [];
 
   const server = createServer((req, res) => {
+    // Introspection for test workers: `global-state` shares nothing across
+    // Playwright processes, so captures are served over HTTP — the port
+    // reaches tests via the `providers.api_endpoint` row (same source the
+    // emailsender reads).
+    if (req.method === "GET" && req.url === "/__captures") {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(receivedRequests));
+      return;
+    }
     let body = "";
     req.on("data", (chunk: Buffer) => {
       body += chunk.toString();
@@ -48,6 +57,9 @@ export async function startFakeBrevoServer(fixedPort?: number): Promise<FakeBrev
       receivedRequests.push({
         headers: req.headers as Record<string, string>,
         body: body ? JSON.parse(body) : null,
+        // Host-clock stamp — comparable to NATS tap `received_at` and the
+        // DB timestamps (same machine): pipeline-latency measurements.
+        received_at: Date.now(),
       });
 
       // Mimic Brevo's success response shape.

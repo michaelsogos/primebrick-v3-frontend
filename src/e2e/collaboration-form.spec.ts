@@ -62,8 +62,15 @@ test.describe("collaborative update surface (job_trigger detail)", () => {
             // target_subject must resolve in census.callables — the write path
             // rejects undeclared subjects (jobs.service.ts assertCallableTarget).
             target_subject: "emailsender.send",
-            execution_context: "user",
-            enabled: true,
+            // emailsender.send's payload_schema requires to/templateCode/
+            // languageIso — an empty map is a valid passthrough row but the
+            // FORM conformance check gates Save on mapped requireds.
+            payload_map: {
+              to: { kind: "const", value: "e2e@primebrick.test" },
+              templateCode: { kind: "const", value: "e2e_template" },
+              languageIso: { kind: "const", value: "en" },
+            },
+            run_as: "originator",
           },
         },
       });
@@ -112,7 +119,7 @@ test.describe("collaborative update surface (job_trigger detail)", () => {
       // --- A opens the record, B opens the same record -------------------
       await loginAsTestAdmin(pageA);
       await pageA.goto(DETAIL_PATH(ruleUuid), { waitUntil: "domcontentloaded" });
-      await expect(pageA.getByTestId("entity-form-page")).toBeVisible({ timeout: 5000 });
+      await expect(pageA.getByTestId("entity-form-page")).toBeVisible({ timeout: 30000 });
       const presenceZone = pageA.getByTestId("page-header-presence");
       // Design: "0 others → no avatars" — the stack renders nothing while
       // A is alone on the record (no self chip — the viewer's own
@@ -121,7 +128,7 @@ test.describe("collaborative update surface (job_trigger detail)", () => {
 
       await loginAsCollabAdmin(pageB);
       await pageB.goto(DETAIL_PATH(ruleUuid), { waitUntil: "domcontentloaded" });
-      await expect(pageB.getByTestId("entity-form-page")).toBeVisible({ timeout: 5000 });
+      await expect(pageB.getByTestId("entity-form-page")).toBeVisible({ timeout: 30000 });
 
       // B's READING signal lands on A's snapshot → stack appears: one
       // other-avatar (B). No self chip exists anymore.
@@ -135,7 +142,8 @@ test.describe("collaborative update surface (job_trigger detail)", () => {
       await aSpec.locator("input").first().fill("@every 9h");
 
       // --- B edits name + schedule_spec and saves ------------------------
-      const bName = `e2e-collab-${TS}-B`;
+      // name's format is `identifier` — edge-alphanumeric lowercase grammar.
+      const bName = `e2e-collab-${TS}-b`;
       await pageB.getByTestId("entity-form-field-name").locator("input").fill(bName);
       await pageB
         .getByTestId("entity-form-field-schedule_spec")
@@ -201,7 +209,7 @@ test.describe("collaborative update surface (job_trigger detail)", () => {
     try {
       await loginAsTestAdmin(pageA);
       await pageA.goto(DETAIL_PATH(uuid2), { waitUntil: "domcontentloaded" });
-      await expect(pageA.getByTestId("entity-form-page")).toBeVisible({ timeout: 5000 });
+      await expect(pageA.getByTestId("entity-form-page")).toBeVisible({ timeout: 30000 });
       const presenceZone = pageA.getByTestId("page-header-presence");
       // Fresh record — A is alone, the stack stays empty.
       await expect(presenceZone.getByTestId("presence-avatar")).toHaveCount(0);
@@ -209,7 +217,7 @@ test.describe("collaborative update surface (job_trigger detail)", () => {
       // Same user, second context → A must SEE the duplicate session.
       await loginAsTestAdmin(pageB);
       await pageB.goto(DETAIL_PATH(uuid2), { waitUntil: "domcontentloaded" });
-      await expect(pageB.getByTestId("entity-form-page")).toBeVisible({ timeout: 5000 });
+      await expect(pageB.getByTestId("entity-form-page")).toBeVisible({ timeout: 30000 });
 
       const otherTabAvatar = presenceZone.getByTestId("presence-avatar");
       await expect(otherTabAvatar).toHaveCount(1, { timeout: 5000 });

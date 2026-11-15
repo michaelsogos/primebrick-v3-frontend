@@ -20,6 +20,17 @@
 
   let { children }: { children: Snippet } = $props();
 
+  /**
+   * The census gates every (app) page mount — entity pages resolve
+   * `/svc/<code>` from `module.entities` (registerEntityServices) at
+   * component-init time, the same guarantee the old static map gave.
+   * Kicked here, not in onMount: `loading` flips synchronously so the
+   * gate below holds the very first render until the fetch settles.
+   * Failures still mount children (their own error surfaces take over;
+   * the session-expired dialog lives outside this gate by design).
+   */
+  void shellNav.loadShellNav();
+
   // Route-aware translation loader — watches route + language changes.
   // Call-only: the composable registers its own $effect watchers; the return
   // value is unused.
@@ -137,7 +148,11 @@
 </script>
 
 <AppShell>
-  {@render children()}
+  {#if shellNav.loading && shellNav.modules.length === 0}
+    <!-- First census in flight — hold page mount (see the gate above). -->
+  {:else}
+    {@render children()}
+  {/if}
 </AppShell>
 
 <AuthMethodsPromptDialog />

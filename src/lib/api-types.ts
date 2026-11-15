@@ -76,6 +76,13 @@ export type ModuleInfo = {
    */
   sheets?: ModuleSheetDecl[];
   /**
+   * Entity names the module's service owns (the same declarations that
+   * produce its `/entities/*` routes). The entity→service resolution
+   * (`/svc/<code>` prefix, ref-sheet drill-through) derives from this —
+   * never a hand-maintained map.
+   */
+  entities?: string[];
+  /**
    * The module's emitted-event vocabulary (`events.emits` — NATS subjects
    * the module publishes, wildcards allowed). Served verbatim like
    * `route_prefixes` — module metadata, never access-filtered. Domain
@@ -179,6 +186,16 @@ export type ServiceInfo = {
   /** i18n key for the module's localized display name (module's own namespace). */
   label_key?: string;
   uuid?: string;
+  /** Registry root the service belongs to (`system` for platform services). */
+  part_of?: string;
+  /** Declared NATS capabilities the service exposes. */
+  capabilities?: string[];
+  /** Owned PG schemas claimed at `service.register`. */
+  schemas?: string[];
+  pkg_name?: string;
+  is_default?: boolean;
+  version?: number;
+  created_at?: string;
 };
 
 export type ModuleConfigEntry = {

@@ -33,49 +33,37 @@ export { ApiDatabaseUnavailableError, ApiRedisUnavailableError, ApiUnreachableEr
 const ENTITY_API_PATH = '/api/v1/entities';
 
 /**
- * Entities owned by a microservice are reached through the BE proxy
- * (`/svc/<service>/api/v1/entities/<entity>`); BE-owned entities use the
- * direct path. Single source of truth for every generic entity layer
- * (entity-list-table composables, version history, dialogs).
+ * entity→service resolution — derived from `GET /api/v1/modules`
+ * (`module.entities`, the same declarations that produce each service's
+ * routes) and fed by `loadShellNav`. Entities owned by a microservice
+ * are reached through the BE proxy (`/svc/<service>/api/v1/entities/<e>`);
+ * unmapped entities — BE-owned or headless — use the direct path, the
+ * pre-map semantics unchanged.
  */
-const ENTITY_SERVICE_MAP: Record<string, string> = {
-  customer: 'crm',
-  customer_type: 'crm',
-  contact_type: 'crm',
-  account_kind: 'crm',
-  customer_link_type: 'crm',
-  consent_type: 'crm',
-  company_dimension: 'crm',
-  local_address_type: 'crm',
-  qualification: 'crm',
-  marketing_qualification: 'crm',
-  legal_form: 'crm',
-  local_address: 'crm',
-  customer_account: 'crm',
-  customer_contact: 'crm',
-  customer_link: 'crm',
-  ai_model: 'ai',
-  ai_cerebellum: 'ai',
-  job_schedule: 'job',
-  job_run: 'job',
-  job_trigger: 'job',
-  provider: 'emailsender',
-  email_template: 'emailsender',
-};
+let _entityService = new Map<string, string>();
+
+/**
+ * The census feeds the map — called once per `loadShellNav` resolution.
+ * Atomic swap: a language re-census replaces the map in one step so a
+ * mounted page never observes a half-empty map mid-refetch.
+ */
+export function registerEntityServices(entries: Iterable<readonly [string, string]>): void {
+  _entityService = new Map(entries);
+}
 
 export function entityApiBase(entity: string): string {
-  const service = ENTITY_SERVICE_MAP[entity];
+  const service = _entityService.get(entity);
   return service ? `/svc/${service}/api/v1/entities/${entity}` : `${ENTITY_API_PATH}/${entity}`;
 }
 
 /**
  * `/svc/<service>` proxy prefix for service-owned entities; `''` for
- * BE-owned. Declared endpoints (`meta.actions[].endpoint.path`, e.g.
+ * unmapped. Declared endpoints (`meta.actions[].endpoint.path`, e.g.
  * `/api/v1/actions/<op>`) are service-local — they must ride the same
- * proxy prefix. Single source: ENTITY_SERVICE_MAP.
+ * proxy prefix. Single source: the `/api/v1/modules` census.
  */
 export function serviceApiPrefix(entity: string): string {
-  const service = ENTITY_SERVICE_MAP[entity];
+  const service = _entityService.get(entity);
   return service ? `/svc/${service}` : '';
 }
 

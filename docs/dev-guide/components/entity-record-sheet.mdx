@@ -1,0 +1,129 @@
+---
+title: Entity record sheet
+description: The `entity.record` stacked sheet — the canonical record surface opened by ref-cell text clicks, roles badges, and preview rows. Anatomy, resolution contract, and meta-driven behavior.
+---
+
+# Entity record sheet
+
+`EntityRecordSheet` is the canonical read/edit surface for a single
+record. It lives in `src/lib/entity-list/sheets/panels/` and mounts
+through the sheet host — never navigated to directly. It shares the
+same field machinery as `EntityFormPage`: the same widgets render here,
+readonly until the pencil toggle flips them into edit mode.
+
+## Opening the sheet
+
+Cells and rows open it via `openSheet` with `{ stack: true }` — the
+sheet stacks on top of whatever sheet is open (LIFO: Escape/X pops one
+pane, the parent survives):
+
+```ts
+import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
+
+openSheet('entity.record', {
+  entity: 'role_mapping',      // target entity API name
+  value: code,                 // cell value: uid, or business-key value
+  ref: { entity: 'role_mapping', filter_field: 'idp_role' },
+}, { stack: true });
+```
+
+| Prop | Purpose |
+|------|---------|
+| `entity` | Target entity API name — resolves through `entityApiBase` to `/api/v1/entities/<entity>` (BE) or `/svc/<service>/api/v1/entities/<entity>` |
+| `value` | The cell's raw value — the target uid for uuid refs, the business-key value otherwise |
+| `ref` | Optional ref contract; `filter_field !== uid` triggers business-key resolution |
+
+## Resolution contract
+
+<Mermaid chart={`flowchart TD
+  V["value"] --> FF{"ref.filter_field?"}
+  FF -->|"absent or = uid"| UUID{"isUUID(value)?"}
+  FF -->|"other field"| LIST["GET /list?filters[0][field]=ff&value=v"]
+  UUID -->|"yes"| REC["GET /entity/uuid"]
+  UUID -->|"no"| PSEUDO["pseudo-actor hero (no API call)"]
+  LIST -->|"row found"| REC
+  LIST -->|"no row"| MISSING["missing hero"]
+  REC -->|"200"| BODY["record surface"]
+  REC -->|"404"| MISSING
+  REC -->|"5xx"| FAILED["failed hero"]
+`} />
+
+- **uuid refs** — `value` is fetched directly via
+  `GET /entities/{entity}/{uuid}`. A non-uuid `value` with no
+  `filter_field` is a pseudo-actor ref (e.g. `system` in audit fields):
+  warning hero, zero API calls.
+- **business-key refs** — `filter_field` names a target column; the
+  sheet resolves `GET /entities/{entity}/list?filters[0][field]=<ff>
+  &filters[0][op]==&filters[0][value]=<v>&limit=1` to find the uid,
+  then fetches the record. The `roles` badge drill uses this path
+  (`entity:'role_mapping', filter_field:'idp_role'`).
+
+## Surface anatomy
+
+Top to bottom, `EntityRecordSheetBody` renders:
+
+1. **uid badge** — `meta.uid` value as a `secondary` pill: `file-key`
+   icon (amber-500), mono value, inner copy CTA (transient check swap,
+   no toast). Never an input — the uid is identity, not a field.
+2. **Lifecycle status badge** (footer) — `deleted_at` set → destructive
+   `status.deleted` chip; `suspended` → emerald outline `status.suspended`
+   chip. Both render from the record's own fields.
+3. **Business fields** — `EntityFormField` per column: the same widget
+   anatomy `EntityFormPage` mounts (SwitchField, ColorSelector, entity
+   combo…), `disabled` in read mode, editable under the pencil toggle.
+   Field selection: declared `page_props.form` placements when the
+   entity has a form-bearing census route, else every served column
+   in `order`. `hidden:true` columns never reach this surface.
+4. **Audit accordion** — `column.audited` columns collapsed at the
+   bottom behind a single-item Accordion. Values render through the
+   canonical audit formatter (`useAuditBox.formatValue` — datetime
+   localized, ref actors resolved to display names, `-` for nulls),
+   `label: value` definition-list rows. Audit facts can never reach a
+   widget — `EntityFormField` rejects `audited` columns by construction.
+5. **Version badge** (footer, left) — `v{version}` outline badge; click
+   opens the `entity.versionHistory` sheet stacked on top. Excluded
+   from both form and audit surfaces.
+
+## Edit flow
+
+The pencil toggle (header CTA, gated on `meta.actions` update
+permission) flips `editing` — the same widgets re-render editable.
+Save dispatches `PUT /entities/{entity}/{uuid}` with the canonical
+`{ entity: {...}, version }` envelope; the record then refetches and
+widgets return to readonly. `immutable` columns stay disabled even in
+edit mode; `avatar` columns with `avatar.initials_field` derive their
+draft from the sibling field live while editing.
+
+## Meta-driven behavior
+
+Every section is vocabulary-driven — no sheet-specific branching:
+
+| Column flag | Effect on the sheet |
+|-------------|---------------------|
+| `hidden:true` | Dropped from served meta — never rendered (e.g. `auth_method_enforcer_dismissed`) |
+| `immutable:true` | Disabled in edit mode, excluded from PUT payload |
+| `audited:true` | Audit accordion only — never a widget |
+| `kind:"calculated"` | Readonly always (e.g. `suspended`) |
+| `type:"avatar"` + `avatar.color_field` | MetaAvatar hex, initials derived live in edit |
+| `options_source:"system.roles"` | Role badges; in list cells each badge drills into `entity.record` for `role_mapping` |
+
+## Hero states
+
+| State | When | Hero |
+|-------|------|------|
+| `pseudo` | Non-uuid `value`, no `filter_field` | warning + ghost icon |
+| `missing` | 404, or business-key lookup finds no row | destructive + user-x |
+| `failed` | Other fetch failures | destructive + circle-alert |
+
+The heroes are the honest contract: a stale uuid, a drifted business
+code, and a transport error each get a distinct, translated state —
+never a blank or a thrown boundary.
+
+## Related
+
+- [Entity list table](/docs/dev-guide/components/entity-list-table) —
+  the table whose ref/roles cells open this sheet
+- [Entity metadata](/docs/dev-guide/entity-metadata) — the column
+  vocabulary (`hidden`, `immutable`, `audited`, `ref`, `options_source`)
+- [Sheet panel](/docs/dev-guide/components/sheet-panel) — the generic
+  host panel chrome this surface mounts inside

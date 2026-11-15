@@ -2,7 +2,7 @@
 	import { CopyButton } from '@primebrick/ui';
 	import type { PasswordCopyButtonProps } from './types.js';
 	import { cn } from '$lib/utils.js';
-	import { usePasswordCopy } from './password.svelte.js';
+	import { usePasswordCopy } from './password-context.svelte.js';
 
 	let { ref = $bindable(null), class: className, ...rest }: PasswordCopyButtonProps = $props();
 

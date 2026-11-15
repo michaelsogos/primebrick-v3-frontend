@@ -1,5 +1,5 @@
 import { SvelteSet } from 'svelte/reactivity';
-import { useEntitySheetSync, nextSearchScopeKeys } from '$lib/entity-list';
+import { useEntitySheetSync, nextSearchScopeKeys, defaultVisibleColumnKeys } from '$lib/entity-list';
 import type { MetaColumn, ViewName, AdvancedFilter } from '$lib/entity-list/types';
 import type { DeepReadonly } from '@primebrick/ui';
 
@@ -86,7 +86,14 @@ export function useSheetPanels(options: UseSheetPanelsOptions) {
             }
             options.columnOrder.applyColumnVisibility(group, dedup);
           },
-          onResetColumnVisibility: () => options.onResetColumnVisibility()('table')
+          onResetColumnVisibility: () => options.onResetColumnVisibility()('table'),
+          onSelectAll: () =>
+            options.onVisibleKeysChange()(
+              [...stickyColumnsGroup, ...nonAuditingColumns, ...auditingColumnsGroup].map((c) => c.key)
+            ),
+          // Deselect restores declared default visibility — the header
+          // eraser stays the "full reset" gesture (visibility + order + sort).
+          onDeselectAll: () => options.onVisibleKeysChange()(defaultVisibleColumnKeys(options.columns()))
         };
       },
       'entity.searchIn': () => ({
