@@ -3,7 +3,6 @@
   import type { Snippet } from 'svelte';
   import type { MetaColumn } from '$lib/entity-list/types';
   import type { CellArgs, EntityRowActions } from '../types';
-  import type { usePreviewPanel } from '../composables/usePreviewPanel.svelte';
   import type { useRowActions } from '../composables/useRowActions.svelte';
 
   let {
@@ -14,7 +13,7 @@
     selectedKeys,
     rowKey,
     isRowDeleted,
-    previewPanel,
+    focusedRowIndex,
     actionsEnabled,
     rowActions,
     entityRowActions,
@@ -39,7 +38,6 @@
     onCloseRowDropdown,
     onEditRow,
     rowActionsComposable,
-    onPreviewRow,
     sparklineData
   }: EntityListTableCardViewProps = $props();
 
@@ -51,7 +49,7 @@
     selectedKeys: string[];
     rowKey: (row: TRow) => string;
     isRowDeleted: (row: TRow) => boolean;
-    previewPanel: ReturnType<typeof usePreviewPanel<TRow>>;
+    focusedRowIndex: number | null;
     actionsEnabled: boolean;
     rowActions?: Snippet<[{ row: TRow }]>;
     entityRowActions?: EntityRowActions;
@@ -76,7 +74,6 @@
     onCloseRowDropdown: () => void;
     onEditRow: (row: TRow) => void;
     rowActionsComposable: ReturnType<typeof useRowActions<TRow>>;
-    onPreviewRow: (row: TRow) => void;
     /** Per-column batch sparkline buckets — same map as the table view. */
     sparklineData?: Record<string, { by_key: Record<string, unknown[]>; bucket_unit?: string }>;
   };
@@ -91,7 +88,7 @@
     selectedKeys={selectedKeys}
     rowKey={rowKey}
     isRowDeleted={isRowDeleted}
-    previewPanel={previewPanel}
+    focusedRowIndex={focusedRowIndex}
     actionsEnabled={actionsEnabled}
     rowActions={rowActions}
     entityRowActions={entityRowActions}
@@ -119,7 +116,6 @@
     onDuplicateRow={(r) => rowActionsComposable.handleDuplicateRow(r)}
     onDeleteRow={(r) => rowActionsComposable.handleDeleteRow(r)}
     onRestoreRow={(r) => rowActionsComposable.handleRestoreRow(r)}
-    onPreviewRow={onPreviewRow}
     handleCustomAction={(a, r) => rowActionsComposable.handleCustomAction(a, r)}
     sparklineData={sparklineData}
   />

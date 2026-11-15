@@ -522,7 +522,7 @@ test.describe("/system/job/* pages (module-owned)", () => {
     // the cell carries the service NAME and a lazy ref (ref_entity=
     // service_registry, ref_key=code) — the same canonical cell anatomy
     // every audited entity now gets for free.
-    await page.getByRole("button", { name: "Columns" }).click();
+    await page.getByRole("button", { name: "Columns" }).first().click();
     const toggle = page.getByTestId("columns-toggle-created_by");
     await expect(toggle).toBeVisible({ timeout: 15000 });
     await toggle.click();
@@ -552,7 +552,7 @@ test.describe("/system/job/* pages (module-owned)", () => {
     // `service_code` is physically retired — the subject carries the
     // namespace (`jobs.schedule.<owner>.*`). No header, no picker entry.
     await expect(page.locator("th", { hasText: /^service$/i })).toHaveCount(0);
-    await page.getByRole("button", { name: "Columns" }).click();
+    await page.getByRole("button", { name: "Columns" }).first().click();
     await expect(page.getByTestId("columns-toggle-service_code")).toHaveCount(0);
     await expect(page.getByTestId("columns-toggle-trigger_uuid")).toBeVisible({ timeout: 15000 });
     await page.keyboard.press("Escape");

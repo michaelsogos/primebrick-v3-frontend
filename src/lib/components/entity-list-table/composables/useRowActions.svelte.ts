@@ -40,7 +40,6 @@ export interface RowActionsOptions<TRow extends Record<string, unknown>> {
    */
   usePurgeDelete?: () => boolean;
   rowKey?: (row: TRow) => string;
-  onPreviewRow?: (row: TRow) => void;
   closeRowDropdown?: () => void;
   t?: (key: string, params?: Record<string, unknown>) => string;
   customActionHandlers?: () => (Record<string, (row: TRow) => void> | undefined);
@@ -77,7 +76,6 @@ export function useRowActions<TRow extends Record<string, unknown>>(
     isRowDeleted,
     usePurgeDelete,
     rowKey,
-    onPreviewRow,
     closeRowDropdown,
     dialogs,
     customActionHandlers: getCustomActionHandlers,
@@ -104,10 +102,6 @@ export function useRowActions<TRow extends Record<string, unknown>>(
     closeRowDropdown?.();
   }
 
-  function handlePreviewRow(row: TRow) {
-    onPreviewRow?.(row);
-    closeRowDropdown?.();
-  }
 
   function handleDeleteRow(row: TRow) {
     dialogs?.setRowToDelete?.(row);
@@ -419,7 +413,6 @@ export function useRowActions<TRow extends Record<string, unknown>>(
     handleDeleteRow,
     handleRestoreRow,
     handleDuplicateRow,
-    handlePreviewRow,
     confirmDeleteRow,
     confirmRestoreRow,
     confirmDuplicateRow,

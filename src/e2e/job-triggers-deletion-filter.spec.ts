@@ -186,9 +186,10 @@ test.describe("/system/job/triggers deletion filter", () => {
 
     // ── Menu layout contract (by design):
     //    Modifica first, primary color; Disattiva is the LAST main CTA;
-    //    ONE divider separates main CTAs from Registro/Anteprima
-    //    (secondary, read-only). No divider between custom ops and
-    //    delete — delete belongs to the main mutation group.
+    //    ONE divider separates main CTAs from Registro (secondary,
+    //    read-only). No divider between custom ops and delete — delete
+    //    belongs to the main mutation group. The Preview item is gone for
+    //    good (record detail lives on the kind:"detail" route via dblclick).
     const texts = (await items.allTextContents()).map((t) => t.trim());
     const idxEdit = texts.findIndex((t) => /modifica|edit|bearbeiten|modifier|editar/i.test(t));
     const idxDisable = texts.findIndex((t) => /disattiva|disable|deaktivier|désactiver|desactivar|desativar/i.test(t));
@@ -197,7 +198,7 @@ test.describe("/system/job/triggers deletion filter", () => {
     expect(idxEdit).toBe(0);
     expect(idxDisable).toBeGreaterThan(idxEdit);
     expect(idxHistory).toBeGreaterThan(idxDisable);
-    expect(idxPreview).toBeGreaterThan(idxDisable);
+    expect(idxPreview).toBe(-1);
     const editItem = menuItem(/modifica|edit|bearbeiten|modifier|editar/i);
     await expect(editItem.first()).toHaveClass(/text-primary/);
 

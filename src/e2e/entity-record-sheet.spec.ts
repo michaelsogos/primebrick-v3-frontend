@@ -20,7 +20,7 @@ test.describe("entity.record sheet — responsive + entity id label", () => {
 
     // `trigger_uuid` isn't in the default visible set — enable it via the
     // column picker (same toggle contract as the ref-cell spec).
-    await page.getByRole("button", { name: "Columns" }).click();
+    await page.getByRole("button", { name: "Columns" }).first().click();
     const toggle = page.getByTestId("columns-toggle-trigger_uuid");
     await expect(toggle).toBeVisible({ timeout: 15000 });
     await toggle.click();

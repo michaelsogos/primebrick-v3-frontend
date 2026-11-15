@@ -2,7 +2,6 @@ export { useViewMode } from './useViewMode.svelte';
 export type { ViewModeOptions, ViewMode } from './useViewMode.svelte';
 
 // New composables for EntityListTable refactoring
-export { usePreviewPanel } from './usePreviewPanel.svelte';
 export { useClientSelection } from './useClientSelection.svelte';
 export { useRowRangeSelection } from './useRowRangeSelection.svelte';
 export { useKeyboardNavigation } from './useKeyboardNavigation.svelte';

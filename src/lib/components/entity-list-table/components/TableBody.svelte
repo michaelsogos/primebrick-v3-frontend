@@ -43,7 +43,7 @@
     dropdownMenuRow,
     focusedRowIndex,
     onEntityRowClick,
-    onPreviewRow,
+    onRowDblClick,
     onToggleRowSelect,
     onOpenRowDropdown,
     onCloseRowDropdown,
@@ -90,12 +90,11 @@
       duplicate?: boolean;
       delete?: boolean;
       edit?: boolean;
-      preview?: boolean;
     };
     dropdownMenuRow: TRow | null;
     focusedRowIndex: number | null;
     onEntityRowClick: (key: string, e: MouseEvent) => void;
-    onPreviewRow: (row: TRow) => void;
+    onRowDblClick: (row: TRow) => void;
     onToggleRowSelect: (key: string) => void;
     onOpenRowDropdown: (row: TRow) => void;
     onCloseRowDropdown: () => void;
@@ -218,7 +217,7 @@
           isRowDeleted,
           onRowRangeMouseDown: (index: number, e: MouseEvent) => rowRangeSelection.onRowRangeMouseDown(index, e),
           onEntityRowClick,
-          onPreviewRow,
+          onRowDblClick,
           onToggleRowSelect,
           onOpenRowDropdown,
           onCloseRowDropdown,

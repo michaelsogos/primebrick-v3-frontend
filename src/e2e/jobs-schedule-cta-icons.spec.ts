@@ -21,6 +21,7 @@ import { loginAsTestAdmin } from "./helpers/admin-login";
 interface CtaRow {
   action_name: string;
   icon?: string;
+  color?: string;
 }
 
 test.describe("job_schedule lifecycle CTAs — :filled icons", () => {
@@ -47,11 +48,19 @@ test.describe("job_schedule lifecycle CTAs — :filled icons", () => {
     });
     expect(meta.row).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ action_name: "stop", icon: "square:filled" }),
-        expect.objectContaining({ action_name: "pause", icon: "pause:filled" }),
-        expect.objectContaining({ action_name: "resume", icon: "play:filled" }),
+        expect.objectContaining({ action_name: "stop", icon: "square:filled", color: "warning" }),
+        expect.objectContaining({ action_name: "pause", icon: "pause:filled", color: "warning" }),
+        expect.objectContaining({ action_name: "resume", icon: "play:filled", color: "success" }),
+        expect.objectContaining({ action_name: "enable", color: "success" }),
+        expect.objectContaining({ action_name: "disable", color: "destructive" }),
       ]),
     );
+    // Lifecycle order is declaration order — the soft-delete op must be last
+    // (menu order: stop → pause → resume → enable → disable, state-gated).
+    const lifecycle = meta.row
+      .map((a) => a.action_name)
+      .filter((n) => ["stop", "pause", "resume", "enable", "disable"].includes(n));
+    expect(lifecycle).toEqual(["stop", "pause", "resume", "enable", "disable"]);
     expect(meta.bulk).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ action_name: "pause_all", icon: "pause:filled" }),

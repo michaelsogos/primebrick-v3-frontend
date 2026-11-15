@@ -74,7 +74,7 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
     await expect.poll(() => listRows.length, { timeout: 15000 }).toBeGreaterThan(0);
 
     // Enable all three audit actor columns via the column picker.
-    await page.getByRole("button", { name: "Columns" }).click();
+    await page.getByRole("button", { name: "Columns" }).first().click();
     for (const key of ["created_by", "updated_by", "deleted_by"]) {
       const toggle = page.getByTestId(`columns-toggle-${key}`);
       await expect(toggle).toBeVisible({ timeout: 15000 });
