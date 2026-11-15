@@ -1,0 +1,265 @@
+import { test, expect, type Page } from "@playwright/test";
+import { loginAsTestAdmin } from "./helpers/admin-login";
+
+/* Wire-contract attack matrix — /entities/job_schedule/list.
+ *
+ * Not a happy-path suite: every case either exercises the contract edges
+ * (wildcard escapes, csv/bracket/repeated search_in, typed ops vs column
+ * types, connector mixing, sort/page/deleted_records) or deliberately
+ * violates it (unknown fields/ops/keys, malformed shapes, injection
+ * needles) and asserts the strict fail-closed verdict.
+ *
+ * Data anchor (dev seed, empirically read):
+ *   5 rows — 3 kind=trigger (job_name≈"e2e-*"), 2 kind=infra_derived;
+ *   target_subject: crm.emit_fake_event ×2, emailsender.send, jobs.due… ×2;
+ *   status: disarmed ×5; schedule_type: recurring ×4, once ×1.
+ * Assertions stay relational where data may grow, exact-0 where disjoint.
+ */
+
+const LIST = "/svc/job/api/v1/entities/job_schedule/list";
+
+async function wire(page: Page, qs: string) {
+  const res = await page.request.get(`${LIST}?${qs}`);
+  const body = await res.json().catch(() => null);
+  return { status: res.status(), body, total: body?.total !== undefined ? Number(body.total) : null };
+}
+
+const F = (i: number, field: string, op: string, value: string) =>
+  `filters[${i}][field]=${field}&filters[${i}][op]=${encodeURIComponent(op)}&filters[${i}][value]=${encodeURIComponent(value)}&filters[${i}][connector]=AND`;
+
+test.describe("wire attack — job_schedule list", () => {
+  test.describe.configure({ timeout: 90_000 }); // many sequential authed wire calls
+  let allRows = 0;
+
+  test.beforeEach(async ({ page }) => {
+    await loginAsTestAdmin(page);
+    await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
+    if (!allRows) {
+      const base = await wire(page, "page=1&page_size=1");
+      expect(base.status).toBe(200);
+      allRows = base.total!;
+      expect(allRows).toBeGreaterThanOrEqual(5);
+    }
+  });
+
+  // ── A. needle semantics: \* \? wildcards, literals, escapes, gate ──
+  test("A — needle syntax: wildcards, literals, escapes, min-length gate", async ({ page }) => {
+    const cases: Array<[string, (t: number | null) => void]> = [
+      ["search=e2e", (t) => { expect(t).toBeGreaterThanOrEqual(1); expect(t).toBeLessThan(allRows); }],
+      // `\*` is the wildcard operator — but a PURE wildcard has zero true
+      // chars → min-length gate matches nothing (by design, anchorless
+      // searches are expensive/meaningless). Bare `*`/`?` are literals.
+      ["search=%5C*", (t) => expect(t).toBe(0)],
+      ["search=*", (t) => expect(t).toBe(0)],
+      ["search=%5C?", (t) => expect(t).toBe(0)],
+      ["search=?", (t) => expect(t).toBe(0)],
+      // `%`/`_`/`#` are escaped to literals — never wildcards by accident.
+      ["search=%25", (t) => expect(t).toBe(0)],
+      ["search=_", (t) => expect(t).toBe(0)],
+      ["search=%23", (t) => expect(t).toBe(0)],
+      // prefix/suffix wildcard mixes
+      ["search=e2e%5C*", (t) => { expect(t).toBeGreaterThanOrEqual(1); expect(t).toBeLessThanOrEqual(allRows); }],
+      ["search=%5C*fake%5C*", (t) => expect(t).toBeGreaterThanOrEqual(1)], // \*fake\* anchored wildcard
+      // min-length gate: <3 true chars deliberately matches nothing.
+      ["search=ab", (t) => expect(t).toBe(0)],
+      ["search=5m", (t) => expect(t).toBe(0)],
+      // injection / quoting / trailing backslash — parameterized, literal.
+      ["search='%20OR%20'1'='1", (t) => expect(t).toBe(0)],
+      ["search=e2e%5C", (t) => expect(t).toBe(0)],
+      ["search=%20e2e%20", (t) => expect(t).toBeGreaterThanOrEqual(1)], // trimmed
+      ["search=E2E", (t) => expect(t).toBeGreaterThanOrEqual(1)],       // ILIKE ci
+      ["search=%C3%A92e", (t) => expect(t).toBe(0)],                    // unicode miss
+    ];
+    for (const [qs, check] of cases) {
+      const r = await wire(page, qs);
+      expect(r.status, qs).toBe(200);
+      check(r.total);
+    }
+  });
+
+  // ── B. search_in: every wire form + every rejection ──
+  test("B — search_in wire forms and fail-closed rejections", async ({ page }) => {
+    const ok: string[] = [
+      "search_in=job_name,schedule_subject,target_subject,schedule_spec",
+      "search_in=target_subject",
+      "search_in[]=job_name&search_in[]=schedule_subject",
+      "search_in=job_name&search_in=schedule_subject", // repeated
+      "search_in=uuid",
+      "search_in=job_name,job_name", // dup keys — harmless
+    ];
+    for (const si of ok) {
+      const r = await wire(page, `search=e2e&${si}`);
+      expect(r.status, si).toBe(200);
+    }
+
+    const bad: Array<[string, string]> = [
+      ["search_in=", ""],
+      ["search_in=job_name,", ""],                 // trailing comma → empty key
+      ["search_in=JOB_NAME", "JOB_NAME"],          // case-sensitive
+      ["search_in=schedule_type", "schedule_type"],// filterable ≠ searchable
+      ["search_in=job_name,bogus", "bogus"],
+      ["search_in=job_name, job_name", " job_name"],// no trim → space poisons key
+      ["search_in=kind", "kind"],                  // badge — not a text surface
+      ["search_in=version", "version"],
+    ];
+    for (const [si, frag] of bad) {
+      const r = await wire(page, `search=e2e&${si}`);
+      expect(r.status, si).toBe(400);
+      expect(String(r.body?.detail ?? ""), si).toContain(frag === "" ? "search_in" : frag);
+    }
+
+    // scope without needle: legal no-op (param ignored, rows unfiltered).
+    const noNeedle = await wire(page, "search_in=job_name");
+    expect(noNeedle.status).toBe(200);
+    expect(noNeedle.total).toBe(allRows);
+  });
+
+  // ── C. filters: per-type ops, typed values, rejections ──
+  test("C — filters per type and operator contract", async ({ page }) => {
+    const ok: Array<[string, (t: number | null) => void]> = [
+      [F(0, "kind", "=", "trigger"), (t) => expect(t).toBeGreaterThanOrEqual(3)],
+      [F(0, "kind", "!=", "trigger"), (t) => expect(t).toBeGreaterThanOrEqual(2)],
+      [F(0, "status", "=", "armed"), (t) => expect(t).toBe(0)],
+      [F(0, "schedule_type", "=", "once"), (t) => expect(t).toBe(1)],
+      [F(0, "target_subject", "=", "crm.emit_fake_event"), (t) => expect(t).toBe(2)],
+      // Wire ops are SQL-ish — `contains`/`startsWith`/`endsWith` are
+      // UI-level ops the FE translates to ILIKE patterns BEFORE the wire.
+      [F(0, "target_subject", "ILIKE", "%emit%"), (t) => expect(t).toBe(2)], // emit_fake×2 — "emailsender" ∌ "emit"
+      [F(0, "schedule_subject", "ILIKE", "jobs.schedule.job%"), (t) => expect(t).toBeGreaterThanOrEqual(4)],
+      [F(0, "job_name", "ILIKE", "%e2e%"), (t) => expect(t).toBeGreaterThanOrEqual(1)], // calculated col, cast to text
+      [F(0, "uuid", "ILIKE", "07"), (t) => expect(t).not.toBeNull()],                    // the user's case
+      [F(0, "version", ">=", "1"), (t) => expect(t).toBe(allRows)],
+      [F(0, "created_at", "<", "2099-01-01"), (t) => expect(t).toBe(allRows)],
+      [F(0, "run_as", "=", "user"), (t) => expect(t).toBeGreaterThanOrEqual(1)],
+    ];
+    for (const [qs, check] of ok) {
+      const r = await wire(page, `page_size=50&${qs}`);
+      expect(r.status, qs).toBe(200);
+      check(r.total);
+    }
+
+    // IN via bracket array value.
+    const inArr = await wire(page,
+      "filters[0][field]=kind&filters[0][op]=IN&filters[0][value][]=trigger&filters[0][value][]=infra_derived&filters[0][connector]=AND");
+    expect(inArr.status).toBe(200);
+    expect(inArr.total).toBe(allRows);
+
+    const bad: string[] = [
+      F(0, "schedule_spec", "=", "x"),          // filterable:false authored
+      F(0, "bogus_field", "=", "x"),
+      F(0, "JOB_NAME", "=", "x"),               // case
+      F(0, "created_at", ">", "not-a-date"),    // unparseable datetime → 400
+      F(0, "version", "=", "not-a-number"),     // typed value → 400
+      F(0, "uuid", "=", "not-a-uuid"),          // pgType:uuid declared → 400
+      F(0, "kind", "DROP", "x"),                // unknown op
+      F(0, "kind", "contains", "x"),            // UI-level op raw on wire
+      "filters[0][op]==&filters[0][value]=x",   // field missing
+      "filters[0][field]=status",               // op+value missing
+    ];
+    for (const qs of bad) {
+      const r = await wire(page, qs);
+      expect(r.status, qs).toBe(400);
+    }
+  });
+
+  // ── D. combinations — the classes that actually bite ──
+  test("D — search × filters × scope × sort × paging combined", async ({ page }) => {
+    const cases: Array<[string, (t: number | null) => void]> = [
+      // search + standard filter, intersecting
+      [`search=e2e&${F(0, "kind", "=", "trigger")}`, (t) => expect(t).toBeGreaterThanOrEqual(1)],
+      // search + standard filter, disjoint → legal 0, NOT an error
+      [`search=e2e&${F(0, "kind", "=", "infra_derived")}`, (t) => expect(t).toBe(0)],
+      [`search=e2e&${F(0, "status", "=", "armed")}`, (t) => expect(t).toBe(0)],
+      // search scoped + quick filter on the SAME column
+      [`search=fake&search_in=target_subject&${F(0, "target_subject", "ILIKE", "%emit%")}`, (t) => expect(t).toBe(2)],
+      // scoped-empty vs unscoped: "emit" lives in target_subject only
+      ["search=emit&search_in=target_subject", (t) => expect(t).toBe(2)],
+      ["search=emit&search_in=schedule_subject", (t) => expect(t).toBe(0)],
+      // search + preset-style filter + scoped search_in — the user's combo
+      [`search=e2e&search_in=job_name,target_subject&${F(0, "schedule_type", "=", "recurring")}`, (t) => expect(t).toBeGreaterThanOrEqual(1)],
+      // scoped-empty vs unscoped: e2e lives in job_name, not schedule_subject
+      ["search=e2e&search_in=schedule_subject", (t) => expect(t).toBe(0)],
+      ["search=e2e&search_in=target_subject,schedule_subject", (t) => expect(t).toBe(0)],
+      // wildcard needle + filters — a PURE `\*` has zero true chars → the
+      // gate resolves the search to 1=0 → AND with the filter → 0.
+      [`search=%5C*&${F(0, "schedule_type", "=", "once")}`, (t) => expect(t).toBe(0)],
+      // anchored wildcard DOES search → e2e\* hits the trigger rows.
+      [`search=e2e%5C*&${F(0, "kind", "=", "trigger")}`, (t) => expect(t).toBeGreaterThanOrEqual(1)],
+      // IN-filter + search + sort + paging, all at once
+      [`search=e2e&sort_key=schedule_subject&sort_dir=DESC&page=1&page_size=1&filters[0][field]=kind&filters[0][op]=IN&filters[0][value][]=trigger&filters[0][value][]=manual&filters[0][connector]=AND`,
+        (t) => expect(t).toBeGreaterThanOrEqual(1)],
+      // deleted_records wire vocabulary is EXCLUDED/INCLUDED/ONLY —
+      // the UI-mode names (`deleted`/`all`) are rejected like any bogus value.
+      [`search=e2e&deleted_records=ONLY`, (t) => expect(t).not.toBeNull()],
+      [`deleted_records=INCLUDED&${F(0, "kind", "=", "trigger")}`, (t) => expect(t).toBeGreaterThanOrEqual(3)],
+      [`deleted_records=only&${F(0, "kind", "=", "trigger")}`, (t) => expect(t).toBeGreaterThanOrEqual(3)], // case-normalized
+    ];
+    for (const [qs, check] of cases) {
+      const r = await wire(page, qs);
+      expect(r.status, qs).toBe(200);
+      check(r.total);
+    }
+
+    // AND vs OR connector across two filters — OR must widen, AND must narrow.
+    // `connector` is a TOP-LEVEL param joining all conditions uniformly;
+    // the per-condition `connector` field is wire-compat noise (ignored).
+    const or_ = await wire(page,
+      `${F(0, "kind", "=", "trigger")}&filters[1][field]=schedule_type&filters[1][op]=%3D&filters[1][value]=once&connector=OR`);
+    const and_ = await wire(page, `${F(0, "kind", "=", "trigger")}`);
+    expect(or_.status).toBe(200);
+    expect(or_.total!).toBeGreaterThanOrEqual(and_.total!); // trigger ∪ once ⊇ trigger
+  });
+
+  // ── E. sort / paging / envelope edges ──
+  test("E — sort, paging, envelope abuse", async ({ page }) => {
+    const ok: Array<[string, (t: number | null, body: unknown) => void]> = [
+      ["sort_key=schedule_subject&sort_dir=ASC", (t) => expect(t).toBe(allRows)],
+      ["sort_key=version&sort_dir=DESC", (t) => expect(t).toBe(allRows)],
+      ["sort_key=next_run_at&sort_dir=ASC", (t) => expect(t).toBe(allRows)],
+      ["page_size=1&page=1", (t) => expect(t).toBe(allRows)],
+    ];
+    for (const [qs, check] of ok) {
+      const r = await wire(page, qs);
+      expect(r.status, qs).toBe(200);
+      check(r.total, r.body);
+    }
+    // Out-of-range page → empty rows. NOTE: `total` is COUNT(*) OVER() on
+    // the paginated window — it reports 0, not the matching count. Locked
+    // as observed behavior; the contract question is tracked separately.
+    const r0 = await wire(page, "page=999&page_size=10");
+    expect(r0.status).toBe(200);
+    expect((r0.body as { rows: unknown[] }).rows.length).toBe(0);
+
+    // sort_dir is normalized lenient-by-design: anything ≠ ASC → DESC.
+    const dir = await wire(page, "sort_dir=UP");
+    expect(dir.status).toBe(200);
+
+    const bad = [
+      "sort_key=run_stats",        // histogram — virtual, not sortable
+      "sort_key=bogus_field",
+      "page=0",
+      "page=-1",
+      "page=abc",                  // typed coercion → 400, never a PG 500
+      "page=1.5",
+      "page_size=abc",
+      "page_size=0",
+      "page_size=-5",
+      "deleted_records=BOGUS",     // enum — fail closed, no silent default
+      "deleted_records=deleted",   // UI-mode name on the wire → 400
+      "deleted_records=all",       // UI-mode name on the wire → 400
+    ];
+    for (const qs of bad) {
+      const r = await wire(page, qs);
+      expect(r.status, qs).toBe(400);
+    }
+  });
+
+  // ── F. capability routes — audit-actors on audit COLUMNS, not the
+  //     audit-trail table (job_schedule has columns, no @AuditTrail) ──
+  test("F — audit-actors resolves on an audit-columns entity without history table", async ({ page }) => {
+    const res = await page.request.get("/svc/job/api/v1/entities/job_schedule/audit-actors");
+    expect(res.status()).toBe(200);
+    const body = await res.json();
+    expect(Array.isArray(body.items)).toBe(true);
+  });
+});
