@@ -1,4 +1,5 @@
 <script lang="ts" generics="TRow extends Record<string, unknown>">
+  import { tick } from 'svelte';
   import { t } from '$lib/i18n';
   import { checkboxInteractiveClass } from '@primebrick/ui';
   import EntityListTableHeader from './components/EntityListTableHeader.svelte';
@@ -164,10 +165,14 @@
   // entity's user-guide doc. Cleanup releases it on unmount / entity change.
   $effect(() => claimDocsContext({ entity, mode: 'list' }));
 
-  // Reload-strip visibility — `rowsLoading` can toggle true→false inside a
-  // single paint on fast localhost responses (filter apply ≈15ms), which
-  // would leave the strip imperceptible. Once turned on it stays visible
-  // for a minimum duration so the reload is always perceptible.
+  // Reload-strip visibility — two guards around the raw flag:
+  //   on : `rowsLoading` can flip inside a single paint on fast localhost
+  //        responses (filter apply ≈15ms) → min ON-duration or the strip
+  //        is imperceptible.
+  //   off: `loading=false` lands in the same flush that commits the new
+  //        rows, but painting them (sparkline/datetime/badge cells) can
+  //        take real time — the strip holds until the new tbody is
+  //        actually painted (tick + a full frame), never before.
   const RELOAD_STRIP_MIN_MS = 250;
   let reloadStripVisible = $state(false);
   let reloadStripOnAt = 0;
@@ -180,13 +185,22 @@
       return;
     }
     if (!reloadStripVisible) return;
-    const wait = RELOAD_STRIP_MIN_MS - (Date.now() - reloadStripOnAt);
-    if (wait <= 0) {
-      reloadStripVisible = false;
-      return;
-    }
-    const t = setTimeout(() => (reloadStripVisible = false), wait);
-    return () => clearTimeout(t);
+    const onAt = reloadStripOnAt;
+    let cancelled = false;
+    void (async () => {
+      await tick();
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+      if (cancelled) return;
+      const wait = RELOAD_STRIP_MIN_MS - (Date.now() - onAt);
+      if (wait <= 0) reloadStripVisible = false;
+      else
+        setTimeout(() => {
+          if (!cancelled) reloadStripVisible = false;
+        }, wait);
+    })();
+    return () => {
+      cancelled = true;
+    };
   });
 
   // Census-module dictionaries — `nats_subject`/ref cells resolve subject
