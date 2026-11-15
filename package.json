@@ -34,6 +34,8 @@
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",
     "@eslint/js": "10.0.1",
+    "@nats-io/jetstream": "3.4.0",
+    "@nats-io/transport-node": "3.4.0",
     "@iconify-json/bi": "1.2.7",
     "@iconify-json/lucide": "1.2.146",
     "@internationalized/date": "3.12.4",
