@@ -81,7 +81,7 @@
 			transparent 100%
 		);
 		box-shadow: 0 0 6px 1px rgba(99, 102, 241, 0.9);
-		animation: kitt-scan 1.8s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
+		animation: kitt-scan 1.05s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
 	}
 
 	/* translateX % is relative to the comet's own width (25%): 300% moves it
