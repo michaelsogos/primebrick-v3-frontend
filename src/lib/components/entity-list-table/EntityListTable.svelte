@@ -43,6 +43,7 @@
   import { get } from 'svelte/store';
   import { useMfaStepUp } from '$lib/composables/useMfaStepUp.svelte';
   import MfaStepUpDialog from '$lib/components/auth/MfaStepUpDialog.svelte';
+  import { LoadingBar } from '$lib/components/ui/loading-bar';
 
   import type { EntityListTableProps, ActionChrome } from './types';
 
@@ -198,7 +199,17 @@
   const searchableColumns = $derived(
     allColumns.filter((c) => isColumnSearchable(c) && c.type === 'text')
   );
-  const filterableColumns = $derived(allColumns.filter((c) => isColumnFilterable(c)));
+  // Fields governed by a declared filter preset (their `where[].field`) are
+  // owned by the toolbar preset control — exposing them again in the filters
+  // panel would create a second source of truth for the same predicate.
+  const presetOwnedFields = $derived(
+    new Set(
+      filterPresets.flatMap((p) => p.options.flatMap((o) => (o.where ?? []).map((w) => w.field)))
+    )
+  );
+  const filterableColumns = $derived(
+    allColumns.filter((c) => isColumnFilterable(c) && !presetOwnedFields.has(c.key))
+  );
   const stickyColumnsGroup = $derived(
     columnOrder.applyKeyOrder(allColumns.filter((c) => c.sticky === true), orderState.sticky)
   );
@@ -768,6 +779,16 @@
     sort={cardSortZone}
     ianaToggle={cardIanaZone}
   />
+
+  <!-- Persistent reload strip — the h-0.5 slot keeps its height even when
+       idle (no layout shift); the bar renders on EVERY populated-table
+       reload (sort, filters, presets, pagination, refresh), not just the
+       empty-state first load. -->
+  <div class="h-0.5 w-full shrink-0" data-testid="elt-reload-strip">
+    {#if rowsLoading}
+      <LoadingBar size="xs" />
+    {/if}
+  </div>
 
   <EntityListTableContent
     metaLoading={metaLoading}

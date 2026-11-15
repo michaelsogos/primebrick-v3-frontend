@@ -60,6 +60,7 @@ import {
 } from '$lib/entity-list';
 import type { EntityMeta, AdvancedFilter, DeletionFilterMode, ListResponse, FilterCondition } from '$lib/entity-list/types';
 import { appendListFilterParams } from '$lib/entity-list/list-filter-params';
+import { sanitizeListState } from '$lib/entity-list/sanitize-list-state';
 import { parseUrlFilters } from '$lib/components/entity-list-table/composables/use-url-filters-sync.svelte';
 import { useSyncChannel } from '$lib/composables/useSyncChannel.svelte';
 import { serviceCodeOf, useServiceAvailability } from '$lib/composables/use-service-availability.svelte';
@@ -618,6 +619,22 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
     try {
       // Sequential: if meta fails (gateway/offline), loadRows never runs.
       await loadMeta();
+      // Drop persisted criteria that no longer resolve under the served
+      // meta — a stale key would poison every list call into a 400 loop
+      // (the wire now fails closed on unknown fields). Silent for the
+      // user; dev-gated warn for diagnosis.
+      {
+        const dropped = sanitizeListState(columns, _state);
+        if (import.meta.env.DEV) {
+          const { droppedFilterFields, droppedAdvancedIds, droppedSearchInKeys } = dropped;
+          if (droppedFilterFields.length || droppedAdvancedIds.length || droppedSearchInKeys.length) {
+            console.warn(
+              `[useEntityList] dropped stale persisted list criteria for "${opts.basePath}": ` +
+              `filters=[${droppedFilterFields.join(',')}] advanced=[${droppedAdvancedIds.join(',')}] search_in=[${droppedSearchInKeys.join(',')}]`
+            );
+          }
+        }
+      }
       await loadRows();
       const maxPages = Math.max(1, Math.ceil(Number(_state.total) / _state.pageSize));
       if (_state.page > maxPages) {
