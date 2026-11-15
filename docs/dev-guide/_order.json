@@ -14,6 +14,7 @@
     "button-styles",
     "components/index",
     "entity-metadata",
+    "elt-case-study-job-schedules",
     "i18n",
     "ai-tool-loop",
     "error-handling",
