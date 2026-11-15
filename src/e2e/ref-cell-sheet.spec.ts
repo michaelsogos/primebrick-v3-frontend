@@ -241,6 +241,74 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
     await expect(page.getByTestId("entity-record-sheet")).toBeVisible();
   });
 
+  test("version history title is prose — translated action + actor drill opens the user record", async ({
+    page,
+  }) => {
+    const i = resolvedIndex();
+    test.skip(i < 0, "no row with a resolved actor on this page");
+
+    // Intercept the audit feed — assertions target real wire entries
+    // (action + changed_by), never assumed fixture data.
+    const auditRows: {
+      id: string | number;
+      action: string;
+      changed_by: string | null;
+      changed_by_name: string | null;
+    }[] = [];
+    page.on("response", (res) => {
+      if (/\/entities\/user_profile\/[^/]+\/audit/.test(res.url())) {
+        void res
+          .json()
+          .then((j) => {
+            if (Array.isArray(j?.data)) auditRows.push(...j.data);
+          })
+          .catch(() => {});
+      }
+    });
+
+    await page.locator("table tbody tr").nth(i).getByTestId("ref-cell-created_by-text").click();
+    const sheet = page.getByTestId("entity-record-sheet");
+    await expect(sheet).toBeVisible({ timeout: 15000 });
+    await page.getByTestId("entity-record-sheet-version-badge").click();
+
+    const primary = page.getByTestId("sheet-primary-pane");
+    const firstTitle = primary.locator("h3").first();
+    await expect(firstTitle).toBeVisible({ timeout: 15000 });
+    await expect.poll(() => auditRows.length, { timeout: 15000 }).toBeGreaterThan(0);
+
+    // The title is prose "{action} by {actor}" — EVERY timeline title
+    // must match the translated-participle shape; a raw enum action
+    // (INSERT/UPDATE/…) or "(uuid)" tail means the lookup regressed.
+    const titles = (await primary.locator("h3").allTextContents()).map((t) =>
+      t.trim().replace(/\s+/g, " "),
+    );
+    expect(titles.length).toBeGreaterThan(0);
+    for (const t of titles) {
+      expect(t).toMatch(/^(Created|Updated|Deleted|Permanently deleted|Restored|Cloned)( by .+)?$/);
+    }
+    // Only the action carries the semaphoric color — the connector and
+    // the actor drill stay neutral (font-normal text-foreground).
+    const actorBtn = firstTitle.locator("button[data-testid^='version-history-actor-']");
+    await expect(actorBtn).toHaveClass(/font-normal/);
+
+    // Actor drill — a uuid actor opens the canonical entity.record sheet
+    // on user_profile (stacked right pane). The uid badge always carries
+    // the target uuid — on a live record AND on the notFound hero for
+    // ghost actors (join miss → raw uuid, the honest error state).
+    const uuidRow = auditRows.find((r) => r.changed_by && UUID_RE.test(r.changed_by));
+    test.skip(!uuidRow, "no audit row with a uuid actor on this page");
+    const drill = primary.getByTestId(`version-history-actor-${uuidRow!.id}`);
+    await drill.click();
+    // Stack contract: the original record stays pinned on the left pane;
+    // the actor's record sheet takes the right slot.
+    const recordSheet = primary.getByTestId("entity-record-sheet");
+    await expect(recordSheet).toBeVisible({ timeout: 15000 });
+    await expect(recordSheet.getByTestId("entity-record-sheet-uid-badge")).toHaveAttribute(
+      "title",
+      uuidRow!.changed_by!,
+    );
+  });
+
   test("sheet uses the shared form builder — avatar_color renders the ColorSelector, not a text input", async ({
     page,
   }) => {
