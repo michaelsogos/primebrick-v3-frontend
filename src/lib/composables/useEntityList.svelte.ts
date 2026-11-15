@@ -597,6 +597,20 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
       }
     } catch (e) {
       if (isAbortError(e)) return;
+      // Out-of-range page (stale state after another writer deleted
+      // rows): the BE rejects with PAGE_OUT_OF_RANGE + extra.last_page —
+      // clamp and retry once. Silent for the legit drift; probing still
+      // gets the hard 400. One retry, then the normal error path owns it.
+      if (e instanceof ApiListError && e.internalCode === 'PAGE_OUT_OF_RANGE') {
+        const last = Number(e.extra?.last_page);
+        _state.page = Number.isInteger(last) && last >= 1 ? last : 1;
+        try {
+          await loadRows();
+        } catch (retryErr) {
+          if (!isAbortError(retryErr)) handleLoadError(retryErr, opts.errorScopeKey);
+        }
+        return;
+      }
       handleLoadError(e, opts.errorScopeKey);
     } finally {
       _state.loading = false;

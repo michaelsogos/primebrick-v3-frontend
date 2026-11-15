@@ -223,12 +223,23 @@ test.describe("wire attack — job_schedule list", () => {
       expect(r.status, qs).toBe(200);
       check(r.total, r.body);
     }
-    // Out-of-range page → empty rows. NOTE: `total` is COUNT(*) OVER() on
-    // the paginated window — it reports 0, not the matching count. Locked
-    // as observed behavior; the contract question is tracked separately.
+    // Out-of-range page on a NON-EMPTY filter → RFC error, not a lying
+    // `total:0`. `PAGE_OUT_OF_RANGE` + extra {page,last_page,total} lets
+    // a legitimately-stale client clamp-and-retry; probing gets a 400.
     const r0 = await wire(page, "page=999&page_size=10");
-    expect(r0.status).toBe(200);
-    expect((r0.body as { rows: unknown[] }).rows.length).toBe(0);
+    expect(r0.status).toBe(400);
+    const r0body = r0.body as { internal_code?: string; extra?: { last_page?: number; total?: number } };
+    expect(r0body.internal_code).toBe("PAGE_OUT_OF_RANGE");
+    expect(r0body.extra?.last_page).toBe(1);
+    expect(r0body.extra?.total).toBe(allRows);
+    // …but an empty result set is legit on ANY page when nothing matches
+    // — the probe returns total:0 → 200, no false out-of-range claim.
+    const legitEmpty = await wire(page, "search=zzzznothingmatches&page=1");
+    expect(legitEmpty.status).toBe(200);
+    expect(legitEmpty.total).toBe(0);
+    const legitEmptyDeep = await wire(page, "search=zzzznothingmatches&page=5");
+    expect(legitEmptyDeep.status).toBe(200);
+    expect(legitEmptyDeep.total).toBe(0);
 
     // sort_dir is normalized lenient-by-design: anything ≠ ASC → DESC.
     const dir = await wire(page, "sort_dir=UP");
