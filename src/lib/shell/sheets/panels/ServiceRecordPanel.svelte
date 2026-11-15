@@ -2,8 +2,8 @@
   /**
    * ServiceRecordPanel — the `service.record` host panel: the record view
    * for `service_registry` refs (lazy refs whose per-row `entity_field`
-   * resolves to `service_registry`, e.g. `job_schedule.armed_by` on
-   * service-armed schedules).
+   * resolves to `service_registry`, e.g. audited `created_by` cells
+   * carrying a `system:<code>` actor).
    *
    * `service_registry` is NOT entity-served — its record read is the
    * registry RPC `GET /api/v1/system/services/:code`, keyed by the
@@ -13,9 +13,7 @@
    *
    * `context_row` carries the wire row that opened the drill: when it
    * brings the schedule arming triple (`job_name`, `schedule_spec`,
-   * `run_as`) the panel surfaces it as the "armed schedule" section —
-   * the trigger-arm parallel minimum (the execution lane is always
-   * `system` for service-armed schedules by construction).
+   * `run_as`) the panel surfaces it as the "armed schedule" section.
    *
    * In-sheet links are `_blank`-only by contract.
    */
@@ -66,7 +64,7 @@
   });
 
   /** The arming triple — present only when the drill came from a
-   *  schedule row (`job_schedule.armed_by` lazy ref). */
+   *  schedule row (e.g. its `created_by` service-actor cell). */
   const arming = $derived.by(() => {
     const job_name = context_row?.job_name;
     const schedule_spec = context_row?.schedule_spec;

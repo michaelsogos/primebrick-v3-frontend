@@ -257,7 +257,7 @@ test.describe("job-chain-live — engine semantics end to end", () => {
 
     // Mirror arms (schedule-only → armTimer at refresh).
     const s1 = await waitForSchedule(t1.schedule_subject, (r) => r?.status === "armed");
-    expect(s1!.kind).toBe("trigger");
+    expect(s1!.trigger_uuid).toBe(t1.uuid);
     expect(s1!.schedule_type).toBe("recurring");
     expect(s1!.run_as).toBe("user"); // author → user lane
     expect(s1!.armed_at).not.toBeNull();

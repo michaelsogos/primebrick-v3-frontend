@@ -28,8 +28,6 @@ export const TRIGGER_SCHEDULE_PREFIX = "jobs.schedule.job.";
 export interface ScheduleRow {
   uuid: string;
   schedule_subject: string;
-  service_code: string;
-  kind: string;
   run_as: string;
   schedule_spec: string;
   schedule_type: string;
