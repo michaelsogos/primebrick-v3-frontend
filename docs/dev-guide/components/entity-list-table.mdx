@@ -106,6 +106,33 @@ is stored in sessionStorage under `{columnOrderStorageKey}:viewMode`
 switches between them. Rendering is handled by `EntityListTableTableView`
 and `EntityListTableCardView`.
 
+## Reload UX
+
+An `h-0.5` slot under the toolbar (`data-testid="elt-reload-strip"`)
+always reserves its height — the table never reflows when the indicator
+appears. Inside it the [LoadingBar](/docs/dev-guide/components/loading-bar)
+renders the KITT scanner comet. The contract is **stale-while-revalidate
+with a render barrier**:
+
+- Old rows stay mounted during every reload — no empty flash, no layout
+  jump.
+- The strip holds for a minimum perceptible duration (~250ms) so even a
+  sub-frame localhost response produces a visible signal.
+- Release is deferred past `loading=false`: the strip stays up through
+  `tick()` + two animation frames, i.e. until the **new** row set is
+  committed and painted — the old rows never sit there under a vanished
+  indicator.
+
+Two guards live in `useEntityList` behind the same lifecycle:
+
+- **`PAGE_OUT_OF_RANGE` self-heal** — when stale state points past the
+  last page (e.g. another writer deleted rows), the API answers a
+  hard `400` with `{page, last_page, total}` in `extra`; the composable
+  clamps to `last_page` and retries once, silently for the user.
+- **`pageSize` ceiling 100** — persisted restores, `default_page_size`
+  from meta, the page-size setter and the wire emission all clamp;
+  the API rejects `>250` regardless.
+
 ## Selection model
 
 Two complementary models:
