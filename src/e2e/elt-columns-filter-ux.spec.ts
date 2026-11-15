@@ -105,9 +105,13 @@ test.describe("ELT columns/filter UX — job_schedule", () => {
 
     await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 30000 });
-    // No networkidle — the SSE service-availability feed never idles; the
-    // bootstrap list call is already captured once rows render.
-    await page.waitForTimeout(500);
+
+    // search_in only reaches the wire when a search is typed — without
+    // this, the stale-scope assertions would be vacuous (empty set).
+    await page.getByTestId("entity-search").locator("input").fill("e2e");
+    await expect
+      .poll(async () => listSearchIn.length, { timeout: 15000 })
+      .toBeGreaterThan(0);
 
     expect(listFields).not.toContain("bogus_field");
     expect(listFields).not.toContain("schedule_spec");
@@ -115,6 +119,49 @@ test.describe("ELT columns/filter UX — job_schedule", () => {
     expect(listSearchIn.join(",")).not.toContain("version");
     // The survived legit criterion still applied.
     expect(listFields).toContain("status");
+  });
+
+  test("typed search actually filters — multi-key search_in on the wire, no silent no-op", async ({ page }) => {
+    await loginAsTestAdmin(page);
+    const searchCalls: { status: number; total: number; searchIn: string | null }[] = [];
+    page.on("response", async (res) => {
+      const url = res.url();
+      if (!url.includes("/entities/job_schedule/list")) return;
+      const u = new URL(url);
+      if (!u.searchParams.get("search")) return;
+      try {
+        const body = await res.json();
+        searchCalls.push({
+          status: res.status(),
+          total: Number(body.total ?? -1),
+          searchIn: u.searchParams.get("search_in")
+        });
+      } catch { /* non-json */ }
+    });
+    await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
+    // Wait for a REAL data row — the loading/empty state is a single
+    // colspan row; data rows carry a 2nd+ cell. Counting too early gives 1.
+    await expect(page.locator("table tbody tr").first().locator("td").nth(1)).toBeVisible({ timeout: 30000 });
+    const allRows = await page.locator("table tbody tr").count();
+    expect(allRows).toBeGreaterThan(1);
+
+    // Type a real search — "e2e" matches a known subset (e2e-gate-* rows).
+    await page.getByTestId("entity-search").locator("input").fill("e2e");
+    await expect
+      .poll(async () => searchCalls.length, { timeout: 15000 })
+      .toBeGreaterThan(0);
+
+    // The wire carried the multi-key comma-joined scope AND the server
+    // filtered — the regression this locks: joined scope used to be one
+    // invalid key (silent no-op returning all rows, now a strict 400).
+    const call = searchCalls.at(-1)!;
+    expect(call.status).toBe(200);
+    expect(call.searchIn).toContain(",");
+    expect(call.total).toBeGreaterThan(0);
+    expect(call.total).toBeLessThan(allRows);
+    // …and the UI actually re-rendered the filtered set.
+    await expect(page.locator("table tbody tr")).toHaveCount(call.total, { timeout: 10000 });
+    await expect(page.getByText("Caricamento fallito")).toHaveCount(0);
   });
 
   test("filters panel excludes the preset-owned schedule_type field", async ({ page }) => {
