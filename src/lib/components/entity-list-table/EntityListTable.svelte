@@ -390,7 +390,7 @@
   const clientSelectedTotalPages = $derived(clientSelection.clientSelectedTotalPages);
   const footerUsesClientPaging = $derived(rowSelectionEnabled && showSelectedOnly);
   // `page` arrives from extJsonParse as native bigint — normalize to number
-  // once here so every downstream consumer (footer math, PreviewPanel)
+  // once here so every downstream consumer (footer math, sheets)
   // stays in plain-number land.
   const footerPage = $derived(footerUsesClientPaging ? clientSelectedPage : Number(page));
   const footerTotalPages = $derived(footerUsesClientPaging ? clientSelectedTotalPages : totalPages);

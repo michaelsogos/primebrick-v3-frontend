@@ -35,7 +35,7 @@ export function useScrollPreservation(options: {
   /** Stored format: a FRACTION (0..1) of the scrollable range — the honest
    *  anchor for an auto-layout table whose column widths depend on data,
    *  column visibility and host width. A raw px offset drifts whenever
-   *  columns re-layout (fresh data, preview panel, sidebar). Legacy px
+   *  columns re-layout (fresh data, sidebar). Legacy px
    *  values (>1) restore verbatim once, then rewrite as fractions on the
    *  next save. */
   function readStoredScrollLeft(host: HTMLElement): number {
