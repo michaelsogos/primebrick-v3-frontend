@@ -2,7 +2,7 @@
 	import { Toggle } from '$lib/components/ui/toggle';
 	import { Eye as EyeIcon } from '@primebrick/ui/vendor/lucide';
 	import { EyeOff as EyeOffIcon } from '@primebrick/ui/vendor/lucide';
-	import { usePasswordToggleVisibility } from './password.svelte.js';
+	import { usePasswordToggleVisibility } from './password-context.svelte.js';
 	import type { PasswordToggleVisibilityProps } from './types.js';
 	import { cn } from '$lib/utils.js';
 	import { inputTrailingIconButtonClasses } from '@primebrick/ui';

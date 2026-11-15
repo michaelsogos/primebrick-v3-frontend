@@ -1,30 +1,11 @@
-<script lang="ts" module>
-	import { type VariantProps, tv } from '@primebrick/ui/vendor/tailwind-variants';
-
-	export const loadingBarVariants = tv({
-		base: "w-full overflow-hidden rounded-full relative",
-		variants: {
-			size: {
-				xs: "h-0.5",
-				sm: "h-1",
-			},
-			variant: {
-				muted: "bg-muted",
-			},
-		},
-		defaultVariants: {
-			size: "xs",
-			variant: "muted",
-		},
-	});
-
-	export type LoadingBarSize = VariantProps<typeof loadingBarVariants>["size"];
-	export type LoadingBarVariant = VariantProps<typeof loadingBarVariants>["variant"];
-</script>
-
 <script lang="ts">
 	import type { HTMLAttributes } from "svelte/elements";
 	import { cn, type WithElementRef } from "$lib/utils.js";
+	import {
+		loadingBarVariants,
+		type LoadingBarSize,
+		type LoadingBarVariant,
+	} from "./variants.js";
 
 	type Props = WithElementRef<HTMLAttributes<HTMLDivElement>, HTMLDivElement> & {
 		size?: LoadingBarSize;

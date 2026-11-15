@@ -4,7 +4,7 @@ export {
 	type ToggleSize,
 	type ToggleVariant,
 	type ToggleVariants
-} from './toggle.svelte';
+} from './variants.js';
 
 export {
 	Root,

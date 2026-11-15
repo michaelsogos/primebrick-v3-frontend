@@ -1,8 +1,9 @@
-import Root, {
+import Root from "./loading-bar.svelte";
+import {
 	loadingBarVariants,
 	type LoadingBarSize,
 	type LoadingBarVariant,
-} from "./loading-bar.svelte";
+} from "./variants.js";
 
 export {
 	Root,
