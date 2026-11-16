@@ -1010,6 +1010,8 @@
   "app.widgets.mapper.title": "Mapping",
   "app.widgets.mapper.unmapped": "Unmapped fields ({count})",
   "app.widgets.mapper.view": "View map",
+  "app.widgets.mapper.source": "SOURCE",
+  "app.widgets.mapper.dest_event": "DEST EVENT",
   "app.widgets.payload_map.subtitle": "Pick a destination to map its request fields — an empty map forwards the event payload unchanged.",
   "app.widgets.payload_map.unmapped": "Not set",
   "app.widgets.schedule_spec.apply": "Apply",
