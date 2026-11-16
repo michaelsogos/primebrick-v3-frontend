@@ -684,6 +684,33 @@ test.describe("/system/job/* pages (module-owned)", () => {
     await expect(panel).toHaveCount(0, { timeout: 10000 });
   });
 
+  test("search on trigger ELT never serializes non-searchable jsonb columns", async ({ page }) => {
+    // Regression: `filter`/`payload_map` (jsonb, type:"text" in meta) used
+    // to reach `search_in` — the wire allowlist (physical textlike only)
+    // rejected them with a 400 VALIDATION error on every keystroke.
+    // `withColumnConstraints` now resolves the served `searchable` flag
+    // against the physical pg type, so the FE scope can never outrun the
+    // backend vocabulary again.
+    const badResponses: string[] = [];
+    page.on("response", (r) => {
+      if (r.url().includes("/entities/job_trigger/list") && r.status() >= 400)
+        badResponses.push(`${r.status()} ${r.url()}`);
+    });
+    await page.goto("/system/job/triggers", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
+
+    const searchInput = page.getByTestId("entity-search").locator("input");
+    await expect(searchInput).toBeVisible({ timeout: 15000 });
+    await searchInput.fill("api");
+    // Debounced fetch — wait for the request to have happened, not a timer.
+    await page.waitForResponse(
+      (r) => r.url().includes("/entities/job_trigger/list") && r.url().includes("search=api"),
+      { timeout: 15000 },
+    );
+    await expect(page.locator("table")).toBeVisible({ timeout: 15000 });
+    expect(badResponses, `400/5xx on list: ${badResponses.join(" | ")}`).toHaveLength(0);
+  });
+
   test("trigger ELT column order — Statistiche precedes Ultima esecuzione", async ({ page }) => {
     // `run_stats` (order 80) must sit before `last_run` (82) in the served
     // column order — the sparkline summary precedes the timestamps.
