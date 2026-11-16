@@ -206,4 +206,58 @@ test.describe("mapper viewer", () => {
     expect(scheduleOnly.status()).toBe(400);
     expect(await scheduleOnly.text()).toContain("unmapped_required");
   });
+
+  /**
+   * Audit-diff ref enrichment — `*_by` actor values inside the delta
+   * carry `old_display_name`/`new_display_name` resolved per-uuid
+   * through user_profiles (the SAME contract the diff-detail rows
+   * render). Insert + update rows are both probed: the update row's
+   * old side names the PREVIOUS actor, never the new one.
+   */
+  test("audit delta — actor refs resolve to display_name per side", async ({ page }) => {
+    await loginAsTestAdmin(page);
+    const trig = await declareTrigger(page.request, {
+      name: `e2e-audit-ref-${Date.now()}`,
+      event_subject: "crm.customer_changed",
+      target_subject: "emailsender.send",
+      run_as: "author",
+      payload_map: MAP,
+    });
+
+    try {
+      const cur = await page.request.get(`${JOB_API}/entities/job_trigger/${trig.uuid}`);
+      const { version } = (await cur.json()) as { version: number };
+      const put = await page.request.put(`${JOB_API}/entities/job_trigger/${trig.uuid}`, {
+        data: { entity: { name: `e2e-audit-ref-renamed-${Date.now()}`, version } },
+      });
+      expect(put.status()).toBe(200);
+
+      const audit = await page.request.get(
+        `${JOB_API}/entities/job_trigger/${trig.uuid}/audit?page=1&limit=10`,
+      );
+      expect(audit.status()).toBe(200);
+      const { data } = (await audit.json()) as {
+        data: { action: string; delta: Record<string, { old_display_name?: string; new_display_name?: string }> }[];
+      };
+
+      const insert = data.find((r) => r.action === "INSERT");
+      const update = data.find((r) => r.action === "UPDATE");
+      expect(insert).toBeTruthy();
+      expect(update).toBeTruthy();
+
+      // Actor columns resolve both sides per-uuid — never a bare GUID.
+      for (const row of [insert, update]) {
+        const createdBy = row!.delta["created_by"] ?? row!.delta["updated_by"];
+        expect(
+          typeof createdBy?.new_display_name === "string" && createdBy.new_display_name.length > 0,
+        ).toBeTruthy();
+        if (row!.delta["updated_by"]) {
+          const ub = row!.delta["updated_by"]!;
+          expect(ub.new_display_name).not.toMatch(/^[0-9a-fA-F-]{36}$/);
+        }
+      }
+    } finally {
+      await deleteTrigger(page.request, trig.uuid);
+    }
+  });
 });
