@@ -6,6 +6,14 @@
 - Applies automatically at the start of any new session.
 - Triggered whenever a new feature, refactor, debt management, or bugfix is requested.
 
+## Re-read obligation — every turn, not once per session
+
+This file MUST be re-read whenever the agent is called to ANALYZE, PLAN,
+or CODE — not once at session start. Memory of it decays inside a long
+session; "I already read it" is not compliance. This is a mechanical
+obligation, not a suggestion: a turn that analyzes, plans, or codes
+without a fresh read of this document is a protocol violation.
+
 ## Documentation deep-dive — MANDATORY gate before TIC and TOC
 
 No phase ever starts on memory or code examples alone. Before entering
@@ -13,6 +21,16 @@ EITHER phase the agent MUST run a thorough documentation pass across
 **every repo the task's domain touches** — `AGENTS.md`, `.devin/rules/*`,
 `docs/ai/*`, `docs/dev-guide/*` in each of them. Docs are the contract;
 source code is only the proof.
+
+**Doc first, code second — order is not negotiable.** "Docs are the
+contract, code is the proof" means the doc provides the correct
+high-level view FIRST and code is then read to deepen, verify, and
+complete it. The two interpenetrate — the doc states intent, code
+proves behavior — but the entry point is always the doc, never the
+code. Starting from source and inferring the contract backwards
+produces drift: neighboring code that disagrees with the doc is a bug
+or a debt, never documentation.
+
 
 - **Before TIC** (Analysis Phase → plan file): map the task's domain to
   the repos it concerns, read the relevant rules and canonical docs in
@@ -43,6 +61,18 @@ ANY turn and for ANY judgment call, the resolution order is fixed:
 3. **Guessing is the violation.** The protocol is "search → ask", never
    "guess and fix later". An unverified assumption that ships costs
    more than a question asked.
+
+## Non-negotiables
+
+- **Never offer a drift fallback.** When presenting options, never
+  include a path that bypasses the governed contract — a parallel
+  scheduler, a hidden channel, a local workaround. If the governed
+  path is blocked, the contingency is unblocking the block, never a
+  parallel mechanism. Presenting drift as a choice legitimizes it.
+- **Code precedent never overrides a rule.** If neighboring code
+  violates a rule, the rule wins — the neighbor is debt, not
+  precedent. Copying a violation because "the sibling file does it"
+  is how debt propagates; flag the neighbor, follow the contract.
 
 ## Actions
 1. **Analysis Phase**: Analyze the codebase to fully understand the requirements, but **DO NOT modify any source code files** during this phase.
