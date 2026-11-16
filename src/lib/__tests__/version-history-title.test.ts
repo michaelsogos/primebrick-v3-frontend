@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
 	auditActionKey,
 	changedBySheetTarget,
-} from "../entity-list/sheets/panels/version-history-title";
+} from "../entity-list/sheets/version-history-title";
 
 describe("auditActionKey — served-truth key contract", () => {
 	it("maps wire actions to the lowercase generic block", () => {

@@ -18,7 +18,7 @@
     selectedKeys,
     rowKey,
     isRowDeleted,
-    previewPanel,
+    focusedRowIndex,
     actionsEnabled,
     rowActions,
     entityRowActions,
@@ -46,7 +46,6 @@
     onDuplicateRow,
     onDeleteRow,
     onRestoreRow,
-    onPreviewRow,
     handleCustomAction,
     sparklineData
   }: {
@@ -57,7 +56,7 @@
     selectedKeys: string[];
     rowKey: (row: TRow) => string;
     isRowDeleted: (row: TRow) => boolean;
-    previewPanel: { state: { focusedRowIndex: number | null } };
+    focusedRowIndex: number | null;
     actionsEnabled: boolean;
     rowActions?: Snippet<[{ row: TRow }]>;
     entityRowActions?: EntityRowActions;
@@ -85,7 +84,6 @@
     onDuplicateRow: (row: TRow) => void;
     onDeleteRow: (row: TRow) => void;
     onRestoreRow: (row: TRow) => void;
-    onPreviewRow: (row: TRow) => void;
     handleCustomAction?: (action: RowCustomAction, row: TRow) => void;
     /** Per-column batch sparkline buckets — same map as the table view. */
     sparklineData?: Record<string, { by_key: Record<string, unknown[]>; bucket_unit?: string }>;
@@ -167,7 +165,7 @@
           {@const rk = rowKey(r)}
           {@const rowSelected = rowSelectionEnabled && selectedKeys.includes(rk)}
           {@const rowDeleted = isRowDeleted(r)}
-          {@const rowFocused = previewPanel.state.focusedRowIndex !== null && viewRows[previewPanel.state.focusedRowIndex] === r}
+          {@const rowFocused = focusedRowIndex !== null && viewRows[focusedRowIndex] === r}
           <CardItem
             row={r}
             rowKey={rk}
@@ -193,7 +191,6 @@
             onDuplicateRow={onDuplicateRow}
             onDeleteRow={onDeleteRow}
             onRestoreRow={onRestoreRow}
-            onPreviewRow={onPreviewRow}
             handleCustomAction={handleCustomAction}
             sparklineData={sparklineData}
           />

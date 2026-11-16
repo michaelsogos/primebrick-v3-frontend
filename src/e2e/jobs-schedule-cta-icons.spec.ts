@@ -21,6 +21,7 @@ import { loginAsTestAdmin } from "./helpers/admin-login";
 interface CtaRow {
   action_name: string;
   icon?: string;
+  color?: string;
 }
 
 test.describe("job_schedule lifecycle CTAs — :filled icons", () => {
@@ -47,10 +48,19 @@ test.describe("job_schedule lifecycle CTAs — :filled icons", () => {
     });
     expect(meta.row).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ action_name: "pause", icon: "pause:filled" }),
-        expect.objectContaining({ action_name: "resume", icon: "play:filled" }),
+        expect.objectContaining({ action_name: "stop", icon: "square:filled", color: "warning" }),
+        expect.objectContaining({ action_name: "pause", icon: "pause:filled", color: "warning" }),
+        expect.objectContaining({ action_name: "resume", icon: "play:filled", color: "success" }),
+        expect.objectContaining({ action_name: "enable", color: "success" }),
+        expect.objectContaining({ action_name: "disable", color: "destructive" }),
       ]),
     );
+    // Lifecycle order is declaration order — the soft-delete op must be last
+    // (menu order: stop → pause → resume → enable → disable, state-gated).
+    const lifecycle = meta.row
+      .map((a) => a.action_name)
+      .filter((n) => ["stop", "pause", "resume", "enable", "disable"].includes(n));
+    expect(lifecycle).toEqual(["stop", "pause", "resume", "enable", "disable"]);
     expect(meta.bulk).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ action_name: "pause_all", icon: "pause:filled" }),
@@ -76,6 +86,33 @@ test.describe("job_schedule lifecycle CTAs — :filled icons", () => {
     // "washed out" next to opaque severity icons, esp. with :filled glyphs).
     for (const cls of ["lucide-pause", "lucide-play", "lucide-power"]) {
       await expect(toolbar.locator(`svg.${cls}`)).not.toHaveClass(/opacity-70/);
+    }
+  });
+
+  test("row kebab renders lifecycle ops with :filled svgs", async ({ page }) => {
+    await page.goto("/system/job/job-schedules", {
+      waitUntil: "domcontentloaded",
+    });
+    await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
+
+    // Row kebab — the actions cell is the row's last cell; state decides
+    // which lifecycle ops are visible_on-gated in (stop/pause on armed,
+    // resume on paused, enable/disable elsewhere).
+    const kebab = page.locator("table tbody tr").first().locator("td").last().getByRole("button").first();
+    await kebab.click();
+    const menu = page.getByRole("menu");
+    await expect(menu).toBeVisible();
+
+    for (const cls of ["lucide-square", "lucide-pause", "lucide-play"]) {
+      const icon = menu.locator(`svg.${cls}`).first();
+      if (await icon.count()) {
+        await expect(icon).toHaveAttribute("fill", "currentColor");
+      }
+    }
+    // Negative control — enable/disable ("power") must stay stroke-only.
+    const power = menu.locator("svg.lucide-power").first();
+    if (await power.count()) {
+      await expect(power).toHaveAttribute("fill", "none");
     }
   });
 });

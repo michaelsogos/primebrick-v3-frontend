@@ -39,7 +39,7 @@ test.describe("identity column contract — job_schedule", () => {
     await expect(subjectCells.first()).toBeVisible({ timeout: 10000 });
 
     // Picker: the pin is checked AND disabled — never toggleable.
-    await page.getByRole("button", { name: "Columns" }).click();
+    await page.getByRole("button", { name: "Columns" }).first().click();
     const pinToggle = page.getByTestId("columns-toggle-job_name");
     await expect(pinToggle).toBeVisible({ timeout: 15000 });
     await expect(pinToggle).toBeDisabled();
@@ -47,9 +47,10 @@ test.describe("identity column contract — job_schedule", () => {
     // data-state instead of the a11y role.
     await expect(pinToggle.locator('[data-state="checked"]')).toHaveCount(1);
 
-    // The WHO column: created_by relabelled "Armed By" — visible and
+    // The WHO column: armed_by is a dedicated calculated ref column
+    // (fired_at → armed_by → armed_at → disarmed_at band) — visible and
     // user-toggleable (a normal column, not the identity).
-    const armedByToggle = page.getByTestId("columns-toggle-created_by");
+    const armedByToggle = page.getByTestId("columns-toggle-armed_by");
     await expect(armedByToggle).toBeVisible();
     await expect(armedByToggle).toContainText("Armed By");
     await expect(armedByToggle).toBeEnabled();
@@ -100,13 +101,19 @@ test.describe("identity column contract — job_schedule", () => {
     await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 30000 });
 
-    const svg = page.locator("table tbody svg[aria-label='sparkline']").first();
-    await expect(svg).toBeVisible({ timeout: 15000 });
-    // The overlay trigger is a button sibling of the svg carrying the
-    // composed bucket text as aria-label.
-    const trigger = svg.locator("xpath=following-sibling::button[1]");
-    const label = await trigger.getAttribute("aria-label", { timeout: 15000 });
-    expect(label).toBeTruthy();
+    // The overlay triggers are per-slot buttons siblings of each row's
+    // sparkline svg; the aria-label lists every series quantified — zeros
+    // included — while an EMPTY bucket's tooltip honestly renders "No runs".
+    // Scan rows' slots for the first bucket with a non-zero series.
+    const slots = page.locator("table tbody svg[aria-label='sparkline']")
+      .locator("xpath=following-sibling::button");
+    const labels = await slots.evaluateAll((els) =>
+      els.map((el) => el.getAttribute("aria-label") ?? ""),
+    );
+    const hit = labels.findIndex((l) => /[1-9]\d* \p{L}/u.test(l));
+    test.skip(hit < 0, "no populated sparkline bucket on the page — data precondition unmet");
+    const trigger = slots.nth(hit);
+    const label = labels[hit];
     await trigger.hover();
     const tooltip = page.locator("[data-tooltip-content]").first();
     await expect(tooltip).toBeVisible({ timeout: 5000 });

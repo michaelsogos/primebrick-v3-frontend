@@ -5,16 +5,15 @@ import { loginAsTestAdmin } from "./helpers/admin-login";
  * entity-list-table interaction spot-checks — the table pipeline was the
  * largest surface re-typed in the `no-explicit-any` cleanup (prop contracts
  * across TableHeader/HeaderRow/TableRow/TableBody/CardView/TableView plus
- * the previewPanel/sticky/rowRangeSelection composables). These specs prove
+ * the keyboardNavigation/sticky/rowRangeSelection composables). These specs prove
  * the interactions the types now describe still behave end-to-end.
  *
  * Product contract under test (not implementation):
  *   - sortable header click → a fresh /list request carries sort_key+sort_dir
  *   - select-all checkbox → every rendered row flips data-state="selected"
- *   - row dblclick → the preview panel opens AND exactly one row carries
- *     data-focused-row-index — the focusedRowIndex wiring was a latent bug
- *     an `as any` cast hid (TableBody never passed it to TableRow), so this
- *     attribute could never render before the cleanup fixed it
+ *   - row dblclick → the record's `kind:"detail"` census route opens in a NEW
+ *     focused browser tab (the internal preview pane was removed — Sheets own
+ *     record detail now)
  *
  * Surface: /system/job/job-schedules — host-rendered standard list
  * archetype, guaranteed populated (the job module registers schedules at
@@ -66,21 +65,22 @@ test.describe("entity-list-table interactions", () => {
     }
   });
 
-  test("row dblclick opens the preview panel and focuses exactly that row", async ({ page }) => {
-    await page.goto(SCHEDULES, { waitUntil: "domcontentloaded" });
+  test("row dblclick opens the record detail route in a new focused tab", async ({ page, context }) => {
+    // job_trigger owns a kind:"detail" census decl (/system/job/triggers/[uuid])
+    // — job_schedule does not, so this contract is asserted on the triggers list.
+    await page.goto("/system/job/triggers", { waitUntil: "domcontentloaded" });
     const firstRow = page.locator("table tbody tr[data-row-index]").first();
     await expect(firstRow).toBeVisible({ timeout: 30000 });
-    const idx = await firstRow.getAttribute("data-row-index");
 
+    const popup = context.waitForEvent("page", { timeout: 5000 });
     await firstRow.dblclick();
+    const tab = await popup;
 
-    // The preview region splits — and exactly ONE row gets the focus marker.
-    // Both come from the same previewPanel.state.focusedRowIndex wiring.
-    await expect(page.locator("tr[data-focused-row-index]")).toHaveCount(1);
-    await expect(page.locator("tr[data-focused-row-index]")).toHaveAttribute(
-      "data-focused-row-index",
-      idx ?? "",
-    );
+    await expect(tab).toHaveURL(/\/system\/job\/triggers\/[0-9a-f-]{36}/, { timeout: 15000 });
+    // The new tab must take focus — the parent stays on the list.
+    await expect.poll(() => tab.evaluate(() => document.hasFocus())).toBe(true);
+    expect(page.url()).toContain("/system/job/triggers");
+    await tab.close();
   });
 
   /**
@@ -245,9 +245,10 @@ test.describe("entity-list-table interactions", () => {
 
   /**
    * Footer keyboard legend — must document the REAL bindings, nothing else.
-   * ↑↓ move the row cursor, Space selects, Enter opens the row menu, ←→ scroll
-   * horizontally (they navigate preview records only while the panel is
-   * open), esc closes; Pag.↑/Pag.↓ and Home/End page. Chips are
+   * ↑↓ move the row cursor, Space selects, Enter opens the row menu,
+   * esc closes; Pag.↑/Pag.↓ and Home/End page. ←→ are gone — the preview
+   * pane they navigated was removed, and native horizontal scroll is not
+   * a command worth advertising. Chips are
    * language-neutral text → assert them directly; a legend advertising a
    * binding that does not exist is a contract bug.
    */
@@ -269,20 +270,25 @@ test.describe("entity-list-table interactions", () => {
     const panel = page.getByTestId("elt-kbd-legend-panel");
     await expect(panel).toBeVisible({ timeout: 5000 });
     const text = await panel.innerText();
-    for (const chip of ["↑", "↓", "←", "→", "Enter", "Esc", "Pag.", "Home", "End", "↖", "↘"]) {
+    for (const chip of ["↑", "↓", "Enter", "Esc", "Pag.", "Home", "End", "↖", "↘"]) {
       expect(text, `legend shows ${chip}`).toContain(chip);
+    }
+    // ←/→ are NOT advertised — they lost their only binding when the
+    // preview pane was removed (horizontal scroll is native, not a command).
+    for (const chip of ["←", "→"]) {
+      expect(text, `legend must not show ${chip}`).not.toContain(chip);
     }
     // Pag. chips come in a pair (up + down).
     expect((text.match(/Pag\./g) ?? []).length, "Pag. ↑ and Pag. ↓").toBe(2);
-    // The four arrows render as ONE hint group under "Move selector" —
-    // nothing but whitespace and glyphs may sit between ↓ and →.
+    // ↑↓ are the only move-selector chips — nothing but whitespace may
+    // sit between them.
+    const iUp = text.indexOf("↑");
     const iDown = text.indexOf("↓");
-    const iRight = text.indexOf("→");
     expect(
-      text.slice(iDown + 1, iRight).replace(/[\s←]/g, ""),
-      "arrows merged — no label between ↓ and →",
+      text.slice(iUp + 1, iDown).replace(/\s/g, ""),
+      "↑↓ merged — no label between them",
     ).toBe("");
-    expect(text.indexOf("→"), "arrow group before Space").toBeLessThan(text.indexOf("Space"));
+    expect(iDown, "arrow group before Space").toBeLessThan(text.indexOf("Space"));
     // A missing translation renders the raw i18n key — none may leak.
     expect(text).not.toContain("keys.");
     expect(text).not.toContain("system.entities.list");
@@ -421,7 +427,7 @@ test.describe("card-view toolbar zones (/crm/customers)", () => {
     await expect(page.locator("table tbody tr[data-row-index]").first()).toBeVisible({ timeout: 30000 });
 
     // `roles` is default_visible:false → enable it via the columns sheet.
-    await page.getByRole("button", { name: "Columns" }).click();
+    await page.getByRole("button", { name: "Columns" }).first().click();
     await page.getByTestId("columns-toggle-roles").click();
     await page.keyboard.press("Escape");
 
@@ -479,7 +485,7 @@ test.describe("card-view toolbar zones (/crm/customers)", () => {
     await expect(page.locator("table tbody tr[data-row-index]").first()).toBeVisible({ timeout: 30000 });
 
     // `avatar_initials` is default_visible:false → enable it via the columns sheet.
-    await page.getByRole("button", { name: "Columns" }).click();
+    await page.getByRole("button", { name: "Columns" }).first().click();
     await page.getByTestId("columns-toggle-avatar_initials").click();
     await page.keyboard.press("Escape");
 

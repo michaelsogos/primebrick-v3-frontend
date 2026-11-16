@@ -18,6 +18,7 @@
   import { CircleX } from '@primebrick/ui/vendor/lucide';
   import { ExternalLink } from '@primebrick/ui/vendor/lucide';
   import JsonCellViewer from './JsonCellViewer.svelte';
+  import MapperCellViewer from './MapperCellViewer.svelte';
   import { Tooltip } from '@primebrick/ui';
   import { getAuditFieldValue } from '../utils/cell-formatting';
   import { getAuditColumnsContext, getActiveRolesContext, getMetaUidContext, getEntitiesNsContext, getTableEntityContext } from '../context';
@@ -98,6 +99,22 @@
    *  `entity.versionHistory` with the same payload row actions build. */
   const entityCtx = getTableEntityContext();
   const cellEntitiesNs = getEntitiesNsContext();
+
+  /** `format:"json"` columns carrying a DST mapper document opt into the
+   *  prose sheet viewer via `widget` — explicit opt-in beats the generic
+   *  JSON inspector AND the conditions-array shape sniff. New mapper
+   *  widgets on the same DST contract join this set. */
+  const MAPPER_WIDGETS = new Set(['payload_map']);
+
+  /** Record's `kind:"detail"` href — the same census derivation the row
+   *  dblclick handler owns; the mapper cell's trailing CTA navigates
+   *  `_blank` to it (absent decl → no CTA). */
+  const mapperDetailHref = $derived.by(() => {
+    if (!entityCtx) return null;
+    const detail = routeCensus.find((r) => r.entity === entityCtx.entity && r.kind === 'detail');
+    const v = row[entityCtx.uid];
+    return detail && v != null ? detail.route.replace(/\[[a-zA-Z0-9_]+\]/, String(v)) : null;
+  });
   /** Shared active-roles lookup (`options_source:"system.roles"` columns)
    *  — one lazy fetch per list, `idp_role` → label_key → `$t`. */
   const activeRoles = getActiveRolesContext();
@@ -334,7 +351,9 @@
   {/if}
 {:else if column.format === 'json' && value !== null && value !== undefined && value !== ''}
   {@const json = jsonCellContent(value)}
-  {#if json.kind === 'conditions'}
+  {#if MAPPER_WIDGETS.has(column.widget ?? '')}
+    <MapperCellViewer {value} {column} {row} detailHref={mapperDetailHref} />
+  {:else if json.kind === 'conditions'}
     <div class="flex min-w-0 flex-wrap gap-1">
       {#each json.conditions as cond (cond.field)}
         <!-- Canonical black tooltip: the condition's own JSON fragment,

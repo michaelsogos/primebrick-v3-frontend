@@ -30,7 +30,6 @@
     datetimeIanaRenderTick,
     viewMode,
     onRowClick,
-    onPreviewRow,
     onEditRow,
     onDeleteRow,
     onRestoreRow,
@@ -54,7 +53,6 @@
     datetimeIanaRenderTick?: number;
     viewMode: 'cards_grid' | 'cards_list';
     onRowClick?: (row: TRow, key: string, e: MouseEvent) => void;
-    onPreviewRow?: (row: TRow) => void;
     onEditRow?: (row: TRow) => void;
     onDeleteRow?: (row: TRow) => void;
     onRestoreRow?: (row: TRow) => void;
@@ -163,14 +161,6 @@
               {/snippet}
             </DropdownMenu.Trigger>
             <DropdownMenu.Content align="end">
-              {#if entityRowActions?.preview}
-                <DropdownMenu.Item onclick={() => onPreviewRow?.(r)}>
-                  <div class="flex items-center gap-2">
-                    <Eye class="size-4" />
-                    <span>{$t('app.common.preview')}</span>
-                  </div>
-                </DropdownMenu.Item>
-              {/if}
               {#if entityRowActions?.edit}
                 <DropdownMenu.Item onclick={() => onEditRow?.(r)}>
                   <div class="flex items-center gap-2">

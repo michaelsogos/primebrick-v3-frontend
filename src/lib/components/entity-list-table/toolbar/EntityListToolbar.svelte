@@ -3,7 +3,7 @@
   import { SearchBar, ViewModeToggle, FilterPresetToolbar } from '.';
   import { DeletionFilterToggle } from '@primebrick/ui';
   import { Columns3 } from '@primebrick/ui/vendor/lucide'
-  import { Funnel } from '@primebrick/ui/vendor/lucide';
+  import { Funnel, Plus } from '@primebrick/ui/vendor/lucide';
   import { Button } from '@primebrick/ui';
   import { RefreshButton } from '@primebrick/ui';
   import { Toolbar } from '@primebrick/ui';
@@ -31,8 +31,11 @@
     onToggleFilters: () => void;
     onColumnSelectorClick: () => void;
     onCreateAction?: () => void;
-    /** Meta-driven create CTA shape (route census `kind:"create"`) —
-     *  `label_key`/`icon` override the generic "New" default. */
+    /** Create CTA chrome — `label_key` overrides the generic "New" copy;
+     *  `icon` is the AUTHORED override (meta action `create.single` or an
+     *  explicit page prop). Absent → the generic `+` default below.
+     *  Route/nav icons never reach this prop — a page icon is not an
+     *  action icon. */
     create_cta?: { label_key?: string; icon?: string };
     /** Declared toolbar filter presets (`meta.table.filter_presets`). */
     filterPresets?: readonly FilterPreset[];
@@ -150,6 +153,8 @@
       >
         {#if create_cta?.icon}
           <DynamicIcon name={create_cta.icon} size={16} />
+        {:else}
+          <Plus size={16} />
         {/if}
         {$t(create_cta?.label_key ?? 'system.entities.list.new')}
       </Button>

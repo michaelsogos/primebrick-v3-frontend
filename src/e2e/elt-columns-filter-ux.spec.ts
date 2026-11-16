@@ -24,7 +24,7 @@ test.describe("ELT columns/filter UX — job_schedule", () => {
     await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 30000 });
 
-    await page.getByRole("button", { name: "Columns" }).click();
+    await page.getByRole("button", { name: "Columns" }).first().click();
     const selectAll = page.getByTestId("columns-select-all");
     await expect(selectAll).toBeVisible({ timeout: 15000 });
 

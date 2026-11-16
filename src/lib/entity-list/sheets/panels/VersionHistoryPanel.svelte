@@ -24,7 +24,7 @@
   import { JsonCodeBlock } from '@primebrick/ui';
   import type { MetaColumn } from '$lib/entity-list/types';
   import { tryParseJsonObject } from '$lib/utils/json-object';
-  import { auditActionKey, changedBySheetTarget } from './version-history-title';
+  import { auditActionKey, changedBySheetTarget } from '../version-history-title';
 
   interface Props {
     entity: string;
@@ -46,7 +46,7 @@
   };
 
   type VersionHistoryEntry = {
-    id: bigint;
+    uuid: string;
     action: string;
     version: bigint;
     changed_at: string;
@@ -74,10 +74,10 @@
   let versionHistoryPage = $state<number>(1);
   let versionHistoryLimit = $state<number>(50);
   let versionHistoryHasMore = $state<boolean>(false);
-  let expandedEntries = new SvelteSet<bigint>();
+  let expandedEntries = new SvelteSet<string>();
 
 
-  function toggleEntryExpanded(entryId: bigint) {
+  function toggleEntryExpanded(entryId: string) {
     if (expandedEntries.has(entryId)) {
       expandedEntries.delete(entryId);
     } else {
@@ -454,7 +454,7 @@
     {:else}
       <div class="p-4">
         <Timeline.Root>
-          {#each versionHistoryData as entry (entry.id)}
+          {#each versionHistoryData as entry (entry.uuid)}
             {@const colorClass = getAuditActionColorClass(entry.action)}
             {@const borderClass = getAuditActionBorderClass(entry.action)}
             {@const ActionIcon = getAuditActionIcon(entry.action)}
@@ -484,7 +484,7 @@
                       type="button"
                       class="font-normal text-foreground underline-offset-2 rounded-sm px-0.5 hover:bg-accent hover:underline cursor-pointer"
                       onclick={() => openChangedByRecord(entry)}
-                      data-testid={`version-history-actor-${entry.id}`}
+                      data-testid={`version-history-actor-${entry.uuid}`}
                     >{getChangedByDisplay(entry)}</button>
                   {/if}
                 </Timeline.Title>
@@ -494,16 +494,16 @@
                       variant="ghost"
                       size="sm"
                       class="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
-                      onclick={() => toggleEntryExpanded(entry.id)}
+                      onclick={() => toggleEntryExpanded(entry.uuid)}
                     >
-                      <ChevronDown class={cn("size-4 transition-transform", expandedEntries.has(entry.id) && "rotate-180")} />
-                      <span class="ml-1">{expandedEntries.has(entry.id) ? $t('system.entities.version_history.hide_details') : $t('system.entities.version_history.show_details')}</span>
+                      <ChevronDown class={cn("size-4 transition-transform", expandedEntries.has(entry.uuid) && "rotate-180")} />
+                      <span class="ml-1">{expandedEntries.has(entry.uuid) ? $t('system.entities.version_history.hide_details') : $t('system.entities.version_history.show_details')}</span>
                     </Button>
                   </div>
                 {/if}
                 <div class="mt-1">
                   {#if isUpdate}
-                    {#if expandedEntries.has(entry.id)}
+                    {#if expandedEntries.has(entry.uuid)}
                       <div class="space-y-2">
                         {#each descriptions as desc (desc)}
                           {@const delta = desc as {field: string, operator: string, toOperator?: string, oldValue?: string, newValue?: string, isBadge?: boolean, badgeColor?: string, badgeLabelText?: string, badgeLabelKey?: string, oldBadgeColor?: string, oldBadgeLabelText?: string, oldBadgeLabelKey?: string, isColor?: boolean, colorValue?: string, oldColorValue?: string, isJson?: boolean, jsonValue?: unknown, oldJsonValue?: unknown}}

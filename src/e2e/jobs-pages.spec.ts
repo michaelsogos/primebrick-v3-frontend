@@ -235,6 +235,36 @@ test.describe("/system/job/* pages (module-owned)", () => {
     }
   });
 
+  test("/system/job/triggers renders columns in meta order — destination after source, filters after schedule", async ({
+    page,
+  }) => {
+    await page.goto("/system/job/triggers", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("table tbody tr[data-row-index]").first()).toBeVisible({ timeout: 30000 });
+
+    // Wire contract — meta `order` values: event_subject(source) <
+    // target_subject(destination) < schedule_spec < filter. The served
+    // array stays in declaration order; orderedColumns sorts by `order`.
+    const meta = await page.evaluate(async () => {
+      const res = await fetch("/svc/job/api/v1/entities/job_trigger/meta");
+      const body = await res.json();
+      return (body.columns ?? []) as { key: string; order: number }[];
+    });
+    const ord = (k: string) => meta.find((c) => c.key === k)?.order ?? -1;
+    expect(ord("event_subject")).toBeGreaterThan(-1);
+    expect(ord("target_subject")).toBeGreaterThan(ord("event_subject"));
+    expect(ord("target_subject")).toBeLessThan(ord("schedule_spec"));
+    expect(ord("schedule_spec")).toBeLessThan(ord("filter"));
+
+    // DOM contract — the visible thead mirrors meta order (filter is
+    // default_visible:false, so only the first three can appear as th).
+    const headers = await page.locator("table thead th").allTextContents();
+    const hIdx = (re: RegExp) => headers.findIndex((h) => re.test(h));
+    const srcIdx = hIdx(/listening|sorgente|source|ereignisquelle|origen|origem/i);
+    const dstIdx = hIdx(/destination|destinazione|destino|ereignisziel/i);
+    expect(srcIdx).toBeGreaterThan(-1);
+    expect(dstIdx).toBe(srcIdx + 1);
+  });
+
   test("/system/job/triggers create CTA → NEW TAB archetype EntityFormPage (no remote mount)", async ({
     page,
     context,
@@ -302,6 +332,54 @@ test.describe("/system/job/* pages (module-owned)", () => {
     });
     expect(result.status).toBe(404);
     expect(result.body).not.toContain("does not exist");
+  });
+
+  test("job_trigger audit endpoint returns uuid-keyed entries — the version-history contract", async ({
+    page,
+  }) => {
+    await page.goto("/system/job/triggers", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
+
+    // Contract: entities-route.ts declares job_trigger `auditable: true` —
+    // the version-history panel fetches GET /:uuid/audit and keys entries
+    // by audit-row `uuid` (never the retired numeric `id`). Regression
+    // locked here: a wedged service made this fetch hang "stale pending";
+    // a completing 200 with uuid-keyed rows is the positive contract.
+    // Audit rows exist only on triggers that were written after insert —
+    // scan the list for the first trigger carrying history.
+    const result = await page.evaluate(async () => {
+      const list = await fetch(
+        "/svc/job/api/v1/entities/job_trigger/list?page=1&page_size=25",
+      )
+        .then((r) => r.json())
+        .catch(() => null);
+      const rows = (list?.rows ?? []) as { uuid?: string }[];
+      for (const row of rows) {
+        if (!row?.uuid) continue;
+        const res = await fetch(
+          `/svc/job/api/v1/entities/job_trigger/${row.uuid}/audit?page=1&limit=20`,
+        );
+        if (res.status !== 200) return { status: res.status, body: await res.text() };
+        const body = await res.text();
+        if ((JSON.parse(body).data ?? []).length > 0)
+          return { status: res.status, body };
+      }
+      return { status: -1, body: "no job_trigger row with audit history" };
+    });
+    expect(result.status).toBe(200);
+    const payload = JSON.parse(result.body) as {
+      data: { uuid: string; action: string; changed_at: string }[];
+      pagination: { hasMore: boolean };
+    };
+    expect(Array.isArray(payload.data)).toBe(true);
+    expect(payload.data.length).toBeGreaterThan(0);
+    for (const entry of payload.data) {
+      expect(entry.uuid).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
+      );
+      expect(typeof entry.action).toBe("string");
+      expect(entry.changed_at).toBeTruthy();
+    }
   });
 
   test("cold load hydrates cleanly — no effect_orphan (vite deps must stay consistent)", async ({
@@ -522,7 +600,7 @@ test.describe("/system/job/* pages (module-owned)", () => {
     // the cell carries the service NAME and a lazy ref (ref_entity=
     // service_registry, ref_key=code) — the same canonical cell anatomy
     // every audited entity now gets for free.
-    await page.getByRole("button", { name: "Columns" }).click();
+    await page.getByRole("button", { name: "Columns" }).first().click();
     const toggle = page.getByTestId("columns-toggle-created_by");
     await expect(toggle).toBeVisible({ timeout: 15000 });
     await toggle.click();
@@ -552,7 +630,7 @@ test.describe("/system/job/* pages (module-owned)", () => {
     // `service_code` is physically retired — the subject carries the
     // namespace (`jobs.schedule.<owner>.*`). No header, no picker entry.
     await expect(page.locator("th", { hasText: /^service$/i })).toHaveCount(0);
-    await page.getByRole("button", { name: "Columns" }).click();
+    await page.getByRole("button", { name: "Columns" }).first().click();
     await expect(page.getByTestId("columns-toggle-service_code")).toHaveCount(0);
     await expect(page.getByTestId("columns-toggle-trigger_uuid")).toBeVisible({ timeout: 15000 });
     await page.keyboard.press("Escape");

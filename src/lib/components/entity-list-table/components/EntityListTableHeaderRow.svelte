@@ -5,8 +5,7 @@
   import { ArrowDown } from '@primebrick/ui/vendor/lucide'
   import { Globe } from '@primebrick/ui/vendor/lucide'
   import { MapPin } from '@primebrick/ui/vendor/lucide'
-  import { PanelRightClose } from '@primebrick/ui/vendor/lucide'
-  import { PanelRightOpen } from '@primebrick/ui/vendor/lucide';
+  import { Columns3 } from '@primebrick/ui/vendor/lucide'
   import * as Table from '$lib/components/ui/table';
   import { Button } from '@primebrick/ui';
   import { DynamicIcon } from '@primebrick/ui';
@@ -16,7 +15,6 @@
   import type { MetaColumn } from '$lib/entity-list/types';
   import { isColumnSortable } from '$lib/entity-list/types';
   import type { useStickyColumns } from '../composables/useStickyColumns.svelte';
-  import type { usePreviewPanel } from '../composables/usePreviewPanel.svelte';
 
   let {
     rowSelectionEnabled,
@@ -36,8 +34,7 @@
     datetimeIanaModeByKey,
     toggleDatetimeIana,
     actionsEnabled,
-    previewPanel,
-    viewRows
+    onOpenColumnSelector
   }: EntityListTableHeaderRowProps = $props();
 
   type EntityListTableHeaderRowProps = {
@@ -58,8 +55,7 @@
     datetimeIanaModeByKey: Record<string, 'browser' | 'record'>;
     toggleDatetimeIana: (col: MetaColumn) => void;
     actionsEnabled: boolean;
-    previewPanel: ReturnType<typeof usePreviewPanel<TRow>>;
-    viewRows: TRow[];
+    onOpenColumnSelector: () => void;
   };
 </script>
 
@@ -190,24 +186,12 @@
           <Button
             variant="ghost"
             size="icon-sm"
-            onclick={() => {
-              if (!previewPanel.state.previewPanelOpen && !previewPanel.state.previewRow && viewRows.length > 0) {
-                previewPanel.openPreview(viewRows[0]);
-              } else if (previewPanel.state.previewPanelOpen) {
-                previewPanel.closePreview();
-              } else {
-                previewPanel.openPreview(viewRows[0]);
-              }
-            }}
-            aria-label={$t('system.entities.list.toggle_preview_panel')}
-            title={$t('system.entities.list.toggle_preview_panel')}
-            class="transition-transform duration-300"
+            onclick={onOpenColumnSelector}
+            aria-label={$t('system.entities.list.columns')}
+            title={$t('system.entities.list.columns')}
+            data-testid="elt-column-selector"
           >
-            {#if previewPanel.state.previewPanelOpen}
-              <PanelRightClose class="size-4 transition-transform duration-300" />
-            {:else}
-              <PanelRightOpen class="size-4 transition-transform duration-300" />
-            {/if}
+            <Columns3 class="size-4" />
           </Button>
         </div>
       </Table.Head>

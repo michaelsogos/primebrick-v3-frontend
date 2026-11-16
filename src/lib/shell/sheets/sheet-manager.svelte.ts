@@ -22,6 +22,7 @@ export const SHEET_PANEL_IDS = [
   'entity.datetimeIana',
   'entity.versionHistory',
   'entity.jsonViewer',
+  'entity.mapperViewer',
   'entity.record',
   'service.record',
   'config.currencySelect',
@@ -106,6 +107,14 @@ export type SheetPanelPropsMap = {
   'entity.jsonViewer': {
     /** The cell's parsed JSON value (null-prototype safe — read-only). */
     value: unknown;
+  };
+  'entity.mapperViewer': {
+    /** The cell's DST mapper document (parsed object or raw JSON text). */
+    value: unknown;
+    /** The owning wire row — `target_subject` resolves the callable schema. */
+    row?: Record<string, unknown>;
+    /** Resolved sheet title — the cell passes the column's label. */
+    title?: string;
   };
   'entity.record': {
     /** Target entity API name (from `column.ref.entity`). */

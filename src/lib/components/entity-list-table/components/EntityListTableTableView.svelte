@@ -2,13 +2,11 @@
   import { Root as TableRoot } from '$lib/components/ui/table';
   import { cn } from '$lib/utils';
   import TableBody from './TableBody.svelte';
-  import PreviewPanelWrapper from './PreviewPanelWrapper.svelte';
   import EntityListTableHeaderRow from './EntityListTableHeaderRow.svelte';
   import { stickyCellClassWithCompute } from '../utils/cell-styling';
   import type { Snippet } from 'svelte';
   import type { MetaColumn } from '$lib/entity-list/types';
   import type { CellArgs, EntityRowActions } from '../types';
-  import type { usePreviewPanel } from '../composables/usePreviewPanel.svelte';
   import type { useRowActions } from '../composables/useRowActions.svelte';
   import type { useStickyColumns } from '../composables/useStickyColumns.svelte';
   import type { useRowRangeSelection } from '../composables/useRowRangeSelection.svelte';
@@ -33,7 +31,8 @@
     datetimeIanaModeByKey,
     toggleDatetimeIana,
     actionsEnabled,
-    previewPanel,
+    focusedRowIndex,
+    onOpenColumnSelector,
     viewRows,
     error,
     errorView,
@@ -56,27 +55,13 @@
     entityRowActions,
     dropdownMenuRow,
     onEntityRowClick,
-    handlePreviewRow,
+    onRowDblClick,
     toggleRowSelect,
     openRowDropdown,
     closeRowDropdown,
     handleEditRow,
     rowActionsComposable,
-    uid,
-    pageSize,
-    page,
-    onPageChange,
-    entity,
-    entities_ns,
-    columns,
-    stickyColumns,
-    dataColumns,
-    auditingColumns,
-    selectedKeys,
-    footerRangeTotal,
-    footerPage,
-    previewDropdownOpen,
-    navigatePreview
+    selectedKeys
   }: EntityListTableTableViewProps = $props();
 
   type EntityListTableTableViewProps = {
@@ -99,7 +84,8 @@
     datetimeIanaModeByKey: Record<string, 'browser' | 'record'>;
     toggleDatetimeIana: (col: MetaColumn) => void;
     actionsEnabled: boolean;
-    previewPanel: ReturnType<typeof usePreviewPanel<TRow>>;
+    focusedRowIndex: number | null;
+    onOpenColumnSelector: () => void;
     viewRows: TRow[];
     error: string | null;
     errorView?: Snippet;
@@ -122,28 +108,13 @@
     entityRowActions?: EntityRowActions;
     dropdownMenuRow: TRow | null;
     onEntityRowClick: (key: string, e: MouseEvent) => void;
-    handlePreviewRow: (row: TRow) => void;
+    onRowDblClick: (row: TRow) => void;
     toggleRowSelect: (key: string) => void;
     openRowDropdown: (row: TRow) => void;
     closeRowDropdown: () => void;
     handleEditRow: (row: TRow) => void;
     rowActionsComposable: ReturnType<typeof useRowActions<TRow>>;
-    uid: string;
-    pageSize: number;
-    page: number;
-    onPageChange: (page: number) => void;
-    entity: string;
-    /** Entity-label i18n namespace (`meta.entities_ns`) — forwarded to PreviewPanelWrapper. */
-    entities_ns?: string;
-    columns: MetaColumn[];
-    stickyColumns: MetaColumn[] | undefined;
-    dataColumns: MetaColumn[] | undefined;
-    auditingColumns: MetaColumn[] | undefined;
     selectedKeys: string[];
-    footerRangeTotal: number;
-    footerPage: number;
-    previewDropdownOpen: boolean;
-    navigatePreview: (direction: number) => void;
   };
 
   /**
@@ -163,7 +134,7 @@
   let frameRect = $state<{ top: number; left: number; width: number; height: number } | null>(null);
 
   function measureFocusFrame() {
-    const idx = previewPanel.state.focusedRowIndex;
+    const idx = focusedRowIndex;
     if (idx === null || !tableRef) {
       frameRect = null;
       return;
@@ -183,7 +154,7 @@
   }
 
   $effect(() => {
-    previewPanel.state.focusedRowIndex;
+    focusedRowIndex;
     viewRows;
     shownColumns;
     measureFocusFrame();
@@ -202,7 +173,7 @@
   });
 </script>
 
-<div class="flex h-full overflow-hidden" role="region" aria-label="Table and preview panel">
+<div class="flex h-full overflow-hidden" role="region" aria-label="Table">
   <div class="flex-1 min-w-0 overflow-hidden">
     {#snippet tableChildren()}
       <EntityListTableHeaderRow
@@ -223,8 +194,7 @@
         datetimeIanaModeByKey={datetimeIanaModeByKey}
         toggleDatetimeIana={toggleDatetimeIana}
         actionsEnabled={actionsEnabled}
-        previewPanel={previewPanel}
-        viewRows={viewRows}
+        onOpenColumnSelector={onOpenColumnSelector}
       />
       <TableBody
         error={error}
@@ -258,9 +228,9 @@
         rowActions={rowActions}
         entityRowActions={entityRowActions}
         dropdownMenuRow={dropdownMenuRow}
-        focusedRowIndex={previewPanel.state.focusedRowIndex}
+        focusedRowIndex={focusedRowIndex}
         onEntityRowClick={onEntityRowClick}
-        onPreviewRow={handlePreviewRow}
+        onRowDblClick={onRowDblClick}
         onToggleRowSelect={toggleRowSelect}
         onOpenRowDropdown={openRowDropdown}
         onCloseRowDropdown={closeRowDropdown}
@@ -293,35 +263,4 @@
       bind:ref={tableRef}
     />
   </div>
-
-  <PreviewPanelWrapper
-    {previewPanel}
-    {rows}
-    {viewRows}
-    {uid}
-    {pageSize}
-    {page}
-    {onPageChange}
-    {entity}
-    entities_ns={entities_ns}
-    {columns}
-    {stickyColumns}
-    {dataColumns}
-    {auditingColumns}
-    {entityRowActions}
-    {datetimeIanaModeByKey}
-    {isRowDeleted}
-    {rowKey}
-    footerRangeTotal={footerRangeTotal}
-    footerPage={footerPage}
-    {previewDropdownOpen}
-    navigatePreview={navigatePreview}
-    onEditRow={handleEditRow}
-    onDuplicateRow={(row: TRow) => rowActionsComposable.handleDuplicateRow(row)}
-    onDeleteRow={(row: TRow) => rowActionsComposable.handleDeleteRow(row)}
-    onRestoreRow={(row: TRow) => rowActionsComposable.handleRestoreRow(row)}
-    onPreviewDropdownOpenChange={(open: boolean) => previewDropdownOpen = open}
-    {rowsLoading}
-    {cell}
-  />
 </div>
