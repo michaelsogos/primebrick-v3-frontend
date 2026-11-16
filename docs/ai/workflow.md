@@ -51,6 +51,31 @@ ANY turn and for ANY judgment call, the resolution order is fixed:
 4. **MANDATORY BLOCKER**: Once the file is saved, output this exact message in the chat: *"Planning complete. I have created the plan file inside your ai-plans folder. Awaiting approval."* 
 5. **HALT EXECUTION**: Stop immediately. **DO NOT** execute any coding, terminal commands, or subagents until the user explicitly sends the keyword: **"PROCEED"**.
 
+## TIC is empirical — every gap surfaced in the plan, nothing deferred to TOC
+
+The purpose of the Analysis Phase is to discover **every** gap the task
+touches — empirically, not by assumption. If a question can be answered
+by running code, querying a database, reading a file, or executing an
+E2E probe, it MUST be answered inside TIC and the evidence recorded in
+the plan file. "We will find out during execution" is a protocol
+violation: an analysis deferred to TOC is a gap that ships unverified.
+
+- **Censuses belong to TIC** — inventories of call sites, violations,
+  consumers, affected tables/routes are produced during analysis and
+  land verbatim in the plan file (counts + file:line evidence), never
+  as a TODO for the executor.
+- **Pseudo-code and snippets belong to TIC** — the intended change is
+  sketched in the plan precisely enough that TOC is transcription, not
+  design.
+- **Empirical probes belong to TIC** — and per "Tests are deliverables",
+  a probe written to answer an analysis question is written as the final
+  spec from the start, in its canonical location, never as a throwaway
+  script. The E2E that proves a gap exists stays as the regression test.
+- **TOC contains zero discovery work** — no censuses left "to be done",
+  no "figure out how X works", no "decide based on what we find". Open
+  questions at plan time are resolved via the doubt protocol
+  (docs -> user), never parked inside the plan.
+
 ## Tests are deliverables — final specs from the first write
 
 Every behavioral verification written during a task MUST land as a
