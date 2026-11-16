@@ -24,7 +24,7 @@
   import { JsonCodeBlock } from '@primebrick/ui';
   import type { MetaColumn } from '$lib/entity-list/types';
   import { tryParseJsonObject } from '$lib/utils/json-object';
-  import { auditActionKey, changedBySheetTarget } from './version-history-title';
+  import { auditActionKey, changedBySheetTarget } from '../version-history-title';
 
   interface Props {
     entity: string;
