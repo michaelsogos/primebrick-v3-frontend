@@ -648,6 +648,42 @@ test.describe("/system/job/* pages (module-owned)", () => {
     await expect(cell).not.toContainText(/Process Manager|AI Assistants Manager|system:/);
   });
 
+  test("system:api actor — the BE's own registry row resolves to API Gateway", async ({ page }) => {
+    // The BE writes `system:api` (e.g. api-partition-maintenance). Its
+    // self-enrolled service_registry row (code='api', label_key
+    // system.api.title) must resolve name + drill like any service.
+    await page.goto("/system/job/triggers", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
+    const langNow = await page.evaluate(() => sessionStorage.getItem("pb.lang"));
+    if (langNow !== "it-IT") {
+      await page.evaluate(() => sessionStorage.setItem("pb.lang", "it-IT"));
+      await page.reload({ waitUntil: "domcontentloaded" });
+      await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
+    }
+
+    await page.getByRole("button", { name: /Columns|Colonne/ }).first().click();
+    const toggle = page.getByTestId("columns-toggle-created_by");
+    await expect(toggle).toBeVisible({ timeout: 15000 });
+    await toggle.click();
+    await page.keyboard.press("Escape");
+
+    // The api-owned system trigger — its created_by is `system:api`.
+    const row = page.locator("tr", { hasText: "api-partition-maintenance" }).first();
+    await expect(row).toBeVisible({ timeout: 15000 });
+    const cell = row.getByTestId("ref-cell-created_by-text");
+    await expect(cell).toBeVisible({ timeout: 15000 });
+    await expect(cell).toContainText("API Gateway");
+    await expect(cell).not.toContainText("system:api");
+
+    // Drill opens the service.record panel for code='api' — resolvable.
+    await cell.click();
+    const panel = page.getByTestId("service-record-panel");
+    await expect(panel).toBeVisible({ timeout: 15000 });
+    await expect(page.getByTestId("service-record-info")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(panel).toHaveCount(0, { timeout: 10000 });
+  });
+
   test("trigger ELT column order — Statistiche precedes Ultima esecuzione", async ({ page }) => {
     // `run_stats` (order 80) must sit before `last_run` (82) in the served
     // column order — the sparkline summary precedes the timestamps.
@@ -668,6 +704,13 @@ test.describe("/system/job/* pages (module-owned)", () => {
     expect(statsIdx, `headers: ${headerKeys.join(" | ")}`).toBeGreaterThanOrEqual(0);
     expect(lastIdx, `headers: ${headerKeys.join(" | ")}`).toBeGreaterThanOrEqual(0);
     expect(statsIdx).toBeLessThan(lastIdx);
+
+    // `system_key` is an internal reconcile anchor — `hidden: true`
+    // suppresses it from the served meta entirely: no table column AND
+    // no column-picker toggle.
+    await page.getByTestId("elt-column-selector").click();
+    await expect(page.getByTestId("columns-toggle-system_key")).toHaveCount(0);
+    await page.keyboard.press("Escape");
   });
 
   test("job_name/armed_by share the owning trigger's identity — even past its deletion", async ({
