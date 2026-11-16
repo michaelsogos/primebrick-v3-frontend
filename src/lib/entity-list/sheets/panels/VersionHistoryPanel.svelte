@@ -5,6 +5,7 @@
   import { extJsonParse } from "$lib/api-ext";
   import { t, formatUiDateTime, formatUiDate } from "$lib/i18n";
   import { uiLang } from "$lib/i18n/store.svelte";
+  import { loadModuleTranslations } from "$lib/i18n/use-module-translations.svelte";
   import { SheetPanelLayout, toDisplayString } from '@primebrick/ui';
   import { History } from '@primebrick/ui/vendor/lucide';
   import { Hourglass } from '@primebrick/ui/vendor/lucide'
@@ -222,13 +223,35 @@
     return Info;
   }
 
+  /** `system:<code>` writers — the census `label_key` through i18n wins
+   *  over the registry `name` wire value (English-only; same contract as
+   *  the ELT ref cell and VersionsPanel). The owning dict is route-loaded
+   *  so a foreign-module page never fetched it — preload best-effort
+   *  (per module+lang, deduped); unresolved codes keep the served name. */
+  $effect(() => {
+    for (const e of versionHistoryData) {
+      const actor = e.changed_by ?? '';
+      if (!actor.startsWith('system:')) continue;
+      const code = actor.slice('system:'.length);
+      const m = shellNav.modules.find((x) => x.id === code);
+      if (m) void loadModuleTranslations(m.translations_module ?? m.id, $uiLang, { bestEffort: true });
+    }
+  });
+
   function getChangedByDisplay(entry: VersionHistoryEntry): string {
+    const actor = entry.changed_by ?? '';
+    if (actor.startsWith('system:')) {
+      const mod = shellNav.modules.find((m) => m.id === actor.slice('system:'.length));
+      const lk = mod?.label_key;
+      const translated = lk ? $t(lk) : '';
+      if (translated && translated !== lk) return translated;
+    }
     // If display_name is available from the join, use it
     if (entry.changed_by_name) {
       return entry.changed_by_name;
     }
     // Last resort: fallback to UUID
-    return entry.changed_by || '';
+    return actor;
   }
 
   /** Translated action label — `auditActionKey` owns the key contract

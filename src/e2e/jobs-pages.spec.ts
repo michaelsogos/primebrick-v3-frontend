@@ -621,6 +621,55 @@ test.describe("/system/job/* pages (module-owned)", () => {
     await expect(panel).toHaveCount(0, { timeout: 10000 });
   });
 
+  test("created_by service actor renders in the active UI language", async ({ page }) => {
+    // `system:<code>` actors resolve through service_registry — the cell
+    // must show the census label_key translated in the ACTIVE language,
+    // not the English registry wire name. Pin it-IT like every i18n spec.
+    await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
+    const langNow = await page.evaluate(() => sessionStorage.getItem("pb.lang"));
+    if (langNow !== "it-IT") {
+      await page.evaluate(() => sessionStorage.setItem("pb.lang", "it-IT"));
+      await page.reload({ waitUntil: "domcontentloaded" });
+      await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
+    }
+
+    await page.getByRole("button", { name: /Columns|Colonne/ }).first().click();
+    const toggle = page.getByTestId("columns-toggle-created_by");
+    await expect(toggle).toBeVisible({ timeout: 15000 });
+    await toggle.click();
+    await page.keyboard.press("Escape");
+
+    const cell = page.getByTestId("ref-cell-created_by-text").first();
+    await expect(cell).toBeVisible({ timeout: 15000 });
+    // `system:job`/`system:ai` writers — localized module display name,
+    // never the English registry `name` nor the raw `system:<code>` token.
+    await expect(cell).toContainText(/Gestore dei Processi|Gestore degli Assistenti AI/);
+    await expect(cell).not.toContainText(/Process Manager|AI Assistants Manager|system:/);
+  });
+
+  test("trigger ELT column order — Statistiche precedes Ultima esecuzione", async ({ page }) => {
+    // `run_stats` (order 80) must sit before `last_run` (82) in the served
+    // column order — the sparkline summary precedes the timestamps.
+    await page.goto("/system/job/triggers", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
+    const langNow = await page.evaluate(() => sessionStorage.getItem("pb.lang"));
+    if (langNow !== "it-IT") {
+      await page.evaluate(() => sessionStorage.setItem("pb.lang", "it-IT"));
+      await page.reload({ waitUntil: "domcontentloaded" });
+      await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
+    }
+
+    const headerKeys = await page.locator("thead th").evaluateAll((ths) =>
+      ths.map((th) => th.textContent?.trim() ?? ""),
+    );
+    const statsIdx = headerKeys.findIndex((h) => /Statistiche|Statistics/i.test(h));
+    const lastIdx = headerKeys.findIndex((h) => /Ultima esecuzione|Last (run|execution)/i.test(h));
+    expect(statsIdx, `headers: ${headerKeys.join(" | ")}`).toBeGreaterThanOrEqual(0);
+    expect(lastIdx, `headers: ${headerKeys.join(" | ")}`).toBeGreaterThanOrEqual(0);
+    expect(statsIdx).toBeLessThan(lastIdx);
+  });
+
   test("job_name/armed_by share the owning trigger's identity — even past its deletion", async ({
     page,
   }) => {
