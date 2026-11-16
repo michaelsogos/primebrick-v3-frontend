@@ -14,13 +14,17 @@
   let {
     meta,
     value,
+    entity,
   }: {
     /** Served entity meta — null when meta itself failed to load; the
-     *  label degrades to the raw entity name. */
+     *  label degrades to `entity` then to a bare `ID`. */
     meta: EntityMeta | null;
     /** The uid to display — record uid, resolved ref uuid, or the raw
      *  stored value for pseudo-actor refs. */
     value: unknown;
+    /** Entity API-name fallback for the label when meta never loaded
+     *  (e.g. the owning service is unreachable). */
+    entity?: string;
   } = $props();
 
   /** Translated entity singular — the `<ns>.entities.<tk>.singular`
@@ -28,9 +32,9 @@
    *  the label readable when a dict entry is missing. */
   const entitySingular = $derived.by(() => {
     const ns = meta?.entities_ns ?? 'system';
-    const tk = meta?.translation_key ?? meta?.entity ?? '';
+    const tk = meta?.translation_key ?? meta?.entity ?? entity ?? '';
     const resolved = $t(`${ns}.entities.${tk}.singular`);
-    return resolved && !resolved.includes('.singular') ? resolved : (meta?.entity ?? '');
+    return resolved && !resolved.includes('.singular') ? resolved : (meta?.entity ?? entity ?? '');
   });
 
   let uidCopied = $state(false);

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { SvelteSet } from 'svelte/reactivity';
-  import { apiFetch, entityApiBase } from "$lib/api";
+  import { apiFetch, entityApiBase, ApiUnreachableError } from "$lib/api";
+  import { shellNav } from "$lib/shell/modules-shell.svelte";
   import { extJsonParse } from "$lib/api-ext";
   import { t, formatUiDateTime, formatUiDate } from "$lib/i18n";
   import { uiLang } from "$lib/i18n/store.svelte";
@@ -68,6 +69,34 @@
   // $derived: keep reactive link to props (avoids state_referenced_locally).
   const i18nEntity = $derived(translationKey ?? entity);
 
+  /** The entity's owning service display name — census `entities`
+   *  declaration; `undefined` when the owner isn't censused (the hero
+   *  falls back to the generic message). */
+  const ownerServiceName = $derived.by(() => {
+    const mod = shellNav.modules.find((m) => m.entities?.includes(entity));
+    if (!mod) return undefined;
+    if (mod.label_key) {
+      const resolved = $t(mod.label_key);
+      if (resolved && resolved !== mod.label_key) return resolved;
+    }
+    return mod.name || undefined;
+  });
+  /** Translated entity singular — same `<ns>.entities.<tk>.singular`
+   *  contract the record surface uses; raw key fallback keeps the
+   *  message readable when a dict entry is missing. */
+  const entitySingular = $derived.by(() => {
+    const resolved = $t(`${entities_ns}.entities.${i18nEntity}.singular`);
+    return resolved && !resolved.includes('.singular') ? resolved : i18nEntity;
+  });
+  /** The audit fetch failed because the OWNING SERVICE can't be reached
+   *  (proxy 502/503-scoped or network failure) — the watermark names the
+   *  service instead of the generic error. */
+  const ownerUnreachableMessage = $derived.by(() =>
+    ownerServiceName
+      ? $t('app.service.entity_owner_unreachable', { service: ownerServiceName, entity: entitySingular })
+      : $t('app.service.entity_owner_unreachable_generic'),
+  );
+
   let versionHistoryData = $state<VersionHistoryEntry[]>([]);
   let versionHistoryLoading = $state<boolean>(false);
   let versionHistoryError = $state<string | null>(null);
@@ -102,7 +131,10 @@
       versionHistoryData = data.data || [];
       versionHistoryHasMore = data.pagination?.hasMore || false;
     } catch (e) {
-      versionHistoryError = $t('system.entities.version_history.error');
+      versionHistoryError =
+        e instanceof ApiUnreachableError
+          ? ownerUnreachableMessage
+          : $t('system.entities.version_history.error');
       console.error('Failed to load version history:', e);
     } finally {
       versionHistoryLoading = false;
@@ -126,7 +158,10 @@
       versionHistoryData = [...versionHistoryData, ...(data.data || [])];
       versionHistoryHasMore = data.pagination?.hasMore || false;
     } catch (e) {
-      versionHistoryError = $t('system.entities.version_history.error');
+      versionHistoryError =
+        e instanceof ApiUnreachableError
+          ? ownerUnreachableMessage
+          : $t('system.entities.version_history.error');
       console.error('Failed to load version history:', e);
     } finally {
       versionHistoryLoading = false;
@@ -434,7 +469,7 @@
         </div>
       </div>
     {:else if versionHistoryError}
-      <div class="grid h-full place-items-center p-3">
+      <div class="grid h-full place-items-center p-3" data-testid="version-history-error">
         <div class="relative flex flex-col items-center gap-2 text-center">
           <div class="pb-watermark-error">
             <CircleX class="size-20 text-destructive" />
