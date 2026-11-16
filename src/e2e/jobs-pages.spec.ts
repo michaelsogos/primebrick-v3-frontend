@@ -334,6 +334,54 @@ test.describe("/system/job/* pages (module-owned)", () => {
     expect(result.body).not.toContain("does not exist");
   });
 
+  test("job_trigger audit endpoint returns uuid-keyed entries — the version-history contract", async ({
+    page,
+  }) => {
+    await page.goto("/system/job/triggers", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
+
+    // Contract: entities-route.ts declares job_trigger `auditable: true` —
+    // the version-history panel fetches GET /:uuid/audit and keys entries
+    // by audit-row `uuid` (never the retired numeric `id`). Regression
+    // locked here: a wedged service made this fetch hang "stale pending";
+    // a completing 200 with uuid-keyed rows is the positive contract.
+    // Audit rows exist only on triggers that were written after insert —
+    // scan the list for the first trigger carrying history.
+    const result = await page.evaluate(async () => {
+      const list = await fetch(
+        "/svc/job/api/v1/entities/job_trigger/list?page=1&page_size=25",
+      )
+        .then((r) => r.json())
+        .catch(() => null);
+      const rows = (list?.rows ?? []) as { uuid?: string }[];
+      for (const row of rows) {
+        if (!row?.uuid) continue;
+        const res = await fetch(
+          `/svc/job/api/v1/entities/job_trigger/${row.uuid}/audit?page=1&limit=20`,
+        );
+        if (res.status !== 200) return { status: res.status, body: await res.text() };
+        const body = await res.text();
+        if ((JSON.parse(body).data ?? []).length > 0)
+          return { status: res.status, body };
+      }
+      return { status: -1, body: "no job_trigger row with audit history" };
+    });
+    expect(result.status).toBe(200);
+    const payload = JSON.parse(result.body) as {
+      data: { uuid: string; action: string; changed_at: string }[];
+      pagination: { hasMore: boolean };
+    };
+    expect(Array.isArray(payload.data)).toBe(true);
+    expect(payload.data.length).toBeGreaterThan(0);
+    for (const entry of payload.data) {
+      expect(entry.uuid).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
+      );
+      expect(typeof entry.action).toBe("string");
+      expect(entry.changed_at).toBeTruthy();
+    }
+  });
+
   test("cold load hydrates cleanly — no effect_orphan (vite deps must stay consistent)", async ({
     page,
   }) => {
