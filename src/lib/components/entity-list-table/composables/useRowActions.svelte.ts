@@ -171,7 +171,7 @@ export function useRowActions<TRow extends Record<string, unknown>>(
       } else {
         pushNotification({
           impact: 'MEDIUM',
-          messageKey: 'system.entities.list.deleteFailed',
+          messageKey: 'app.common.delete_failed',
           scope: tFn('app.common.errors.scope.deleteApi'),
           detail: error instanceof Error ? error.message : String(error),
           toast: true,
@@ -213,7 +213,7 @@ export function useRowActions<TRow extends Record<string, unknown>>(
       } else {
         pushNotification({
           impact: 'MEDIUM',
-          messageKey: 'system.entities.list.restoreFailed',
+          messageKey: 'app.common.restore_failed',
           scope: tFn('app.common.errors.scope.restoreApi'),
           detail: error instanceof Error ? error.message : String(error),
           toast: true,
