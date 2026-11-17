@@ -355,6 +355,153 @@ test.describe("/system/job/* pages (module-owned)", () => {
     await popup.close();
   });
 
+  test("/system/job/runs meta contract — service_code dropped, trigger projected, subject anatomy", async ({
+    page,
+  }) => {
+    await page.goto("/system/job/runs", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
+
+    // Served-meta contract — the physical drop + calculated projections.
+    const meta = await page.evaluate(async () => {
+      const res = await fetch("/svc/job/api/v1/entities/job_run/meta");
+      return res.json();
+    });
+    const cols = (meta.columns ?? []) as {
+      key: string;
+      type?: string;
+      format?: string;
+      kind?: string;
+      icon?: string;
+      default_visible?: boolean;
+      filterable?: boolean;
+      ref?: { entity?: string; key_field?: string };
+      badge?: { values?: Record<string, { color?: string }> };
+    }[];
+    const keys = cols.map((c) => c.key);
+    expect(keys).not.toContain("service_code"); // physical DROP — gone everywhere
+    expect(keys).not.toContain("trigger_uuid"); // hidden:true → row payload only
+    const byKey = (k: string) => cols.find((c) => c.key === k);
+
+    // Friendly lineage: calculated ref drilling job_trigger by uuid.
+    expect(byKey("trigger")).toMatchObject({
+      type: "ref",
+      kind: "calculated",
+      default_visible: true,
+      ref: { entity: "job_trigger", key_field: "trigger_uuid" },
+    });
+    // Source queue — same nats_subject anatomy as every sibling subject field.
+    expect(byKey("schedule_subject")).toMatchObject({
+      type: "text",
+      format: "nats_subject",
+      icon: "zap",
+      default_visible: false,
+    });
+    expect(byKey("run_as")?.default_visible).toBe(true);
+    for (const k of ["fire_seq", "report"] as const) {
+      expect(byKey(k)).toMatchObject({ default_visible: false, filterable: false });
+    }
+    // Status badge recolor (A.2): dispatched info, skipped gray, lost amber.
+    const statusValues = byKey("status")?.badge?.values ?? {};
+    expect(statusValues.dispatched?.color).toBe("info");
+    expect(statusValues.skipped?.color).toBe("gray");
+    expect(statusValues.lost?.color).toBe("amber");
+    expect(statusValues.succeeded?.color).toBe("green");
+    expect(statusValues.failed?.color).toBe("red");
+
+    expect(meta.table?.default_sort).toEqual({ key: "created_at", dir: "desc" });
+    const preset = (meta.table?.filter_presets ?? []).find(
+      (p: { id: string }) => p.id === "outcome",
+    );
+    expect(preset).toMatchObject({ display: "button_group", default_option: "all" });
+
+    // Rendered contract — fresh context: trigger + run_as headers visible,
+    // the technical source queue hidden in the picker.
+    const headers = await page.locator("table thead th").allTextContents();
+    const has = (re: RegExp) => headers.some((h) => re.test(h));
+    expect(has(/trigger|attivatore|auslöser|déclencheur|disparador|acionador/i)).toBe(true);
+    expect(has(/queue|coda|warteschlange|file|cola|fila/i)).toBe(false);
+  });
+
+  test("/system/job/runs outcome preset ANDs status= into the wire request", async ({
+    page,
+  }) => {
+    const listUrls: string[] = [];
+    page.on("request", (req) => {
+      if (req.url().includes("/entities/job_run/list"))
+        listUrls.push(decodeURIComponent(req.url()));
+    });
+
+    await page.goto("/system/job/runs", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
+
+    // Icon-only group per the toolbar contract — options carry tooltips.
+    const preset = page
+      .locator("[data-slot='button-group']")
+      .filter({ has: page.locator("button svg.lucide-ghost") })
+      .first();
+    await expect(preset).toBeVisible({ timeout: 15000 });
+    const failedBtn = preset.locator("button[aria-pressed]", {
+      has: page.locator("svg.lucide-x"),
+    }).first();
+    const allBtn = preset.locator("button[aria-pressed]", {
+      has: page.locator("svg.lucide-list-clock"),
+    }).first();
+
+    const mark = listUrls.length;
+    await expect(async () => {
+      await failedBtn.click();
+      await expect(failedBtn).toHaveAttribute("aria-pressed", "true", { timeout: 2000 });
+    }).toPass({ timeout: 15000 });
+    await expect(async () => {
+      expect(
+        listUrls
+          .slice(mark)
+          .some((u) => u.includes("filters[0][field]=status") && u.includes("filters[0][value]=failed")),
+      ).toBe(true);
+    }).toPass({ timeout: 10000 });
+
+    // `all` applies no status scope — like schedule_kind's escape option.
+    const allMark = listUrls.length;
+    await expect(async () => {
+      await allBtn.click();
+      await expect(allBtn).toHaveAttribute("aria-pressed", "true", { timeout: 2000 });
+    }).toPass({ timeout: 15000 });
+    await expect(async () => {
+      expect(listUrls.slice(allMark).some((u) => !u.includes("field]=status"))).toBe(true);
+    }).toPass({ timeout: 10000 });
+  });
+
+  test("/system/job/runs visibleKeys v2 — legacy array migrates, intent persists", async ({
+    page,
+  }) => {
+    const VK = "pb:jobs:runs:visibleKeys";
+    // Seed a legacy v1 resolved array — a narrow column set from an older
+    // meta. Render must match it verbatim (no new columns leaked in).
+    await page.addInitScript(([key]) => {
+      sessionStorage.setItem(key, JSON.stringify(["uuid", "job_name", "status"]));
+    }, [VK]);
+    await page.goto("/system/job/runs", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 30000 });
+
+    const headers = await page.locator("table thead th").allTextContents();
+    const has = (re: RegExp) => headers.some((h) => re.test(h));
+    // The stored set renders verbatim — status visible, run_as/trigger NOT.
+    expect(has(/status|stato|état|estado/i)).toBe(true);
+    expect(has(/trigger|attivatore|auslöser|déclencheur|disparador|acionador/i)).toBe(false);
+
+    // First persist rewrites the payload into the v2 intent shape —
+    // never a bare array again.
+    await expect(async () => {
+      const raw = await page.evaluate((k) => sessionStorage.getItem(k), VK);
+      const parsed = JSON.parse(raw ?? "null") as { v?: number; shown?: unknown; hidden?: unknown } | null;
+      expect(parsed?.v).toBe(2);
+      expect(Array.isArray(parsed?.shown)).toBe(true);
+      expect(Array.isArray(parsed?.hidden)).toBe(true);
+      // The hidden list captures the served columns absent from the set.
+      expect((parsed?.hidden as string[]).length).toBeGreaterThan(0);
+    }).toPass({ timeout: 10000 });
+  });
+
   test("job_run has NO audit endpoint — the run row IS the audit trail", async ({
     page,
   }) => {

@@ -42,7 +42,9 @@ import { pushNotification } from '$lib/errors/app-errors';
 import type { AppErrorTag } from '$lib/errors/app-errors';
 import {
   defaultVisibleColumnKeys,
+  deriveVisibleKeyPrefs,
   orderedColumns,
+  resolveVisibleKeyPrefs,
   sanitizeVisibleKeys,
   searchableTextColumns,
   fetchEntityMeta,
@@ -58,7 +60,7 @@ import {
   resolvePresetConditions,
   serviceApiBase
 } from '$lib/entity-list';
-import type { EntityMeta, AdvancedFilter, DeletionFilterMode, ListResponse, FilterCondition } from '$lib/entity-list/types';
+import type { EntityMeta, AdvancedFilter, DeletionFilterMode, ListResponse, FilterCondition, VisibleKeyPrefs } from '$lib/entity-list/types';
 import { appendListFilterParams } from '$lib/entity-list/list-filter-params';
 import { sanitizeListState } from '$lib/entity-list/sanitize-list-state';
 import { parseUrlFilters } from '$lib/components/entity-list-table/composables/use-url-filters-sync.svelte';
@@ -228,6 +230,22 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
   let stateRestored = false;
   let sortRestored = false;
   let pageSizeRestored = false;
+  /** v2 visibility prefs awaiting column resolution — set on restore,
+   *  consumed by `ensureVisibleKeys` once meta lands. */
+  let pendingVisiblePrefs: Pick<VisibleKeyPrefs, 'shown' | 'hidden'> | null = null;
+
+  /** Storage-shape guard: v2 writes `{v:2, shown:[], hidden:[]}` — a
+   *  legacy v1 payload is a bare `string[]`. */
+  function isVisibleKeyPrefs(v: unknown): v is Pick<VisibleKeyPrefs, 'shown' | 'hidden'> {
+    if (!v || typeof v !== 'object' || Array.isArray(v)) return false;
+    const p = v as { shown?: unknown; hidden?: unknown };
+    return (
+      Array.isArray(p.shown) &&
+      Array.isArray(p.hidden) &&
+      p.shown.every((x) => typeof x === 'string') &&
+      p.hidden.every((x) => typeof x === 'string')
+    );
+  }
 
   function restorePersistentState() {
     if (stateRestored) return;
@@ -252,7 +270,12 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
       const vk = storageGet(skVisibleKeys);
       if (vk) {
         const parsed = JSON.parse(vk) as unknown;
-        if (Array.isArray(parsed) && parsed.every((x) => typeof x === 'string')) {
+        if (isVisibleKeyPrefs(parsed)) {
+          // v2 {shown,hidden} — intent stored, set resolved once columns land.
+          pendingVisiblePrefs = parsed;
+        } else if (Array.isArray(parsed) && parsed.every((x) => typeof x === 'string')) {
+          // Legacy v1 resolved array — applied verbatim (identical render),
+          // migrated to v2 shape on the next persist.
           _state.visibleKeys = parsed;
         }
       }
@@ -338,7 +361,7 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
 
   function persistState() {
     storageSet(skSort, JSON.stringify({ key: _state.sortKey, dir: _state.sortDir }));
-    storageSet(skVisibleKeys, JSON.stringify(_state.visibleKeys));
+    storageSet(skVisibleKeys, JSON.stringify(deriveVisibleKeyPrefs(_state.visibleKeys, columns)));
     storageSet(skSearchInKeys, JSON.stringify(_state.searchInKeys));
     storageSet(skFilterValues, JSON.stringify(_state.filterValues));
     storageSet(skAdvancedFilters, JSON.stringify(_state.advancedFilters));
@@ -377,11 +400,16 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
   let activeListController: AbortController | null = null;
 
   function ensureVisibleKeys() {
-    if (_state.visibleKeys.length === 0 && columns.length) {
+    if (!columns.length) return;
+    if (pendingVisiblePrefs) {
+      _state.visibleKeys = resolveVisibleKeyPrefs(pendingVisiblePrefs, columns);
+      pendingVisiblePrefs = null;
+      return;
+    }
+    if (_state.visibleKeys.length === 0) {
       _state.visibleKeys = defaultVisibleColumnKeys(columns);
       return;
     }
-    if (!columns.length) return;
     _state.visibleKeys = sanitizeVisibleKeys(_state.visibleKeys, columns);
   }
 

@@ -13,8 +13,6 @@
 import { test, expect } from '@playwright/test';
 import { loginAsTestAdmin } from './helpers/admin-login';
 
-const RUN_UUID = '04914617-7563-4c95-b7dc-778e3d87550f'; // partition-maintenance, succeeded
-
 /** Import the sheet-manager instance the app itself is using. */
 async function sheetManager(page: import('@playwright/test').Page) {
   const url = await page.evaluate(() => {
@@ -53,7 +51,15 @@ test('remote sheet job.runDetail mounts and loads its run', async ({ page }) => 
   // Let the app settle so every shell module URL is in the resource buffer.
   await page.waitForTimeout(2000);
 
-  await openRemoteSheet(page, 'job.runDetail', { run_uuid: RUN_UUID });
+  // Live fixture — any existing run works (the dev DB is reseeded over
+  // time; a hardcoded uuid rots with it).
+  const run = await page.request
+    .get('/svc/job/api/v1/entities/job_run/list?page=1&page_size=1')
+    .then((r) => r.json())
+    .then((b) => (b.rows?.[0] ?? null) as { uuid?: string; job_name?: string } | null);
+  expect(run?.uuid, 'at least one job_run row exists').toBeTruthy();
+
+  await openRemoteSheet(page, 'job.runDetail', { run_uuid: run!.uuid! });
 
   // Remote mount surface appears inside the host sheet.
   const mount = page.getByTestId('remote-sheet-mount');
@@ -61,11 +67,11 @@ test('remote sheet job.runDetail mounts and loads its run', async ({ page }) => 
   await expect(page.getByTestId('remote-sheet-content')).toBeVisible({ timeout: 15_000 });
 
   // Domain content arrived remote-side — the run's own fields rendered.
-  await expect(mount).toContainText('partition-maintenance', { timeout: 15_000 });
-  await expect(mount).toContainText(RUN_UUID);
+  await expect(mount).toContainText(run!.job_name!, { timeout: 15_000 });
+  await expect(mount).toContainText(run!.uuid!);
 
   // ws-bound fetch works — the remote called its owning service through ctx.api.
-  const res = await page.request.get(`/svc/job/api/v1/entities/job_run/${RUN_UUID}`);
+  const res = await page.request.get(`/svc/job/api/v1/entities/job_run/${run!.uuid!}`);
   expect(res.status()).toBe(200);
 
   // ctx.sheet.close() — the content drives the host-owned frame.
