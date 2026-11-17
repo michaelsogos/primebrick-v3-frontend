@@ -270,7 +270,7 @@ export function useBulkActions(options: BulkActionsOptions) {
         impact: 'NONE',
         messageKey: 'system.entities.version_history.record_restored',
         messageParams: { count: result?.affected ?? items.length },
-        scope: tFn('app.common.errors.scope.bulkRestoreApi'),
+        scope: tFn('app.common.errors.scope.bulk_restore_api'),
       });
 
       // Clear selection after successful restore
@@ -290,7 +290,7 @@ export function useBulkActions(options: BulkActionsOptions) {
         pushNotification({
           impact: 'MEDIUM',
           messageKey: 'system.entities.list.bulk_restore_failed',
-          scope: tFn('app.common.errors.scope.bulkRestoreApi'),
+          scope: tFn('app.common.errors.scope.bulk_restore_api'),
           detail: error instanceof Error ? error.message : String(error),
           toast: true,
         });
@@ -428,7 +428,7 @@ export function useBulkActions(options: BulkActionsOptions) {
       pushNotification({
         impact: 'LOW',
         messageKey: 'app.common.done',
-        scope: tFn('app.common.errors.scope.customActionApi'),
+        scope: tFn('app.common.errors.scope.custom_action_api'),
         toast: true
       });
     } catch (error) {

@@ -172,7 +172,7 @@ export function useRowActions<TRow extends Record<string, unknown>>(
         pushNotification({
           impact: 'MEDIUM',
           messageKey: 'app.common.delete_failed',
-          scope: tFn('app.common.errors.scope.deleteApi'),
+          scope: tFn('app.common.errors.scope.delete_api'),
           detail: error instanceof Error ? error.message : String(error),
           toast: true,
         });
@@ -214,7 +214,7 @@ export function useRowActions<TRow extends Record<string, unknown>>(
         pushNotification({
           impact: 'MEDIUM',
           messageKey: 'app.common.restore_failed',
-          scope: tFn('app.common.errors.scope.restoreApi'),
+          scope: tFn('app.common.errors.scope.restore_api'),
           detail: error instanceof Error ? error.message : String(error),
           toast: true,
         });
@@ -358,7 +358,7 @@ export function useRowActions<TRow extends Record<string, unknown>>(
     pushNotification({
       impact: 'LOW',
       messageKey: 'app.common.done',
-      scope: tFn('app.common.errors.scope.customActionApi'),
+      scope: tFn('app.common.errors.scope.custom_action_api'),
       toast: true
     });
     return true;
