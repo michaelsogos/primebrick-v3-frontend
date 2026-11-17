@@ -10,6 +10,7 @@
   import FormPageLayout from '$lib/components/FormPageLayout.svelte';
   import { pushNotification } from '$lib/errors/app-errors';
   import { updateService, fetchModuleConfig, updateModuleConfigKey } from '$lib/api';
+  import { loadTranslationsByKeys } from '$lib/i18n/use-module-translations.svelte';
   import type { ServiceInfo, ModuleConfigEntry, IconType } from '$lib/api-types';
 
 
@@ -44,6 +45,14 @@
     configError = null;
     try {
       configEntries = await fetchModuleConfig(service.code);
+      // Config label/description keys are module-owned ({schema}.settings.config.*)
+      // — fetch exactly the cited keys via the governed findTranslations read
+      // before the tab renders; on failure labels degrade to the raw key.
+      await loadTranslationsByKeys(
+        configEntries.flatMap((e) =>
+          [e.label_key, e.description_key].filter((k): k is string => !!k),
+        ),
+      );
       configLoaded = true;
     } catch (e) {
       configError = e instanceof Error ? e.message : 'Failed to load config';

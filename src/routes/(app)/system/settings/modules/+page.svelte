@@ -27,6 +27,7 @@
   import { fetchServices, toggleModule, deleteModule, deleteServiceInstance } from '$lib/api';
   import type { ServiceInfo } from '$lib/api-types';
   import { resolveModuleLabel } from '$lib/shell/module-label';
+  import { loadTranslationsByKeys } from '$lib/i18n/use-module-translations.svelte';
   import { DeleteDialog } from '@primebrick/ui';
   import { groupByCode, aggregateStatus } from '$lib/services-store.svelte';
   import { backendState } from '$lib/backend-availability';
@@ -72,6 +73,12 @@
     error = null;
     try {
       services = await fetchServices();
+      // Module labels are module-owned keys ({code}.module.name + platform
+      // system.*) — one governed findTranslations call enriches the dict;
+      // on failure labels degrade to the registry name fallback.
+      await loadTranslationsByKeys(
+        services.map((s) => s.label_key).filter((k): k is string => !!k),
+      );
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to load modules';
       pushNotification({
