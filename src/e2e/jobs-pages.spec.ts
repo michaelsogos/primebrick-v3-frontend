@@ -372,29 +372,53 @@ test.describe("/system/job/* pages (module-owned)", () => {
       format?: string;
       kind?: string;
       icon?: string;
+      color?: string;
       default_visible?: boolean;
       filterable?: boolean;
-      ref?: { entity?: string; key_field?: string };
-      badge?: { values?: Record<string, { color?: string }> };
+      ref?: { entity?: string; key_field?: string; filter_field?: string };
+      badge?: { values?: Record<string, { color?: string; label_key?: string }> };
+      null_label?: unknown;
     }[];
     const keys = cols.map((c) => c.key);
     expect(keys).not.toContain("service_code"); // physical DROP — gone everywhere
     expect(keys).not.toContain("trigger_uuid"); // hidden:true → row payload only
+    expect(keys).not.toContain("error_detail"); // hidden:true → sheet surface only
     const byKey = (k: string) => cols.find((c) => c.key === k);
 
-    // Friendly lineage: calculated ref drilling job_trigger by uuid.
+    // Friendly lineage: calculated ref drilling job_trigger by the stamped uuid.
     expect(byKey("trigger")).toMatchObject({
       type: "ref",
       kind: "calculated",
       default_visible: true,
       ref: { entity: "job_trigger", key_field: "trigger_uuid" },
     });
-    // Source queue — same nats_subject anatomy as every sibling subject field.
+    // Owning schedule — calculated ref, business-key drill on the subject.
+    expect(byKey("schedule")).toMatchObject({
+      type: "ref",
+      kind: "calculated",
+      default_visible: true,
+      ref: {
+        entity: "job_schedule",
+        key_field: "schedule_subject",
+        filter_field: "schedule_subject",
+      },
+    });
+    // Ordinary NULLs render "-" — no destructive null_label anywhere.
+    expect(byKey("trigger")?.null_label).toBeUndefined();
+    expect(byKey("schedule_subject")?.null_label).toBeUndefined();
+    // SOURCE + DESTINATION — the same nats_subject anatomy pair schedules carry.
     expect(byKey("schedule_subject")).toMatchObject({
       type: "text",
       format: "nats_subject",
       icon: "zap",
-      default_visible: false,
+      default_visible: true,
+    });
+    expect(byKey("target_subject")).toMatchObject({
+      type: "text",
+      format: "nats_subject",
+      icon: "send",
+      color: "sky-500",
+      default_visible: true,
     });
     expect(byKey("run_as")?.default_visible).toBe(true);
     for (const k of ["fire_seq", "report"] as const) {
@@ -407,6 +431,25 @@ test.describe("/system/job/* pages (module-owned)", () => {
     expect(statusValues.lost?.color).toBe("amber");
     expect(statusValues.succeeded?.color).toBe("green");
     expect(statusValues.failed?.color).toBe("red");
+    // error_code — closed badge enum, every item mapped to a translated label.
+    const errorValues = byKey("error_code")?.badge?.values ?? {};
+    expect(Object.keys(errorValues).sort()).toEqual(
+      [
+        "EXECUTION_ERROR",
+        "HANDLER_ERROR",
+        "VALIDATION_ERROR",
+        "DENIED",
+        "DISPATCH_ERROR",
+        "DISPATCH_TIMEOUT",
+        "AUTH_ACTOR_UNRESOLVABLE",
+        "SCHEDULE_PAUSED",
+        "SCHEDULE_DISARMED",
+      ].sort(),
+    );
+    for (const v of Object.values(errorValues)) {
+      expect(v.label_key).toMatch(/^job\.entities\.job_run\.status\./);
+      expect(v.color).toBeTruthy();
+    }
 
     expect(meta.table?.default_sort).toEqual({ key: "created_at", dir: "desc" });
     const preset = (meta.table?.filter_presets ?? []).find(
@@ -414,12 +457,13 @@ test.describe("/system/job/* pages (module-owned)", () => {
     );
     expect(preset).toMatchObject({ display: "button_group", default_option: "all" });
 
-    // Rendered contract — fresh context: trigger + run_as headers visible,
-    // the technical source queue hidden in the picker.
+    // Rendered contract — trigger + schedule refs and BOTH subject columns
+    // (source + destination) visible by default.
     const headers = await page.locator("table thead th").allTextContents();
     const has = (re: RegExp) => headers.some((h) => re.test(h));
     expect(has(/trigger|attivatore|auslöser|déclencheur|disparador|acionador/i)).toBe(true);
-    expect(has(/queue|coda|warteschlange|file|cola|fila/i)).toBe(false);
+    expect(has(/queue|coda|warteschlange|file|cola|fila/i)).toBe(true);
+    expect(has(/destination|destinazione|ziel|destino/i)).toBe(true);
   });
 
   test("/system/job/runs outcome preset ANDs status= into the wire request", async ({
@@ -469,6 +513,50 @@ test.describe("/system/job/* pages (module-owned)", () => {
     await expect(async () => {
       expect(listUrls.slice(allMark).some((u) => !u.includes("field]=status"))).toBe(true);
     }).toPass({ timeout: 10000 });
+  });
+
+  test("/system/job/runs error_code badge opens the run-detail remote sheet", async ({
+    page,
+  }) => {
+    // Fixture: at least one failed run with an error_code on this dev DB.
+    const failed = await page
+      .request
+      .get("/svc/job/api/v1/entities/job_run/list?filters[0][field]=status&filters[0][op]=%3D&filters[0][value]=failed&page_size=5")
+      .then((r) => r.json())
+      .then((b) => (b.rows ?? []) as { error_code?: string | null }[]);
+    test.skip(
+      !failed.some((r) => r.error_code),
+      "no failed run with error_code on this dataset",
+    );
+
+    await page.goto("/system/job/runs", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
+
+    // Scope to failed runs via the outcome preset — every row then carries
+    // an error_code badge (the cell wraps it in a button → runDetail).
+    const preset = page
+      .locator("[data-slot='button-group']")
+      .filter({ has: page.locator("button svg.lucide-ghost") })
+      .first();
+    const failedBtn = preset.locator("button[aria-pressed]", {
+      has: page.locator("svg.lucide-x"),
+    }).first();
+    await expect(async () => {
+      await failedBtn.click();
+      await expect(failedBtn).toHaveAttribute("aria-pressed", "true", { timeout: 2000 });
+    }).toPass({ timeout: 15000 });
+    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 15000 });
+
+    // Locate the error_code column by header, then click its cell button.
+    const headers = await page.locator("table thead th").allTextContents();
+    const errIdx = headers.findIndex((h) => /error|errore|erreur|fehler|erro/i.test(h));
+    expect(errIdx, "error_code column header present").toBeGreaterThanOrEqual(0);
+    const cell = page.locator("table tbody tr").first().locator("td").nth(errIdx);
+    await cell.locator("button").first().click();
+
+    // The module's remote sheet mounts with the run's own content.
+    await expect(page.getByTestId("remote-sheet-mount")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByTestId("remote-sheet-content")).toBeVisible({ timeout: 15000 });
   });
 
   test("/system/job/runs visibleKeys v2 — legacy array migrates, intent persists", async ({
