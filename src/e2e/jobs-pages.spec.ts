@@ -615,6 +615,49 @@ test.describe("/system/job/* pages (module-owned)", () => {
     expect(result.body).not.toContain("does not exist");
   });
 
+  test("job_run version badge → disabled watermark, ZERO /audit request", async ({
+    page,
+  }) => {
+    // Capability gate: job_run meta serves `read.audit` enabled:false —
+    // the version-history panel must render the disabled-feature
+    // watermark from the (cached) meta WITHOUT issuing a doomed GET on a
+    // route that does not exist. Any /audit request here is a regression.
+    const auditRequests: string[] = [];
+    page.on("request", (req) => {
+      // `/:uuid/audit` trail endpoint only — never source-module fetches
+      // like `auditable-fields.ts`.
+      if (/\/audit(\?|$)/.test(req.url())) auditRequests.push(req.url());
+    });
+
+    await page.goto("/system/job/runs", { waitUntil: "domcontentloaded" });
+    // Hydration gate — a sidebar link renders only post-onMount.
+    await expect(
+      page.locator("[data-sidebar='content'] a[href^='/system/']").first(),
+    ).toBeVisible({ timeout: 5000 });
+    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 5000 });
+
+    // `version` is a hidden-but-toggleable audit column — surface it,
+    // then click the v{n} badge cell: same entity.versionHistory payload
+    // the record-sheet footer badge and row action build.
+    await page.getByRole("button", { name: "Columns" }).first().click();
+    const toggle = page.getByTestId("columns-toggle-version");
+    await expect(toggle).toBeVisible({ timeout: 5000 });
+    await toggle.click();
+    await page.keyboard.press("Escape");
+
+    const versionCell = page
+      .locator("table tbody tr")
+      .first()
+      .locator("td button", { hasText: /^v\d+$/ })
+      .first();
+    await expect(versionCell).toBeVisible({ timeout: 5000 });
+    await versionCell.click();
+
+    const disabled = page.getByTestId("version-history-disabled");
+    await expect(disabled).toBeVisible({ timeout: 5000 });
+    expect(auditRequests, "no /audit request may be issued").toEqual([]);
+  });
+
   test("job_trigger audit endpoint returns uuid-keyed entries — the version-history contract", async ({
     page,
   }) => {

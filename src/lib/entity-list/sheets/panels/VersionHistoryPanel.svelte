@@ -6,8 +6,10 @@
   import { t, formatUiDateTime, formatUiDate } from "$lib/i18n";
   import { uiLang } from "$lib/i18n/store.svelte";
   import { loadModuleTranslations } from "$lib/i18n/use-module-translations.svelte";
-  import { SheetPanelLayout, toDisplayString } from '@primebrick/ui';
+  import { SheetPanelLayout, toDisplayString, isEntityOpEnabled } from '@primebrick/ui';
+  import { fetchEntityMeta } from '$lib/entity-list';
   import { History } from '@primebrick/ui/vendor/lucide';
+  import { Grid3x3Off } from '@primebrick/ui/vendor/lucide';
   import { Hourglass } from '@primebrick/ui/vendor/lucide'
   import { CircleX } from '@primebrick/ui/vendor/lucide'
   import { Info } from '@primebrick/ui/vendor/lucide'
@@ -99,6 +101,11 @@
   );
 
   let versionHistoryData = $state<VersionHistoryEntry[]>([]);
+  /** `read.audit` capability from served meta — `null` while resolving.
+   *  The meta cache is warm (the record sheet fetched it before opening
+   *  this panel), so resolution costs no request; on miss it is ONE
+   *  `GET /meta` on a real endpoint instead of a doomed `GET /audit`. */
+  let auditEnabled = $state<boolean | null>(null);
   let versionHistoryLoading = $state<boolean>(false);
   let versionHistoryError = $state<string | null>(null);
   let versionHistoryPage = $state<number>(1);
@@ -468,9 +475,21 @@
     return descriptions;
   }
 
-  // Load data on mount
+  // Capability gate before any network: `read.audit` enabled:false in the
+  // served actions means the entity exposes NO audit route — render the
+  // disabled watermark instead of issuing a doomed GET. Meta fetch failure
+  // falls through to `loadVersionHistory()` so the real error watermark
+  // (unreachable-service path included) still surfaces.
   $effect(() => {
-    loadVersionHistory();
+    fetchEntityMeta(entityApiBase(entity))
+      .then((meta) => {
+        auditEnabled = isEntityOpEnabled(meta.actions, 'read.audit');
+        if (auditEnabled) void loadVersionHistory();
+      })
+      .catch(() => {
+        auditEnabled = true;
+        void loadVersionHistory();
+      });
   });
 
 </script>
@@ -482,7 +501,16 @@
   {#snippet title()}
     {$t('system.entities.version_history.title')}
   {/snippet}
-    {#if versionHistoryLoading && versionHistoryData.length === 0}
+    {#if auditEnabled === false}
+      <div class="grid h-full place-items-center p-3" data-testid="version-history-disabled">
+        <div class="relative flex flex-col items-center gap-2 text-center">
+          <div class="pb-watermark-disabled">
+            <Grid3x3Off class="size-20 text-muted-foreground" />
+          </div>
+          <div class="text-sm font-medium text-muted-foreground">{$t('app.common.version_history_disabled')}</div>
+        </div>
+      </div>
+    {:else if auditEnabled === null || (versionHistoryLoading && versionHistoryData.length === 0)}
       <div class="grid h-full place-items-center p-3">
         <div class="relative flex flex-col items-center gap-2 text-center">
           <div class="pb-watermark-loading">
