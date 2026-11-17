@@ -75,6 +75,13 @@
    `actions_overrides`), and the same hue marks `CLONE` rows in the
    version-history trail. Never spend `violet` on unrelated actions and
    never recolor clone surfaces to another semantic.
+15. **Feature disabled / missing → `Grid3x3Off` + `pb-watermark-disabled`** —
+   the canonical watermark anatomy for a capability the entity's meta
+   declares off (e.g. `read.audit` `enabled:false` on entities with no
+   audit trail). Neutral muted glyph (`text-muted-foreground`), neutral
+   pulse animation — never `CircleX` (transport failure), `Hourglass`
+   (loading) or `TriangleAlert`/`Info` (empty data). First consumer:
+   `VersionHistoryPanel`.
 
 ## Deep dive
 
