@@ -386,40 +386,44 @@ test.describe("/system/job/* pages (module-owned)", () => {
     expect(keys).not.toContain("error_detail"); // hidden:true → sheet surface only
     const byKey = (k: string) => cols.find((c) => c.key === k);
 
-    // Friendly lineage: calculated ref drilling job_trigger by the stamped uuid.
+    // Friendly lineage: calculated ref drilling job_trigger by the stamped
+    // uuid — toggleable but off the default surface (lineage, not outcome).
     expect(byKey("trigger")).toMatchObject({
       type: "ref",
       kind: "calculated",
-      default_visible: true,
+      default_visible: false,
       ref: { entity: "job_trigger", key_field: "trigger_uuid" },
     });
     // Owning schedule — calculated ref, uuid drill like every sibling ref.
     expect(byKey("schedule")).toMatchObject({
       type: "ref",
       kind: "calculated",
-      default_visible: true,
+      default_visible: false,
       ref: { entity: "job_schedule", key_field: "schedule_uuid" },
     });
     // Ordinary NULLs render "-" — no destructive null_label anywhere.
     expect(byKey("trigger")?.null_label).toBeUndefined();
     expect(byKey("schedule_subject")?.null_label).toBeUndefined();
-    // SOURCE + DESTINATION — the same nats_subject anatomy pair schedules carry.
+    // SOURCE + DESTINATION — the same nats_subject anatomy pair schedules
+    // carry; toggleable but off the default surface like the refs.
     expect(byKey("schedule_subject")).toMatchObject({
       type: "text",
       format: "nats_subject",
       icon: "zap",
-      default_visible: true,
+      default_visible: false,
     });
     expect(byKey("target_subject")).toMatchObject({
       type: "text",
       format: "nats_subject",
       icon: "send",
       color: "sky-500",
-      default_visible: true,
+      default_visible: false,
     });
-    expect(byKey("run_as")?.default_visible).toBe(true);
+    expect(byKey("run_as")?.default_visible).toBe(false);
+    // Counters + outcome payload — the default-visible engine columns.
+    expect(byKey("redelivery_count")?.default_visible).toBe(true);
     for (const k of ["fire_seq", "report"] as const) {
-      expect(byKey(k)).toMatchObject({ default_visible: false, filterable: false });
+      expect(byKey(k)).toMatchObject({ default_visible: true, filterable: false });
     }
     // Status badge recolor (A.2): dispatched info, skipped gray, lost amber.
     const statusValues = byKey("status")?.badge?.values ?? {};
@@ -452,15 +456,28 @@ test.describe("/system/job/* pages (module-owned)", () => {
     const preset = (meta.table?.filter_presets ?? []).find(
       (p: { id: string }) => p.id === "outcome",
     );
-    expect(preset).toMatchObject({ display: "button_group", default_option: "all" });
+    // Monitor-first order: sent (default) → succeeded → failed aggregate → all.
+    expect(preset).toMatchObject({ display: "button_group", default_option: "sent" });
+    expect(
+      preset?.options.map((o: { id: string }) => o.id),
+    ).toEqual(["sent", "succeeded", "failed", "all"]);
+    expect(preset?.options.find((o: { id: string }) => o.id === "failed")).toMatchObject({
+      icon: "triangle-exclamation-point",
+      where: [{ field: "status", op: "IN", value: ["failed", "lost", "skipped"] }],
+    });
 
-    // Rendered contract — trigger + schedule refs and BOTH subject columns
-    // (source + destination) visible by default.
+    // Rendered contract — the default surface is the outcome-monitor nine:
+    // name, status, timing pair, duration, error, counters, report.
+    // Lineage columns (trigger/schedule/subjects/run_as) stay hidden until
+    // toggled on.
     const headers = await page.locator("table thead th").allTextContents();
     const has = (re: RegExp) => headers.some((h) => re.test(h));
-    expect(has(/trigger|attivatore|auslöser|déclencheur|disparador|acionador/i)).toBe(true);
-    expect(has(/queue|coda|warteschlange|file|cola|fila/i)).toBe(true);
-    expect(has(/destination|destinazione|ziel|destino/i)).toBe(true);
+    expect(has(/status|stato|état|estado/i)).toBe(true);
+    expect(has(/duration|durata|dauer|durée|duración/i)).toBe(true);
+    expect(has(/error|errore|erreur|fehler|erro/i)).toBe(true);
+    expect(has(/trigger|attivatore|auslöser|déclencheur|disparador|acionador/i)).toBe(false);
+    expect(has(/queue|coda|warteschlange|file|cola|fila/i)).toBe(false);
+    expect(has(/destination|destinazione|ziel|destino/i)).toBe(false);
   });
 
   test("/system/job/runs outcome preset ANDs status= into the wire request", async ({
@@ -478,27 +495,47 @@ test.describe("/system/job/* pages (module-owned)", () => {
     // Icon-only group per the toolbar contract — options carry tooltips.
     const preset = page
       .locator("[data-slot='button-group']")
-      .filter({ has: page.locator("button svg.lucide-ghost") })
+      .filter({ has: page.locator("button svg.lucide-triangle-exclamation-point") })
       .first();
     await expect(preset).toBeVisible({ timeout: 15000 });
+    const sentBtn = preset.locator("button[aria-pressed]", {
+      has: page.locator("svg.lucide-play"),
+    }).first();
     const failedBtn = preset.locator("button[aria-pressed]", {
-      has: page.locator("svg.lucide-x"),
+      has: page.locator("svg.lucide-triangle-exclamation-point"),
     }).first();
     const allBtn = preset.locator("button[aria-pressed]", {
       has: page.locator("svg.lucide-list-clock"),
     }).first();
 
+    // `sent` is the DEFAULT view — the first list call already carries the
+    // dispatched scope, no click needed.
+    await expect(async () => {
+      expect(
+        listUrls.some(
+          (u) => u.includes("filters[0][field]=status") && u.includes("filters[0][value]=dispatched"),
+        ),
+      ).toBe(true);
+    }).toPass({ timeout: 10000 });
+    await expect(async () => {
+      await expect(sentBtn).toHaveAttribute("aria-pressed", "true", { timeout: 2000 });
+    }).toPass({ timeout: 10000 });
+
+    // `failed` is the problem-bucket aggregate — IN (failed,lost,skipped).
     const mark = listUrls.length;
     await expect(async () => {
       await failedBtn.click();
       await expect(failedBtn).toHaveAttribute("aria-pressed", "true", { timeout: 2000 });
     }).toPass({ timeout: 15000 });
     await expect(async () => {
-      expect(
-        listUrls
-          .slice(mark)
-          .some((u) => u.includes("filters[0][field]=status") && u.includes("filters[0][value]=failed")),
-      ).toBe(true);
+      const failedCall = listUrls
+        .slice(mark)
+        .find((u) => u.includes("filters[0][field]=status"));
+      expect(failedCall).toBeTruthy();
+      expect(failedCall).toContain("filters[0][op]=IN");
+      for (const v of ["failed", "lost", "skipped"]) {
+        expect(failedCall).toContain(`filters[0][value][]=${v}`);
+      }
     }).toPass({ timeout: 10000 });
 
     // `all` applies no status scope — like schedule_kind's escape option.
@@ -533,10 +570,10 @@ test.describe("/system/job/* pages (module-owned)", () => {
     // an error_code badge (the cell wraps it in a button → runDetail).
     const preset = page
       .locator("[data-slot='button-group']")
-      .filter({ has: page.locator("button svg.lucide-ghost") })
+      .filter({ has: page.locator("button svg.lucide-triangle-exclamation-point") })
       .first();
     const failedBtn = preset.locator("button[aria-pressed]", {
-      has: page.locator("svg.lucide-x"),
+      has: page.locator("svg.lucide-triangle-exclamation-point"),
     }).first();
     await expect(async () => {
       await failedBtn.click();
@@ -634,6 +671,21 @@ test.describe("/system/job/* pages (module-owned)", () => {
     await expect(
       page.locator("[data-sidebar='content'] a[href^='/system/']").first(),
     ).toBeVisible({ timeout: 5000 });
+    await expect(page.locator("table")).toBeVisible({ timeout: 5000 });
+
+    // The default outcome preset is `sent` (dispatched) — a possibly-empty
+    // scope on this dataset. Switch to `all` so a run row exists to open.
+    const preset = page
+      .locator("[data-slot='button-group']")
+      .filter({ has: page.locator("button svg.lucide-list-clock") })
+      .first();
+    const allBtn = preset.locator("button[aria-pressed]", {
+      has: page.locator("svg.lucide-list-clock"),
+    }).first();
+    await expect(async () => {
+      await allBtn.click();
+      await expect(allBtn).toHaveAttribute("aria-pressed", "true", { timeout: 2000 });
+    }).toPass({ timeout: 10000 });
     await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 5000 });
 
     // `version` is a hidden-but-toggleable audit column — surface it,
