@@ -1025,7 +1025,7 @@ test.describe("/system/job/* pages (module-owned)", () => {
     await expect(cell).toBeVisible({ timeout: 15000 });
     // `system:job`/`system:ai` writers — localized module display name,
     // never the English registry `name` nor the raw `system:<code>` token.
-    await expect(cell).toContainText(/Gestore dei Processi|Gestore degli Assistenti AI/);
+    await expect(cell).toContainText(/Gestione Processi|Gestione Assistenti AI/);
     await expect(cell).not.toContainText(/Process Manager|AI Assistants Manager|system:/);
   });
 

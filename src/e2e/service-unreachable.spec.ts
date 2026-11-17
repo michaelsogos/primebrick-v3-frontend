@@ -250,10 +250,10 @@ test.describe("service unreachable watermark", () => {
       const err = page.getByTestId("version-history-error");
       await expect(err).toBeVisible({ timeout: 15000 });
       // The panel carries entities_ns + translationKey — both names
-      // resolve to their TRANSLATED labels (Gestore dei Processi /
+      // resolve to their TRANSLATED labels (Gestione Processi /
       // Attivatore), proving interpolation, not the generic fallback.
       await expect(err).toContainText(/responsabile di Attivatore non è al momento raggiungibile/);
-      await expect(err).toContainText("Gestore dei Processi");
+      await expect(err).toContainText("Gestione Processi");
       await expect(err).not.toContainText("{service}");
       await expect(err).not.toContainText("{entity}");
     } finally {
