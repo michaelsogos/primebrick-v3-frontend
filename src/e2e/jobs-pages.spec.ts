@@ -520,6 +520,11 @@ test.describe("/system/job/* pages (module-owned)", () => {
     await expect(async () => {
       await expect(sentBtn).toHaveAttribute("aria-pressed", "true", { timeout: 2000 });
     }).toPass({ timeout: 10000 });
+    // Outline glyph — `play`, not `play:filled`.
+    await expect(sentBtn.locator("svg").first()).not.toHaveAttribute(
+      "fill",
+      "currentColor",
+    );
 
     // `failed` is the problem-bucket aggregate — IN (failed,lost,skipped).
     const mark = listUrls.length;
