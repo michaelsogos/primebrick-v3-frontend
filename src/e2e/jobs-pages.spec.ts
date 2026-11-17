@@ -265,6 +265,55 @@ test.describe("/system/job/* pages (module-owned)", () => {
     expect(dstIdx).toBe(srcIdx + 1);
   });
 
+  test("/system/job/triggers default column visibility — next_run shown, is_system hidden-but-toggleable", async ({
+    page,
+  }) => {
+    // Served contract — the meta declares the defaults the ELT derives
+    // its fresh-profile visibleKeys from.
+    await page.goto("/system/job/triggers", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
+    const flags = await page.evaluate(async () => {
+      const res = await fetch("/svc/job/api/v1/entities/job_trigger/meta");
+      const cols = ((await res.json()).columns ?? []) as {
+        key: string;
+        default_visible?: boolean;
+        hideable?: boolean;
+      }[];
+      const find = (k: string) => cols.find((c) => c.key === k);
+      return { is_system: find("is_system"), next_run: find("next_run") };
+    });
+    expect(flags.is_system?.default_visible).toBe(false);
+    expect(flags.is_system?.hideable).not.toBe(false);
+    expect(flags.next_run?.default_visible).toBe(true);
+    expect(flags.next_run?.hideable).not.toBe(false);
+
+    // Rendered contract — a fresh context has no stored visibleKeys, so
+    // the meta defaults decide: a next_run header exists, is_system does
+    // not (it lives in the picker only).
+    const headers = await page.locator("table thead th").allTextContents();
+    const has = (re: RegExp) => headers.some((h) => re.test(h));
+    expect(
+      has(/next run|prossima esecuzione|nächste ausführung|prochaine exécution|próxima ejecución|próxima execução/i),
+    ).toBe(true);
+    expect(has(/^\s*system|sistema\s*$/i)).toBe(false);
+
+    // Picker contract — both stay user-toggleable (enabled), next_run
+    // checked, is_system unchecked.
+    await page.getByRole("button", { name: /columns|colonne|spalten|colonnes|columnas|colunas/i }).first().click();
+    const nextRunToggle = page.getByTestId("columns-toggle-next_run");
+    const isSystemToggle = page.getByTestId("columns-toggle-is_system");
+    await expect(nextRunToggle).toBeVisible({ timeout: 15000 });
+    await expect(isSystemToggle).toBeVisible();
+    for (const toggle of [nextRunToggle, isSystemToggle]) {
+      await expect(toggle).toBeEnabled();
+    }
+    await expect(nextRunToggle.locator('[data-state="checked"]')).toHaveCount(1);
+    await expect(nextRunToggle.locator('[data-state="unchecked"]')).toHaveCount(0);
+    await expect(isSystemToggle.locator('[data-state="checked"]')).toHaveCount(0);
+    await expect(isSystemToggle.locator('[data-state="unchecked"]')).toHaveCount(1);
+    await page.keyboard.press("Escape");
+  });
+
   test("/system/job/triggers create CTA → NEW TAB archetype EntityFormPage (no remote mount)", async ({
     page,
     context,
