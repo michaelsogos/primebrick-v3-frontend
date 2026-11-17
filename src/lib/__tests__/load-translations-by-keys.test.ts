@@ -51,25 +51,25 @@ describe('loadTranslationsByKeys', () => {
 
   it('fetches the cited keys once and merges rows into the dict by language', async () => {
     fetchTranslationsFind.mockResolvedValue([
-      row('job.module.name', 'en-GB', 'Process Manager'),
-      row('job.module.name', 'it-IT', 'Gestore Processi'),
+      row('job.module.name', 'en-GB', 'Process Management'),
+      row('job.module.name', 'it-IT', 'Gestione Processi'),
     ]);
     await loadTranslationsByKeys(['job.module.name']);
     expect(fetchTranslationsFind).toHaveBeenCalledTimes(1);
     expect(fetchTranslationsFind).toHaveBeenCalledWith(['job.module.name']);
-    expect(get(t)('job.module.name')).toBe('Process Manager');
+    expect(get(t)('job.module.name')).toBe('Process Management');
   });
 
   it('lets the current-language row win over the en-GB floor', async () => {
     uiLang.set('it-IT');
     fetchTranslationsFind.mockResolvedValue([
-      row('ai.module.name', 'en-GB', 'AI Assistants Manager'),
-      row('ai.module.name', 'it-IT', 'Gestore Assistenti AI'),
+      row('ai.module.name', 'en-GB', 'AI Assistants Management'),
+      row('ai.module.name', 'it-IT', 'Gestione Assistenti AI'),
     ]);
     await loadTranslationsByKeys(['ai.module.name']);
-    expect(get(t)('ai.module.name')).toBe('Gestore Assistenti AI');
+    expect(get(t)('ai.module.name')).toBe('Gestione Assistenti AI');
     uiLang.set('en-GB');
-    expect(get(t)('ai.module.name')).toBe('AI Assistants Manager');
+    expect(get(t)('ai.module.name')).toBe('AI Assistants Management');
   });
 
   it('dedups the matches signature — repeat calls do not refetch', async () => {
