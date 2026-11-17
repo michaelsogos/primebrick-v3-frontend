@@ -382,6 +382,7 @@ test.describe("/system/job/* pages (module-owned)", () => {
     const keys = cols.map((c) => c.key);
     expect(keys).not.toContain("service_code"); // physical DROP — gone everywhere
     expect(keys).not.toContain("trigger_uuid"); // hidden:true → row payload only
+    expect(keys).not.toContain("schedule_uuid"); // hidden:true → row payload only
     expect(keys).not.toContain("error_detail"); // hidden:true → sheet surface only
     const byKey = (k: string) => cols.find((c) => c.key === k);
 
@@ -392,16 +393,12 @@ test.describe("/system/job/* pages (module-owned)", () => {
       default_visible: true,
       ref: { entity: "job_trigger", key_field: "trigger_uuid" },
     });
-    // Owning schedule — calculated ref, business-key drill on the subject.
+    // Owning schedule — calculated ref, uuid drill like every sibling ref.
     expect(byKey("schedule")).toMatchObject({
       type: "ref",
       kind: "calculated",
       default_visible: true,
-      ref: {
-        entity: "job_schedule",
-        key_field: "schedule_subject",
-        filter_field: "schedule_subject",
-      },
+      ref: { entity: "job_schedule", key_field: "schedule_uuid" },
     });
     // Ordinary NULLs render "-" — no destructive null_label anywhere.
     expect(byKey("trigger")?.null_label).toBeUndefined();
