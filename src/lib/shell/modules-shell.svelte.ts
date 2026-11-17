@@ -74,6 +74,25 @@ function resolveModuleFromRoute(pathname: string): string | null {
 }
 
 /**
+ * Settings-family modules — the reserved `settings` module and sibling
+ * `*-settings` nodes (e.g. `crm-settings`) — always render LAST within
+ * their root level, whatever the registry order. Convention on the
+ * emitted id (no declaration flag): the same seam feeds the launcher
+ * column and the breadcrumb module switcher, so one comparator keeps
+ * every surface consistent.
+ */
+function isSettingsModule(m: { id: string }): boolean {
+  return m.id === 'settings' || m.id.endsWith('-settings');
+}
+
+/** Stable settings-last ordering — non-settings order preserved. */
+function settingsLast<T extends { id: string }>(list: T[]): T[] {
+  return [...list].sort(
+    (a, b) => Number(isSettingsModule(a)) - Number(isSettingsModule(b)),
+  );
+}
+
+/**
  * The TRANSLATIONS module owning the route's runtime dict. Virtual
  * sibling modules (`crm-settings`) carry `translations_module` pointing
  * at the declaring service — dict fetches must resolve to it or they
@@ -185,22 +204,27 @@ export const shellNav = {
   /** Modules NAVIGABLE under a root level — the access-filtered nav has
    *  at least one leaf under that root. Prefix-only membership is
    *  routing-domain (the module owns URLs there but has nothing to
-   *  navigate to). */
+   *  navigate to). Settings-family modules always sort last. */
   modulesForRoot(root: string): ModuleInfo[] {
-    return _state.modules.filter(
-      (m) =>
-        m.accessible !== false &&
-        flattenNavLeaves(m.nav ?? []).some((l) => rootOfPath(l.href) === root),
+    return settingsLast(
+      _state.modules.filter(
+        (m) =>
+          m.accessible !== false &&
+          flattenNavLeaves(m.nav ?? []).some((l) => rootOfPath(l.href) === root),
+      ),
     );
   },
   /** Modules that declare surface under `root` but have ZERO accessible
    *  leaves (`accessible:false`) — the launcher reveal switch renders
-   *  them disabled; never navigable. */
+   *  them disabled; never navigable. Settings-family last like the
+   *  navigable list. */
   inaccessibleModulesForRoot(root: string): ModuleInfo[] {
-    return _state.modules.filter(
-      (m) =>
-        m.accessible === false &&
-        (m.route_prefixes ?? []).some((p) => rootOfPath(p) === root),
+    return settingsLast(
+      _state.modules.filter(
+        (m) =>
+          m.accessible === false &&
+          (m.route_prefixes ?? []).some((p) => rootOfPath(p) === root),
+      ),
     );
   },
   /** Declared default module for a root — `is_default` among `part_of`
