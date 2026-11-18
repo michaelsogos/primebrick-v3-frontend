@@ -32,8 +32,9 @@ describe('getAuditFieldValue — formatter wiring', () => {
 	it('renders locale separators via the real formatListCellValue', () => {
 		const c = col({ key: 'total', type: 'number' });
 		expect(getAuditFieldValue({ total: 12345.6 }, c, 'en-GB' as UiLang, formatListCellValue)).toBe('12,345.6');
-		// it-IT groups from five integer digits (ICU min2 grouping).
-		expect(getAuditFieldValue({ total: 12345.6 }, c, 'it-IT' as UiLang, formatListCellValue)).toBe('12.345,6');
+		// useGrouping:"always" — 4-digit groups hold even where ICU 'auto'
+		// would skip them (the it-IT min2 regression this contract kills).
+		expect(getAuditFieldValue({ total: 1234.5 }, c, 'it-IT' as UiLang, formatListCellValue)).toBe('1.234,5');
 	});
 
 	it('percent uom displays canonical fraction as percent points', () => {
@@ -46,6 +47,12 @@ describe('getAuditFieldValue — formatter wiring', () => {
 		expect(
 			getAuditFieldValue({ total: 9.99, currency_code: 'EUR' }, c, 'en-GB' as UiLang, formatListCellValue)
 		).toBe('€9.99');
+	});
+
+	it('custom uom with a fixed Intl unit renders style:"unit" (duration_ms case)', () => {
+		const c = col({ key: 'duration_ms', type: 'number', uom: { kind: 'custom', unit: 'millisecond' } });
+		expect(getAuditFieldValue({ duration_ms: 24 }, c, 'it-IT' as UiLang, formatListCellValue)).toBe('24 ms');
+		expect(getAuditFieldValue({ duration_ms: 1234 }, c, 'en-GB' as UiLang, formatListCellValue)).toBe('1,234 ms');
 	});
 
 	it('auditable *_by columns bypass the formatter (resolved _name wins)', () => {

@@ -25,7 +25,7 @@
 		MetaColumn,
 		PayloadOptionsSource,
 	} from '@primebrick/ui';
-	import { flagCodeForBcp47, toDisplayString, numericKindOf } from '@primebrick/ui';
+	import { flagCodeForBcp47, toDisplayString, numericKindOf, uomUnitSymbol } from '@primebrick/ui';
 	import type { NumericUomSpec } from '@primebrick/ui';
 	import type { Decimal } from '@primebrick/ui';
 	import { currencySymbol } from '$lib/currency';
@@ -48,6 +48,7 @@
 	import { MetaAvatar } from '$lib/components/ui/avatar-preview';
 	import { t } from '$lib/i18n';
 	import { UI_LANGS } from '$lib/i18n/languages';
+	import { uiLang } from '$lib/i18n/store.svelte';
 	import { apiFetch } from '$lib/api';
 	import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
 	import { useEntityRefOptions } from './use-entity-ref-options.svelte';
@@ -379,6 +380,15 @@
 		const u = column.uom;
 		if (!u) return undefined;
 		if (u.kind === 'percent') return { kind: 'percent' };
+		if (u.kind === 'custom') {
+			// Fixed-unit variants — display-only adornment, nothing to pick:
+			// `unit` resolves its locale-short symbol from Intl (ms, kg…),
+			// `symbol` is the declared fixed suffix.
+			if ('unit' in u) {
+				return { kind: 'custom', code: u.unit, symbol: uomUnitSymbol(u.unit, $uiLang) };
+			}
+			if (!('field' in u)) return { kind: 'custom', symbol: u.symbol };
+		}
 		const rawCode = surface === 'form' && record ? record[u.field] : undefined;
 		const code =
 			typeof rawCode === 'string' ||

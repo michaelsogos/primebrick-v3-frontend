@@ -33,4 +33,24 @@ test("number cells render right-aligned, tabular digits, locale-formatted", asyn
   for (const text of texts) {
     expect(text.trim()).toMatch(/^-?[\d.,\s%]+([a-zA-Z€$£]{1,4})?$/u);
   }
+
+  // The Duration column carries the fixed Intl unit (`uom.unit:
+  // "millisecond"` on job_run meta) — its cells render style:"unit"
+  // output: `<grouped number> ms`. Runs without a duration show the
+  // blankish dash, so scan a few rows for a populated one.
+  const headTexts = await page.locator("table thead th").allTextContents();
+  const durIdx = headTexts.findIndex((t) => t.trim() === "Duration");
+  expect(durIdx).toBeGreaterThan(-1);
+  // th/td align 1:1 — the checkbox column exists on both sides.
+  const rows = page.locator("table tbody tr");
+  const rowCount = await rows.count();
+  let sawUnit = false;
+  for (let i = 0; i < Math.min(rowCount, 25); i++) {
+    const text = (await rows.nth(i).locator("td").nth(durIdx).textContent())?.trim() ?? "";
+    if (text === "-" || text === "") continue;
+    expect(text).toMatch(/^-?[\d.,\s]+\s*ms$/u);
+    sawUnit = true;
+    break;
+  }
+  expect(sawUnit).toBe(true);
 });
