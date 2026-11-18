@@ -132,15 +132,19 @@
 	const fieldSchema = $derived(
 		newField ? schemaAtPath((source_schema ?? {}) as JsonSchema, `$.${newField}`) : undefined,
 	);
+	// `const` is a one-member vocabulary — `event.schema` offers `2`, same
+	// closed-picker treatment as enum (the literal stays the wire value).
 	const valueOptions = $derived(
-		(fieldSchema?.enum ?? []).map((v) => {
-			const lk = (
-				(fieldSchema as Record<string, unknown> | undefined)?.['x_enum_labels'] as
-					| Record<string, string>
-					| undefined
-			)?.[String(v)];
-			return { value: String(v), label: lk ? $t(lk) : String(v) };
-		}),
+		(fieldSchema?.enum ?? (fieldSchema && 'const' in fieldSchema ? [fieldSchema.const] : [])).map(
+			(v) => {
+				const lk = (
+					(fieldSchema as Record<string, unknown> | undefined)?.['x_enum_labels'] as
+						| Record<string, string>
+						| undefined
+				)?.[String(v)];
+				return { value: String(v), label: lk ? $t(lk) : String(v) };
+			},
+		),
 	);
 	const valueKind = $derived<'enum' | 'boolean' | 'number' | 'text'>(
 		valueOptions.length > 0
@@ -169,7 +173,10 @@
 		if (valueKind === 'boolean') return newValue === 'true';
 		if (valueKind === 'number') return Number(newValue);
 		if (valueKind === 'enum')
-			return (fieldSchema?.enum ?? []).find((e) => String(e) === newValue) ?? newValue;
+			return (
+				(fieldSchema?.enum ?? (fieldSchema && 'const' in fieldSchema ? [fieldSchema.const] : []))
+					.find((e) => String(e) === newValue) ?? newValue
+			);
 		return newValue;
 	}
 
