@@ -332,11 +332,15 @@ export async function apiFetchWithTimeout(
  * `lang`. The caller merges it into the i18n dict store so `$t` resolves
  * nav labels deterministically, before any module dictionary is
  * route-loaded.
+ *
+ * `init.signal` — the census fetch is voidable: a uiLang change mid-flight
+ * aborts the stale-lang request instead of waiting for it to land.
  */
 export async function fetchModules(
   lang: string,
+  init?: RequestInit,
 ): Promise<{ modules: ModuleInfo[]; labels: Record<string, string> }> {
-  const res = await apiFetch(`/api/v1/modules?lang=${encodeURIComponent(lang)}`);
+  const res = await apiFetch(`/api/v1/modules?lang=${encodeURIComponent(lang)}`, init);
   if (!res.ok) throw new Error(`Modules request failed (${res.status})`);
   return (await res.json()) as { modules: ModuleInfo[]; labels: Record<string, string> };
 }
