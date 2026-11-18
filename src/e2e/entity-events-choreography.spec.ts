@@ -127,22 +127,26 @@ test.describe("entity events choreography — trigger authored in the browser", 
     }
 
     // filter — the rule_filter composer navigates the source payload
-    // schema as a PropNavigator tree: envelope props at col 0, entity
-    // columns (x_label_key-labeled) inside `$.after`. `$.action` is the
-    // enum leaf — pick it, keep eq, choose `create`, commit the badge.
+    // schema as a PropNavigator tree: `$.event` is the envelope,
+    // `$.entity` the state section — columns (x_label_key-labeled)
+    // inside `$.entity.after`. `$.event.action` is the enum leaf —
+    // pick it, keep eq, choose `create`, commit the badge.
     const filterField = popup.getByTestId("entity-form-field-filter");
     await filterField.getByTestId("rule-filter-field").click();
     const navPopover = popup.locator('[data-slot="popover-content"]:visible').last();
     const col0 = navPopover.locator('[data-propnv-col="0"]');
-    await expect(col0.locator('[data-propnv-path="$.action"]')).toBeVisible();
-    // `$.after` descends into the typed entity snapshot.
-    await col0.locator('[data-propnv-path="$.after"]').click();
+    await expect(col0.locator('[data-propnv-path="$.event"]')).toBeVisible();
+    // `$.entity.after` descends into the typed entity snapshot.
+    await col0.locator('[data-propnv-path="$.entity"]').click();
     const col1 = navPopover.locator('[data-propnv-col="1"]');
-    await expect(col1.locator('[data-propnv-path="$.after.name"]')).toBeVisible();
-    // `$.action` is a leaf — clicking commits the path. Wait for the
-    // navigator popover to fully close before opening the value combo:
-    // an open navigator overlay would swallow the next click.
-    await col0.locator('[data-propnv-path="$.action"]').click();
+    await col1.locator('[data-propnv-path="$.entity.after"]').click();
+    const col2 = navPopover.locator('[data-propnv-col="2"]');
+    await expect(col2.locator('[data-propnv-path="$.entity.after.name"]')).toBeVisible();
+    // `$.event.action` is a leaf — descend then click commits the path.
+    await col0.locator('[data-propnv-path="$.event"]').click();
+    await navPopover.locator('[data-propnv-col="1"]').locator('[data-propnv-path="$.event.action"]').click();
+    // Wait for the navigator popover to fully close before opening the
+    // value combo: an open navigator overlay would swallow the click.
     await expect(navPopover).toBeHidden();
     // `action` carries an enum → the value control is a closed combo
     // (bits-ui Command.Item → role="option"; substring text — the item
@@ -154,7 +158,7 @@ test.describe("entity events choreography — trigger authored in the browser", 
       .first()
       .click();
     await filterField.getByTestId("rule-filter-add").click();
-    await expect(filterField.getByTestId("rule-filter-badges")).toContainText("action");
+    await expect(filterField.getByTestId("rule-filter-badges")).toContainText(/action/i);
 
     await expect(popup.getByTestId("entity-form-submit")).toBeEnabled();
     const postCapture = popup.waitForResponse(
@@ -165,11 +169,11 @@ test.describe("entity events choreography — trigger authored in the browser", 
     const postRes = await postCapture;
     expect(postRes.status()).toBe(201);
     // The composer serialized the badge back to the RuleFilter[] wire —
-    // action=create is what test 2's emitted event matches on.
+    // event.action=create is what test 2's emitted event matches on.
     const postedBody = postRes.request().postDataJSON() as { entity?: Record<string, unknown> };
     const postedRaw = postedBody.entity?.filter;
     const postedFilter = typeof postedRaw === "string" ? JSON.parse(postedRaw) : postedRaw;
-    expect(postedFilter).toEqual([{ field: "action", op: "eq", value: "create" }]);
+    expect(postedFilter).toEqual([{ field: "event.action", op: "eq", value: "create" }]);
     await popup.waitForEvent("close", { timeout: 15000 });
     await expect(page.locator("table")).toContainText(TRIG_NAME, { timeout: 15000 });
 
@@ -245,11 +249,15 @@ test.describe("entity events choreography — trigger authored in the browser", 
         { timeout: 15000, intervals: [500, 1000, 2000] },
       )
       .toBe(true);
-    expect(streamPayload!.schema).toBe(1);
-    expect(streamPayload!.service).toBe("job");
-    expect(streamPayload!.entity).toBe("job_trigger");
-    expect(streamPayload!.action).toBe("create");
-    expect(streamPayload!.uuid).toBe(dummyUuid);
+    const evt = streamPayload!.event as Record<string, unknown>;
+    expect(evt.schema).toBe(2);
+    expect(evt.service).toBe("job");
+    expect(evt.entity).toBe("job_trigger");
+    expect(evt.action).toBe("create");
+    expect(evt.uuid).toBe(dummyUuid);
+    expect(evt.subject).toBe(evtSubject);
+    expect(typeof evt.emitted_at).toBe("number");
+    expect(typeof evt.emitted_by).toBe("string");
 
     // 2) The choreography trigger matched the event → dispatched a run.
     await expect

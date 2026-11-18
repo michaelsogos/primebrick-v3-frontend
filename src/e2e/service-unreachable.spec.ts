@@ -28,7 +28,7 @@ const MAP = {
   to: { kind: "list", items: [{ kind: "const", value: "unreach@example.com" }] },
   variables: {
     kind: "map",
-    entries: { customer_name: { kind: "path", path: "$.customer.display_name" } },
+    entries: { customer_name: { kind: "path", path: "$.entity.after.display_name" } },
   },
   languageIso: {
     kind: "meta",

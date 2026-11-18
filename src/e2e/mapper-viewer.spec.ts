@@ -32,7 +32,7 @@ const MAP = {
   to: { kind: "list", items: [{ kind: "const", value: "mapper-viewer@example.com" }] },
   variables: {
     kind: "map",
-    entries: { customer_name: { kind: "path", path: "$.customer.display_name" } },
+    entries: { customer_name: { kind: "path", path: "$.entity.after.display_name" } },
   },
   languageIso: {
     kind: "meta",
@@ -140,7 +140,7 @@ test.describe("mapper viewer", () => {
 
       // `map` entries nest as key → prose lines.
       await expect(rows).toContainText("customer_name");
-      await expect(rows).toContainText("$.customer.display_name");
+      await expect(rows).toContainText("$.entity.after.display_name");
       // Fallback clause renders its localized prose line.
       await expect(page.getByTestId("mapper-viewer-fallback").first()).toContainText(
         "altrimenti, se vuoto",

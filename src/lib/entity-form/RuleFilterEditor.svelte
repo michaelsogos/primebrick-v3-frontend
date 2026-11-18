@@ -119,6 +119,8 @@
 		const base = types.find((t) => t !== 'null');
 		if (base === 'array') return `array<${sub.items ? leafSub(sub.items as JsonSchema) : 'unknown'}>`;
 		if (typeof sub.format === 'string') return sub.format;
+		// Enum leaves carry no `type` — the vocabulary IS the type.
+		if (Array.isArray(sub.enum)) return sub.enum.map(String).join(' · ');
 		return base ?? 'unknown';
 	}
 
@@ -128,18 +130,22 @@
 	const pathTree = $derived.by(() => {
 		const walk = (schema: JsonSchema | undefined, prefix: string, depth: number): PropNavNode[] => {
 			if (!schema?.properties || depth > 5) return [];
-			return Object.entries(schema.properties).map(([key, sub]) => {
-				const path = `${prefix}.${key}`;
-				const children = walk(sub as JsonSchema, path, depth + 1);
-				const labelKey = (sub as Record<string, unknown>)?.['x_label_key'];
-				return {
-					value: path,
-					label: typeof labelKey === 'string' && labelKey ? $t(labelKey) : key,
-					_sub: leafSub(sub as JsonSchema),
-					_schema: sub as Record<string, unknown>,
-					...(children.length > 0 ? { children } : {}),
-				} satisfies PropNavNode;
-			});
+			return Object.entries(schema.properties)
+				.map(([key, sub]) => {
+					const path = `${prefix}.${key}`;
+					const children = walk(sub as JsonSchema, path, depth + 1);
+					const labelKey = (sub as Record<string, unknown>)?.['x_label_key'];
+					return {
+						value: path,
+						label: typeof labelKey === 'string' && labelKey ? $t(labelKey) : key,
+						_sub: leafSub(sub as JsonSchema),
+						_schema: sub as Record<string, unknown>,
+						...(children.length > 0 ? { children } : {}),
+					} satisfies PropNavNode;
+				})
+				// Alphabetical by resolved label — schema enumeration order is
+				// meaningless to an author (user decision, 2026-12-21).
+				.sort((a, b) => String(a.label).localeCompare(String(b.label)));
 		};
 		return walk((source_schema ?? {}) as JsonSchema, '$', 1);
 	});
