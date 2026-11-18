@@ -140,7 +140,7 @@ test.describe("payload-map widget", () => {
 
     // The eye-dashed toggle (footer) reveals the hidden partition —
     // disabled but still carrying honest type icons:
-    //   emitted_at  → integer → hash (epoch ms — `unix_ms` was a lie)
+    //   emitted_at  → date-time → calendar-clock (RFC 3339 timestamp)
     //   emitted_by  → actor_token → user-cog (actor)
     //   email/uuid  → mail / file-key
     const eyeToggle = popup.getByTestId("payload-map-path-templateCode-toggle-disabled");
@@ -159,7 +159,7 @@ test.describe("payload-map widget", () => {
     await col0.locator('[data-propnv-path="$.event"]').click();
     const col1b = pathPopover.locator('[data-propnv-col="1"]');
     await expect(
-      col1b.locator('[data-propnv-path="$.event.emitted_at"]').locator("svg.lucide-hash"),
+      col1b.locator('[data-propnv-path="$.event.emitted_at"]').locator("svg.lucide-calendar-clock"),
     ).toBeVisible();
     await expect(
       col1b.locator('[data-propnv-path="$.event.emitted_by"]').locator("svg.lucide-user-cog"),

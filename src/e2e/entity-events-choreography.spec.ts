@@ -256,7 +256,9 @@ test.describe("entity events choreography — trigger authored in the browser", 
     expect(evt.action).toBe("create");
     expect(evt.uuid).toBe(dummyUuid);
     expect(evt.subject).toBe(evtSubject);
-    expect(typeof evt.emitted_at).toBe("number");
+    // RFC 3339 `date-time` — a real timestamp on the wire, not epoch ms.
+    expect(typeof evt.emitted_at).toBe("string");
+    expect(Number.isNaN(Date.parse(String(evt.emitted_at)))).toBe(false);
     expect(typeof evt.emitted_by).toBe("string");
 
     // 2) The choreography trigger matched the event → dispatched a run.
