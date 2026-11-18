@@ -58,7 +58,7 @@ test.describe("mapper viewer", () => {
     await pinItalian(page);
     const { uuid } = await declareTrigger(page.request, {
       name: `e2e-mapper-viewer-${Date.now()}`,
-      event_subject: "crm.customer_changed",
+      event_subject: "events.crm.customer.on.changed",
       target_subject: "emailsender.send",
       run_as: "author",
       payload_map: MAP,
@@ -166,7 +166,7 @@ test.describe("mapper viewer", () => {
    * The wire gate the two legacy email triggers sailed through — a
    * verbatim passthrough only stands when the source emit provably
    * carries the callable's requireds (or inject/semantic covers them).
-   * `crm.customer_changed` emits a customer snapshot — `to`/
+   * `events.crm.customer.on.changed` emits a customer snapshot — `to`/
    * `templateCode`/`languageIso` are undeliverable from it, so the write
    * must be a 400. An undeclared event and a schedule-only empty map
    * fail the same gate.
@@ -178,7 +178,7 @@ test.describe("mapper viewer", () => {
 
     const uncovered = await post({
       name: `e2e-gate-uncovered-${Date.now()}`,
-      event_subject: "crm.customer_changed",
+      event_subject: "events.crm.customer.on.changed",
       target_subject: "emailsender.send",
       run_as: "author",
       payload_map: null,
@@ -218,7 +218,7 @@ test.describe("mapper viewer", () => {
     await loginAsTestAdmin(page);
     const trig = await declareTrigger(page.request, {
       name: `e2e-audit-ref-${Date.now()}`,
-      event_subject: "crm.customer_changed",
+      event_subject: "events.crm.customer.on.changed",
       target_subject: "emailsender.send",
       run_as: "author",
       payload_map: MAP,

@@ -184,7 +184,7 @@ test.describe("service unreachable watermark", () => {
     await pinItalian(page);
     const { uuid } = await declareTrigger(page.request, {
       name: `e2e-unreach-mapper-${Date.now()}`,
-      event_subject: "crm.customer_changed",
+      event_subject: "events.crm.customer.on.changed",
       target_subject: "emailsender.send",
       run_as: "author",
       payload_map: MAP,

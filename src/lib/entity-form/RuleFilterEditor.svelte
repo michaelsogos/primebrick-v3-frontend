@@ -21,12 +21,13 @@
 		JsonValueEditor,
 		NumericInput,
 		PrimeField,
+		PropNavigator,
 		TextInput,
+		type PropNavNode,
 	} from '@primebrick/ui';
 	import { X as XIcon, Plus, ListFilter, Braces } from '@primebrick/ui/vendor/lucide';
 	import { t } from '$lib/i18n';
 	import {
-		schemaDotPaths,
 		schemaAtPath,
 		type JsonSchema,
 	} from './rule-schema-completions';
@@ -110,13 +111,38 @@
 	let newOp = $state<RuleOp>('eq');
 	let newValue = $state<string>('');
 
-	const fieldOptions = $derived(
-		schemaDotPaths((source_schema ?? {}) as JsonSchema).map((p) => ({
-			value: p.path.replace(/^\$\.?/, ''),
-			label: p.path.replace(/^\$\.?/, ''),
-			_desc: p.type,
-		})),
-	);
+	/** Readable leaf-type line for the navigator's `_sub` — honest about the
+	 *  shape: a `format` IS the type (email, date-time), arrays unwrap. */
+	function leafSub(sub: JsonSchema): string {
+		const raw = sub.type;
+		const types = Array.isArray(raw) ? raw.map(String) : raw !== undefined ? [String(raw)] : [];
+		const base = types.find((t) => t !== 'null');
+		if (base === 'array') return `array<${sub.items ? leafSub(sub.items as JsonSchema) : 'unknown'}>`;
+		if (typeof sub.format === 'string') return sub.format;
+		return base ?? 'unknown';
+	}
+
+	/** Schema tree for the PropNavigator — `value` carries the wire path,
+	 *  `label` translates `x_label_key` (emitted per-column by the SDK's
+	 *  entityEventPayloadSchema) with the raw key as honest fallback. */
+	const pathTree = $derived.by(() => {
+		const walk = (schema: JsonSchema | undefined, prefix: string, depth: number): PropNavNode[] => {
+			if (!schema?.properties || depth > 5) return [];
+			return Object.entries(schema.properties).map(([key, sub]) => {
+				const path = `${prefix}.${key}`;
+				const children = walk(sub as JsonSchema, path, depth + 1);
+				const labelKey = (sub as Record<string, unknown>)?.['x_label_key'];
+				return {
+					value: path,
+					label: typeof labelKey === 'string' && labelKey ? $t(labelKey) : key,
+					_sub: leafSub(sub as JsonSchema),
+					_schema: sub as Record<string, unknown>,
+					...(children.length > 0 ? { children } : {}),
+				} satisfies PropNavNode;
+			});
+		};
+		return walk((source_schema ?? {}) as JsonSchema, '$', 1);
+	});
 	const opOptions = $derived(
 		OPS.map(({ op, icon }) => ({
 			value: op,
@@ -132,7 +158,14 @@
 		newField ? schemaAtPath((source_schema ?? {}) as JsonSchema, `$.${newField}`) : undefined,
 	);
 	const valueOptions = $derived(
-		(fieldSchema?.enum ?? []).map((v) => ({ value: String(v), label: String(v) })),
+		(fieldSchema?.enum ?? []).map((v) => {
+			const lk = (
+				(fieldSchema as Record<string, unknown> | undefined)?.['x_enum_labels'] as
+					| Record<string, string>
+					| undefined
+			)?.[String(v)];
+			return { value: String(v), label: lk ? $t(lk) : String(v) };
+		}),
 	);
 	const valueKind = $derived<'enum' | 'boolean' | 'number' | 'text'>(
 		valueOptions.length > 0
@@ -177,6 +210,15 @@
 		commit(filters.filter((_, i) => i !== idx));
 	}
 
+	/** Committed field — translate via the schema leaf's `x_label_key` when
+	 *  the selected source emits one; the raw path stays the fallback AND
+	 *  the hover title (wire truth, always traceable). */
+	function badgeField(f: RuleFilterItem): string {
+		const leaf = schemaAtPath((source_schema ?? {}) as JsonSchema, `$.${f.field}`);
+		const lk = (leaf as Record<string, unknown> | undefined)?.['x_label_key'];
+		return typeof lk === 'string' && lk ? $t(lk) : f.field;
+	}
+
 	function badgeValue(f: RuleFilterItem): string {
 		if (f.value === true || f.value === false)
 			return $t(f.value ? 'system.entities.list.boolean_true' : 'system.entities.list.boolean_false');
@@ -208,16 +250,16 @@
 		{#if !locked}
 			<div class="space-y-2">
 				<PrimeField label={$t('system.entities.list.field')}>
-					{#snippet control({ id })}
-						<ComboSelect
-							{id}
-							mode="single"
-							bind:value={newField}
-							options={fieldOptions}
-							valueField="value"
-							labelField="label"
+					{#snippet control()}
+						<PropNavigator
+							nodes={pathTree}
+							value={newField ? `$.${newField}` : ''}
+							isSelectable={() => true}
 							placeholder={$t('system.entities.list.select_field')}
 							data-testid="rule-filter-field"
+							onSelect={(path) => {
+								newField = path.replace(/^\$\.?/, '');
+							}}
 						/>
 					{/snippet}
 				</PrimeField>
@@ -299,7 +341,7 @@
 				<span class="text-xs italic text-muted-foreground/70">{$t('system.entities.list.all_criteria')}</span>
 				{#each filters as f, i (i)}
 					<Badge variant="secondary" class="w-fit gap-1.5 pr-1">
-						<span class="text-xs font-bold text-foreground">{f.field}</span>
+						<span class="text-xs font-bold text-foreground" title={f.field}>{badgeField(f)}</span>
 						<span class="text-xs text-primary inline-flex items-center gap-0.5">
 							<DynamicIcon
 								name={OPS.find((o) => o.op === (f.op ?? 'eq'))?.icon ?? 'equal'}

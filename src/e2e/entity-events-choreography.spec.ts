@@ -97,7 +97,7 @@ test.describe("entity events choreography — trigger authored in the browser", 
     await popup.keyboard.press("Escape");
 
     // payload_map — the callable contract requires `event` (enum): fixed
-    // value crm.customer_changed, same as the lifecycle archetype spec.
+    // value events.crm.customer.on.changed, same as the lifecycle archetype spec.
     const eventRow = popup.getByTestId("payload-map-row-event");
     await eventRow.locator('[role="combobox"]').first().click({ position: { x: 8, y: 18 } });
     await popup
@@ -108,7 +108,7 @@ test.describe("entity events choreography — trigger authored in the browser", 
     await eventRow.locator('[role="combobox"]').nth(1).click({ position: { x: 8, y: 18 } });
     await popup
       .locator('[role="option"]:visible')
-      .filter({ hasText: "crm.customer_changed" })
+      .filter({ hasText: "events.crm.customer.on.changed" })
       .first()
       .click({ force: true });
     await popup.keyboard.press("Escape");
@@ -126,6 +126,36 @@ test.describe("entity events choreography — trigger authored in the browser", 
       await popup.keyboard.press("Escape");
     }
 
+    // filter — the rule_filter composer navigates the source payload
+    // schema as a PropNavigator tree: envelope props at col 0, entity
+    // columns (x_label_key-labeled) inside `$.after`. `$.action` is the
+    // enum leaf — pick it, keep eq, choose `create`, commit the badge.
+    const filterField = popup.getByTestId("entity-form-field-filter");
+    await filterField.getByTestId("rule-filter-field").click();
+    const navPopover = popup.locator('[data-slot="popover-content"]:visible').last();
+    const col0 = navPopover.locator('[data-propnv-col="0"]');
+    await expect(col0.locator('[data-propnv-path="$.action"]')).toBeVisible();
+    // `$.after` descends into the typed entity snapshot.
+    await col0.locator('[data-propnv-path="$.after"]').click();
+    const col1 = navPopover.locator('[data-propnv-col="1"]');
+    await expect(col1.locator('[data-propnv-path="$.after.name"]')).toBeVisible();
+    // `$.action` is a leaf — clicking commits the path. Wait for the
+    // navigator popover to fully close before opening the value combo:
+    // an open navigator overlay would swallow the next click.
+    await col0.locator('[data-propnv-path="$.action"]').click();
+    await expect(navPopover).toBeHidden();
+    // `action` carries an enum → the value control is a closed combo
+    // (bits-ui Command.Item → role="option"; substring text — the item
+    // innerText carries layout whitespace that defeats ^…$ anchors).
+    await filterField.getByTestId("rule-filter-value").click();
+    await popup
+      .locator('[role="option"]:visible')
+      .filter({ hasText: "create" })
+      .first()
+      .click();
+    await filterField.getByTestId("rule-filter-add").click();
+    await expect(filterField.getByTestId("rule-filter-badges")).toContainText("action");
+
     await expect(popup.getByTestId("entity-form-submit")).toBeEnabled();
     const postCapture = popup.waitForResponse(
       (r) => r.url().includes("/entities/job_trigger") && r.request().method() === "POST",
@@ -134,6 +164,12 @@ test.describe("entity events choreography — trigger authored in the browser", 
     await popup.getByTestId("entity-form-submit").click();
     const postRes = await postCapture;
     expect(postRes.status()).toBe(201);
+    // The composer serialized the badge back to the RuleFilter[] wire —
+    // action=create is what test 2's emitted event matches on.
+    const postedBody = postRes.request().postDataJSON() as { entity?: Record<string, unknown> };
+    const postedRaw = postedBody.entity?.filter;
+    const postedFilter = typeof postedRaw === "string" ? JSON.parse(postedRaw) : postedRaw;
+    expect(postedFilter).toEqual([{ field: "action", op: "eq", value: "create" }]);
     await popup.waitForEvent("close", { timeout: 15000 });
     await expect(page.locator("table")).toContainText(TRIG_NAME, { timeout: 15000 });
 
@@ -182,7 +218,7 @@ test.describe("entity events choreography — trigger authored in the browser", 
           schedule_spec: "@every 1h",
           target_subject: "crm.emit_fake_event",
           run_as: "system",
-          payload_map: { event: { kind: "const", value: "crm.customer_changed" } },
+          payload_map: { event: { kind: "const", value: "events.crm.customer.on.changed" } },
         },
       },
     });

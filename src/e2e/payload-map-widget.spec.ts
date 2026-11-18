@@ -16,7 +16,7 @@
  *
  * Surface: /system/job/triggers/create with `emailsender.send` as the
  * target (its `to` prop is `array<string email>` — the dedup fixture)
- * and `crm.customer_changed` as the event (rich nested payload schema —
+ * and `events.crm.customer.on.changed` as the event (rich nested payload schema —
  * the icon fixture). Nothing is submitted.
  *
  * Conventions: e2e-browser-session.md — 5s expectation budget everywhere
@@ -69,12 +69,12 @@ async function pickOption(popup: Page, text: RegExp | string): Promise<void> {
   await opt.click();
 }
 
-/** Census wiring: crm.customer_changed event + emailsender.send target —
+/** Census wiring: events.crm.customer.on.changed event + emailsender.send target —
  *  the fixture pair every test in this file shares. */
 async function pickEventAndTarget(popup: Page): Promise<void> {
   const eventField = popup.getByTestId("entity-form-field-event_subject");
   await clickUntilExpanded(eventField.locator('[role="combobox"]'));
-  await pickOption(popup, "crm.customer_changed");
+  await pickOption(popup, "events.crm.customer.on.changed");
   await popup.keyboard.press("Escape");
 
   const targetField = popup.getByTestId("entity-form-field-target_subject");
