@@ -107,7 +107,8 @@ hand). Authored entries are presentation overrides on top of the class.
 | `badge` | `{ values: Record<string, { label_key?, label_text?, color? }> }` |
 | `datetime_iana_toggle` | `{ record_iana_field }` — browser-local vs record-timezone header toggle |
 | `sparkline` | `type:"sparkline"` virtual column — `{ endpoint, request_field, row_key, response_field?, series }`; the list engine batch-POSTs row keys after every load (no per-page wiring) and `TableCell` renders `SparklineBars` in every view mode (`table`, `cards_list`, `cards`) |
-| `format` | Semantic renderer discriminator — `TableCell` switches on it **before** `type`: `schedule_spec` → badge + localized prose (`@primebrick/ui` schedule-spec i18n), `nats_subject` → badge + link to the owning module page (census-resolved), `json` → readable chips/prose for known shapes (e.g. trigger filter conditions) else safe preview, `identifier`/`display_name` → text affordances. Closed additive union in `MetaColumnFormat` |
+| `format` | Semantic renderer discriminator — `TableCell` switches on it **before** `type`: `schedule_spec` → badge + localized prose (`@primebrick/ui` schedule-spec i18n), `nats_subject` → badge + link to the owning module page (census-resolved), `json` → mapper widgets get `MapperCellViewer`, `[{field,op,value}]` condition arrays get prose chips, everything else gets the `JsonCellViewer` "View" link → `entity.jsonViewer` sheet, `identifier`/`display_name` → text affordances. Closed additive union in `MetaColumnFormat` |
+| `uom` | `type:"number"` unit-of-measure semantics — `MetaColumnUom` union: `{kind:'percent'}` (canonical fraction → `style:"percent"`), `{kind:'currency', field}` (sibling ISO code → `style:"currency"`), `{kind:'custom', field, source}` (per-row code + picker source), `{kind:'custom', unit}` (FIXED Intl-sanctioned identifier — `Intl.supportedValuesOf('unit')` vocabulary, `style:"unit"` e.g. `"24 ms"`), `{kind:'custom', symbol}` (FIXED arbitrary suffix Intl does not sanction). Exactly one of `field`/`unit`/`symbol` per `custom` — enforced by `withColumnConstraints` at meta bind. Absent → plain `style:"decimal"` |
 | `virtual` | `true` = no physical column backing — value arrives via service-side decoration (e.g. trigger `last_run`/`next_run`) or batch endpoints (`sparkline`). `type:"sparkline"`/`"ref_count"` imply it |
 | `immutable` | `true` = set once at creation OR derived by a process — editable on `kind:"create"` forms, rendered disabled on update/detail surfaces, excluded from update payloads. Distinct from `managed` (DB-filled key — derived by `withColumnConstraints`, never authored) and `audited` (lifecycle facts) |
 | `ref` | `type:"ref"` — `{ entity, entity_field?, key_field?, route?, filter_field?, value_field?, presentation? }`. `presentation:"link"` (DEFAULT) renders the two-affordance anatomy: text click opens the target record in the stacked `entity.record` sheet; the trailing ExternalLink opens the target `/list` filtered to this row in a new tab. `"badge"` is the legacy single-link pill — explicit opt-in only. Routes resolve through the module census (no hardcoded paths); a target with `route:"none"` degrades to a plain label. **Lazy ref**: `entity_field` (XOR with `entity`) names a row column carrying the target entity per row — one column, 2+ drill targets (e.g. `job_schedule.armed_by` → `job_trigger` \| `service_registry`); `key_field` names the row column holding the drill key (default: the cell value). The cell value is the display label — no `_name` join can decorate N entities — and the sheet is picked by the resolved entity (`entity.record` for entity-served targets, the panel map for registered non-entity targets like `service_registry` → `service.record`) |
@@ -115,11 +116,17 @@ hand). Authored entries are presentation overrides on top of the class.
 | `tooltip`, `tooltip_priority`, `tooltip_title` | Tooltip content, severity, title keys |
 | `show_form_tooltip`, `show_list_tooltip` | Tooltip visibility per context |
 
-Cell rendering follows fixed standards no page may bypass: `boolean`
-columns render `CircleCheck`/`CircleX` icons **centered** in the cell;
-arbitrary wire values convert via `toDisplayString` (`@primebrick/ui`),
-never `String()` — wire JSON parses to null-prototype objects and implicit
-coercion throws (`@typescript-eslint/no-base-to-string` enforces this).
+Cell rendering follows fixed standards no page may bypass — the full
+anatomy contract lives in
+[`entity-list-table → Cell anatomy`](./components/entity-list-table#cell-anatomy)
+("Cell anatomy"): `boolean` columns render `CircleCheck`/`CircleX` icons
+**centered** in the cell; `type:"number"` cells are right-aligned,
+tabular-digit, locale-formatted via `formatListCellValue` (headers stay
+left-aligned); every sheet-opening cell shares the `CellAffordance`
+two-affordance anatomy; arbitrary wire values convert via
+`toDisplayString` (`@primebrick/ui`), never `String()` — wire JSON parses
+to null-prototype objects and implicit coercion throws
+(`@typescript-eslint/no-base-to-string` enforces this).
 
 ## `table` — EntityListTable options
 

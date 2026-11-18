@@ -203,6 +203,8 @@ shared by table, form, and preview pages. All fields are snake_case:
 | `datetime_iana_toggle` | `{ record_iana_field }` for IANA timezone toggle |
 | `tooltip`, `tooltip_priority`, `tooltip_title` | Tooltip configuration |
 | `show_form_tooltip`, `show_list_tooltip` | Tooltip visibility per context |
+| `format` | Semantic renderer discriminator — `TableCell` switches on it **before** `type` (`schedule_spec`, `nats_subject`, `json`, `identifier`, …) |
+| `uom` | Unit-of-measure semantics for `type:"number"` — see below |
 
 Utility functions in `src/lib/entity-list/types.ts`:
 `orderedColumns()` (sticky → normal → audited, each by `order`),
@@ -213,25 +215,47 @@ The default "all fields" search covers **visible ∩ searchable ∩ `text`
 columns**: hidden-by-default columns (e.g. `uuid`) are excluded until the
 user shows them or picks them explicitly in the search-scope selector.
 
+## Cell anatomy
+
+Cell rendering follows fixed standards no page may bypass:
+
+- **Sheet-opening cells share `CellAffordance`.** Every cell whose click
+  opens a sheet uses the same two-affordance anatomy
+  (`table/CellAffordance.svelte`): the **text** is a `font-medium` button that
+  underlines on hover and opens the cell's canonical sheet; the
+  **trailing icon** sits at the cell's right edge (`opacity-0` →
+  `group-hover:opacity-100`) and carries the SECOND action — a `_blank`
+  `href` on ref cells, or the same sheet again via `oniconclick`. Never
+  invent per-cell button anatomy — `ref` (default `presentation:"link"`),
+  `MapperCellViewer` and `JsonCellViewer` all ride this component.
+- **`format:"json"` dispatch order:** mapper widgets
+  (`widget:"payload_map"` → `MapperCellViewer` + `entity.mapperViewer`)
+  → condition arrays (`[{field, op, value}]` → prose chips + per-chip
+  canonical tooltip) → **generic fallback** (`JsonCellViewer` → a
+  text-only "View" link opening the registered `entity.jsonViewer`
+  sheet). No icon in the cell — the braces glyph lives in the sheet
+  header only.
+- **`type:"number"` cells are locale-formatted + right-aligned** by
+  construction — `formatListCellValue`/`formatListNumberValue`
+  (`@primebrick/ui`) renders through `Intl` with `useGrouping:true`
+  (explicit: `auto` skips 4-digit groups in `it-IT`), so `1234` is
+  `1.234` / `1,234` in every locale. The fraction-digit budget derives
+  from `numericKindOf(col)` — `int8`/`bigint` always renders zero
+  decimals. `uom` adds unit semantics (see `entity-metadata.mdx`):
+  percent → `style:"percent"`, currency → `style:"currency"` from the
+  sibling ISO field, fixed `unit` → `style:"unit"` (`"24 ms"`), fixed
+  `symbol` → decimal + suffix, `field`+`source` → per-row code. Cells
+  carry `text-right tabular-nums`; **headers stay left-aligned** —
+  never mirror data alignment into `th`.
+- `boolean` columns render `CircleCheck`/`CircleX` icons **centered**;
+  arbitrary wire values convert via `toDisplayString`
+  (`@primebrick/ui`), never `String()` — wire JSON parses to
+  null-prototype objects and implicit coercion throws
+  (`@typescript-eslint/no-base-to-string` enforces this).
+
 ## Built-in cell drifts
 
 Two cell behaviors are **by construction**, not authored per table:
-
-- **`version` column → version-history badge.** `TableCell` renders the
-  canonical `v<N>` badge-drill (the same anatomy as the record-sheet
-  footer badge — `text-xs font-semibold border-primary`) instead of the
-  raw number. Clicking opens the stacked `entity.versionHistory` sheet
-  with the same payload row actions build (`TableEntityContext`: entity,
-  translationKey, uid, columns).
-- **Actor ref → `entity.record` sheet with hero states.** `type:"ref"`
-  cells resolve the actor link; the opened sheet classifies the target
-  before fetching (`isUUID` from `@primebrick/ui`):
-  - **non-uuid value** (`system`, seed aliases) → warning `StateHero`
-    ("fictitious {entity_singular}"), never hits the API;
-  - **uuid-shaped but 404** → destructive `StateHero`
-    ("no longer available");
-  - **other load failure** → destructive `StateHero` with the generic
-    load-error key.
 
 ## Route-level usage — EntityTablePage
 
