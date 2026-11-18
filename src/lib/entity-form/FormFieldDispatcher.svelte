@@ -63,6 +63,7 @@
 		depResetsOnPivotChange,
 	} from './depends-on';
 	import { ruleJsonCompletions } from './rule-schema-completions';
+	import RuleFilterEditor from './RuleFilterEditor.svelte';
 	import { CircleCheck, CircleX } from '@primebrick/ui/vendor/lucide';
 	import { getResolvedIanaTimeZone } from '@primebrick/ui';
 	import { calendarDateToUtcIso, isoToCalendarDate } from './date-wire';
@@ -201,6 +202,7 @@
 	const FORM_CONTROLS = new Set([
 		'schedule_spec',
 		'json',
+		'rule_filter',
 		'subject_combo',
 		'role_multi',
 		'payload_map',
@@ -287,7 +289,7 @@
 		// the preview renderer is a form/list surface, never a filter control.
 		if (column.type === 'avatar') return 'text';
 		const resolved = deriveControl();
-		if (resolved === 'subject_combo' || resolved === 'json' || resolved === 'payload_map' || resolved === 'schedule_spec')
+		if (resolved === 'subject_combo' || resolved === 'json' || resolved === 'rule_filter' || resolved === 'payload_map' || resolved === 'schedule_spec')
 			return 'text';
 		if (FILTER_CONTROLS.has(resolved)) return resolved;
 		throw new Error(
@@ -308,6 +310,9 @@
 		// column value, color from the `avatar.color_field` sibling).
 		if (column.type === 'avatar') return 'avatar';
 		if (format === 'schedule_spec') return 'schedule_spec';
+		// `rule_filter` wins over the jsonb fallback — a RuleFilter[]
+		// column renders the guided composer, never raw JSON first.
+		if (format === 'rule_filter') return 'rule_filter';
 		if (format === 'json' || column.pg_type === 'jsonb' || column.pg_type === 'json') return 'json';
 		if (format === 'nats_subject') {
 			return column.options_source === 'census.emits' ||
@@ -701,6 +706,17 @@
 		preview_open={false}
 		{placeholder}
 		readonly={effectiveLocked}
+		on_ai_assist={onJsonAiAssist}
+		extra_completions={ruleCompletions}
+		{...controlProps}
+	/>
+{:else if control === 'rule_filter'}
+	<RuleFilterEditor
+		bind:value={stringValue.value}
+		source_schema={sourceEmit?.payload_schema}
+		schema={column.json_schema}
+		readonly={effectiveLocked}
+		{placeholder}
 		on_ai_assist={onJsonAiAssist}
 		extra_completions={ruleCompletions}
 		{...controlProps}

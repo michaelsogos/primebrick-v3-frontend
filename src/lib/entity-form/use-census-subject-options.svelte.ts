@@ -58,25 +58,45 @@ export function useCensusSubjectOptions(modules: () => ModuleInfo[]): CensusSubj
 	const emitDecls = $derived(modules().flatMap((m) => m.events?.emits ?? []));
 	const callableDecls = $derived(modules().flatMap((m) => m.callables?.callables ?? []));
 
+	/** An `events.<svc>.<entity>.>` subject IS an entity-lifecycle emit —
+	 *  semantic `.on.<name>` events never match (different token count). */
+	const ENTITY_LIFECYCLE_RE = /^events\.[^.]+\.[^.]+\.>$/;
+
+	/** Options sort by the RESOLVED label in the current language —
+	 *  deterministic across environments, never census/DB order. */
+	const byLabel = <T extends { label: string; value: string }>(a: T, b: T) =>
+		a.label.localeCompare(b.label, lang.current) || a.value.localeCompare(b.value);
+
 	const emitsOptions = $derived(
-		emitDecls.map((e) => ({
-			value: e.subject,
-			label: e.label_key ? tr.current(e.label_key) : e.subject,
-			_desc: e.description_key ? tr.current(e.description_key) : '',
-			_sub: e.subject,
-			_icon: 'zap',
-			_icon_color: 'amber-500',
-		})),
+		emitDecls
+			.map((e) => ({
+				value: e.subject,
+				label: e.label_key ? tr.current(e.label_key) : e.subject,
+				// Entity-lifecycle emits carry no description_key — the FE
+				// states what the channel carries ("all lifecycle events")
+				// since the label already names the entity.
+				_desc: e.description_key
+					? tr.current(e.description_key)
+					: ENTITY_LIFECYCLE_RE.test(e.subject)
+						? tr.current('app.events.entity_lifecycle_desc')
+						: '',
+				_sub: e.subject,
+				_icon: 'zap',
+				_icon_color: 'amber-500',
+			}))
+			.sort(byLabel),
 	);
 	const callablesOptions = $derived(
-		callableDecls.map((c) => ({
-			value: c.subject,
-			label: c.label_key ? tr.current(c.label_key) : c.subject,
-			_desc: c.description_key ? tr.current(c.description_key) : '',
-			_sub: c.subject,
-			_icon: 'send',
-			_icon_color: 'sky-500',
-		})),
+		callableDecls
+			.map((c) => ({
+				value: c.subject,
+				label: c.label_key ? tr.current(c.label_key) : c.subject,
+				_desc: c.description_key ? tr.current(c.description_key) : '',
+				_sub: c.subject,
+				_icon: 'send',
+				_icon_color: 'sky-500',
+			}))
+			.sort(byLabel),
 	);
 
 	const censusContributors = $derived(
