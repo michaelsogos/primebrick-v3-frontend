@@ -25,7 +25,7 @@
 		MetaColumn,
 		PayloadOptionsSource,
 	} from '@primebrick/ui';
-	import { flagCodeForBcp47, toDisplayString, numericKindOf, uomUnitSymbol } from '@primebrick/ui';
+	import { flagCodeForBcp47, toDisplayString, numericKindOf, uomUnitSymbol, UNIT_CATEGORIES, type MetaColumnUomKind } from '@primebrick/ui';
 	import type { NumericUomSpec } from '@primebrick/ui';
 	import type { Decimal } from '@primebrick/ui';
 	import { currencySymbol } from '$lib/currency';
@@ -380,15 +380,46 @@
 		const u = column.uom;
 		if (!u) return undefined;
 		if (u.kind === 'percent') return { kind: 'percent' };
-		if (u.kind === 'custom') {
-			// Fixed-unit variants — display-only adornment, nothing to pick:
-			// `unit` resolves its locale-short symbol from Intl (ms, kg…),
-			// `symbol` is the declared fixed suffix.
+		if (u.kind === 'custom' && !('field' in u)) {
+			// Standalone `symbol` — fixed arbitrary suffix, display-only.
+			return { kind: 'custom', symbol: u.symbol };
+		}
+		if (u.kind in UNIT_CATEGORIES) {
+			// Category kind — FIXED `unit` renders its locale-short Intl
+			// symbol (ms, kg…) as a display-only adornment; `field` is the
+			// per-row code and the CATEGORY itself is the picker vocabulary
+			// (no `source` exists on these kinds).
 			if ('unit' in u) {
 				return { kind: 'custom', code: u.unit, symbol: uomUnitSymbol(u.unit, $uiLang) };
 			}
-			if (!('field' in u)) return { kind: 'custom', symbol: u.symbol };
+			const rawUnit = surface === 'form' && record ? record[u.field] : undefined;
+			const unit =
+				typeof rawUnit === 'string' ||
+				typeof rawUnit === 'number' ||
+				typeof rawUnit === 'boolean'
+					? String(rawUnit)
+					: '';
+			return {
+				kind: 'custom',
+				code: unit,
+				symbol: unit ? uomUnitSymbol(unit, $uiLang) : '',
+				options: UNIT_CATEGORIES[u.kind as MetaColumnUomKind].map((unitCode) => ({
+					code: unitCode,
+					symbol: uomUnitSymbol(unitCode, $uiLang),
+				})),
+				on_uom_change: record
+					? (unitCode: string) => {
+							if (record) {
+								record[u.field] = unitCode;
+								record = record;
+							}
+						}
+					: undefined,
+			};
 		}
+		if (u.kind !== 'currency' && u.kind !== 'custom') return undefined;
+		// Remaining union: currency | custom{field,source} — both carry the
+		// per-row code on the `u.field` sibling.
 		const rawCode = surface === 'form' && record ? record[u.field] : undefined;
 		const code =
 			typeof rawCode === 'string' ||
@@ -416,7 +447,7 @@
 					: undefined,
 			};
 		}
-		return { kind: 'custom', code, symbol: u.symbol ?? code };
+		return { kind: 'custom', code, symbol: ('symbol' in u ? u.symbol : undefined) ?? code };
 	});
 	/** Multi-select surfaces (filter IN semantics) — an empty selection is
 	 *  `undefined`, not `[]`, so the serializer drops the param entirely. */

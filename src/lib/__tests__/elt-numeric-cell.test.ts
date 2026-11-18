@@ -49,8 +49,8 @@ describe('getAuditFieldValue — formatter wiring', () => {
 		).toBe('€9.99');
 	});
 
-	it('custom uom with a fixed Intl unit renders style:"unit" (duration_ms case)', () => {
-		const c = col({ key: 'duration_ms', type: 'number', uom: { kind: 'custom', unit: 'millisecond' } });
+	it('category-kind uom with a fixed Intl unit renders style:"unit" (duration_ms case)', () => {
+		const c = col({ key: 'duration_ms', type: 'number', uom: { kind: 'time', unit: 'millisecond' } });
 		expect(getAuditFieldValue({ duration_ms: 24 }, c, 'it-IT' as UiLang, formatListCellValue)).toBe('24 ms');
 		expect(getAuditFieldValue({ duration_ms: 1234 }, c, 'en-GB' as UiLang, formatListCellValue)).toBe('1,234 ms');
 	});

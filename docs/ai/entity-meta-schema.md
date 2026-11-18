@@ -107,10 +107,12 @@ type EntityMeta = {
 - The numeric **kind** is derived, never authored: `numericKindOf(col)` maps
   the injected `pg_type` → `bigint` | `number` | `decimal`. One resolver for
   every surface (input, zod, filter, cell) — never re-derive locally.
-- `uom` declares unit semantics — three shapes (see core `MetaColumnUom`):
-  fixed `unit` (Intl-sanctioned identifier), per-row `field`+`source`, fixed
-  `symbol`; plus `percent` (canonical fraction) and `currency` (sibling ISO
-  field). Absent → plain decimal.
+- `uom` declares unit semantics — `kind` carries the macro-category (see
+  core `MetaColumnUom`/`UNIT_CATEGORIES`): `percent` (canonical fraction),
+  `currency{field}` (sibling ISO), category kinds (`time`, `length`,
+  `digital`, …) with fixed `unit` or per-row `field` (category = picker
+  vocabulary), `custom` for non-standard vocabularies only
+  (`field`+`source`, or standalone `symbol`). Absent → plain decimal.
 - Cell display: `formatListCellValue`/`formatListNumberValue` (ui) — Intl
   `useGrouping:'always'` (4-digit groups everywhere; `auto` skips them in
   it-IT), `style:'percent'|'currency'|'unit'` native, `bigint` → 0 decimals.
