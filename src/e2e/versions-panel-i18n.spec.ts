@@ -35,9 +35,9 @@ test("versions panel — installed modules show localized display names (it-IT)"
   // online module resolves its own dict (loaded best-effort by the
   // panel itself), so raw English names must NOT appear.
   const expected: Record<string, string> = {
-    "Process Manager": "Gestione Processi",
-    "Email Manager": "Gestione Gateway Comunicazione",
-    "AI Assistants Manager": "Gestione Assistenti AI",
+    "Process Management": "Gestione Processi",
+    "Communications Management": "Gestione Comunicazioni",
+    "AI Assistants Management": "Gestione Assistenti AI",
     "Webhook Ingress": "Ingresso Webhook",
     Settings: "Impostazioni",
   };
