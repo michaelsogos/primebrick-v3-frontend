@@ -11,13 +11,21 @@ export function getAuditFieldValue<TRow extends Record<string, unknown>>(
   row: TRow,
   col: MetaColumn,
   uiLang: UiLang,
-  formatListCellValueFn: (col: MetaColumn, raw: unknown, lang: UiLang) => string,
+  formatListCellValueFn: (col: MetaColumn, raw: unknown, lang: UiLang, row?: Record<string, unknown>) => string,
   auditingColumns?: MetaColumn[]
 ): string {
   // Note: datetime/date formatting is handled in TableCell.svelte template
   // before calling this function (sequential logic: snippet, boolean, badge, datetime)
-  // This function is only called in the {:else} case for non-formatted fields
-  return getAuditableDisplayValue(row, col, auditingColumns);
+  // This function is only called in the {:else} case for non-formatted fields.
+  // Auditable `*_by` columns keep their resolved `_name` sibling; every other
+  // column goes through the injected cell formatter (locale numbers/dates),
+  // with the row so `uom.field` siblings resolve.
+  if (isAuditableColumn(col.key, auditingColumns) && col.key.endsWith('_by')) {
+    return getAuditableDisplayValue(row, col, auditingColumns);
+  }
+  const raw = row[col.key];
+  if (isBlankish(raw)) return '-';
+  return formatListCellValueFn(col, raw, uiLang, row);
 }
 
 export function isCardFieldEmpty<TRow extends Record<string, unknown>>(
