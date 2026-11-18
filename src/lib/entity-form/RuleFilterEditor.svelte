@@ -23,7 +23,9 @@
 		PrimeField,
 		PropNavigator,
 		TextInput,
+		schemaToNavNodes,
 		type PropNavNode,
+		type SchemaLike,
 	} from '@primebrick/ui';
 	import { X as XIcon, Plus, ListFilter, Braces } from '@primebrick/ui/vendor/lucide';
 	import { t } from '$lib/i18n';
@@ -111,44 +113,11 @@
 	let newOp = $state<RuleOp>('eq');
 	let newValue = $state<string>('');
 
-	/** Readable leaf-type line for the navigator's `_sub` — honest about the
-	 *  shape: a `format` IS the type (email, date-time), arrays unwrap. */
-	function leafSub(sub: JsonSchema): string {
-		const raw = sub.type;
-		const types = Array.isArray(raw) ? raw.map(String) : raw !== undefined ? [String(raw)] : [];
-		const base = types.find((t) => t !== 'null');
-		if (base === 'array') return `array<${sub.items ? leafSub(sub.items as JsonSchema) : 'unknown'}>`;
-		if (typeof sub.format === 'string') return sub.format;
-		// Enum leaves carry no `type` — the vocabulary IS the type.
-		if (Array.isArray(sub.enum)) return sub.enum.map(String).join(' · ');
-		return base ?? 'unknown';
-	}
-
-	/** Schema tree for the PropNavigator — `value` carries the wire path,
-	 *  `label` translates `x_label_key` (emitted per-column by the SDK's
-	 *  entityEventPayloadSchema) with the raw key as honest fallback. */
-	const pathTree = $derived.by(() => {
-		const walk = (schema: JsonSchema | undefined, prefix: string, depth: number): PropNavNode[] => {
-			if (!schema?.properties || depth > 5) return [];
-			return Object.entries(schema.properties)
-				.map(([key, sub]) => {
-					const path = `${prefix}.${key}`;
-					const children = walk(sub as JsonSchema, path, depth + 1);
-					const labelKey = (sub as Record<string, unknown>)?.['x_label_key'];
-					return {
-						value: path,
-						label: typeof labelKey === 'string' && labelKey ? $t(labelKey) : key,
-						_sub: leafSub(sub as JsonSchema),
-						_schema: sub as Record<string, unknown>,
-						...(children.length > 0 ? { children } : {}),
-					} satisfies PropNavNode;
-				})
-				// Alphabetical by resolved label — schema enumeration order is
-				// meaningless to an author (user decision, 2026-12-21).
-				.sort((a, b) => String(a.label).localeCompare(String(b.label)));
-		};
-		return walk((source_schema ?? {}) as JsonSchema, '$', 1);
-	});
+	// Schema tree for the PropNavigator — the SHARED builder owns label
+	// (`x_label_key` → translated), `_sub` (readable type line), and the
+	// type icons so this picker and the payload-map selector can never
+	// diverge into two presentations of the same schema.
+	const pathTree = $derived.by(() => schemaToNavNodes(source_schema as SchemaLike | undefined));
 	const opOptions = $derived(
 		OPS.map(({ op, icon }) => ({
 			value: op,
