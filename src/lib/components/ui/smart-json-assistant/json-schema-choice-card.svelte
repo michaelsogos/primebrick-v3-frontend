@@ -12,6 +12,7 @@
    * Fully schema-agnostic: the object name used in generated prompts and
    * the i18n namespace arrive via props.
    */
+  import { untrack } from 'svelte';
   import { SvelteSet } from 'svelte/reactivity';
   import { JsonCodeBlock } from '@primebrick/ui';
   import { Button } from '@primebrick/ui';
@@ -174,9 +175,8 @@
   // ValidationRulesSection (/create): a key that exists in the dict resolves
   // to its translation in the trigger instead of showing the raw key.
   // Seed only; user selection immediately resolves the choice via
-  // handleKeySelect.
-  // svelte-ignore state_referenced_locally
-  let keyPickerValue = $state(choice.kind === 'key_picker' ? choice.suggested_key : '');
+  // handleKeySelect — untrack marks the intentional one-time read.
+  let keyPickerValue = $state(untrack(() => (choice.kind === 'key_picker' ? choice.suggested_key : '')));
 
   /** Pick an existing (or newly typed) translation key → precise prompt. */
   function handleKeySelect(value: string | string[]) {

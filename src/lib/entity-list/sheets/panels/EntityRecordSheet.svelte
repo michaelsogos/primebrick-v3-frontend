@@ -22,7 +22,7 @@
    *
    * In-sheet links are `_blank`-only by contract.
    */
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import { t } from '$lib/i18n';
   import { apiFetch, entityApiBase, routesCensusFromModules, ApiUnreachableError } from '$lib/api';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
@@ -55,9 +55,8 @@
   } = $props();
 
   // Props are stable within a sheet mount — the host remounts the panel
-  // per open, so plain captures are the honest contract.
-  // svelte-ignore state_referenced_locally
-  const basePath = entityApiBase(entity);
+  // per open; untrack marks the intentional one-time read.
+  const basePath = untrack(() => entityApiBase(entity));
   const routeCensus = $derived(routesCensusFromModules(shellNav.modules));
 
   /** The entity's declared form layout — first form-bearing route in the
@@ -88,8 +87,7 @@
    *  uuid before GET; heroes keep showing it above the error state.
    *  Initial value = the cell's raw stored value (same prop-stability
    *  contract as `basePath` — the panel remounts per open). */
-  // svelte-ignore state_referenced_locally
-  let heroUid = $state<unknown>(value);
+  let heroUid = $state<unknown>(untrack(() => value));
 
   /** Edit mode — gated on `meta.actions`: the pencil renders iff the
    *  `update.single` op is enabled AND the user satisfies its declared

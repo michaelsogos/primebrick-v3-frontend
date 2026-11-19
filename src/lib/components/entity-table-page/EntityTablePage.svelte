@@ -2,7 +2,7 @@
   import { t } from '$lib/i18n';
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
-  import { onMount, type Snippet } from 'svelte';
+  import { onMount, untrack, type Snippet } from 'svelte';
   import { entitiesNs } from '$lib/utils/entity-meta';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
   import { isSnakeCaseSingular } from '$lib/entity-list';
@@ -107,9 +107,8 @@
   }: EntityTablePageProps = $props();
 
   // Page-level config props are immutable per mount (the entity doesn't
-  // change under a mounted page) — the composable captures them at init.
-  // svelte-ignore state_referenced_locally
-  const list = useEntityList<TRow>({
+  // change under a mounted page) — untrack marks the one-time capture.
+  const list = untrack(() => useEntityList<TRow>({
     basePath,
     storageKeyPrefix,
     syncChannel,
@@ -123,7 +122,7 @@
     searchGate,
     searchDebounceMs,
     t: $t
-  });
+  }));
 
   onMount(() => {
     void list.init();

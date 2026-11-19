@@ -1,5 +1,6 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
+  import { untrack } from 'svelte';
   import { SheetPanelLayout } from '@primebrick/ui';
   import { SwitchField } from '@primebrick/ui';
   import { Flag } from '@primebrick/ui/vendor/lucide';
@@ -12,15 +13,12 @@
 
   let { current_flags, config_type, on_flags_change }: Props = $props();
 
-  // Parse current flags into individual toggles.
-  // Panel is mounted fresh each time the sheet opens, so capturing the initial
-  // prop value is intentional — the toggles are then user-mutable.
-  // svelte-ignore state_referenced_locally
-  let flagG = $state(current_flags.includes('g'));
-  // svelte-ignore state_referenced_locally
-  let flagI = $state(current_flags.includes('i'));
-  // svelte-ignore state_referenced_locally
-  let flagM = $state(current_flags.includes('m'));
+  // The toggles are user-mutable drafts initialized once from the prop —
+  // the panel remounts on each open (keepMountedState defaults false), so
+  // untrack expresses the intentional read-once, no suppression needed.
+  let flagG = $state(untrack(() => current_flags.includes('g')));
+  let flagI = $state(untrack(() => current_flags.includes('i')));
+  let flagM = $state(untrack(() => current_flags.includes('m')));
 
   // Show multiline flag only for text type (textarea)
   let showMultiline = $derived(config_type === 'text');

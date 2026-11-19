@@ -18,6 +18,7 @@
 	 * or fallback that routes one here is a contract violation and fails
 	 * fast instead of silently drawing a dead control.
 	 */
+	import { untrack } from 'svelte';
 	import { t } from '$lib/i18n';
 	import {
 		FormLabel,
@@ -87,13 +88,15 @@
 	} = $props();
 
 	// Construction guard — `column` is mount-stable (keyed per col.key in
-	// every caller); the audited contract is checked once, at init.
-	// svelte-ignore state_referenced_locally
-	if (column.audited) {
-		throw new Error(
-			`EntityFormField: audited column "${column.key}" cannot render as a form field — audit values are read-only by contract`,
-		);
-	}
+	// every caller); the audited contract is checked once, at init, so
+	// untrack marks the intentional read-once.
+	untrack(() => {
+		if (column.audited) {
+			throw new Error(
+				`EntityFormField: audited column "${column.key}" cannot render as a form field — audit values are read-only by contract`,
+			);
+		}
+	});
 
 	const labelFor = $derived(controlProps?.id as string | undefined);
 

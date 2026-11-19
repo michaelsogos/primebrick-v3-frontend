@@ -9,7 +9,7 @@
    *
    * The `value` prop is the tab identifier (e.g. "details", "permissions").
    */
-  import { getContext } from "svelte";
+  import { getContext, untrack } from "svelte";
   import type { Snippet } from "svelte";
   import { cn } from "$lib/utils.js";
 
@@ -31,9 +31,9 @@
     scrollToTab: (v: string) => void;
   }>("anchor-tabs");
 
-  // svelte-ignore state_referenced_locally
-  // value is a static tab identifier — registerTab is a one-time registration call
-  const section_id = ctx.registerTab(value);
+  // value is a static tab identifier — registerTab is a one-time
+  // registration call, so untrack marks the read-once intent explicitly.
+  const section_id = untrack(() => ctx.registerTab(value));
   const is_active = $derived(ctx.active_value === value);
 
   function handleClick(e: MouseEvent) {

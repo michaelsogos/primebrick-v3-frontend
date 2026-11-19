@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import { SvelteSet, SvelteMap } from 'svelte/reactivity';
   import { t } from '$lib/i18n';
   import type { ConfigEntry } from '$lib/api-types';
@@ -207,9 +208,9 @@
   );
 
   // Clear selection when entries change (e.g. after delete)
-  // Local mutable state initialized from a prop, then reassigned on change.
-  // svelte-ignore state_referenced_locally
-  let lastEntryCount = $state(entries.length);
+  // Local mutable state initialized from a prop, then reassigned on change
+  // — untrack marks the intentional one-time read.
+  let lastEntryCount = $state(untrack(() => entries.length));
   $effect(() => {
     if (entries.length !== lastEntryCount) {
       const validUuids = new Set(entries.map((e) => e.uuid));

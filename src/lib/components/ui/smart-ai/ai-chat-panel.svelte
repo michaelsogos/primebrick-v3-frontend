@@ -20,7 +20,7 @@
    * - `create_composable` — factory: (model_id) => assistant composable
    * - `choices` — snippet: renders an assistant message with choices
    */
-  import { onMount, type Snippet } from 'svelte';
+  import { onMount, untrack, type Snippet } from 'svelte';
   import { browser } from '$app/environment';
   import { Button } from '@primebrick/ui';
   import { Textarea } from '@primebrick/ui';
@@ -114,9 +114,8 @@
 
   const aiModels = useAiModels();
   // assistant_key is a static prop for the lifetime of the panel
-  // (the chat is remounted on change).
-  // svelte-ignore state_referenced_locally
-  const cerebellum = assistant_key ? useAiCerebellum(assistant_key) : null;
+  // (the chat is remounted on change) — untrack marks the one-time capture.
+  const cerebellum = untrack(() => (assistant_key ? useAiCerebellum(assistant_key) : null));
 
   let ai = $state<AiHandle | null>(null);
   let modelId = $state<string | null>(null);

@@ -26,6 +26,7 @@
    * The uid/audited/version partition applies to both paths — a declared
    * form never places system fields anyway.
    */
+  import { untrack } from 'svelte';
   import EntityRecordUid from './EntityRecordUid.svelte';
   import EntityFormField from '$lib/entity-form/EntityFormField.svelte';
   import { useAuditBox } from '$lib/composables/useAuditBox';
@@ -64,9 +65,8 @@
 
   const uidKey = $derived(meta?.uid ?? 'uuid');
   // Context is set once at mount — the served meta (and its uid key) is
-  // stable for the sheet's lifetime.
-  // svelte-ignore state_referenced_locally
-  setMetaUidContext(uidKey);
+  // stable for the sheet's lifetime; untrack marks the one-time effect.
+  untrack(() => setMetaUidContext(uidKey));
 
   // Canonical display order (sticky → normal → audited, each by `order`;
   // absent `order` degrades to array index) — array position MUST NOT

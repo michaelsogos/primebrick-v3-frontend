@@ -29,7 +29,7 @@ interface CapabilitiesCache {
   fetched: boolean;
 }
 
-// svelte-ignore state_referenced_locally — module-level singleton, intentionally shared.
+// Module-level singleton — intentionally shared across consumers.
 const _state = $state<CapabilitiesCache>({ map: null, loading: false, error: null, fetched: false });
 
 let _promise: Promise<void> | null = null;

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import { apiFetch } from '$lib/api';
   import { mapRFC7807ToMessageKey } from '$lib/errors/rfc7807-mapper';
   import { pushNotification } from '$lib/errors/app-errors';
@@ -40,11 +40,10 @@
   // this form mounts we swap it for a fresh one — the BE verifies the old
   // token's signature (exp ignored) and moves the stashed session tokens to
   // the new challenge. If the stash is gone, verification is impossible and
-  // the user must restart password login.
-  // svelte-ignore state_referenced_locally
-  let challengeToken = $state(mfa_challenge_token);
-  // svelte-ignore state_referenced_locally
-  let factors = $state(available_factors);
+  // the user must restart password login. Drafts are read-once prop
+  // snapshots — untrack says so in code, not in a suppression.
+  let challengeToken = $state(untrack(() => mfa_challenge_token));
+  let factors = $state(untrack(() => available_factors));
   let challengeReady = $state(false);
 
   onMount(async () => {
