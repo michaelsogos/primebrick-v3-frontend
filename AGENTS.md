@@ -55,9 +55,10 @@ You are an expert Svelte™ 5 and TypeScript® developer. You MUST EXCLUSIVELY u
    in production via `svelte.config.js` `onwarn`) and produces stale values.
    - ❌ `const i18nEntity = translationKey ?? entity;` (snapshots initial value)
    - ✅ `const i18nEntity = $derived(translationKey ?? entity);`
-   - Use `svelte-ignore state_referenced_locally` ONLY when the value is genuinely
-     static (e.g., local mutable state initialized from a prop, then reassigned on
-     save). Add a comment explaining why.
+   - Intentional one-time reads (local mutable draft state, registrations,
+     init guards) use `$state(untrack(() => prop))` / `untrack(() => call())` —
+     `svelte-ignore state_referenced_locally` is NOT sanctioned when `untrack()`
+     expresses the same intent in code.
    - See [`.devin/rules/svelte-runes.md`](./.devin/rules/svelte-runes.md) and
      [`docs/ai/svelte-runes.md`](./docs/ai/svelte-runes.md) for the full pattern guide.
 7. **SVELTE MCP TOOL**: Before writing any `.svelte` file, agents MUST pass the
