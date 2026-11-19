@@ -532,7 +532,6 @@
 {#if !svc.available}
 	<ServiceUnavailableView
 		service={svcCode ?? decl.module}
-		status={svc.status}
 		onRetry={() => void attemptLoad()}
 	/>
 {:else if loadError}
