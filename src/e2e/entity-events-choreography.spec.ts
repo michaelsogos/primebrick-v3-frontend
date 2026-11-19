@@ -45,6 +45,7 @@ test.describe("entity events choreography — trigger authored in the browser", 
   let trigVersion = 0;
   let dummyUuid = "";
   let dummyVersion = 0;
+  let bulkWatcherUuid = "";
 
   test("create the event-sourced trigger via the UI form → durable consumer binds", async ({
     page,
@@ -330,9 +331,159 @@ test.describe("entity events choreography — trigger authored in the browser", 
       .toBeGreaterThanOrEqual(1);
   });
 
+  test("bulk-delete emits disjoint bulk_delete + entities{batch,uuids} — watcher fires", async ({
+    page,
+  }) => {
+    await loginAsTestAdmin(page);
+    const pool = getPool();
+    const t0 = new Date();
+
+    // 0) Sweep orphans left by earlier failed runs — entity-API deletes so
+    //    the ctl broadcast evicts them from liveTriggers too (a raw SQL
+    //    delete would leave stale watchers firing on our bulk_delete).
+    const { rows: orphans } = await pool.query<{ uuid: string; version: number }>(
+      `SELECT uuid, version FROM job.job_triggers WHERE name LIKE 'e2e-evt-bulk-%' AND deleted_at IS NULL`,
+    );
+    for (const o of orphans) {
+      await page.request.delete(`${JOB_BASE}/job_trigger/${o.uuid}?version=${o.version}`);
+    }
+
+    // 1) Two plain rows — their `create` events must NOT match the filter.
+    const mk = async (name: string) => {
+      const r = await page.request.post(`${JOB_BASE}/job_trigger`, {
+        data: {
+          entity: {
+            name,
+            schedule_spec: "@every 1h",
+            target_subject: "crm.emit_fake_event",
+            run_as: "system",
+            payload_map: { event: { kind: "const", value: "events.crm.customer.on.changed" } },
+          },
+        },
+      });
+      expect(r.status(), await r.text()).toBe(201);
+      return (await r.json()) as { uuid: string; version: number };
+    };
+    const d1 = await mk(`e2e-evt-bulk-a-${TS}`);
+    const d2 = await mk(`e2e-evt-bulk-b-${TS}`);
+
+    // 2) Watcher on d1's EXACT subject — filtered on the DISJOINT bulk
+    //    vocabulary. The per-uuid subject is unbound (unique per run), so
+    //    refreshTrigger's bindSubject creates a FRESH durable every run:
+    //    liveTriggers.set precedes bindSubject in refreshTrigger, thus the
+    //    durable's existence proves the watcher is live — deterministic,
+    //    unlike the shared `events.job.job_trigger.>` lane where delivery
+    //    races the async ctl refresh and the ACKed event is lost for good.
+    const watchSubject = `events.job.job_trigger.${d1.uuid}`;
+    const w = await page.request.post(`${JOB_BASE}/job_trigger`, {
+      data: {
+        entity: {
+          name: `e2e-evt-bulk-watch-${TS}`,
+          event_subject: watchSubject,
+          filter: [{ field: "event.action", op: "eq", value: "bulk_delete" }],
+          target_subject: "crm.emit_fake_event",
+          run_as: "system",
+          payload_map: { event: { kind: "const", value: "events.crm.customer.on.changed" } },
+        },
+      },
+    });
+    expect(w.status(), await w.text()).toBe(201);
+    const watcher = (await w.json()) as { uuid: string };
+    bulkWatcherUuid = watcher.uuid;
+
+    // 3) Wait for the watcher's fresh durable — watcher is live by then.
+    const jsmW = await jetstreamManager(await getNats());
+    await expect
+      .poll(
+        async () => {
+          for await (const c of jsmW.consumers.list(EVENTS_STREAM)) {
+            if (c.config.filter_subject === watchSubject) return true;
+          }
+          return false;
+        },
+        { timeout: 15000, intervals: [500, 1000, 2000] },
+      )
+      .toBe(true);
+    const { rows: vers } = await pool.query<{ uuid: string; version: number }>(
+      `SELECT uuid, version FROM job.job_triggers WHERE uuid = ANY($1)`,
+      [[d1.uuid, d2.uuid]],
+    );
+    const versionOf = (uuid: string) => vers.find((r) => r.uuid === uuid)!.version;
+
+    // 4) POST /bulk-delete — service.bulkDelete → repo.deleteMany → THIN
+    //    `bulk_delete` events correlated by `entities`.
+    const del = await page.request.post(`${JOB_BASE}/job_trigger/bulk-delete`, {
+      data: {
+        items: [
+          { uuid: d1.uuid, version: versionOf(d1.uuid) },
+          { uuid: d2.uuid, version: versionOf(d2.uuid) },
+        ],
+      },
+    });
+    expect(del.ok(), await del.text()).toBeTruthy();
+
+    // 5) Wire contract — per-member event carries the grouped op outcome:
+    //    shared `entities.batch`, the FULL uuid set in `entities.uuids`,
+    //    and no op data left in the standard envelope.
+    const jsm = await jetstreamManager(await getNats());
+    const readEvt = async (uuid: string) => {
+      const m = await jsm.streams.getMessage(EVENTS_STREAM, {
+        last_by_subj: `events.job.job_trigger.${uuid}`,
+      });
+      return m ? (JSON.parse(new TextDecoder().decode(m.data)) as Record<string, unknown>) : null;
+    };
+    await expect
+      .poll(
+        async () => {
+          const e = await readEvt(d1.uuid).catch(() => null);
+          return (e?.event as Record<string, unknown> | undefined)?.action === "bulk_delete";
+        },
+        { timeout: 15000, intervals: [500, 1000, 2000] },
+      )
+      .toBe(true);
+    const e1 = await readEvt(d1.uuid);
+    const e2 = await readEvt(d2.uuid);
+    expect(e2, "second bulk member must land on its own subject").not.toBeNull();
+    const ents1 = e1!.entities as { batch: string; uuids: string[] };
+    const ents2 = e2!.entities as { batch: string; uuids: string[] };
+    expect((e1!.event as Record<string, unknown>).action).toBe("bulk_delete");
+    expect((e2!.event as Record<string, unknown>).action).toBe("bulk_delete");
+    expect((e1!.event as Record<string, unknown>).batch).toBeUndefined();
+    expect(ents1.batch).toBe(ents2.batch);
+    expect(ents1.uuids.slice().sort()).toEqual([d1.uuid, d2.uuid].sort());
+    expect(ents2.uuids.slice().sort()).toEqual([d1.uuid, d2.uuid].sort());
+    // Thin events — no row state on bulk paths by contract.
+    expect((e1!.entity as Record<string, unknown>).after).toBeNull();
+
+    // 6) The watcher matched the disjoint action → fires on d1's event.
+    //    Event-triggered runs carry trigger_uuid (schedule_subject stays
+    //    NULL — no mirror for immediate triggers); `failed` status is env
+    //    noise from the fake callable's shield auth — the run ROW is the
+    //    dispatch proof.
+    await expect
+      .poll(
+        async () => {
+          const r = await pool.query(
+            `SELECT uuid FROM job.job_runs WHERE trigger_uuid = $1 AND created_at > $2`,
+            [watcher.uuid, t0],
+          );
+          return r.rows.length;
+        },
+        { timeout: 20000, intervals: [1000, 2000, 3000] },
+      )
+      .toBeGreaterThanOrEqual(1);
+  });
+
   test("residue-free — both trigger rows deleted via the entity API", async ({ page }) => {
     await loginAsTestAdmin(page);
-    test.skip(!dummyUuid && !trigUuid, "nothing to clean up");
+    test.skip(!dummyUuid && !trigUuid && !bulkWatcherUuid, "nothing to clean up");
+
+    if (bulkWatcherUuid) {
+      const cur = await page.request.get(`${JOB_BASE}/job_trigger/${bulkWatcherUuid}`);
+      const v = ((await cur.json()) as { version?: number }).version;
+      const del = await page.request.delete(`${JOB_BASE}/job_trigger/${bulkWatcherUuid}?version=${v}`);
+      expect(del.ok()).toBeTruthy();
+    }
 
     if (dummyUuid) {
       const cur = await page.request.get(`${JOB_BASE}/job_trigger/${dummyUuid}`);
