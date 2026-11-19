@@ -274,7 +274,7 @@
 			<Button
 				variant="ghost"
 				size="icon-sm"
-				class="self-center"
+				class="self-center text-info hover:bg-info/10 hover:text-info"
 				type="button"
 				disabled={addDisabled}
 				onclick={addFilter}
