@@ -180,6 +180,15 @@ test.describe("entity events choreography — trigger authored in the browser", 
     const opPopover = popup.locator('[data-slot="popover-content"]:visible').last();
     const opOptions = opPopover.locator('[role="option"]:visible');
     await expect(opOptions.filter({ hasText: /exists|esiste/i })).toHaveCount(1);
+    // `exists` carries the authored `question-mark` glyph (CUSTOM_ICONS —
+    // pinned lucide 1.70.0 predates upstream 1.72.0). The verbatim node
+    // tuple pins the glyph; an unresolved name would render the destructive
+    // missing-icon <span> instead.
+    await expect(
+      opOptions
+        .filter({ hasText: /exists|esiste/i })
+        .locator('svg path[d="M12 20h.01"]'),
+    ).toHaveCount(1);
     await expect(opOptions.filter({ hasText: /contains|contiene/i })).toHaveCount(0);
     await expect(opOptions).toHaveCount(3);
     await popup.keyboard.press("Escape");

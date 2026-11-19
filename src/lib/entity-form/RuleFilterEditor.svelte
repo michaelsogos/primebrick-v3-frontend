@@ -69,7 +69,7 @@
 	const OP_ICON: Record<RuleOp, string> = {
 		eq: 'equal',
 		neq: 'equal-not',
-		exists: 'circle-question-mark',
+		exists: 'question-mark',
 		contains: 'text-search',
 		gt: 'chevron-right',
 		lt: 'chevron-left',
