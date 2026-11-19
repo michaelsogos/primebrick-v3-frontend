@@ -40,7 +40,7 @@
    * SheetPanelId key is the dispatch contract; `any` props are the runtime
    * spread boundary (`sheetState.props`).
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- heterogeneous panel registry: each panel owns its props contract; `any` is the runtime dispatch boundary
   const registry: Record<SheetPanelId, Component<any>> = {
     'shell.errors': ErrorsPanel,
     'shell.versions': VersionsPanel,
