@@ -20,14 +20,13 @@
 		DynamicIcon,
 		JsonValueEditor,
 		NumericInput,
-		PrimeField,
 		PropNavigator,
 		TextInput,
 		schemaToNavNodes,
 		type PropNavNode,
 		type SchemaLike,
 	} from '@primebrick/ui';
-	import { X as XIcon, Plus, ListFilter, Braces } from '@primebrick/ui/vendor/lucide';
+	import { X as XIcon, Plus } from '@primebrick/ui/vendor/lucide';
 	import { t } from '$lib/i18n';
 	import {
 		schemaAtPath,
@@ -94,7 +93,6 @@
 	}
 
 	let filters = $state<RuleFilterItem[]>([]);
-	let mode = $state<'builder' | 'json'>('builder');
 
 	function commit(next: RuleFilterItem[]) {
 		filters = next;
@@ -163,6 +161,12 @@
 		newValue = '';
 	});
 
+	// ── single-row cascade — every control renders immediately, disabled
+	// until its upstream pick (field → op → value → add). The field picker
+	// itself waits on the emit's payload_schema: no schema, no paths.
+	const fieldDisabled = $derived(locked || !source_schema);
+	const opDisabled = $derived(locked || !newField);
+	const valueDisabled = $derived(locked || !newField || newOp === 'exists');
 	const addDisabled = $derived(
 		!newField || (newOp !== 'exists' && (newValue === '' || newValue == null)),
 	);
@@ -208,149 +212,128 @@
 	}
 </script>
 
-{#if mode === 'json'}
-	<div class="space-y-2">
-		<JsonValueEditor
-			bind:value
-			{schema}
-			minRows={6}
-			maxHeight="20rem"
-			preview_open={false}
-			{placeholder}
-			readonly={locked}
-			{on_ai_assist}
-			{extra_completions}
-			{...rest}
-		/>
-		<Button variant="ghost" size="xs" type="button" onclick={() => (mode = 'builder')}>
-			<ListFilter class="size-3.5" />
-			{$t('app.widgets.rule_filter.builder_mode')}
-		</Button>
-	</div>
-{:else}
-	<div class="space-y-3">
-		{#if !locked}
-			<div class="space-y-2">
-				<PrimeField label={$t('system.entities.list.field')}>
-					{#snippet control()}
-						<PropNavigator
-							nodes={pathTree}
-							value={newField ? `$.${newField}` : ''}
-							isSelectable={() => true}
-							placeholder={$t('system.entities.list.select_field')}
-							data-testid="rule-filter-field"
-							onSelect={(path) => {
-								newField = path.replace(/^\$\.?/, '');
-							}}
-						/>
-					{/snippet}
-				</PrimeField>
-
-				{#if newField}
-					<PrimeField label={$t('system.entities.list.operator')}>
-						{#snippet control({ id })}
-							<ComboSelect
-								{id}
-								mode="single"
-								bind:value={newOp}
-								options={opOptions}
-								valueField="value"
-								labelField="label"
-								iconField="_icon"
-								data-testid="rule-filter-op"
-							/>
-						{/snippet}
-					</PrimeField>
-
-					{#if newOp !== 'exists'}
-						<PrimeField label={$t('system.entities.list.value')}>
-							{#snippet control({ id })}
-								{#if valueKind === 'enum'}
-									<ComboSelect
-										{id}
-										mode="single"
-										bind:value={newValue}
-										options={valueOptions}
-										valueField="value"
-										labelField="label"
-										data-testid="rule-filter-value"
-									/>
-								{:else if valueKind === 'boolean'}
-									<ComboSelect
-										{id}
-										mode="single"
-										bind:value={newValue}
-										options={[
-											{ value: 'true', label: $t('system.entities.list.boolean_true') },
-											{ value: 'false', label: $t('system.entities.list.boolean_false') },
-										]}
-										valueField="value"
-										labelField="label"
-										data-testid="rule-filter-value"
-									/>
-								{:else if valueKind === 'number'}
-									<NumericInput {id} kind="number" bind:value={newValue} data-testid="rule-filter-value" />
-								{:else}
-									<TextInput {id} bind:value={newValue} data-testid="rule-filter-value" />
-								{/if}
-							{/snippet}
-						</PrimeField>
-					{/if}
+<div class="space-y-3">
+	{#if !locked}
+		<!-- One row like the payload-map composer: field · op · value · add.
+		     Every control renders immediately — `{#if}` reveal would hide the
+		     anatomy; the cascade carries `disabled` instead. -->
+		<div class="grid grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,2fr)_auto] items-start gap-2">
+			<PropNavigator
+				nodes={pathTree}
+				value={newField ? `$.${newField}` : ''}
+				isSelectable={() => true}
+				placeholder={$t('system.entities.list.select_field')}
+				disabled={fieldDisabled}
+				data-testid="rule-filter-field"
+				onSelect={(path) => {
+					newField = path.replace(/^\$\.?/, '');
+				}}
+			/>
+			<ComboSelect
+				mode="single"
+				bind:value={newOp}
+				options={opOptions}
+				valueField="value"
+				labelField="label"
+				iconField="_icon"
+				placeholder={$t('system.entities.list.operator')}
+				disabled={opDisabled}
+				data-testid="rule-filter-op"
+			/>
+			<div class="min-w-0">
+				{#if valueKind === 'enum'}
+					<ComboSelect
+						mode="single"
+						bind:value={newValue}
+						options={valueOptions}
+						valueField="value"
+						labelField="label"
+						placeholder={$t('system.entities.list.value')}
+						disabled={valueDisabled}
+						data-testid="rule-filter-value"
+					/>
+				{:else if valueKind === 'boolean'}
+					<ComboSelect
+						mode="single"
+						bind:value={newValue}
+						options={[
+							{ value: 'true', label: $t('system.entities.list.boolean_true') },
+							{ value: 'false', label: $t('system.entities.list.boolean_false') },
+						]}
+						valueField="value"
+						labelField="label"
+						disabled={valueDisabled}
+						data-testid="rule-filter-value"
+					/>
+				{:else if valueKind === 'number'}
+					<NumericInput kind="number" bind:value={newValue} disabled={valueDisabled} data-testid="rule-filter-value" />
+				{:else}
+					<TextInput bind:value={newValue} disabled={valueDisabled} data-testid="rule-filter-value" />
 				{/if}
-
-				<div class="flex items-center gap-2">
-					<Button
-						variant="outline"
-						size="sm"
-						type="button"
-						disabled={addDisabled}
-						onclick={addFilter}
-						data-testid="rule-filter-add"
-					>
-						<Plus class="size-3.5" />
-						{$t('system.entities.list.add_filter')}
-					</Button>
-					<Button variant="ghost" size="xs" type="button" onclick={() => (mode = 'json')}>
-						<Braces class="size-3.5" />
-						{$t('app.widgets.json.edit_mode')}
-					</Button>
-				</div>
 			</div>
-		{/if}
+			<Button
+				variant="outline"
+				size="sm"
+				type="button"
+				disabled={addDisabled}
+				onclick={addFilter}
+				data-testid="rule-filter-add"
+			>
+				<Plus class="size-3.5" />
+				{$t('system.entities.list.add_filter')}
+			</Button>
+		</div>
+	{/if}
 
-		{#if filters.length > 0}
-			<div class="flex flex-wrap items-center gap-2" data-testid="rule-filter-badges">
-				<span class="text-xs italic text-muted-foreground/70">{$t('system.entities.list.all_criteria')}</span>
-				{#each filters as f, i (i)}
-					<Badge variant="secondary" class="w-fit gap-1.5 pr-1">
-						<span class="text-xs font-bold text-foreground" title={f.field}>{badgeField(f)}</span>
-						<span class="text-xs text-primary inline-flex items-center gap-0.5">
-							<DynamicIcon
-								name={OPS.find((o) => o.op === (f.op ?? 'eq'))?.icon ?? 'equal'}
-								size={12}
-								class="shrink-0"
-							/>
-							{$t(`system.entities.list.operators.${f.op ?? 'eq'}`)}
-						</span>
-						{#if f.op !== 'exists'}
-							<span class="text-xs italic text-muted-foreground">{badgeValue(f)}</span>
-						{/if}
-						{#if !locked}
-							<button
-								type="button"
-								class="ml-0.5 inline-flex size-4 cursor-pointer items-center justify-center rounded-full hover:bg-muted-foreground/20"
-								onclick={() => removeFilter(i)}
-								aria-label={$t('app.common.remove')}
-								data-testid="rule-filter-remove"
-							>
-								<XIcon class="size-3" />
-							</button>
-						{/if}
-					</Badge>
-				{/each}
-			</div>
-		{:else if locked}
-			<span class="text-xs italic text-muted-foreground/70">{value || '—'}</span>
-		{/if}
-	</div>
-{/if}
+	{#if filters.length > 0}
+		<div class="flex flex-wrap items-center gap-2" data-testid="rule-filter-badges">
+			<span class="text-xs italic text-muted-foreground/70">{$t('system.entities.list.all_criteria')}</span>
+			{#each filters as f, i (i)}
+				<Badge variant="secondary" class="w-fit gap-1.5 pr-1">
+					<span class="text-xs font-bold text-foreground" title={f.field}>{badgeField(f)}</span>
+					<span class="text-xs text-primary inline-flex items-center gap-0.5">
+						<DynamicIcon
+							name={OPS.find((o) => o.op === (f.op ?? 'eq'))?.icon ?? 'equal'}
+							size={12}
+							class="shrink-0"
+						/>
+						{$t(`system.entities.list.operators.${f.op ?? 'eq'}`)}
+					</span>
+					{#if f.op !== 'exists'}
+						<span class="text-xs italic text-muted-foreground">{badgeValue(f)}</span>
+					{/if}
+					{#if !locked}
+						<button
+							type="button"
+							class="ml-0.5 inline-flex size-4 cursor-pointer items-center justify-center rounded-full hover:bg-muted-foreground/20"
+							onclick={() => removeFilter(i)}
+							aria-label={$t('app.common.remove')}
+							data-testid="rule-filter-remove"
+						>
+							<XIcon class="size-3" />
+						</button>
+					{/if}
+				</Badge>
+			{/each}
+		</div>
+	{:else}
+		<span class="text-xs italic text-muted-foreground/70" data-testid="rule-filter-empty">
+			{$t('system.entities.list.filter_badge.no_filters_applied')}
+		</span>
+	{/if}
+
+	<!-- Same JsonValueEditor the payload mapper embeds — preview collapsed
+	     behind its accordion toggle; preview⇄edit lives in its toolbar, so
+	     there is no separate "edit JSON" mode to maintain. -->
+	<JsonValueEditor
+		bind:value
+		{schema}
+		minRows={6}
+		preview_open={false}
+		{placeholder}
+		readonly={locked}
+		{on_ai_assist}
+		{extra_completions}
+		{...rest}
+	/>
+</div>

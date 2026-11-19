@@ -132,7 +132,27 @@ test.describe("entity events choreography — trigger authored in the browser", 
     // inside `$.entity.after`. `$.event.action` is the enum leaf —
     // pick it, keep eq, choose `create`, commit the badge.
     const filterField = popup.getByTestId("entity-form-field-filter");
-    await filterField.getByTestId("rule-filter-field").click();
+    // Anatomy contract — the composer renders field · op · value · add on
+    // one row up-front; the cascade is carried by disabled state, never
+    // by conditional reveal. Event is already selected (schema loaded)
+    // so the field picker is enabled; op + value + add wait on the pick.
+    const rfField = filterField.getByTestId("rule-filter-field");
+    const rfOp = filterField.getByTestId("rule-filter-op");
+    const rfValue = filterField.getByTestId("rule-filter-value");
+    const rfAdd = filterField.getByTestId("rule-filter-add");
+    await expect(rfField).toBeVisible();
+    await expect(rfOp).toBeVisible();
+    await expect(rfValue).toBeVisible();
+    await expect(rfAdd).toBeVisible();
+    await expect(rfField).not.toHaveAttribute("aria-disabled", "true");
+    await expect(rfOp).toHaveAttribute("aria-disabled", "true");
+    await expect(rfValue).toBeDisabled();
+    await expect(rfAdd).toBeDisabled();
+    // Empty state — no criteria committed yet.
+    await expect(filterField.getByTestId("rule-filter-empty")).toContainText(
+      /no filters applied|nessun filtro applicato/i,
+    );
+    await rfField.click();
     const navPopover = popup.locator('[data-slot="popover-content"]:visible').last();
     const col0 = navPopover.locator('[data-propnv-col="0"]');
     await expect(col0.locator('[data-propnv-path="$.event"]')).toBeVisible();
@@ -148,6 +168,11 @@ test.describe("entity events choreography — trigger authored in the browser", 
     // Wait for the navigator popover to fully close before opening the
     // value combo: an open navigator overlay would swallow the click.
     await expect(navPopover).toBeHidden();
+    // Cascade released downstream of the field pick; add still waits on
+    // the value (op defaults to eq).
+    await expect(rfOp).not.toHaveAttribute("aria-disabled", "true");
+    await expect(rfValue).not.toHaveAttribute("aria-disabled", "true");
+    await expect(rfAdd).toBeDisabled();
     // `action` carries an enum → the value control is a closed combo
     // (bits-ui Command.Item → role="option"; substring text — the item
     // innerText carries layout whitespace that defeats ^…$ anchors).
@@ -157,8 +182,17 @@ test.describe("entity events choreography — trigger authored in the browser", 
       .filter({ hasText: "create" })
       .first()
       .click();
-    await filterField.getByTestId("rule-filter-add").click();
+    await expect(rfAdd).toBeEnabled();
+    await rfAdd.click();
     await expect(filterField.getByTestId("rule-filter-badges")).toContainText(/action/i);
+    await expect(filterField.getByTestId("rule-filter-empty")).toBeHidden();
+    // JSON preview — collapsed behind its accordion toggle; opening it
+    // renders the committed wire document.
+    const previewToggle = filterField.getByTestId("json-value-preview-toggle");
+    await expect(previewToggle).toBeVisible();
+    await expect(filterField.getByTestId("json-value-preview")).toBeHidden();
+    await previewToggle.click();
+    await expect(filterField.getByTestId("json-value-preview")).toContainText(/event\.action/);
 
     await expect(popup.getByTestId("entity-form-submit")).toBeEnabled();
     const postCapture = popup.waitForResponse(
