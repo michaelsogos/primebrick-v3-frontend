@@ -29,7 +29,7 @@ test.describe("ref display join — job_schedule.trigger_uuid", () => {
     // The cell shows the display name (ref-cell-*-text testid contract).
     await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 30000 });
-    await page.getByRole("button", { name: "Columns" }).click();
+    await page.getByRole("button", { name: "Columns" }).first().click();
     const toggle = page.getByTestId("columns-toggle-trigger_uuid");
     await expect(toggle).toBeVisible({ timeout: 15000 });
     await toggle.click();

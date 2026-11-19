@@ -6,9 +6,12 @@ export function entityListDataCellValignClass(col: MetaColumn): string | undefin
 }
 
 /** `version` is the audit-group tail — its badge pins to the cell's trailing
- *  edge (inline-flex content, so td `text-right` reaches it). */
+ *  edge (inline-flex content, so td `text-right` reaches it). `type:"number"`
+ *  columns right-align + tabular digits by default (the universal numeric
+ *  rule — separators come from formatListCellValue, alignment from here). */
 export function entityListDataCellAlignClass(col: MetaColumn): string | undefined {
-  return col.key === 'version' ? 'text-right' : undefined;
+  if (col.key === 'version') return 'text-right';
+  return col.type === 'number' ? 'text-right tabular-nums' : undefined;
 }
 
 /** Amber tint only when showing the record's stored IANA timezone; browser/local mode uses default neutral like other columns. */

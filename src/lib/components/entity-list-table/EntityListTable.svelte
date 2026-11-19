@@ -27,17 +27,17 @@
   import { hasRequiredPermission, isEntityOpAllowed } from '$lib/permissions.svelte';
   import { useRowActions } from './composables/useRowActions.svelte.js';
   import { useDialogs } from './composables/useDialogs.svelte.js';
-  import { usePreviewPanel } from './composables/usePreviewPanel.svelte.js';
   import { useDeletionFilter } from './composables/useDeletionFilter.svelte';
   import { createSelectionHandlers } from './handlers/selection';
   import { createSortingHandlers } from './handlers/sorting';
   import { createClickHandlers } from './handlers/click-handlers';
   import type { MetaColumn } from '$lib/entity-list/types';
-  import { isColumnFilterable, isColumnSearchable, isColumnSortable } from '$lib/entity-list/types';
+  import { isColumnFilterable, isColumnSortable, searchableTextColumns } from '$lib/entity-list/types';
   import { setAuditColumnsContext, setActiveRolesContext, setEntitiesNsContext, setMetaUidContext, setTableEntityContext } from './context';
   import { useActiveRoles } from '$lib/composables/useActiveRoles.svelte';
   import { setEntitiesNsContext as uiSetEntitiesNsContext } from '@primebrick/ui';
   import { claimDocsContext } from '$lib/shell/docs/docs-context.svelte';
+  import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
   import { loadModuleTranslations } from '$lib/i18n/use-module-translations.svelte';
   import { uiLang } from '$lib/i18n/store.svelte';
@@ -235,9 +235,7 @@
   const allColumns = $derived(columns);
   const datetimeIanaToggleColumns = $derived(allColumns.filter((c) => !!c.datetime_iana_toggle));
   const sortableColumns = $derived(allColumns.filter((c) => isColumnSortable(c)));
-  const searchableColumns = $derived(
-    allColumns.filter((c) => isColumnSearchable(c) && c.type === 'text')
-  );
+  const searchableColumns = $derived(searchableTextColumns(allColumns));
   // Fields governed by a declared filter preset (their `where[].field`) are
   // owned by the toolbar preset control — exposing them again in the filters
   // panel would create a second source of truth for the same predicate.
@@ -350,9 +348,7 @@
   const isRowDeleted = (row: TRow): boolean => isRowDeletedUtil(row);
 
   let dropdownMenuRow = $state<TRow | null>(null);
-  let previewDropdownOpen = $state(false);
 
-  /** Navigate preview records */
   /** Open dropdown menu for a specific row */
   function openRowDropdown(row: TRow) {
     dropdownMenuRow = row;
@@ -361,11 +357,6 @@
   /** Close dropdown menu */
   function closeRowDropdown() {
     dropdownMenuRow = null;
-  }
-
-  /** Navigate preview records */
-  function navigatePreview(direction: number) {
-    previewPanel.navigatePreview(direction > 0 ? "next" : "prev");
   }
 
   const defaultSortDir = $derived(defaultSort?.dir ?? 'asc');
@@ -397,7 +388,7 @@
   const clientSelectedTotalPages = $derived(clientSelection.clientSelectedTotalPages);
   const footerUsesClientPaging = $derived(rowSelectionEnabled && showSelectedOnly);
   // `page` arrives from extJsonParse as native bigint — normalize to number
-  // once here so every downstream consumer (footer math, PreviewPanel)
+  // once here so every downstream consumer (footer math, sheets)
   // stays in plain-number land.
   const footerPage = $derived(footerUsesClientPaging ? clientSelectedPage : Number(page));
   const footerTotalPages = $derived(footerUsesClientPaging ? clientSelectedTotalPages : totalPages);
@@ -470,12 +461,6 @@
     filterValues: () => filterValues,
     advancedFilters: () => advancedFilters,
     deletionFilterMode: () => deletionFilterMode,
-  });
-
-  const previewPanel = usePreviewPanel<TRow>({
-    viewRows: () => viewRows,
-    rowKey: rowKey,
-    onRefresh: () => onRefresh
   });
 
   const dialogs = useDialogs<TRow>();
@@ -556,7 +541,6 @@
   const effectiveRowActions = $derived(({
     edit: opAllowed('update.single'),
     duplicate: opAllowed('duplicate.bulk'),
-    preview: opAllowed('get'),
     delete: opAllowed('delete.single') || opAllowed('purge.single'),
     restore: opAllowed('restore.single'),
     versionHistory: opAllowed('read.audit'),
@@ -578,7 +562,6 @@
   const hasEntityRowActions = $derived(
     effectiveRowActions.edit === true ||
       effectiveRowActions.duplicate === true ||
-      effectiveRowActions.preview === true ||
       effectiveRowActions.versionHistory === true ||
       effectiveRowActions.delete === true ||
       effectiveRowActions.restore === true ||
@@ -624,9 +607,6 @@
     // delete.single disabled) target `DELETE /:uuid/purge` automatically.
     usePurgeDelete: () => !opAllowed('delete.single') && opAllowed('purge.single'),
     rowKey: rowKey,
-    onPreviewRow: (row) => {
-      previewPanel.openPreview(row);
-    },
     closeRowDropdown: closeRowDropdown,
     t: $t,
     customActionHandlers: () => customActionHandlers,
@@ -660,14 +640,7 @@
     selectedKeys: () => selectedKeys,
     onSelectedKeysChange: () => onSelectedKeysChange,
     rowKey,
-    previewPanelOpen: () => previewPanel.state.previewPanelOpen,
-    previewRowIndex: () => previewPanel.state.previewRowIndex,
-    focusedRowIndex: () => previewPanel.state.focusedRowIndex,
-    setFocusedRowIndex: (i: number) => previewPanel.setFocusedRowIndex(i),
-    openPreview: (row: TRow) => previewPanel.openPreview(row),
-    navigatePreview: (direction: 'next' | 'prev') => previewPanel.navigatePreview(direction),
     dropdownMenuRow: () => dropdownMenuRow,
-    previewDropdownOpen: () => previewDropdownOpen,
     closeRowDropdown,
     currentPage: () => footerPage,
     pageCount: () => footerTotalPages,
@@ -700,17 +673,43 @@
   );
   const { resetColumnsAndSorting, resetFilters, handleSortClick } = sortingHandlers;
 
+  // Record detail route — `kind:"detail"` census decl owns the `[param]`
+  // template (same resolution `EntityTablePage` uses for the row edit
+  // target); `window.open` in click-handlers turns a row dblclick into a
+  // focused new tab on it.
+  const detailRouteTemplate = $derived(
+    shellNav.moduleNav?.routes?.find((r) => r.kind === 'detail' && r.entity === entity)?.route
+  );
+  const rowDetailHref = (row: TRow): string | null => {
+    if (!detailRouteTemplate) return null;
+    const v = (row as Record<string, unknown>)[uid];
+    return v == null ? null : detailRouteTemplate.replace(/\[[a-zA-Z0-9_]+\]/, String(v));
+  };
+
   // Click handlers
   const clickHandlers = createClickHandlers(
     rowActionsComposable,
-    previewPanel,
+    rowDetailHref,
     () => rowSelectionEnabled,
     () => rowsLoading,
     () => error,
     rowRangeSelection,
     toggleRowSelect
   );
-  const { handleEditRow, handlePreviewRow, onEntityCardClick } = clickHandlers;
+  const { handleEditRow, handleRowDblClick, onEntityCardClick } = clickHandlers;
+
+  // Columns selector — the same `entity.columns` sheet the toolbar CTA
+  // opens; the header-row actions cell gets its own Columns3 button.
+  function openColumnsSheet() {
+    openSheet('entity.columns', {
+      stickyColumns: stickyColumnsGroup,
+      nonAuditingColumns,
+      auditingColumns: auditingColumnsGroup,
+      visibleKeys,
+      toggleColumnKey,
+      onResetColumnVisibility: resetColumnsAndSorting
+    });
+  }
 
   const loadingText = $derived(loadingMessage ?? $t('app.common.loading'));
   const emptyText = $derived(noRecordsMessage ?? $t('system.entities.list.no_records'));
@@ -840,7 +839,8 @@
     selectedKeys={selectedKeys}
     rowKey={rowKey}
     isRowDeleted={isRowDeleted}
-    previewPanel={previewPanel}
+    focusedRowIndex={keyboardNav.focusedRowIndex}
+    onOpenColumnSelector={openColumnsSheet}
     actionsEnabled={actionsEnabled}
     rowActions={rowActions}
     entityRowActions={effectiveRowActions}
@@ -872,7 +872,7 @@
     onCloseRowDropdown={closeRowDropdown}
     onEditRow={handleEditRow}
     rowActionsComposable={rowActionsComposable}
-    onPreviewRow={handlePreviewRow}
+    onRowDblClick={handleRowDblClick}
     bind:tableRef
     tableDensityClass={tableDensityClass}
     stickyColumnsState={stickyColumnsState}
@@ -881,20 +881,6 @@
     visibleKeys={visibleKeys}
     handleSortClick={handleSortClick}
     rowRangeSelection={rowRangeSelection}
-    uid={uid}
-    pageSize={pageSize}
-    page={page}
-    onPageChange={onPageChange}
-    entity={entity}
-    entities_ns={entities_ns}
-    columns={columns}
-    stickyColumns={stickyColumnsGroup}
-    dataColumns={nonAuditingColumns}
-    auditingColumns={auditingColumnsGroup}
-    footerRangeTotal={footerRangeTotal}
-    footerPage={footerPage}
-    previewDropdownOpen={previewDropdownOpen}
-    navigatePreview={navigatePreview}
     extraCols={extraCols}
   />
 

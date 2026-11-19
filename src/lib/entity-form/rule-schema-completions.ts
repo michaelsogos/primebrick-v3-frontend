@@ -30,7 +30,7 @@ import { syntaxTree } from '@codemirror/language';
 import type { EditorState } from '@codemirror/state';
 import { PAYLOAD_MAP_META_KINDS } from '@primebrick/ui';
 
-interface JsonSchema {
+export interface JsonSchema {
 	type?: string;
 	description?: string;
 	properties?: Record<string, JsonSchema>;
@@ -86,7 +86,7 @@ export function schemaDotPaths(schema: JsonSchema): { path: string; type: string
 }
 
 /** Resolve a `$.a.b` path to its schema node (for value candidates). */
-function schemaAtPath(schema: JsonSchema, path: string): JsonSchema | undefined {
+export function schemaAtPath(schema: JsonSchema, path: string): JsonSchema | undefined {
 	const segs = path.replace(/^\$\.?/, '').split('.').filter(Boolean);
 	let node: JsonSchema | undefined = schema;
 	for (const seg of segs) {
@@ -97,7 +97,7 @@ function schemaAtPath(schema: JsonSchema, path: string): JsonSchema | undefined 
 
 /** Candidate literals for a field's schema — enum members, else
  *  type-shaped candidates for the common operators. */
-function valueCandidates(sub: JsonSchema | undefined): { label: string; apply: unknown }[] {
+export function valueCandidates(sub: JsonSchema | undefined): { label: string; apply: unknown }[] {
 	if (!sub) return [];
 	if (Array.isArray(sub.enum)) return sub.enum.map((v) => ({ label: JSON.stringify(v), apply: v }));
 	if (sub.type === 'boolean') return ['true', 'false'].map((v) => ({ label: v, apply: v }));

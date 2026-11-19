@@ -14,10 +14,12 @@
   import type { MetaColumn } from '$lib/entity-list/types';
   import type { Snippet } from 'svelte';
   import { uiLang } from '$lib/i18n/store.svelte';
+  import { loadModuleTranslations } from '$lib/i18n/use-module-translations.svelte';
   import { CircleCheck } from '@primebrick/ui/vendor/lucide'
   import { CircleX } from '@primebrick/ui/vendor/lucide';
   import { ExternalLink } from '@primebrick/ui/vendor/lucide';
   import JsonCellViewer from './JsonCellViewer.svelte';
+  import MapperCellViewer from './MapperCellViewer.svelte';
   import { Tooltip } from '@primebrick/ui';
   import { getAuditFieldValue } from '../utils/cell-formatting';
   import { getAuditColumnsContext, getActiveRolesContext, getMetaUidContext, getEntitiesNsContext, getTableEntityContext } from '../context';
@@ -92,12 +94,51 @@
     service_registry: 'service.record',
   };
   const refPanel = $derived(refEntity ? (REF_PANEL_FOR_ENTITY[refEntity] ?? 'entity.record') : 'entity.record');
+  /** `service_registry` ref targets — the census `label_key` through i18n
+   *  wins over the registry `name` wire value (English-only; `label_key`
+   *  is the single display-name source for every UI surface, same contract
+   *  as VersionsPanel). Unresolved modules keep the served name. */
+  const serviceRefModule = $derived(
+    refEntity === 'service_registry'
+      ? shellNav.modules.find((m) => m.id === toDisplayString(refKey))
+      : undefined,
+  );
+  const serviceRefLabel = $derived.by(() => {
+    const lk = serviceRefModule?.label_key;
+    if (!lk) return undefined;
+    const translated = $t(lk);
+    return translated && translated !== lk ? translated : undefined;
+  });
+  const refDisplayValue = $derived(serviceRefLabel ?? displayValue);
+  /** The dict owning `label_key` is route-loaded — a foreign-module list
+   *  never fetched it; preload best-effort (per module+lang, deduped) so
+   *  the ref renders translated instead of the English wire name. */
+  $effect(() => {
+    const m = serviceRefModule;
+    if (m) void loadModuleTranslations(m.translations_module ?? m.id, $uiLang, { bestEffort: true });
+  });
   const metaUid = getMetaUidContext();
   /** Table-entity + namespace contexts — resolved once at init (context is
    *  stable for the cell's lifetime); the `version` branch opens
    *  `entity.versionHistory` with the same payload row actions build. */
   const entityCtx = getTableEntityContext();
   const cellEntitiesNs = getEntitiesNsContext();
+
+  /** `format:"json"` columns carrying a DST mapper document opt into the
+   *  prose sheet viewer via `widget` — explicit opt-in beats the generic
+   *  JSON inspector AND the conditions-array shape sniff. New mapper
+   *  widgets on the same DST contract join this set. */
+  const MAPPER_WIDGETS = new Set(['payload_map']);
+
+  /** Record's `kind:"detail"` href — the same census derivation the row
+   *  dblclick handler owns; the mapper cell's trailing CTA navigates
+   *  `_blank` to it (absent decl → no CTA). */
+  const mapperDetailHref = $derived.by(() => {
+    if (!entityCtx) return null;
+    const detail = routeCensus.find((r) => r.entity === entityCtx.entity && r.kind === 'detail');
+    const v = row[entityCtx.uid];
+    return detail && v != null ? detail.route.replace(/\[[a-zA-Z0-9_]+\]/, String(v)) : null;
+  });
   /** Shared active-roles lookup (`options_source:"system.roles"` columns)
    *  — one lazy fetch per list, `idp_role` → label_key → `$t`. */
   const activeRoles = getActiveRolesContext();
@@ -334,7 +375,9 @@
   {/if}
 {:else if column.format === 'json' && value !== null && value !== undefined && value !== ''}
   {@const json = jsonCellContent(value)}
-  {#if json.kind === 'conditions'}
+  {#if MAPPER_WIDGETS.has(column.widget ?? '')}
+    <MapperCellViewer {value} {column} {row} detailHref={mapperDetailHref} />
+  {:else if json.kind === 'conditions'}
     <div class="flex min-w-0 flex-wrap gap-1">
       {#each json.conditions as cond (cond.field)}
         <!-- Canonical black tooltip: the condition's own JSON fragment,
@@ -371,14 +414,14 @@
       >
         <Badge variant="outline" class="gap-1 shadow-none">
           {#if column.icon}<DynamicIcon name={column.icon} size={12} class="shrink-0" style={iconStyle} />{/if}
-          <span class="truncate font-mono text-[11px]">{toDisplayString(displayValue)}</span>
+          <span class="truncate font-mono text-[11px]">{toDisplayString(refDisplayValue)}</span>
         </Badge>
       </a>
     {:else}
-      <span class="min-w-0 truncate font-mono text-[11px]">{toDisplayString(displayValue)}</span>
+      <span class="min-w-0 truncate font-mono text-[11px]">{toDisplayString(refDisplayValue)}</span>
     {/if}
   {:else if column.ref.route === 'none'}
-    <span class="min-w-0 truncate">{toDisplayString(displayValue)}</span>
+    <span class="min-w-0 truncate">{toDisplayString(refDisplayValue)}</span>
   {:else}
     <!-- Default "link" anatomy: medium text (underline on hover) opens
          the record sheet; trailing ExternalLink → filtered /list _blank
@@ -392,7 +435,7 @@
         : null}
     {#if refEntity && refKey !== undefined && refKey !== null && refKey !== ''}
       <CellAffordance
-        text={toDisplayString(displayValue)}
+        text={toDisplayString(refDisplayValue)}
         ontextclick={() => {
           if (refPanel === 'service.record') {
             openSheet('service.record', { code: toDisplayString(refKey), context_row: row as Record<string, unknown> }, { stack: true });
@@ -412,7 +455,7 @@
       <!-- Lazy-ref row whose entity/key fields came back empty — the
            target cannot be addressed, so the label renders plainly
            (same contract as `route:"none"`). -->
-      <span class="min-w-0 truncate">{toDisplayString(displayValue) || '-'}</span>
+      <span class="min-w-0 truncate">{toDisplayString(refDisplayValue) || '-'}</span>
     {/if}
   {/if}
 {:else if column.type === 'ref_count' && column.reverse_ref}

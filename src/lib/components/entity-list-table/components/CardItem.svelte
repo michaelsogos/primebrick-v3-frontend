@@ -31,7 +31,6 @@
     onDuplicateRow,
     onDeleteRow,
     onRestoreRow,
-    onPreviewRow,
     handleCustomAction,
     sparklineData
   }: {
@@ -59,7 +58,6 @@
     onDuplicateRow: (row: TRow) => void;
     onDeleteRow: (row: TRow) => void;
     onRestoreRow: (row: TRow) => void;
-    onPreviewRow: (row: TRow) => void;
     handleCustomAction?: (action: RowCustomAction, row: TRow) => void;
     /** Per-column batch sparkline buckets — same map as the table view. */
     sparklineData?: Record<string, { by_key: Record<string, unknown[]>; bucket_unit?: string }>;
@@ -121,7 +119,6 @@
         onDuplicateRow={onDuplicateRow}
         onDeleteRow={onDeleteRow}
         onRestoreRow={onRestoreRow}
-        onPreviewRow={onPreviewRow}
         handleCustomAction={handleCustomAction}
         isListMode={true}
       />
@@ -163,7 +160,6 @@
         onDuplicateRow={onDuplicateRow}
         onDeleteRow={onDeleteRow}
         onRestoreRow={onRestoreRow}
-        onPreviewRow={onPreviewRow}
         handleCustomAction={handleCustomAction}
         isListMode={false}
       />

@@ -235,6 +235,85 @@ test.describe("/system/job/* pages (module-owned)", () => {
     }
   });
 
+  test("/system/job/triggers renders columns in meta order — destination after source, filters after schedule", async ({
+    page,
+  }) => {
+    await page.goto("/system/job/triggers", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("table tbody tr[data-row-index]").first()).toBeVisible({ timeout: 30000 });
+
+    // Wire contract — meta `order` values: event_subject(source) <
+    // target_subject(destination) < schedule_spec < filter. The served
+    // array stays in declaration order; orderedColumns sorts by `order`.
+    const meta = await page.evaluate(async () => {
+      const res = await fetch("/svc/job/api/v1/entities/job_trigger/meta");
+      const body = await res.json();
+      return (body.columns ?? []) as { key: string; order: number }[];
+    });
+    const ord = (k: string) => meta.find((c) => c.key === k)?.order ?? -1;
+    expect(ord("event_subject")).toBeGreaterThan(-1);
+    expect(ord("target_subject")).toBeGreaterThan(ord("event_subject"));
+    expect(ord("target_subject")).toBeLessThan(ord("schedule_spec"));
+    expect(ord("schedule_spec")).toBeLessThan(ord("filter"));
+
+    // DOM contract — the visible thead mirrors meta order (filter is
+    // default_visible:false, so only the first three can appear as th).
+    const headers = await page.locator("table thead th").allTextContents();
+    const hIdx = (re: RegExp) => headers.findIndex((h) => re.test(h));
+    const srcIdx = hIdx(/listening|sorgente|source|ereignisquelle|origen|origem/i);
+    const dstIdx = hIdx(/destination|destinazione|destino|ereignisziel/i);
+    expect(srcIdx).toBeGreaterThan(-1);
+    expect(dstIdx).toBe(srcIdx + 1);
+  });
+
+  test("/system/job/triggers default column visibility — next_run shown, is_system hidden-but-toggleable", async ({
+    page,
+  }) => {
+    // Served contract — the meta declares the defaults the ELT derives
+    // its fresh-profile visibleKeys from.
+    await page.goto("/system/job/triggers", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
+    const flags = await page.evaluate(async () => {
+      const res = await fetch("/svc/job/api/v1/entities/job_trigger/meta");
+      const cols = ((await res.json()).columns ?? []) as {
+        key: string;
+        default_visible?: boolean;
+        hideable?: boolean;
+      }[];
+      const find = (k: string) => cols.find((c) => c.key === k);
+      return { is_system: find("is_system"), next_run: find("next_run") };
+    });
+    expect(flags.is_system?.default_visible).toBe(false);
+    expect(flags.is_system?.hideable).not.toBe(false);
+    expect(flags.next_run?.default_visible).toBe(true);
+    expect(flags.next_run?.hideable).not.toBe(false);
+
+    // Rendered contract — a fresh context has no stored visibleKeys, so
+    // the meta defaults decide: a next_run header exists, is_system does
+    // not (it lives in the picker only).
+    const headers = await page.locator("table thead th").allTextContents();
+    const has = (re: RegExp) => headers.some((h) => re.test(h));
+    expect(
+      has(/next run|prossima esecuzione|nächste ausführung|prochaine exécution|próxima ejecución|próxima execução/i),
+    ).toBe(true);
+    expect(has(/^\s*system|sistema\s*$/i)).toBe(false);
+
+    // Picker contract — both stay user-toggleable (enabled), next_run
+    // checked, is_system unchecked.
+    await page.getByRole("button", { name: /columns|colonne|spalten|colonnes|columnas|colunas/i }).first().click();
+    const nextRunToggle = page.getByTestId("columns-toggle-next_run");
+    const isSystemToggle = page.getByTestId("columns-toggle-is_system");
+    await expect(nextRunToggle).toBeVisible({ timeout: 15000 });
+    await expect(isSystemToggle).toBeVisible();
+    for (const toggle of [nextRunToggle, isSystemToggle]) {
+      await expect(toggle).toBeEnabled();
+    }
+    await expect(nextRunToggle.locator('[data-state="checked"]')).toHaveCount(1);
+    await expect(nextRunToggle.locator('[data-state="unchecked"]')).toHaveCount(0);
+    await expect(isSystemToggle.locator('[data-state="checked"]')).toHaveCount(0);
+    await expect(isSystemToggle.locator('[data-state="unchecked"]')).toHaveCount(1);
+    await page.keyboard.press("Escape");
+  });
+
   test("/system/job/triggers create CTA → NEW TAB archetype EntityFormPage (no remote mount)", async ({
     page,
     context,
@@ -276,6 +355,288 @@ test.describe("/system/job/* pages (module-owned)", () => {
     await popup.close();
   });
 
+  test("/system/job/runs meta contract — service_code dropped, trigger projected, subject anatomy", async ({
+    page,
+  }) => {
+    await page.goto("/system/job/runs", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
+
+    // Served-meta contract — the physical drop + calculated projections.
+    const meta = await page.evaluate(async () => {
+      const res = await fetch("/svc/job/api/v1/entities/job_run/meta");
+      return res.json();
+    });
+    const cols = (meta.columns ?? []) as {
+      key: string;
+      type?: string;
+      format?: string;
+      kind?: string;
+      icon?: string;
+      color?: string;
+      default_visible?: boolean;
+      filterable?: boolean;
+      ref?: { entity?: string; key_field?: string; filter_field?: string };
+      badge?: { values?: Record<string, { color?: string; label_key?: string }> };
+      null_label?: unknown;
+    }[];
+    const keys = cols.map((c) => c.key);
+    expect(keys).not.toContain("service_code"); // physical DROP — gone everywhere
+    expect(keys).not.toContain("trigger_uuid"); // hidden:true → row payload only
+    expect(keys).not.toContain("schedule_uuid"); // hidden:true → row payload only
+    expect(keys).not.toContain("error_detail"); // hidden:true → sheet surface only
+    const byKey = (k: string) => cols.find((c) => c.key === k);
+
+    // Identity: calculated ref drilling job_trigger by the stamped uuid —
+    // `trigger` is the display_field (the pin derives from it: sticky,
+    // never-hideable identity column), resolved live from the owning
+    // trigger's name.
+    expect(byKey("trigger")).toMatchObject({
+      type: "ref",
+      kind: "calculated",
+      sticky: true,
+      hideable: false,
+      ref: { entity: "job_trigger", key_field: "trigger_uuid" },
+    });
+    // Owning schedule — calculated ref, uuid drill like every sibling ref.
+    expect(byKey("schedule")).toMatchObject({
+      type: "ref",
+      kind: "calculated",
+      default_visible: false,
+      ref: { entity: "job_schedule", key_field: "schedule_uuid" },
+    });
+    // Ordinary NULLs render "-" — no destructive null_label anywhere.
+    expect(byKey("trigger")?.null_label).toBeUndefined();
+    expect(byKey("schedule_subject")?.null_label).toBeUndefined();
+    // SOURCE + DESTINATION — the same nats_subject anatomy pair schedules
+    // carry; toggleable but off the default surface like the refs.
+    expect(byKey("schedule_subject")).toMatchObject({
+      type: "text",
+      format: "nats_subject",
+      icon: "zap",
+      default_visible: false,
+    });
+    expect(byKey("target_subject")).toMatchObject({
+      type: "text",
+      format: "nats_subject",
+      icon: "send",
+      color: "sky-500",
+      default_visible: false,
+    });
+    expect(byKey("run_as")?.default_visible).toBe(false);
+    // Counters + outcome payload — the default-visible engine columns.
+    expect(byKey("redelivery_count")?.default_visible).toBe(true);
+    for (const k of ["fire_seq", "report"] as const) {
+      expect(byKey(k)).toMatchObject({ default_visible: true, filterable: false });
+    }
+    // Status badge recolor (A.2): dispatched info, skipped gray, lost amber.
+    const statusValues = byKey("status")?.badge?.values ?? {};
+    expect(statusValues.dispatched?.color).toBe("info");
+    expect(statusValues.skipped?.color).toBe("gray");
+    expect(statusValues.lost?.color).toBe("amber");
+    expect(statusValues.succeeded?.color).toBe("green");
+    expect(statusValues.failed?.color).toBe("red");
+    // error_code — closed badge enum, every item mapped to a translated label.
+    const errorValues = byKey("error_code")?.badge?.values ?? {};
+    expect(Object.keys(errorValues).sort()).toEqual(
+      [
+        "EXECUTION_ERROR",
+        "HANDLER_ERROR",
+        "VALIDATION_ERROR",
+        "DENIED",
+        "DISPATCH_ERROR",
+        "DISPATCH_TIMEOUT",
+        "AUTH_ACTOR_UNRESOLVABLE",
+        "SCHEDULE_PAUSED",
+        "SCHEDULE_DISARMED",
+      ].sort(),
+    );
+    for (const v of Object.values(errorValues)) {
+      expect(v.label_key).toMatch(/^job\.entities\.job_run\.status\./);
+      expect(v.color).toBeTruthy();
+    }
+
+    expect(meta.table?.default_sort).toEqual({ key: "created_at", dir: "desc" });
+    const preset = (meta.table?.filter_presets ?? []).find(
+      (p: { id: string }) => p.id === "outcome",
+    );
+    // Monitor-first order: sent (default) → succeeded → failed aggregate → all.
+    expect(preset).toMatchObject({ display: "button_group", default_option: "sent" });
+    expect(
+      preset?.options.map((o: { id: string }) => o.id),
+    ).toEqual(["sent", "succeeded", "failed", "all"]);
+    expect(preset?.options.find((o: { id: string }) => o.id === "failed")).toMatchObject({
+      icon: "triangle-exclamation-point",
+      where: [{ field: "status", op: "IN", value: ["failed", "lost", "skipped"] }],
+    });
+
+    // Rendered contract — the default surface opens with the pinned
+    // identity (`trigger`, the owning trigger's name) then the outcome
+    // monitor columns: status, timing pair, duration, error, counters.
+    // Secondary lineage (schedule/subjects/run_as) stays hidden until
+    // toggled on.
+    const headers = await page.locator("table thead th").allTextContents();
+    const has = (re: RegExp) => headers.some((h) => re.test(h));
+    expect(has(/trigger|attivatore|auslöser|déclencheur|disparador|acionador/i)).toBe(true);
+    expect(has(/status|stato|état|estado/i)).toBe(true);
+    expect(has(/duration|durata|dauer|durée|duración/i)).toBe(true);
+    expect(has(/error|errore|erreur|fehler|erro/i)).toBe(true);
+    expect(has(/queue|coda|warteschlange|file|cola|fila/i)).toBe(false);
+    expect(has(/destination|destinazione|ziel|destino/i)).toBe(false);
+  });
+
+  test("/system/job/runs outcome preset ANDs status= into the wire request", async ({
+    page,
+  }) => {
+    const listUrls: string[] = [];
+    page.on("request", (req) => {
+      if (req.url().includes("/entities/job_run/list"))
+        listUrls.push(decodeURIComponent(req.url()));
+    });
+
+    await page.goto("/system/job/runs", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
+
+    // Icon-only group per the toolbar contract — options carry tooltips.
+    const preset = page
+      .locator("[data-slot='button-group']")
+      .filter({ has: page.locator("button svg.lucide-triangle-exclamation-point") })
+      .first();
+    await expect(preset).toBeVisible({ timeout: 15000 });
+    const sentBtn = preset.locator("button[aria-pressed]", {
+      has: page.locator("svg.lucide-play"),
+    }).first();
+    const failedBtn = preset.locator("button[aria-pressed]", {
+      has: page.locator("svg.lucide-triangle-exclamation-point"),
+    }).first();
+    const allBtn = preset.locator("button[aria-pressed]", {
+      has: page.locator("svg.lucide-list-clock"),
+    }).first();
+
+    // `sent` is the DEFAULT view — the first list call already carries the
+    // dispatched scope, no click needed.
+    await expect(async () => {
+      expect(
+        listUrls.some(
+          (u) => u.includes("filters[0][field]=status") && u.includes("filters[0][value]=dispatched"),
+        ),
+      ).toBe(true);
+    }).toPass({ timeout: 10000 });
+    await expect(async () => {
+      await expect(sentBtn).toHaveAttribute("aria-pressed", "true", { timeout: 2000 });
+    }).toPass({ timeout: 10000 });
+    // Outline glyph — `play`, not `play:filled`.
+    await expect(sentBtn.locator("svg").first()).not.toHaveAttribute(
+      "fill",
+      "currentColor",
+    );
+
+    // `failed` is the problem-bucket aggregate — IN (failed,lost,skipped).
+    const mark = listUrls.length;
+    await expect(async () => {
+      await failedBtn.click();
+      await expect(failedBtn).toHaveAttribute("aria-pressed", "true", { timeout: 2000 });
+    }).toPass({ timeout: 15000 });
+    await expect(async () => {
+      const failedCall = listUrls
+        .slice(mark)
+        .find((u) => u.includes("filters[0][field]=status"));
+      expect(failedCall).toBeTruthy();
+      expect(failedCall).toContain("filters[0][op]=IN");
+      for (const v of ["failed", "lost", "skipped"]) {
+        expect(failedCall).toContain(`filters[0][value][]=${v}`);
+      }
+    }).toPass({ timeout: 10000 });
+
+    // `all` applies no status scope — like schedule_kind's escape option.
+    const allMark = listUrls.length;
+    await expect(async () => {
+      await allBtn.click();
+      await expect(allBtn).toHaveAttribute("aria-pressed", "true", { timeout: 2000 });
+    }).toPass({ timeout: 15000 });
+    await expect(async () => {
+      expect(listUrls.slice(allMark).some((u) => !u.includes("field]=status"))).toBe(true);
+    }).toPass({ timeout: 10000 });
+  });
+
+  test("/system/job/runs error_code badge opens the run-detail remote sheet", async ({
+    page,
+  }) => {
+    // Fixture: at least one failed run with an error_code on this dev DB.
+    const failed = await page
+      .request
+      .get("/svc/job/api/v1/entities/job_run/list?filters[0][field]=status&filters[0][op]=%3D&filters[0][value]=failed&page_size=5")
+      .then((r) => r.json())
+      .then((b) => (b.rows ?? []) as { error_code?: string | null }[]);
+    test.skip(
+      !failed.some((r) => r.error_code),
+      "no failed run with error_code on this dataset",
+    );
+
+    await page.goto("/system/job/runs", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
+
+    // Scope to failed runs via the outcome preset — every row then carries
+    // an error_code badge (the cell wraps it in a button → runDetail).
+    const preset = page
+      .locator("[data-slot='button-group']")
+      .filter({ has: page.locator("button svg.lucide-triangle-exclamation-point") })
+      .first();
+    const failedBtn = preset.locator("button[aria-pressed]", {
+      has: page.locator("svg.lucide-triangle-exclamation-point"),
+    }).first();
+    await expect(async () => {
+      await failedBtn.click();
+      await expect(failedBtn).toHaveAttribute("aria-pressed", "true", { timeout: 2000 });
+    }).toPass({ timeout: 15000 });
+    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 15000 });
+
+    // Locate the error_code column by header, then click its cell button.
+    const headers = await page.locator("table thead th").allTextContents();
+    const errIdx = headers.findIndex((h) => /error|errore|erreur|fehler|erro/i.test(h));
+    expect(errIdx, "error_code column header present").toBeGreaterThanOrEqual(0);
+    const cell = page.locator("table tbody tr").first().locator("td").nth(errIdx);
+    await cell.locator("button").first().click();
+
+    // The module's remote sheet mounts with the run's own content.
+    await expect(page.getByTestId("remote-sheet-mount")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByTestId("remote-sheet-content")).toBeVisible({ timeout: 15000 });
+  });
+
+  test("/system/job/runs visibleKeys v2 — legacy array migrates, intent persists", async ({
+    page,
+  }) => {
+    const VK = "pb:jobs:runs:visibleKeys";
+    // Seed a legacy v1 resolved array — a narrow column set from an older
+    // meta. Render must match it verbatim (no new columns leaked in);
+    // `name` is a dead key from the pre-lineage meta — dropped as unknown.
+    await page.addInitScript(([key]) => {
+      sessionStorage.setItem(key, JSON.stringify(["uuid", "name", "status"]));
+    }, [VK]);
+    await page.goto("/system/job/runs", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 30000 });
+
+    const headers = await page.locator("table thead th").allTextContents();
+    const has = (re: RegExp) => headers.some((h) => re.test(h));
+    // Stored keys render verbatim (uuid+status), `run_as` NOT — the pin
+    // is the sole exception: `trigger` (display_field, hideable:false)
+    // is re-injected over any stored set by construction.
+    expect(has(/status|stato|état|estado/i)).toBe(true);
+    expect(has(/trigger|attivatore|auslöser|déclencheur|disparador|acionador/i)).toBe(true);
+    expect(has(/run.as/i)).toBe(false);
+
+    // First persist rewrites the payload into the v2 intent shape —
+    // never a bare array again.
+    await expect(async () => {
+      const raw = await page.evaluate((k) => sessionStorage.getItem(k), VK);
+      const parsed = JSON.parse(raw ?? "null") as { v?: number; shown?: unknown; hidden?: unknown } | null;
+      expect(parsed?.v).toBe(2);
+      expect(Array.isArray(parsed?.shown)).toBe(true);
+      expect(Array.isArray(parsed?.hidden)).toBe(true);
+      // The hidden list captures the served columns absent from the set.
+      expect((parsed?.hidden as string[]).length).toBeGreaterThan(0);
+    }).toPass({ timeout: 10000 });
+  });
+
   test("job_run has NO audit endpoint — the run row IS the audit trail", async ({
     page,
   }) => {
@@ -302,6 +663,112 @@ test.describe("/system/job/* pages (module-owned)", () => {
     });
     expect(result.status).toBe(404);
     expect(result.body).not.toContain("does not exist");
+  });
+
+  test("job_run version badge → disabled watermark, ZERO /audit request", async ({
+    page,
+  }) => {
+    // Capability gate: job_run meta serves `read.audit` enabled:false —
+    // the version-history panel must render the disabled-feature
+    // watermark from the (cached) meta WITHOUT issuing a doomed GET on a
+    // route that does not exist. Any /audit request here is a regression.
+    const auditRequests: string[] = [];
+    page.on("request", (req) => {
+      // `/:uuid/audit` trail endpoint only — never source-module fetches
+      // like `auditable-fields.ts`.
+      if (/\/audit(\?|$)/.test(req.url())) auditRequests.push(req.url());
+    });
+
+    await page.goto("/system/job/runs", { waitUntil: "domcontentloaded" });
+    // Hydration gate — a sidebar link renders only post-onMount.
+    await expect(
+      page.locator("[data-sidebar='content'] a[href^='/system/']").first(),
+    ).toBeVisible({ timeout: 5000 });
+    await expect(page.locator("table")).toBeVisible({ timeout: 5000 });
+
+    // The default outcome preset is `sent` (dispatched) — a possibly-empty
+    // scope on this dataset. Switch to `all` so a run row exists to open.
+    const preset = page
+      .locator("[data-slot='button-group']")
+      .filter({ has: page.locator("button svg.lucide-list-clock") })
+      .first();
+    const allBtn = preset.locator("button[aria-pressed]", {
+      has: page.locator("svg.lucide-list-clock"),
+    }).first();
+    await expect(async () => {
+      await allBtn.click();
+      await expect(allBtn).toHaveAttribute("aria-pressed", "true", { timeout: 2000 });
+    }).toPass({ timeout: 10000 });
+    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 5000 });
+
+    // `version` is a hidden-but-toggleable audit column — surface it,
+    // then click the v{n} badge cell: same entity.versionHistory payload
+    // the record-sheet footer badge and row action build.
+    await page.getByRole("button", { name: "Columns" }).first().click();
+    const toggle = page.getByTestId("columns-toggle-version");
+    await expect(toggle).toBeVisible({ timeout: 5000 });
+    await toggle.click();
+    await page.keyboard.press("Escape");
+
+    const versionCell = page
+      .locator("table tbody tr")
+      .first()
+      .locator("td button", { hasText: /^v\d+$/ })
+      .first();
+    await expect(versionCell).toBeVisible({ timeout: 5000 });
+    await versionCell.click();
+
+    const disabled = page.getByTestId("version-history-disabled");
+    await expect(disabled).toBeVisible({ timeout: 5000 });
+    expect(auditRequests, "no /audit request may be issued").toEqual([]);
+  });
+
+  test("job_trigger audit endpoint returns uuid-keyed entries — the version-history contract", async ({
+    page,
+  }) => {
+    await page.goto("/system/job/triggers", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
+
+    // Contract: entities-route.ts declares job_trigger `auditable: true` —
+    // the version-history panel fetches GET /:uuid/audit and keys entries
+    // by audit-row `uuid` (never the retired numeric `id`). Regression
+    // locked here: a wedged service made this fetch hang "stale pending";
+    // a completing 200 with uuid-keyed rows is the positive contract.
+    // Audit rows exist only on triggers that were written after insert —
+    // scan the list for the first trigger carrying history.
+    const result = await page.evaluate(async () => {
+      const list = await fetch(
+        "/svc/job/api/v1/entities/job_trigger/list?page=1&page_size=25",
+      )
+        .then((r) => r.json())
+        .catch(() => null);
+      const rows = (list?.rows ?? []) as { uuid?: string }[];
+      for (const row of rows) {
+        if (!row?.uuid) continue;
+        const res = await fetch(
+          `/svc/job/api/v1/entities/job_trigger/${row.uuid}/audit?page=1&limit=20`,
+        );
+        if (res.status !== 200) return { status: res.status, body: await res.text() };
+        const body = await res.text();
+        if ((JSON.parse(body).data ?? []).length > 0)
+          return { status: res.status, body };
+      }
+      return { status: -1, body: "no job_trigger row with audit history" };
+    });
+    expect(result.status).toBe(200);
+    const payload = JSON.parse(result.body) as {
+      data: { uuid: string; action: string; changed_at: string }[];
+      pagination: { hasMore: boolean };
+    };
+    expect(Array.isArray(payload.data)).toBe(true);
+    expect(payload.data.length).toBeGreaterThan(0);
+    for (const entry of payload.data) {
+      expect(entry.uuid).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
+      );
+      expect(typeof entry.action).toBe("string");
+      expect(entry.changed_at).toBeTruthy();
+    }
   });
 
   test("cold load hydrates cleanly — no effect_orphan (vite deps must stay consistent)", async ({
@@ -472,17 +939,18 @@ test.describe("/system/job/* pages (module-owned)", () => {
     await expect(errorPanel).toHaveCount(0);
   });
 
-  test("armed_by lazy ref: trigger-owned row → job_trigger entity.record", async ({
+  test("trigger lazy ref: trigger-owned row → job_trigger entity.record", async ({
     page,
   }) => {
     await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
 
-    // Every schedule is trigger-owned (trigger_uuid NOT NULL) — armed_by
-    // is a static ref to `job_trigger` keyed by the row's own
-    // `trigger_uuid` and drills to the canonical entity.record sheet.
+    // Every schedule is trigger-owned (trigger_uuid NOT NULL) — `trigger`
+    // is the display_field: a calculated ref to `job_trigger` keyed by
+    // the row's own `trigger_uuid`, drilling to the canonical
+    // entity.record sheet.
     const triggerRow = page.locator("tr", { hasText: "e2e-callable-dispatch" }).first();
-    const triggerCell = triggerRow.getByTestId("ref-cell-armed_by-text");
+    const triggerCell = triggerRow.getByTestId("ref-cell-trigger-text");
     await expect(triggerCell).toBeVisible({ timeout: 15000 });
     await triggerCell.click();
     const recordSheet = page.getByTestId("entity-record-sheet");
@@ -522,7 +990,7 @@ test.describe("/system/job/* pages (module-owned)", () => {
     // the cell carries the service NAME and a lazy ref (ref_entity=
     // service_registry, ref_key=code) — the same canonical cell anatomy
     // every audited entity now gets for free.
-    await page.getByRole("button", { name: "Columns" }).click();
+    await page.getByRole("button", { name: "Columns" }).first().click();
     const toggle = page.getByTestId("columns-toggle-created_by");
     await expect(toggle).toBeVisible({ timeout: 15000 });
     await toggle.click();
@@ -530,7 +998,11 @@ test.describe("/system/job/* pages (module-owned)", () => {
 
     const cell = page.getByTestId("ref-cell-created_by-text").first();
     await expect(cell).toBeVisible({ timeout: 15000 });
-    await expect(cell).toContainText(/Process Manager|AI Assistants Manager/);
+    // The lazy join resolved the service display name — never the raw
+    // `system:<code>` actor stamp (registry names drift with the seed).
+    const actorText = (await cell.textContent())?.trim() ?? "";
+    expect(actorText.length).toBeGreaterThan(0);
+    expect(actorText).not.toMatch(/^system:/);
     await cell.click();
 
     // Service actor → the service.record panel (registry RPC record) —
@@ -543,7 +1015,126 @@ test.describe("/system/job/* pages (module-owned)", () => {
     await expect(panel).toHaveCount(0, { timeout: 10000 });
   });
 
-  test("job_name/armed_by share the owning trigger's identity — even past its deletion", async ({
+  test("created_by service actor renders in the active UI language", async ({ page }) => {
+    // `system:<code>` actors resolve through service_registry — the cell
+    // must show the census label_key translated in the ACTIVE language,
+    // not the English registry wire name. Pin it-IT like every i18n spec.
+    await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
+    const langNow = await page.evaluate(() => sessionStorage.getItem("pb.lang"));
+    if (langNow !== "it-IT") {
+      await page.evaluate(() => sessionStorage.setItem("pb.lang", "it-IT"));
+      await page.reload({ waitUntil: "domcontentloaded" });
+      await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
+    }
+
+    await page.getByRole("button", { name: /Columns|Colonne/ }).first().click();
+    const toggle = page.getByTestId("columns-toggle-created_by");
+    await expect(toggle).toBeVisible({ timeout: 15000 });
+    await toggle.click();
+    await page.keyboard.press("Escape");
+
+    const cell = page.getByTestId("ref-cell-created_by-text").first();
+    await expect(cell).toBeVisible({ timeout: 15000 });
+    // `system:job`/`system:ai` writers — localized module display name,
+    // never the English registry `name` nor the raw `system:<code>` token.
+    await expect(cell).toContainText(/Gestione Processi|Gestione Assistenti AI/);
+    await expect(cell).not.toContainText(/Process Manager|AI Assistants Manager|system:/);
+  });
+
+  test("system:api actor — the BE's own registry row resolves to API Gateway", async ({ page }) => {
+    // The BE writes `system:api` (e.g. api-partition-maintenance). Its
+    // self-enrolled service_registry row (code='api', label_key
+    // system.api.title) must resolve name + drill like any service.
+    await page.goto("/system/job/triggers", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
+    const langNow = await page.evaluate(() => sessionStorage.getItem("pb.lang"));
+    if (langNow !== "it-IT") {
+      await page.evaluate(() => sessionStorage.setItem("pb.lang", "it-IT"));
+      await page.reload({ waitUntil: "domcontentloaded" });
+      await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
+    }
+
+    await page.getByRole("button", { name: /Columns|Colonne/ }).first().click();
+    const toggle = page.getByTestId("columns-toggle-created_by");
+    await expect(toggle).toBeVisible({ timeout: 15000 });
+    await toggle.click();
+    await page.keyboard.press("Escape");
+
+    // The api-owned system trigger — its created_by is `system:api`.
+    const row = page.locator("tr", { hasText: "api-partition-maintenance" }).first();
+    await expect(row).toBeVisible({ timeout: 15000 });
+    const cell = row.getByTestId("ref-cell-created_by-text");
+    await expect(cell).toBeVisible({ timeout: 15000 });
+    await expect(cell).toContainText("API Gateway");
+    await expect(cell).not.toContainText("system:api");
+
+    // Drill opens the service.record panel for code='api' — resolvable.
+    await cell.click();
+    const panel = page.getByTestId("service-record-panel");
+    await expect(panel).toBeVisible({ timeout: 15000 });
+    await expect(page.getByTestId("service-record-info")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(panel).toHaveCount(0, { timeout: 10000 });
+  });
+
+  test("search on trigger ELT never serializes non-searchable jsonb columns", async ({ page }) => {
+    // Regression: `filter`/`payload_map` (jsonb, type:"text" in meta) used
+    // to reach `search_in` — the wire allowlist (physical textlike only)
+    // rejected them with a 400 VALIDATION error on every keystroke.
+    // `withColumnConstraints` now resolves the served `searchable` flag
+    // against the physical pg type, so the FE scope can never outrun the
+    // backend vocabulary again.
+    const badResponses: string[] = [];
+    page.on("response", (r) => {
+      if (r.url().includes("/entities/job_trigger/list") && r.status() >= 400)
+        badResponses.push(`${r.status()} ${r.url()}`);
+    });
+    await page.goto("/system/job/triggers", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
+
+    const searchInput = page.getByTestId("entity-search").locator("input");
+    await expect(searchInput).toBeVisible({ timeout: 15000 });
+    await searchInput.fill("api");
+    // Debounced fetch — wait for the request to have happened, not a timer.
+    await page.waitForResponse(
+      (r) => r.url().includes("/entities/job_trigger/list") && r.url().includes("search=api"),
+      { timeout: 15000 },
+    );
+    await expect(page.locator("table")).toBeVisible({ timeout: 15000 });
+    expect(badResponses, `400/5xx on list: ${badResponses.join(" | ")}`).toHaveLength(0);
+  });
+
+  test("trigger ELT column order — Statistiche precedes Ultima esecuzione", async ({ page }) => {
+    // `run_stats` (order 80) must sit before `last_run` (82) in the served
+    // column order — the sparkline summary precedes the timestamps.
+    await page.goto("/system/job/triggers", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
+    const langNow = await page.evaluate(() => sessionStorage.getItem("pb.lang"));
+    if (langNow !== "it-IT") {
+      await page.evaluate(() => sessionStorage.setItem("pb.lang", "it-IT"));
+      await page.reload({ waitUntil: "domcontentloaded" });
+      await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
+    }
+
+    const headerKeys = await page.locator("thead th").evaluateAll((ths) =>
+      ths.map((th) => th.textContent?.trim() ?? ""),
+    );
+    const statsIdx = headerKeys.findIndex((h) => /Statistiche|Statistics/i.test(h));
+    const lastIdx = headerKeys.findIndex((h) => /Ultima esecuzione|Last (run|execution)/i.test(h));
+    expect(statsIdx, `headers: ${headerKeys.join(" | ")}`).toBeGreaterThanOrEqual(0);
+    expect(lastIdx, `headers: ${headerKeys.join(" | ")}`).toBeGreaterThanOrEqual(0);
+    expect(statsIdx).toBeLessThan(lastIdx);
+
+    // `system_key` is an internal reconcile anchor — `hidden: true`
+    // suppresses it from the served meta entirely: no table column AND
+    // no column-picker toggle.
+    await page.getByTestId("elt-column-selector").click();
+    await expect(page.getByTestId("columns-toggle-system_key")).toHaveCount(0);
+    await page.keyboard.press("Escape");
+  });
+
+  test("trigger keeps the owning trigger's identity — even past its deletion", async ({
     page,
   }) => {
     await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
@@ -552,7 +1143,7 @@ test.describe("/system/job/* pages (module-owned)", () => {
     // `service_code` is physically retired — the subject carries the
     // namespace (`jobs.schedule.<owner>.*`). No header, no picker entry.
     await expect(page.locator("th", { hasText: /^service$/i })).toHaveCount(0);
-    await page.getByRole("button", { name: "Columns" }).click();
+    await page.getByRole("button", { name: "Columns" }).first().click();
     await expect(page.getByTestId("columns-toggle-service_code")).toHaveCount(0);
     await expect(page.getByTestId("columns-toggle-trigger_uuid")).toBeVisible({ timeout: 15000 });
     await page.keyboard.press("Escape");
@@ -561,20 +1152,19 @@ test.describe("/system/job/* pages (module-owned)", () => {
     // the schedule fires is a first-class fact of what it does.
     await expect(page.getByRole("columnheader", { name: "Destination Event" })).toBeVisible();
 
-    // Orphaned mirror (soft-deleted e2e-gate trigger): Armed By keeps the
-    // deleted trigger's name — the armer IS that trigger, its deletion
-    // does not rewrite provenance. Job Name and Armed By converge on the
-    // same identity (plain text vs drillable ref).
+    // Orphaned mirror (soft-deleted e2e-gate trigger): the `trigger`
+    // column resolves through `trigger_uuid` — the join survives the
+    // trigger's soft-delete, so the schedule keeps displaying the
+    // deleted trigger's name with its drill ref.
     const orphanRow = page.locator("tr", { hasText: "e2e-gate-1793665359607" }).first();
     await expect(orphanRow).toBeVisible({ timeout: 15000 });
-    const orphanArmed = orphanRow.getByTestId("ref-cell-armed_by-text");
-    await expect(orphanArmed).toContainText("e2e-gate-1793665359607");
-    await orphanArmed.click();
+    const orphanTrigger = orphanRow.getByTestId("ref-cell-trigger-text");
+    await expect(orphanTrigger).toContainText("e2e-gate-1793665359607");
+    await orphanTrigger.click();
     await expect(page.getByTestId("entity-record-sheet")).toBeVisible({ timeout: 15000 });
     await page.keyboard.press("Escape");
 
-    // Live trigger row: Job Name and Armed By intentionally share the
-    // trigger's display — identity (plain text) vs drillable ref.
+    // Live trigger row: the same calculated ref carries its identity.
     const liveRow = page.locator("tr", { hasText: "e2e-callable-dispatch" }).first();
     await expect(liveRow).toBeVisible({ timeout: 15000 });
   });

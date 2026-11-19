@@ -33,6 +33,7 @@ export type {
 	FilterPreset,
 	FilterPresetOption,
 	FilterCondition,
+	VisibleKeyPrefs,
 } from '@primebrick/ui';
 
 export {
@@ -44,6 +45,8 @@ export {
 	isColumnFilterable,
 	isColumnSearchable,
 	defaultVisibleColumnKeys,
+	deriveVisibleKeyPrefs,
+	resolveVisibleKeyPrefs,
 	sanitizeVisibleKeys,
 	searchableTextColumns,
 	getOperatorsForColumnType,

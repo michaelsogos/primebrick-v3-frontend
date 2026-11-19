@@ -46,8 +46,9 @@ export interface ScheduleRow {
 export interface RunRow {
   uuid: string;
   schedule_subject: string;
-  service_code: string;
-  job_name: string;
+  schedule_uuid: string | null;
+  trigger_uuid: string;
+  target_subject: string;
   run_as: string;
   status: string;
   error_code: string | null;

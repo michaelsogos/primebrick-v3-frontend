@@ -12,7 +12,7 @@
   import { Pencil } from '@primebrick/ui/vendor/lucide'
   import { Copy } from '@primebrick/ui/vendor/lucide'
   import { FileClock } from '@primebrick/ui/vendor/lucide'
-  import { Eye } from '@primebrick/ui/vendor/lucide'
+
   import { Trash2 } from '@primebrick/ui/vendor/lucide'
   import { DynamicIcon, actionColorClass } from '@primebrick/ui';
 
@@ -34,7 +34,6 @@
     onDuplicateRow,
     onDeleteRow,
     onRestoreRow,
-    onPreviewRow,
     handleCustomAction,
     isListMode
   }: {
@@ -55,7 +54,6 @@
     onDuplicateRow: (row: TRow) => void;
     onDeleteRow: (row: TRow) => void;
     onRestoreRow: (row: TRow) => void;
-    onPreviewRow: (row: TRow) => void;
     handleCustomAction?: (action: RowCustomAction, row: TRow) => void;
     isListMode: boolean;
   } = $props();
@@ -189,26 +187,16 @@
               </DropdownMenu.Item>
             {/if}
           {/if}
-          {#if entityRowActions?.versionHistory !== false || entityRowActions?.preview !== false}
+          {#if entityRowActions?.versionHistory !== false}
             <DropdownMenu.Separator />
-            {#if entityRowActions?.versionHistory !== false}
-              <DropdownMenu.Item
-                onclick={(e) => { e.stopPropagation(); onLoadVersionHistory(row); }}
-              >
-                <div class="flex items-center gap-2">
-                  <FileClock class="size-4" />
-                  <span>{$t('app.common.version_history')}</span>
-                </div>
-              </DropdownMenu.Item>
-            {/if}
-            {#if entityRowActions?.preview !== false}
-              <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); onPreviewRow(row); }}>
-                <div class="flex items-center gap-2">
-                  <Eye class="size-4" />
-                  <span>{$t('system.entities.list.preview')}</span>
-                </div>
-              </DropdownMenu.Item>
-            {/if}
+            <DropdownMenu.Item
+              onclick={(e) => { e.stopPropagation(); onLoadVersionHistory(row); }}
+            >
+              <div class="flex items-center gap-2">
+                <FileClock class="size-4" />
+                <span>{$t('app.common.version_history')}</span>
+              </div>
+            </DropdownMenu.Item>
           {/if}
         </DropdownMenu.Content>
       </DropdownMenu.Root>

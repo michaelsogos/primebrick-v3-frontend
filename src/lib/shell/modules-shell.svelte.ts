@@ -74,6 +74,25 @@ function resolveModuleFromRoute(pathname: string): string | null {
 }
 
 /**
+ * Settings-family modules — the reserved `settings` module and sibling
+ * `*-settings` nodes (e.g. `crm-settings`) — always render LAST within
+ * their root level, whatever the registry order. Convention on the
+ * emitted id (no declaration flag): the same seam feeds the launcher
+ * column and the breadcrumb module switcher, so one comparator keeps
+ * every surface consistent.
+ */
+function isSettingsModule(m: { id: string }): boolean {
+  return m.id === 'settings' || m.id.endsWith('-settings');
+}
+
+/** Stable settings-last ordering — non-settings order preserved. */
+function settingsLast<T extends { id: string }>(list: T[]): T[] {
+  return [...list].sort(
+    (a, b) => Number(isSettingsModule(a)) - Number(isSettingsModule(b)),
+  );
+}
+
+/**
  * The TRANSLATIONS module owning the route's runtime dict. Virtual
  * sibling modules (`crm-settings`) carry `translations_module` pointing
  * at the declaring service — dict fetches must resolve to it or they
@@ -185,22 +204,27 @@ export const shellNav = {
   /** Modules NAVIGABLE under a root level — the access-filtered nav has
    *  at least one leaf under that root. Prefix-only membership is
    *  routing-domain (the module owns URLs there but has nothing to
-   *  navigate to). */
+   *  navigate to). Settings-family modules always sort last. */
   modulesForRoot(root: string): ModuleInfo[] {
-    return _state.modules.filter(
-      (m) =>
-        m.accessible !== false &&
-        flattenNavLeaves(m.nav ?? []).some((l) => rootOfPath(l.href) === root),
+    return settingsLast(
+      _state.modules.filter(
+        (m) =>
+          m.accessible !== false &&
+          flattenNavLeaves(m.nav ?? []).some((l) => rootOfPath(l.href) === root),
+      ),
     );
   },
   /** Modules that declare surface under `root` but have ZERO accessible
    *  leaves (`accessible:false`) — the launcher reveal switch renders
-   *  them disabled; never navigable. */
+   *  them disabled; never navigable. Settings-family last like the
+   *  navigable list. */
   inaccessibleModulesForRoot(root: string): ModuleInfo[] {
-    return _state.modules.filter(
-      (m) =>
-        m.accessible === false &&
-        (m.route_prefixes ?? []).some((p) => rootOfPath(p) === root),
+    return settingsLast(
+      _state.modules.filter(
+        (m) =>
+          m.accessible === false &&
+          (m.route_prefixes ?? []).some((p) => rootOfPath(p) === root),
+      ),
     );
   },
   /** Declared default module for a root — `is_default` among `part_of`
@@ -228,39 +252,53 @@ export { loadShellNav };
  */
 let _censusLang: string | null = null;
 
+/**
+ * Concurrent callers share one census fetch — the (app) layout gate,
+ * AppShell's onMount and resolveSafePage can all fire during the first
+ * load. Each run owns an AbortController: a uiLang change aborts the
+ * in-flight request, frees the slot, and starts a fresh fetch for the
+ * selected language. The ownership check in `finally` keeps a superseded
+ * run from clobbering the flags of the run that replaced it.
+ *
+ * Declared before the uiLang subscriber: svelte `subscribe` invokes the
+ * callback synchronously at module init — earlier declarations would be
+ * a TDZ trap.
+ */
+let _censusInflight: Promise<void> | null = null;
+let _censusAbort: AbortController | null = null;
+
 // The census is the labels' carrier — when the UI language changes the
 // seed must be re-resolved for the new language, otherwise nav labels of
-// never-visited modules would stay in the previous language. Skipped
-// while no census exists yet (the in-flight one seeds itself) and while
-// a fetch is already running.
+// never-visited modules would stay in the previous language. A change
+// landing mid-flight VOIDS the stale-lang request (abort) and fires the
+// correct GET immediately — the aborted response never lands. Skipped
+// only when no census exists yet and none is in-flight (the upcoming
+// first fetch reads the fresh lang anyway).
 if (typeof window !== 'undefined') {
   uiLang.subscribe((lang) => {
-    if (lang === _censusLang || _state.loading || _state.modules.length === 0) return;
+    if (lang === _censusLang) return;
+    if (_censusInflight) {
+      _censusAbort?.abort();
+      _censusInflight = null;
+    } else if (_state.modules.length === 0) {
+      return;
+    }
     void loadShellNav();
   });
 }
 
-/**
- * Concurrent callers share one census fetch — the (app) layout gate,
- * AppShell's onMount and resolveSafePage can all fire during the first
- * load. A settled in-flight clears itself so language re-census and
- * error retries always start a real fetch.
- */
-let _censusInflight: Promise<void> | null = null;
-
 function loadShellNav(): Promise<void> {
-  _censusInflight ??= _loadShellNav().finally(() => {
-    _censusInflight = null;
-  });
+  _censusInflight ??= _runCensus();
   return _censusInflight;
 }
 
-async function _loadShellNav(): Promise<void> {
+async function _runCensus(): Promise<void> {
+  const ctrl = (_censusAbort = new AbortController());
   _state.loading = true;
   _state.error = null;
   try {
     const lang = get(uiLang);
-    const doc = await fetchModules(lang);
+    const doc = await fetchModules(lang, { signal: ctrl.signal });
     // The labels seed rides the SAME merge path every module dictionary
     // uses — `$t` stays the only read path, `_mergedDicts` the only store.
     mergeModuleDict(lang, doc.labels);
@@ -273,6 +311,9 @@ async function _loadShellNav(): Promise<void> {
     );
     _state.unreachable = false;
   } catch (e) {
+    // Superseded by a newer census (uiLang change aborted this request) —
+    // the replacement run owns the state; land nothing here.
+    if (ctrl.signal.aborted) return;
     if (e instanceof ApiUnreachableError) {
       _state.unreachable = true;
       _state.error = null;
@@ -281,7 +322,11 @@ async function _loadShellNav(): Promise<void> {
       _state.error = e instanceof Error ? e.message : 'Failed to load modules';
     }
   } finally {
-    _state.loading = false;
+    if (_censusAbort === ctrl) {
+      _censusAbort = null;
+      _censusInflight = null;
+      _state.loading = false;
+    }
   }
 }
 

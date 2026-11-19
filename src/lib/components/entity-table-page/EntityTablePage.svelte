@@ -163,11 +163,21 @@
   const effectiveEditPath = $derived(
     editPath ?? censusDetailRoute?.route.replace(/\[[^\]]*\]/, ':uuid')
   );
-  const createCta = $derived(
-    censusCreateRoute
-      ? { label_key: censusCreateRoute.label_key, icon: censusCreateRoute.icon }
-      : undefined
-  );
+  /**
+   * Create CTA chrome — `label_key` rides the census `kind:"create"`
+   * route (its `label_key` IS the authored "New <entity>" copy), `icon`
+   * comes from the meta action `create.single` authored override only.
+   * `censusCreateRoute.icon` is deliberately ignored — a route/page icon
+   * is not a toolbar action icon (route materialization defaults like
+   * `text-cursor-input` would leak into the CTA). No meta override → the
+   * toolbar's generic `+` default renders.
+   */
+  const createCta = $derived.by(() => {
+    const action = meta?.actions?.find((a) => a.op === 'create.single');
+    const label_key = action?.label_key ?? censusCreateRoute?.label_key;
+    const icon = action?.icon;
+    return label_key || icon ? { label_key, icon } : undefined;
+  });
 
   function openCreate() {
     if (!effectiveCreatePath) return;

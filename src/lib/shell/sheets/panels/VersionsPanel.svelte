@@ -10,7 +10,11 @@
   import { chipLabel, chipClass, type HealthChip } from '$lib/composables/useHealthChip';
   import { cn } from '$lib/utils';
   import { servicesState, aggregateStatus, groupByCode } from '$lib/services-store.svelte';
+  import { shellNav } from '$lib/shell/modules-shell.svelte';
   import type { ServiceInfo } from '$lib/api-types';
+  import { fromStore } from 'svelte/store';
+  import { uiLang } from '$lib/i18n/store.svelte';
+  import { loadModuleTranslations } from '$lib/i18n/use-module-translations.svelte';
   import { Blocks } from '@primebrick/ui/vendor/lucide';
   import { Cloud } from '@primebrick/ui/vendor/lucide';
   import { CloudOff } from '@primebrick/ui/vendor/lucide';
@@ -31,6 +35,29 @@
   const healthChipClass = $derived(chipClass(healthChip));
 
   const groupedServices = $derived(groupByCode(servicesState.services));
+  const lang = fromStore(uiLang);
+
+  /** Every listed module's `label_key` resolves against the OWNING
+   *  service's dict — dicts are route-loaded, so this panel pre-loads
+   *  each contributor's dict best-effort (dead service → deduped
+   *  raw-key → `name` fallback, no scream). Same side effect
+   *  `useCensusSubjectOptions` owns for callable labels. */
+  $effect(() => {
+    for (const code of groupedServices.keys()) {
+      const m = shellNav.modules.find((x) => x.id === code);
+      void loadModuleTranslations(m?.translations_module ?? code, lang.current, { bestEffort: true });
+    }
+  });
+
+  /** Module display-name key — the census `label_key` wins (the
+   *  documented single display-name source for every UI surface), then
+   *  the registry row's own `label_key`. Resolution happens in markup so
+   *  `$t` stays reactive to a language switch; raw `name`/`code` are the
+   *  fallback when the key is absent or unresolved (same shape as
+   *  `ServiceRecordPanel.serviceLabel`). */
+  function moduleLabelKey(code: string, module: ServiceInfo): string | undefined {
+    return shellNav.modules.find((m) => m.id === code)?.label_key ?? module.label_key;
+  }
 
   function statusBadgeClass(status: string): string {
     switch (status) {
@@ -233,8 +260,10 @@
                 {@const aggStatus = aggregateStatus(instances)}
                 {@const healthyCount = instances.filter((i) => i.status === 'online').length}
                 {@const module = instances[0] as ServiceInfo}
-                {@const displayName = module.name || code}
-                {@const showCodeNote = module.name && module.name !== code}
+                {@const lk = moduleLabelKey(code, module)}
+                {@const resolvedName = lk ? $t(lk) : ''}
+                {@const displayName = resolvedName && resolvedName !== lk ? resolvedName : (module.name || code)}
+                {@const showCodeNote = displayName !== code}
                 {@const beStatus = backendState.offline ? 'offline' : 'online'}
                 <div class="space-y-2 rounded-lg border-primary-gradient p-3">
                   <!-- Line 1: icon + name (left) | status badge + count/reserved badge (right) -->

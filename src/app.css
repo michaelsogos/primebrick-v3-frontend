@@ -1128,6 +1128,7 @@ li[data-sonner-toast].toast-impact-critical [data-icon] svg,
  *  - pb-watermark-loading : Hourglass — rotate 180° + zoom (loading in progress)
  *  - pb-watermark-error   : CircleX   — error pulse (opacity + scale)
  *  - pb-watermark-empty   : TriangleAlert / Info / ThumbsUp — bounce (opacity + translateY + scale)
+ *  - pb-watermark-disabled: Grid3x3Off — neutral pulse (feature not enabled on this entity)
  *  - pb-watermark-fade    : Cloud     — opacity fade (static metadata loading)
  */
 @keyframes pb-watermark-pulse {
@@ -1184,6 +1185,11 @@ li[data-sonner-toast].toast-impact-critical [data-icon] svg,
 }
 
 .pb-watermark-empty {
+  transform-origin: center;
+  animation: pb-watermark-pulse 2.6s ease-in-out infinite;
+}
+
+.pb-watermark-disabled {
   transform-origin: center;
   animation: pb-watermark-pulse 2.6s ease-in-out infinite;
 }

@@ -4,14 +4,7 @@ export function useKeyboardNavigation<T>(options: {
   selectedKeys: () => string[];
   onSelectedKeysChange: () => (keys: string[]) => void;
   rowKey: (row: T) => string;
-  previewPanelOpen: () => boolean;
-  previewRowIndex: () => number;
-  focusedRowIndex: () => number | null;
-  setFocusedRowIndex: (index: number) => void;
-  openPreview: (row: T) => void;
-  navigatePreview: (direction: 'next' | 'prev') => void;
   dropdownMenuRow: () => T | null;
-  previewDropdownOpen: () => boolean;
   closeRowDropdown: () => void;
   // Unified pager channel — same pair the footer buttons read (footerPage /
   // footerTotalPages): server paging and client "selected only" paging are
@@ -26,25 +19,21 @@ export function useKeyboardNavigation<T>(options: {
   toggleRowSelect: (key: string) => void;
   tableRef: () => HTMLTableElement | null;
 }) {
+  const _state = $state({
+    focusedRowIndex: null as number | null,
+  });
+
+  function setFocusedRowIndex(index: number) {
+    _state.focusedRowIndex = index;
+  }
+
   function handleGlobalKeyDown(e: KeyboardEvent) {
     const target = e.target as HTMLElement;
     if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
     if (target.closest('[role="menu"]') || target.closest('[role="menuitem"]')) return;
 
     // Skip table row navigation if any dropdown menu is open (menu has priority)
-    if (options.dropdownMenuRow() !== null || options.previewDropdownOpen()) return;
-
-    if (options.previewPanelOpen()) {
-      if (e.key === 'ArrowLeft') {
-        e.preventDefault();
-        options.navigatePreview('prev');
-        return;
-      } else if (e.key === 'ArrowRight') {
-        e.preventDefault();
-        options.navigatePreview('next');
-        return;
-      }
-    }
+    if (options.dropdownMenuRow() !== null) return;
 
     // Pager keys — table-level, so they run before the empty-list guard:
     // PageUp must still work on an empty page (e.g. rows deleted). Clamped
@@ -75,39 +64,27 @@ export function useKeyboardNavigation<T>(options: {
     const viewRows = options.viewRows();
     if (viewRows.length === 0) return;
 
-    const focused = options.focusedRowIndex();
+    const focused = _state.focusedRowIndex;
 
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       if (focused === null || focused === undefined) {
-        options.setFocusedRowIndex(0);
+        setFocusedRowIndex(0);
       } else if (focused < viewRows.length - 1) {
-        options.setFocusedRowIndex(focused + 1);
+        setFocusedRowIndex(focused + 1);
       } else if (focused === viewRows.length - 1 && options.currentPage() < options.pageCount()) {
         // Trigger next page when reaching end of current page
         options.goToPage(options.currentPage() + 1);
       }
-      if (options.previewPanelOpen()) {
-        const newFocused = options.focusedRowIndex();
-        if (newFocused !== null && newFocused !== undefined) {
-          options.openPreview(viewRows[newFocused]);
-        }
-      }
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       if (focused === null || focused === undefined) {
-        options.setFocusedRowIndex(viewRows.length - 1);
+        setFocusedRowIndex(viewRows.length - 1);
       } else if (focused > 0) {
-        options.setFocusedRowIndex(focused - 1);
+        setFocusedRowIndex(focused - 1);
       } else if (focused === 0 && options.currentPage() > 1) {
         // Trigger previous page when at start of current page
         options.goToPage(options.currentPage() - 1);
-      }
-      if (options.previewPanelOpen()) {
-        const newFocused = options.focusedRowIndex();
-        if (newFocused !== null && newFocused !== undefined) {
-          options.openPreview(viewRows[newFocused]);
-        }
       }
     } else if (e.key === ' ' && focused !== null && focused !== undefined) {
       e.preventDefault();
@@ -131,7 +108,7 @@ export function useKeyboardNavigation<T>(options: {
 
   // Scroll focused row into view
   $effect(() => {
-    const focused = options.focusedRowIndex();
+    const focused = _state.focusedRowIndex;
     if (focused === null || focused === undefined) return;
     const tableRef = options.tableRef();
     const row = tableRef?.querySelector(`[data-focused-row-index="${focused}"]`) as HTMLElement;
@@ -141,6 +118,8 @@ export function useKeyboardNavigation<T>(options: {
   });
 
   return {
-    handleGlobalKeyDown
+    handleGlobalKeyDown,
+    get focusedRowIndex() { return _state.focusedRowIndex; },
+    setFocusedRowIndex
   };
 }

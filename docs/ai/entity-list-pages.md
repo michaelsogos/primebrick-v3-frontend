@@ -161,6 +161,25 @@ falling back to `label_key`) plus `aria-label`/`aria-pressed`. Exactly one
 option is always pressed (`aria-pressed="true"`). `display:"combobox"`
 variants MAY render icon + label + secondary description.
 
+## Cell anatomy (MANDATORY)
+
+- Every cell whose click opens a sheet MUST render through
+  `CellAffordance` (`table/CellAffordance.svelte`) — text `font-medium`
+  button, underline on hover → canonical sheet; optional trailing icon
+  (`opacity-0` → `group-hover:opacity-100`) carries the SECOND action
+  (`_blank` href on ref cells, or `oniconclick` → the same sheet).
+  NEVER invent per-cell button anatomy or add icons to a text link —
+  `ref`, `MapperCellViewer`, `JsonCellViewer` are the pattern.
+- Generic `format:"json"` cells (not mapper, not condition arrays) render
+  `JsonCellViewer`: text-only "View" link → `entity.jsonViewer`. The
+  braces glyph belongs to the sheet header, never to the cell.
+- `type:"number"` cells are right-aligned `tabular-nums` and
+  locale-formatted via `formatListCellValue` (`@primebrick/ui`) —
+  explicit `useGrouping:true`, `uom` semantics from meta. Number
+  **headers stay left-aligned** — data alignment never propagates to `th`.
+- Wire values go through `toDisplayString`, never `String()` —
+  `no-base-to-string` enforces it.
+
 ## Exceptions
 - **Composite/module pages** — a page hosting several list instances or
   extra UI drives `useEntityList` + `EntityListTable` directly. Remote

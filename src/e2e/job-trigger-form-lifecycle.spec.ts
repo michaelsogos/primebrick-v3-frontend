@@ -78,7 +78,7 @@ test.describe("job_trigger entity-form archetype lifecycle", () => {
     const eventField = popup.getByTestId("entity-form-field-event_subject");
     await eventField.locator('[role="combobox"]').click();
     const commandInput = popup.locator('[data-slot="command-input"]:visible').last();
-    await commandInput.fill("crm.customer_changed");
+    await commandInput.fill("events.crm.customer.on.changed");
     await commandInput.press("Enter");
     await popup.keyboard.press("Escape");
 
@@ -116,7 +116,7 @@ test.describe("job_trigger entity-form archetype lifecycle", () => {
     await eventRow.locator('[role="combobox"]').nth(1).click({ position: { x: 8, y: 18 } });
     await popup
       .locator('[role="option"]:visible')
-      .filter({ hasText: "crm.customer_changed" })
+      .filter({ hasText: "events.crm.customer.on.changed" })
       .first()
       .click({ force: true });
     await popup.keyboard.press("Escape");

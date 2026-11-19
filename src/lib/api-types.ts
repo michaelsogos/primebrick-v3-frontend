@@ -207,6 +207,18 @@ export type ModuleConfigEntry = {
   version: number;
 };
 
+/**
+ * Row returned by `GET /api/v1/system/translations/find` — a translation
+ * row plus its `module` schema discriminator (BE `TranslationMatchRow`).
+ */
+export type TranslationMatchRow = {
+  uuid: string;
+  key: string;
+  language: string;
+  value: string;
+  module: string;
+};
+
 // `ConfigEntry`/`ConfigEntryType` — canonical wire types live in
 // `@primebrick/core` (`config-entry.ts`); re-exported here via `@primebrick/ui`
 // so existing `$lib/api-types` import sites keep working. The `import type`

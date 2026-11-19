@@ -1,10 +1,9 @@
 import type { useRowActions } from '../composables/useRowActions.svelte';
-import type { usePreviewPanel } from '../composables/usePreviewPanel.svelte';
 import type { useRowRangeSelection } from '../composables/useRowRangeSelection.svelte';
 
 export function createClickHandlers<TRow extends Record<string, unknown>>(
   rowActionsComposable: ReturnType<typeof useRowActions<TRow>>,
-  previewPanel: ReturnType<typeof usePreviewPanel<TRow>>,
+  detailHref: (row: TRow) => string | null,
   rowSelectionEnabled: () => boolean,
   rowsLoading: () => boolean,
   error: () => string | null,
@@ -15,8 +14,18 @@ export function createClickHandlers<TRow extends Record<string, unknown>>(
     rowActionsComposable.handleEditRow(row);
   }
 
-  function handlePreviewRow(row: TRow) {
-    previewPanel.openPreview(row);
+  // Row dblclick → the record's `kind:"detail"` census route in a NEW
+  // browser tab. `window.open` inside a user gesture focuses the new tab
+  // natively; no detail decl → the record is not standalone-browsable.
+  function handleRowDblClick(row: TRow) {
+    const href = detailHref(row);
+    if (!href) {
+      if (import.meta.env.DEV) {
+        console.warn('[EntityListTable] dblclick ignored — no kind:"detail" census route for this entity');
+      }
+      return;
+    }
+    window.open(href, '_blank');
   }
 
   function onEntityRowClick(key: string, e: MouseEvent) {
@@ -55,7 +64,7 @@ export function createClickHandlers<TRow extends Record<string, unknown>>(
 
   return {
     handleEditRow,
-    handlePreviewRow,
+    handleRowDblClick,
     onEntityRowClick,
     onEntityCardClick
   };

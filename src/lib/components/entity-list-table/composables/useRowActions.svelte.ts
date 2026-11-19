@@ -40,7 +40,6 @@ export interface RowActionsOptions<TRow extends Record<string, unknown>> {
    */
   usePurgeDelete?: () => boolean;
   rowKey?: (row: TRow) => string;
-  onPreviewRow?: (row: TRow) => void;
   closeRowDropdown?: () => void;
   t?: (key: string, params?: Record<string, unknown>) => string;
   customActionHandlers?: () => (Record<string, (row: TRow) => void> | undefined);
@@ -77,7 +76,6 @@ export function useRowActions<TRow extends Record<string, unknown>>(
     isRowDeleted,
     usePurgeDelete,
     rowKey,
-    onPreviewRow,
     closeRowDropdown,
     dialogs,
     customActionHandlers: getCustomActionHandlers,
@@ -104,10 +102,6 @@ export function useRowActions<TRow extends Record<string, unknown>>(
     closeRowDropdown?.();
   }
 
-  function handlePreviewRow(row: TRow) {
-    onPreviewRow?.(row);
-    closeRowDropdown?.();
-  }
 
   function handleDeleteRow(row: TRow) {
     dialogs?.setRowToDelete?.(row);
@@ -177,8 +171,8 @@ export function useRowActions<TRow extends Record<string, unknown>>(
       } else {
         pushNotification({
           impact: 'MEDIUM',
-          messageKey: 'system.entities.list.deleteFailed',
-          scope: tFn('app.common.errors.scope.deleteApi'),
+          messageKey: 'app.common.delete_failed',
+          scope: tFn('app.common.errors.scope.delete_api'),
           detail: error instanceof Error ? error.message : String(error),
           toast: true,
         });
@@ -219,8 +213,8 @@ export function useRowActions<TRow extends Record<string, unknown>>(
       } else {
         pushNotification({
           impact: 'MEDIUM',
-          messageKey: 'system.entities.list.restoreFailed',
-          scope: tFn('app.common.errors.scope.restoreApi'),
+          messageKey: 'app.common.restore_failed',
+          scope: tFn('app.common.errors.scope.restore_api'),
           detail: error instanceof Error ? error.message : String(error),
           toast: true,
         });
@@ -364,7 +358,7 @@ export function useRowActions<TRow extends Record<string, unknown>>(
     pushNotification({
       impact: 'LOW',
       messageKey: 'app.common.done',
-      scope: tFn('app.common.errors.scope.customActionApi'),
+      scope: tFn('app.common.errors.scope.custom_action_api'),
       toast: true
     });
     return true;
@@ -419,7 +413,6 @@ export function useRowActions<TRow extends Record<string, unknown>>(
     handleDeleteRow,
     handleRestoreRow,
     handleDuplicateRow,
-    handlePreviewRow,
     confirmDeleteRow,
     confirmRestoreRow,
     confirmDuplicateRow,

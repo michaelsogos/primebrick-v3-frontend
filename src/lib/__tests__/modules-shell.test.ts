@@ -71,6 +71,34 @@ const MODULES = [
     ],
   },
   {
+    // Sibling virtual module — discovery emits it as `{code}-settings`;
+    // its dict lives in the declaring service's translations schema.
+    id: 'crm-settings',
+    name: 'settings',
+    enabled: true,
+    icon: 'settings',
+    part_of: 'crm',
+    route_prefixes: ['/crm/settings'],
+    translations_module: 'crm',
+    nav: [
+      { id: 'customer_types', label_key: 'crm.settings.nav.customer_types', href: '/crm/settings/customer_types', default: true },
+    ],
+  },
+  {
+    // Reveal-switch surface: declares /system pages but ZERO accessible
+    // leaves — renders disabled in the launcher, never navigable.
+    id: 'ai-settings',
+    name: 'settings',
+    enabled: true,
+    icon: 'settings',
+    part_of: 'system',
+    route_prefixes: ['/system/ai-settings'],
+    accessible: false,
+    nav: [
+      { id: 'ai-settings', label_key: 'ai.settings.nav', href: '/system/ai-settings' },
+    ],
+  },
+  {
     // Headless service — declares prefixes (owns URLs) but has no
     // navigable nav slice anywhere: no leaves, no launcher/breadcrumb row.
     id: 'webhook',
@@ -141,8 +169,23 @@ describe('root levels — part_of grouping', () => {
 
   it('groups modules by root level — extra prefixes count as membership', () => {
     // crm owns pages under BOTH roots: /crm (own) and /system/crm (extra).
-    expect(shellNav.modulesForRoot('system').map((m) => m.id)).toEqual(['job', 'settings', 'crm']);
-    expect(shellNav.modulesForRoot('crm').map((m) => m.id)).toEqual(['crm']);
+    expect(shellNav.modulesForRoot('system').map((m) => m.id)).toEqual(['job', 'crm', 'settings']);
+    expect(shellNav.modulesForRoot('crm').map((m) => m.id)).toEqual(['crm', 'crm-settings']);
+  });
+
+  it('settings-family modules always sort last within their root', () => {
+    // Convention on the emitted id — reserved `settings` and `*-settings`
+    // siblings (crm-settings) close the list whatever the registry order.
+    // Launcher column and breadcrumb module switcher share this seam.
+    expect(shellNav.modulesForRoot('system').at(-1)?.id).toBe('settings');
+    expect(shellNav.modulesForRoot('crm').at(-1)?.id).toBe('crm-settings');
+    // Non-settings order is the authored registry order — untouched.
+    expect(shellNav.modulesForRoot('system').slice(0, -1).map((m) => m.id)).toEqual(['job', 'crm']);
+  });
+
+  it('the reveal-switch disabled list keeps the same settings-last order', () => {
+    expect(shellNav.inaccessibleModulesForRoot('system').map((m) => m.id)).toEqual(['ai-settings']);
+    expect(shellNav.inaccessibleModulesForRoot('crm')).toEqual([]);
   });
 
   it('excludes modules with no accessible leaf — navigation, not routing', () => {

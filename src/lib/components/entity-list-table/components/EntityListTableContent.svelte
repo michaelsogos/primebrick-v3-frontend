@@ -2,7 +2,6 @@
   import type { Snippet } from 'svelte';
   import type { MetaColumn } from '$lib/entity-list/types';
   import type { CellArgs, EntityRowActions } from '../types';
-  import type { usePreviewPanel } from '../composables/usePreviewPanel.svelte';
   import type { useRowActions } from '../composables/useRowActions.svelte';
   import type { useStickyColumns } from '../composables/useStickyColumns.svelte';
   import type { useRowRangeSelection } from '../composables/useRowRangeSelection.svelte';
@@ -21,7 +20,8 @@
     selectedKeys,
     rowKey,
     isRowDeleted,
-    previewPanel,
+    focusedRowIndex,
+    onOpenColumnSelector,
     actionsEnabled,
     rowActions,
     entityRowActions,
@@ -53,7 +53,7 @@
     onCloseRowDropdown,
     onEditRow,
     rowActionsComposable,
-    onPreviewRow,
+    onRowDblClick,
     tableRef = $bindable(),
     tableDensityClass,
     stickyColumnsState,
@@ -62,20 +62,6 @@
     visibleKeys,
     handleSortClick,
     rowRangeSelection,
-    uid,
-    pageSize,
-    page,
-    onPageChange,
-    entity,
-    entities_ns,
-    columns,
-    stickyColumns,
-    dataColumns,
-    auditingColumns,
-    footerRangeTotal,
-    footerPage,
-    previewDropdownOpen,
-    navigatePreview,
     extraCols
   }: EntityListTableContentProps = $props();
 
@@ -90,7 +76,8 @@
     selectedKeys: string[];
     rowKey: (row: TRow) => string;
     isRowDeleted: (row: TRow) => boolean;
-    previewPanel: ReturnType<typeof usePreviewPanel<TRow>>;
+    focusedRowIndex: number | null;
+    onOpenColumnSelector: () => void;
     actionsEnabled: boolean;
     rowActions?: Snippet<[{ row: TRow }]>;
     entityRowActions?: EntityRowActions;
@@ -122,7 +109,7 @@
     onCloseRowDropdown: () => void;
     onEditRow: (row: TRow) => void;
     rowActionsComposable: ReturnType<typeof useRowActions<TRow>>;
-    onPreviewRow: (row: TRow) => void;
+    onRowDblClick: (row: TRow) => void;
     tableRef: HTMLTableElement | null;
     tableDensityClass: string;
     stickyColumnsState: ReturnType<typeof useStickyColumns>;
@@ -131,21 +118,6 @@
     visibleKeys: string[];
     handleSortClick: (col: MetaColumn) => void;
     rowRangeSelection: ReturnType<typeof useRowRangeSelection>;
-    uid: string;
-    pageSize: number;
-    page: number;
-    onPageChange: (page: number) => void;
-    entity: string;
-    /** Entity-label i18n namespace (`meta.entities_ns`) — forwarded to PreviewPanelWrapper. */
-    entities_ns?: string;
-    columns: MetaColumn[];
-    stickyColumns: MetaColumn[] | undefined;
-    dataColumns: MetaColumn[] | undefined;
-    auditingColumns: MetaColumn[] | undefined;
-    footerRangeTotal: number;
-    footerPage: number;
-    previewDropdownOpen: boolean;
-    navigatePreview: (direction: number) => void;
     extraCols: number;
   };
 </script>
@@ -165,7 +137,7 @@
       selectedKeys={selectedKeys}
       rowKey={rowKey}
       isRowDeleted={isRowDeleted}
-      previewPanel={previewPanel}
+      focusedRowIndex={focusedRowIndex}
       actionsEnabled={actionsEnabled}
       rowActions={rowActions}
       entityRowActions={entityRowActions}
@@ -191,7 +163,6 @@
       onCloseRowDropdown={onCloseRowDropdown}
       onEditRow={onEditRow}
       rowActionsComposable={rowActionsComposable}
-      onPreviewRow={onPreviewRow}
     />
     {#if viewMode === 'table'}
       <EntityListTableTableView
@@ -214,7 +185,8 @@
         datetimeIanaModeByKey={datetimeIanaModeByKey}
         toggleDatetimeIana={toggleDatetimeIana}
         actionsEnabled={actionsEnabled}
-        previewPanel={previewPanel}
+        focusedRowIndex={focusedRowIndex}
+        onOpenColumnSelector={onOpenColumnSelector}
         viewRows={viewRows}
         error={error}
         errorView={errorView}
@@ -237,27 +209,13 @@
         entityRowActions={entityRowActions}
         dropdownMenuRow={dropdownMenuRow}
         onEntityRowClick={onEntityRowClick}
-        handlePreviewRow={onPreviewRow}
+        onRowDblClick={onRowDblClick}
         toggleRowSelect={onToggleRowSelect}
         openRowDropdown={onOpenRowDropdown}
         closeRowDropdown={onCloseRowDropdown}
         handleEditRow={onEditRow}
         rowActionsComposable={rowActionsComposable}
-        uid={uid}
-        pageSize={pageSize}
-        page={page}
-        onPageChange={onPageChange}
-        entity={entity}
-        entities_ns={entities_ns}
-        columns={columns}
-        stickyColumns={stickyColumns}
-        dataColumns={dataColumns}
-        auditingColumns={auditingColumns}
         selectedKeys={selectedKeys}
-        footerRangeTotal={footerRangeTotal}
-        footerPage={footerPage}
-        previewDropdownOpen={previewDropdownOpen}
-        navigatePreview={navigatePreview}
       />
     {/if}
   {/if}

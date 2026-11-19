@@ -93,9 +93,10 @@ test.describe("elt filters widget parity", () => {
     await control.click();
     const popover = page.locator("[data-popover-content], [cmdk-list]").last();
     await expect(popover).toBeVisible({ timeout: 10_000 });
-    // run_as badge vocab: system / originator / author — pick two.
+    // run_as badge vocab: system / originator / author — labels resolve to
+    // System / User Event / Trigger Owner; pick two.
     await popover.getByText(/^System$/i).first().click();
-    await popover.getByText(/^Author$/i).first().click();
+    await popover.getByText(/^Trigger Owner$/i).first().click();
     await page.keyboard.press("Escape");
     urls.length = 0;
     await page.getByTestId("filters-apply").click();
@@ -195,10 +196,10 @@ test.describe("elt filters widget parity", () => {
     // writer), label = user_profiles.display_name when the uuid resolves,
     // else the raw actor. The combo MUST render `label`.
     const respPromise = page.waitForResponse(
-      (r) => r.url().includes("/entities/user_profile/audit-actors") && r.status() === 200,
+      (r) => r.url().includes("/entities/job_trigger/audit-actors") && r.status() === 200,
       { timeout: 30_000 },
     );
-    await page.goto(USERS, { waitUntil: "domcontentloaded" });
+    await page.goto(TRIGGERS, { waitUntil: "domcontentloaded" });
     await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 30_000 });
     await openFiltersSheet(page);
     const items = (await (await respPromise).json()).items as { value: string; label: string }[];
@@ -244,7 +245,10 @@ test.describe("elt filters widget parity", () => {
     await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 30_000 });
     await openFiltersSheet(page);
 
-    const { control } = await labeledControl(page, /\bschedule\b/i);
+    // job_run.schedule (ref → job_schedule) — labeled "Scheduler"; the
+    // sibling `schedule_uuid` is a derived uuid (filterable:false), so the
+    // label is unique on this surface.
+    const { control } = await labeledControl(page, /scheduler/i);
     await expect(control).toHaveAttribute("role", "combobox");
     // The delegate fetches the referenced entity's first page when the
     // control mounts — a static/closed option list would never hit the wire.

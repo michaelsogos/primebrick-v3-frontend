@@ -74,7 +74,7 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
     await expect.poll(() => listRows.length, { timeout: 15000 }).toBeGreaterThan(0);
 
     // Enable all three audit actor columns via the column picker.
-    await page.getByRole("button", { name: "Columns" }).click();
+    await page.getByRole("button", { name: "Columns" }).first().click();
     for (const key of ["created_by", "updated_by", "deleted_by"]) {
       const toggle = page.getByTestId(`columns-toggle-${key}`);
       await expect(toggle).toBeVisible({ timeout: 15000 });
@@ -250,7 +250,7 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
     // Intercept the audit feed — assertions target real wire entries
     // (action + changed_by), never assumed fixture data.
     const auditRows: {
-      id: string | number;
+      uuid: string;
       action: string;
       changed_by: string | null;
       changed_by_name: string | null;
@@ -297,7 +297,7 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
     // ghost actors (join miss → raw uuid, the honest error state).
     const uuidRow = auditRows.find((r) => r.changed_by && UUID_RE.test(r.changed_by));
     test.skip(!uuidRow, "no audit row with a uuid actor on this page");
-    const drill = primary.getByTestId(`version-history-actor-${uuidRow!.id}`);
+    const drill = primary.getByTestId(`version-history-actor-${uuidRow!.uuid}`);
     await drill.click();
     // Stack contract: the original record stays pinned on the left pane;
     // the actor's record sheet takes the right slot.
@@ -440,6 +440,7 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
     await expect(sheet).not.toContainText("Record not found", { timeout: 15000 });
 
     const putBodies: { url: string; body: { entity?: Record<string, unknown> } }[] = [];
+    const putStatuses: number[] = [];
     page.on("request", (req) => {
       if (req.method() === "PUT") {
         try {
@@ -449,6 +450,9 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
         }
       }
     });
+    page.on("response", (res) => {
+      if (res.request().method() === "PUT") putStatuses.push(res.status());
+    });
 
     const pencil = page.getByTestId("entity-record-sheet-edit-toggle");
     await expect(pencil).toBeVisible();
@@ -456,31 +460,46 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
 
     const field = sheet.locator("#record-sheet-field-display_name");
     const original = await field.inputValue();
-    await field.fill("E2E");
-    await page.getByTestId("entity-record-sheet-save").click();
+    // Unique marker — a previous interrupted run can leave the record at
+    // the literal marker, making the next fill a silent zero-dirty no-op
+    // (the PUT then carries only {version}).
+    const marker = `E2E-${Date.now().toString(36)}`;
+    try {
+      await field.fill(marker);
+      await page.getByTestId("entity-record-sheet-save").click();
 
-    // Canonical write contract: PUT to the update.single endpoint carrying
-    // { entity: { ...surface fields, version } } — uid/audit never cross.
-    await expect.poll(() => putBodies.length, { timeout: 15000 }).toBe(1);
-    const sent = putBodies[0];
-    expect(sent.url).toContain("/api/v1/");
-    expect(sent.body.entity).toBeTruthy();
-    expect(sent.body.entity!.display_name).toBe("E2E");
-    expect(sent.body.entity!.version).not.toBeUndefined();
-    expect(sent.body.entity!.uuid).toBeUndefined();
-    expect(sent.body.entity!.created_by).toBeUndefined();
+      // Canonical write contract: PUT to the update.single endpoint carrying
+      // { entity: { ...surface fields, version } } — uid/audit never cross.
+      await expect.poll(() => putBodies.length, { timeout: 15000 }).toBe(1);
+      const sent = putBodies[0];
+      expect(sent.url).toContain("/api/v1/");
+      expect(sent.body.entity).toBeTruthy();
+      expect(sent.body.entity!.display_name).toBe(marker);
+      expect(sent.body.entity!.version).not.toBeUndefined();
+      expect(sent.body.entity!.uuid).toBeUndefined();
+      expect(sent.body.entity!.created_by).toBeUndefined();
 
-    // After save the sheet re-GETs and returns to readonly.
-    await expect(field).not.toBeEditable({ timeout: 15000 });
-    await expect(page.getByTestId("entity-record-sheet-save")).toHaveCount(0);
-
-    // Restore the original value — leave dev data as found.
-    await pencil.click();
-    await expect(field).toBeEditable();
-    await field.fill(original);
-    await page.getByTestId("entity-record-sheet-save").click();
-    await expect.poll(() => putBodies.length, { timeout: 15000 }).toBe(2);
-    await expect(field).not.toBeEditable({ timeout: 15000 });
+      // After save the sheet re-GETs and returns to readonly.
+      await expect(field).not.toBeEditable({ timeout: 15000 });
+      await expect(page.getByTestId("entity-record-sheet-save")).toHaveCount(0);
+    } finally {
+      // Restore the original value — leave dev data as found. Only when
+      // the marker PUT actually persisted (2xx): a failed save leaves
+      // the row untouched, and toggling edit while already editing would
+      // EXIT edit mode instead of entering it.
+      if (putStatuses[0] !== undefined && putStatuses[0] < 300) {
+        await pencil.click().catch(() => {});
+        if (await field.isEditable().catch(() => false)) {
+          await field.fill(original).catch(() => {});
+          await page.getByTestId("entity-record-sheet-save").click().catch(() => {});
+          await expect
+            .poll(() => putBodies.length, { timeout: 15000 })
+            .toBe(2)
+            .catch(() => {});
+          await expect(field).not.toBeEditable({ timeout: 15000 }).catch(() => {});
+        }
+      }
+    }
   });
 
   test("sheet header icon is the authored entity icon (users), not a placeholder", async ({
@@ -575,7 +594,9 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
     const suspendRes = await page.request.post(
       `/api/v1/auth/users/${suspendedUuid}/suspend?version=${before?.version}`,
     );
-    expect(suspendRes.ok()).toBeTruthy();
+    if (!suspendRes.ok()) {
+      throw new Error(`suspend failed ${suspendRes.status()}: ${await suspendRes.text()}`);
+    }
 
     try {
       // Suspended actors still resolve the join (suspended ≠ deleted) —

@@ -23,7 +23,7 @@
   import { Pencil } from '@primebrick/ui/vendor/lucide'
   import { Copy } from '@primebrick/ui/vendor/lucide'
   import { FileClock } from '@primebrick/ui/vendor/lucide'
-  import { Eye } from '@primebrick/ui/vendor/lucide'
+
   import { Trash2 } from '@primebrick/ui/vendor/lucide'
   import { DynamicIcon, actionColorClass } from '@primebrick/ui';
   import type { CellArgs, EntityRowActions } from '../types';
@@ -55,7 +55,7 @@
     dropdownMenuRow,
     onRowRangeMouseDown,
     onEntityRowClick,
-    onPreviewRow,
+    onRowDblClick,
     onToggleRowSelect,
     onOpenRowDropdown,
     onCloseRowDropdown,
@@ -89,7 +89,7 @@
     dropdownMenuRow: TRow | null;
     onRowRangeMouseDown: (index: number, e: MouseEvent) => void;
     onEntityRowClick: (key: string, e: MouseEvent) => void;
-    onPreviewRow: (row: TRow) => void;
+    onRowDblClick: (row: TRow) => void;
     onToggleRowSelect: (key: string) => void;
     onOpenRowDropdown: (row: TRow) => void;
     onCloseRowDropdown: () => void;
@@ -115,7 +115,7 @@
   )}
   onmousedown={rowSelectionEnabled ? (e) => onRowRangeMouseDown(index, e) : undefined}
   onclick={rowSelectionEnabled ? (e) => onEntityRowClick(rowKey, e) : undefined}
-  ondblclick={() => onPreviewRow(row)}
+  ondblclick={() => onRowDblClick(row)}
 >
   {#if rowSelectionEnabled}
     <Table.Cell
@@ -319,26 +319,16 @@
                   </DropdownMenu.Item>
                 {/if}
               {/if}
-              {#if entityRowActions?.versionHistory !== false || entityRowActions?.preview !== false}
+              {#if entityRowActions?.versionHistory !== false}
                 <DropdownMenu.Separator />
-                {#if entityRowActions?.versionHistory !== false}
-                  <DropdownMenu.Item
-                    onclick={(e) => { e.stopPropagation(); onLoadVersionHistory(row); }}
-                  >
-                    <div class="flex items-center gap-2">
-                      <FileClock class="size-4" />
-                      <span>{$t('app.common.version_history')}</span>
-                    </div>
-                  </DropdownMenu.Item>
-                {/if}
-                {#if entityRowActions?.preview !== false}
-                  <DropdownMenu.Item onclick={(e) => { e.stopPropagation(); onPreviewRow(row); }}>
-                    <div class="flex items-center gap-2">
-                      <Eye class="size-4" />
-                      <span>{$t('system.entities.list.preview')}</span>
-                    </div>
-                  </DropdownMenu.Item>
-                {/if}
+                <DropdownMenu.Item
+                  onclick={(e) => { e.stopPropagation(); onLoadVersionHistory(row); }}
+                >
+                  <div class="flex items-center gap-2">
+                    <FileClock class="size-4" />
+                    <span>{$t('app.common.version_history')}</span>
+                  </div>
+                </DropdownMenu.Item>
               {/if}
             </DropdownMenu.Content>
           </DropdownMenu.Root>

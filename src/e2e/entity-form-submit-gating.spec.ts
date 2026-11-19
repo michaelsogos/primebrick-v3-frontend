@@ -86,7 +86,7 @@ test.describe("entity-form submit gating", () => {
     await row.locator('[role="combobox"]').nth(1).click({ position: { x: 8, y: 18 } });
     await popup
       .locator('[role="option"]:visible')
-      .filter({ hasText: "crm.customer_changed" })
+      .filter({ hasText: "events.crm.customer.on.changed" })
       .first()
       .click();
     await popup.keyboard.press("Escape");

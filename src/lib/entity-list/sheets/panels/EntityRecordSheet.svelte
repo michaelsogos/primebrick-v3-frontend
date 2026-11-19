@@ -24,7 +24,7 @@
    */
   import { onMount } from 'svelte';
   import { t } from '$lib/i18n';
-  import { apiFetch, entityApiBase, routesCensusFromModules } from '$lib/api';
+  import { apiFetch, entityApiBase, routesCensusFromModules, ApiUnreachableError } from '$lib/api';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
   import { fetchEntityMeta } from '$lib/entity-list';
   import { filteredEntityListHref } from '$lib/entity-list/entity-links';
@@ -77,6 +77,10 @@
   let loading = $state(true);
   let notFound = $state(false);
   let failed = $state(false);
+  /** Owning service unreachable (proxy 502/503-scoped, network failure):
+   *  distinct hero naming the responsible service — never the generic
+   *  load_error when we KNOW who should have answered. */
+  let unreachable = $state(false);
   /** Pseudo-actor ref (`system`, seed aliases): the target is not a uuid —
    *  never reaches the API, renders a warning hero instead. */
   let pseudoRef = $state(false);
@@ -110,6 +114,21 @@
     const tk = meta.translation_key ?? entity;
     const resolved = $t(`${ns}.entities.${tk}.singular`);
     return resolved && !resolved.includes('.singular') ? resolved : entity;
+  });
+
+  /** The entity's owning service display name — the census `entities`
+   *  declaration is the entity→service contract. `label_key` resolves the
+   *  localized name, `name` is its authored fallback. `undefined` for
+   *  BE-owned entities and services absent from the census — the hero
+   *  then falls back to the generic message. */
+  const ownerServiceName = $derived.by(() => {
+    const mod = shellNav.modules.find((m) => m.entities?.includes(entity));
+    if (!mod) return undefined;
+    if (mod.label_key) {
+      const resolved = $t(mod.label_key);
+      if (resolved && resolved !== mod.label_key) return resolved;
+    }
+    return mod.name || undefined;
   });
 
   /** Record surfaces show ONE row — the authored list icon is mapped to
@@ -286,6 +305,7 @@
     loading = true;
     failed = false;
     notFound = false;
+    unreachable = false;
     try {
       meta = await fetchEntityMeta(basePath);
       const uid = meta.uid ?? 'uuid';
@@ -329,8 +349,13 @@
         return;
       }
       record = (await res.json()) as Record<string, unknown>;
-    } catch {
-      failed = true;
+    } catch (e) {
+      // ApiUnreachableError = the owning service (or the BE itself for
+      // unmapped entities) can't be reached — proxy 502/503-scoped or a
+      // network failure. Distinct hero: name WHO is unreachable instead
+      // of the generic load error.
+      if (e instanceof ApiUnreachableError) unreachable = true;
+      else failed = true;
     } finally {
       loading = false;
     }
@@ -390,7 +415,7 @@
     {:else if pseudoRef}
       <!-- Pseudo-actor ref (non-uuid): the subject was never censused.
            Identity stays visible — the stored value IS the ref we hold. -->
-      <EntityRecordUid {meta} value={heroUid} />
+      <EntityRecordUid {meta} value={heroUid} {entity} />
       <StateHero
         severity="warning"
         icon="ghost"
@@ -400,7 +425,7 @@
         test_id="entity-record-sheet-pseudo-hero"
       />
     {:else if notFound}
-      <EntityRecordUid {meta} value={heroUid} />
+      <EntityRecordUid {meta} value={heroUid} {entity} />
       <StateHero
         severity="destructive"
         icon="user-x"
@@ -409,8 +434,23 @@
         params={{ entity_singular: entitySingular }}
         test_id="entity-record-sheet-missing-hero"
       />
+    {:else if unreachable}
+      <!-- Owning service unreachable — the sheet still opens (identity
+           block + watermark) and names the service when the census knows
+           it; the generic message is the fallback when it doesn't. -->
+      <EntityRecordUid {meta} value={heroUid} {entity} />
+      <StateHero
+        severity="destructive"
+        icon="server-off"
+        animation="none"
+        title_key={ownerServiceName
+          ? 'app.service.entity_owner_unreachable'
+          : 'app.service.entity_owner_unreachable_generic'}
+        params={{ service: ownerServiceName, entity: entitySingular }}
+        test_id="entity-record-sheet-unreachable-hero"
+      />
     {:else if failed || !record}
-      <EntityRecordUid {meta} value={heroUid} />
+      <EntityRecordUid {meta} value={heroUid} {entity} />
       <StateHero
         severity="destructive"
         icon="circle-alert"

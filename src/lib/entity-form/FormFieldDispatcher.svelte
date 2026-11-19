@@ -25,7 +25,7 @@
 		MetaColumn,
 		PayloadOptionsSource,
 	} from '@primebrick/ui';
-	import { flagCodeForBcp47, toDisplayString, numericKindOf } from '@primebrick/ui';
+	import { flagCodeForBcp47, toDisplayString, numericKindOf, uomUnitSymbol, UNIT_CATEGORIES, type MetaColumnUomKind } from '@primebrick/ui';
 	import type { NumericUomSpec } from '@primebrick/ui';
 	import type { Decimal } from '@primebrick/ui';
 	import { currencySymbol } from '$lib/currency';
@@ -48,6 +48,7 @@
 	import { MetaAvatar } from '$lib/components/ui/avatar-preview';
 	import { t } from '$lib/i18n';
 	import { UI_LANGS } from '$lib/i18n/languages';
+	import { uiLang } from '$lib/i18n/store.svelte';
 	import { apiFetch } from '$lib/api';
 	import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
 	import { useEntityRefOptions } from './use-entity-ref-options.svelte';
@@ -62,6 +63,7 @@
 		depResetsOnPivotChange,
 	} from './depends-on';
 	import { ruleJsonCompletions } from './rule-schema-completions';
+	import RuleFilterEditor from './RuleFilterEditor.svelte';
 	import { CircleCheck, CircleX } from '@primebrick/ui/vendor/lucide';
 	import { getResolvedIanaTimeZone } from '@primebrick/ui';
 	import { calendarDateToUtcIso, isoToCalendarDate } from './date-wire';
@@ -200,6 +202,7 @@
 	const FORM_CONTROLS = new Set([
 		'schedule_spec',
 		'json',
+		'rule_filter',
 		'subject_combo',
 		'role_multi',
 		'payload_map',
@@ -286,7 +289,7 @@
 		// the preview renderer is a form/list surface, never a filter control.
 		if (column.type === 'avatar') return 'text';
 		const resolved = deriveControl();
-		if (resolved === 'subject_combo' || resolved === 'json' || resolved === 'payload_map' || resolved === 'schedule_spec')
+		if (resolved === 'subject_combo' || resolved === 'json' || resolved === 'rule_filter' || resolved === 'payload_map' || resolved === 'schedule_spec')
 			return 'text';
 		if (FILTER_CONTROLS.has(resolved)) return resolved;
 		throw new Error(
@@ -307,6 +310,9 @@
 		// column value, color from the `avatar.color_field` sibling).
 		if (column.type === 'avatar') return 'avatar';
 		if (format === 'schedule_spec') return 'schedule_spec';
+		// `rule_filter` wins over the jsonb fallback — a RuleFilter[]
+		// column renders the guided composer, never raw JSON first.
+		if (format === 'rule_filter') return 'rule_filter';
 		if (format === 'json' || column.pg_type === 'jsonb' || column.pg_type === 'json') return 'json';
 		if (format === 'nats_subject') {
 			return column.options_source === 'census.emits' ||
@@ -379,6 +385,46 @@
 		const u = column.uom;
 		if (!u) return undefined;
 		if (u.kind === 'percent') return { kind: 'percent' };
+		if (u.kind === 'custom' && !('field' in u)) {
+			// Standalone `symbol` — fixed arbitrary suffix, display-only.
+			return { kind: 'custom', symbol: u.symbol };
+		}
+		if (u.kind in UNIT_CATEGORIES) {
+			// Category kind — FIXED `unit` renders its locale-short Intl
+			// symbol (ms, kg…) as a display-only adornment; `field` is the
+			// per-row code and the CATEGORY itself is the picker vocabulary
+			// (no `source` exists on these kinds).
+			if ('unit' in u) {
+				return { kind: 'custom', code: u.unit, symbol: uomUnitSymbol(u.unit, $uiLang) };
+			}
+			const rawUnit = surface === 'form' && record ? record[u.field] : undefined;
+			const unit =
+				typeof rawUnit === 'string' ||
+				typeof rawUnit === 'number' ||
+				typeof rawUnit === 'boolean'
+					? String(rawUnit)
+					: '';
+			return {
+				kind: 'custom',
+				code: unit,
+				symbol: unit ? uomUnitSymbol(unit, $uiLang) : '',
+				options: UNIT_CATEGORIES[u.kind as MetaColumnUomKind].map((unitCode) => ({
+					code: unitCode,
+					symbol: uomUnitSymbol(unitCode, $uiLang),
+				})),
+				on_uom_change: record
+					? (unitCode: string) => {
+							if (record) {
+								record[u.field] = unitCode;
+								record = record;
+							}
+						}
+					: undefined,
+			};
+		}
+		if (u.kind !== 'currency' && u.kind !== 'custom') return undefined;
+		// Remaining union: currency | custom{field,source} — both carry the
+		// per-row code on the `u.field` sibling.
 		const rawCode = surface === 'form' && record ? record[u.field] : undefined;
 		const code =
 			typeof rawCode === 'string' ||
@@ -406,7 +452,7 @@
 					: undefined,
 			};
 		}
-		return { kind: 'custom', code, symbol: u.symbol ?? code };
+		return { kind: 'custom', code, symbol: ('symbol' in u ? u.symbol : undefined) ?? code };
 	});
 	/** Multi-select surfaces (filter IN semantics) — an empty selection is
 	 *  `undefined`, not `[]`, so the serializer drops the param entirely. */
@@ -660,6 +706,17 @@
 		preview_open={false}
 		{placeholder}
 		readonly={effectiveLocked}
+		on_ai_assist={onJsonAiAssist}
+		extra_completions={ruleCompletions}
+		{...controlProps}
+	/>
+{:else if control === 'rule_filter'}
+	<RuleFilterEditor
+		bind:value={stringValue.value}
+		source_schema={sourceEmit?.payload_schema}
+		schema={column.json_schema}
+		readonly={effectiveLocked}
+		{placeholder}
 		on_ai_assist={onJsonAiAssist}
 		extra_completions={ruleCompletions}
 		{...controlProps}

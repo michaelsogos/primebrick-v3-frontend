@@ -1,11 +1,15 @@
 <script lang="ts">
   import { SvelteSet } from 'svelte/reactivity';
-  import { apiFetch, entityApiBase } from "$lib/api";
+  import { apiFetch, entityApiBase, ApiUnreachableError } from "$lib/api";
+  import { shellNav } from "$lib/shell/modules-shell.svelte";
   import { extJsonParse } from "$lib/api-ext";
   import { t, formatUiDateTime, formatUiDate } from "$lib/i18n";
   import { uiLang } from "$lib/i18n/store.svelte";
-  import { SheetPanelLayout, toDisplayString } from '@primebrick/ui';
+  import { loadModuleTranslations } from "$lib/i18n/use-module-translations.svelte";
+  import { SheetPanelLayout, toDisplayString, isEntityOpEnabled } from '@primebrick/ui';
+  import { fetchEntityMeta } from '$lib/entity-list';
   import { History } from '@primebrick/ui/vendor/lucide';
+  import { Grid3x3Off } from '@primebrick/ui/vendor/lucide';
   import { Hourglass } from '@primebrick/ui/vendor/lucide'
   import { CircleX } from '@primebrick/ui/vendor/lucide'
   import { Info } from '@primebrick/ui/vendor/lucide'
@@ -24,7 +28,7 @@
   import { JsonCodeBlock } from '@primebrick/ui';
   import type { MetaColumn } from '$lib/entity-list/types';
   import { tryParseJsonObject } from '$lib/utils/json-object';
-  import { auditActionKey, changedBySheetTarget } from './version-history-title';
+  import { auditActionKey, changedBySheetTarget } from '../version-history-title';
 
   interface Props {
     entity: string;
@@ -46,7 +50,7 @@
   };
 
   type VersionHistoryEntry = {
-    id: bigint;
+    uuid: string;
     action: string;
     version: bigint;
     changed_at: string;
@@ -68,16 +72,49 @@
   // $derived: keep reactive link to props (avoids state_referenced_locally).
   const i18nEntity = $derived(translationKey ?? entity);
 
+  /** The entity's owning service display name — census `entities`
+   *  declaration; `undefined` when the owner isn't censused (the hero
+   *  falls back to the generic message). */
+  const ownerServiceName = $derived.by(() => {
+    const mod = shellNav.modules.find((m) => m.entities?.includes(entity));
+    if (!mod) return undefined;
+    if (mod.label_key) {
+      const resolved = $t(mod.label_key);
+      if (resolved && resolved !== mod.label_key) return resolved;
+    }
+    return mod.name || undefined;
+  });
+  /** Translated entity singular — same `<ns>.entities.<tk>.singular`
+   *  contract the record surface uses; raw key fallback keeps the
+   *  message readable when a dict entry is missing. */
+  const entitySingular = $derived.by(() => {
+    const resolved = $t(`${entities_ns}.entities.${i18nEntity}.singular`);
+    return resolved && !resolved.includes('.singular') ? resolved : i18nEntity;
+  });
+  /** The audit fetch failed because the OWNING SERVICE can't be reached
+   *  (proxy 502/503-scoped or network failure) — the watermark names the
+   *  service instead of the generic error. */
+  const ownerUnreachableMessage = $derived.by(() =>
+    ownerServiceName
+      ? $t('app.service.entity_owner_unreachable', { service: ownerServiceName, entity: entitySingular })
+      : $t('app.service.entity_owner_unreachable_generic'),
+  );
+
   let versionHistoryData = $state<VersionHistoryEntry[]>([]);
+  /** `read.audit` capability from served meta — `null` while resolving.
+   *  The meta cache is warm (the record sheet fetched it before opening
+   *  this panel), so resolution costs no request; on miss it is ONE
+   *  `GET /meta` on a real endpoint instead of a doomed `GET /audit`. */
+  let auditEnabled = $state<boolean | null>(null);
   let versionHistoryLoading = $state<boolean>(false);
   let versionHistoryError = $state<string | null>(null);
   let versionHistoryPage = $state<number>(1);
   let versionHistoryLimit = $state<number>(50);
   let versionHistoryHasMore = $state<boolean>(false);
-  let expandedEntries = new SvelteSet<bigint>();
+  let expandedEntries = new SvelteSet<string>();
 
 
-  function toggleEntryExpanded(entryId: bigint) {
+  function toggleEntryExpanded(entryId: string) {
     if (expandedEntries.has(entryId)) {
       expandedEntries.delete(entryId);
     } else {
@@ -102,7 +139,10 @@
       versionHistoryData = data.data || [];
       versionHistoryHasMore = data.pagination?.hasMore || false;
     } catch (e) {
-      versionHistoryError = $t('system.entities.version_history.error');
+      versionHistoryError =
+        e instanceof ApiUnreachableError
+          ? ownerUnreachableMessage
+          : $t('system.entities.version_history.error');
       console.error('Failed to load version history:', e);
     } finally {
       versionHistoryLoading = false;
@@ -126,7 +166,10 @@
       versionHistoryData = [...versionHistoryData, ...(data.data || [])];
       versionHistoryHasMore = data.pagination?.hasMore || false;
     } catch (e) {
-      versionHistoryError = $t('system.entities.version_history.error');
+      versionHistoryError =
+        e instanceof ApiUnreachableError
+          ? ownerUnreachableMessage
+          : $t('system.entities.version_history.error');
       console.error('Failed to load version history:', e);
     } finally {
       versionHistoryLoading = false;
@@ -187,13 +230,35 @@
     return Info;
   }
 
+  /** `system:<code>` writers — the census `label_key` through i18n wins
+   *  over the registry `name` wire value (English-only; same contract as
+   *  the ELT ref cell and VersionsPanel). The owning dict is route-loaded
+   *  so a foreign-module page never fetched it — preload best-effort
+   *  (per module+lang, deduped); unresolved codes keep the served name. */
+  $effect(() => {
+    for (const e of versionHistoryData) {
+      const actor = e.changed_by ?? '';
+      if (!actor.startsWith('system:')) continue;
+      const code = actor.slice('system:'.length);
+      const m = shellNav.modules.find((x) => x.id === code);
+      if (m) void loadModuleTranslations(m.translations_module ?? m.id, $uiLang, { bestEffort: true });
+    }
+  });
+
   function getChangedByDisplay(entry: VersionHistoryEntry): string {
+    const actor = entry.changed_by ?? '';
+    if (actor.startsWith('system:')) {
+      const mod = shellNav.modules.find((m) => m.id === actor.slice('system:'.length));
+      const lk = mod?.label_key;
+      const translated = lk ? $t(lk) : '';
+      if (translated && translated !== lk) return translated;
+    }
     // If display_name is available from the join, use it
     if (entry.changed_by_name) {
       return entry.changed_by_name;
     }
     // Last resort: fallback to UUID
-    return entry.changed_by || '';
+    return actor;
   }
 
   /** Translated action label — `auditActionKey` owns the key contract
@@ -410,9 +475,21 @@
     return descriptions;
   }
 
-  // Load data on mount
+  // Capability gate before any network: `read.audit` enabled:false in the
+  // served actions means the entity exposes NO audit route — render the
+  // disabled watermark instead of issuing a doomed GET. Meta fetch failure
+  // falls through to `loadVersionHistory()` so the real error watermark
+  // (unreachable-service path included) still surfaces.
   $effect(() => {
-    loadVersionHistory();
+    fetchEntityMeta(entityApiBase(entity))
+      .then((meta) => {
+        auditEnabled = isEntityOpEnabled(meta.actions, 'read.audit');
+        if (auditEnabled) void loadVersionHistory();
+      })
+      .catch(() => {
+        auditEnabled = true;
+        void loadVersionHistory();
+      });
   });
 
 </script>
@@ -424,7 +501,16 @@
   {#snippet title()}
     {$t('system.entities.version_history.title')}
   {/snippet}
-    {#if versionHistoryLoading && versionHistoryData.length === 0}
+    {#if auditEnabled === false}
+      <div class="grid h-full place-items-center p-3" data-testid="version-history-disabled">
+        <div class="relative flex flex-col items-center gap-2 text-center">
+          <div class="pb-watermark-disabled">
+            <Grid3x3Off class="size-20 text-muted-foreground" />
+          </div>
+          <div class="text-sm font-medium text-muted-foreground">{$t('app.common.version_history_disabled')}</div>
+        </div>
+      </div>
+    {:else if auditEnabled === null || (versionHistoryLoading && versionHistoryData.length === 0)}
       <div class="grid h-full place-items-center p-3">
         <div class="relative flex flex-col items-center gap-2 text-center">
           <div class="pb-watermark-loading">
@@ -434,7 +520,7 @@
         </div>
       </div>
     {:else if versionHistoryError}
-      <div class="grid h-full place-items-center p-3">
+      <div class="grid h-full place-items-center p-3" data-testid="version-history-error">
         <div class="relative flex flex-col items-center gap-2 text-center">
           <div class="pb-watermark-error">
             <CircleX class="size-20 text-destructive" />
@@ -454,7 +540,7 @@
     {:else}
       <div class="p-4">
         <Timeline.Root>
-          {#each versionHistoryData as entry (entry.id)}
+          {#each versionHistoryData as entry (entry.uuid)}
             {@const colorClass = getAuditActionColorClass(entry.action)}
             {@const borderClass = getAuditActionBorderClass(entry.action)}
             {@const ActionIcon = getAuditActionIcon(entry.action)}
@@ -484,7 +570,7 @@
                       type="button"
                       class="font-normal text-foreground underline-offset-2 rounded-sm px-0.5 hover:bg-accent hover:underline cursor-pointer"
                       onclick={() => openChangedByRecord(entry)}
-                      data-testid={`version-history-actor-${entry.id}`}
+                      data-testid={`version-history-actor-${entry.uuid}`}
                     >{getChangedByDisplay(entry)}</button>
                   {/if}
                 </Timeline.Title>
@@ -494,16 +580,16 @@
                       variant="ghost"
                       size="sm"
                       class="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
-                      onclick={() => toggleEntryExpanded(entry.id)}
+                      onclick={() => toggleEntryExpanded(entry.uuid)}
                     >
-                      <ChevronDown class={cn("size-4 transition-transform", expandedEntries.has(entry.id) && "rotate-180")} />
-                      <span class="ml-1">{expandedEntries.has(entry.id) ? $t('system.entities.version_history.hide_details') : $t('system.entities.version_history.show_details')}</span>
+                      <ChevronDown class={cn("size-4 transition-transform", expandedEntries.has(entry.uuid) && "rotate-180")} />
+                      <span class="ml-1">{expandedEntries.has(entry.uuid) ? $t('system.entities.version_history.hide_details') : $t('system.entities.version_history.show_details')}</span>
                     </Button>
                   </div>
                 {/if}
                 <div class="mt-1">
                   {#if isUpdate}
-                    {#if expandedEntries.has(entry.id)}
+                    {#if expandedEntries.has(entry.uuid)}
                       <div class="space-y-2">
                         {#each descriptions as desc (desc)}
                           {@const delta = desc as {field: string, operator: string, toOperator?: string, oldValue?: string, newValue?: string, isBadge?: boolean, badgeColor?: string, badgeLabelText?: string, badgeLabelKey?: string, oldBadgeColor?: string, oldBadgeLabelText?: string, oldBadgeLabelKey?: string, isColor?: boolean, colorValue?: string, oldColorValue?: string, isJson?: boolean, jsonValue?: unknown, oldJsonValue?: unknown}}

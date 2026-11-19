@@ -12,6 +12,7 @@ import {
   type HealthPayload,
   type ModuleInfo,
   type ModuleConfigEntry,
+  type TranslationMatchRow,
   type ConfigEntry,
   type TypeCapabilitiesMap,
   type ServiceInfo,
@@ -331,11 +332,15 @@ export async function apiFetchWithTimeout(
  * `lang`. The caller merges it into the i18n dict store so `$t` resolves
  * nav labels deterministically, before any module dictionary is
  * route-loaded.
+ *
+ * `init.signal` — the census fetch is voidable: a uiLang change mid-flight
+ * aborts the stale-lang request instead of waiting for it to land.
  */
 export async function fetchModules(
   lang: string,
+  init?: RequestInit,
 ): Promise<{ modules: ModuleInfo[]; labels: Record<string, string> }> {
-  const res = await apiFetch(`/api/v1/modules?lang=${encodeURIComponent(lang)}`);
+  const res = await apiFetch(`/api/v1/modules?lang=${encodeURIComponent(lang)}`, init);
   if (!res.ok) throw new Error(`Modules request failed (${res.status})`);
   return (await res.json()) as { modules: ModuleInfo[]; labels: Record<string, string> };
 }
@@ -774,6 +779,23 @@ export async function fetchModuleTranslations(moduleCode: string, language: stri
   const res = await apiFetch(`/api/v1/system/translations/${encodeURIComponent(moduleCode)}/${encodeURIComponent(language)}`);
   if (!res.ok) throw new Error(`Translations request failed (${res.status})`);
   return await res.json();
+}
+
+/**
+ * `GET /api/v1/system/translations/find` — the ONE governed cross-domain
+ * translation read. `matches` are exact keys (`job.module.name`) or subtree
+ * prefixes (`job.settings.config.*`); the BE wires the filter — callers
+ * never receive a full foreign dictionary. Omit `language` to get every
+ * language's rows in one request (the caller layers its own fallback).
+ */
+export async function fetchTranslationsFind(matches: string[], language?: string): Promise<TranslationMatchRow[]> {
+  const qs = new URLSearchParams();
+  for (const m of matches) qs.append('matches[]', m);
+  if (language) qs.set('language', language);
+  const res = await apiFetch(`/api/v1/system/translations/find?${qs.toString()}`);
+  if (!res.ok) throw new Error(`Translations find failed (${res.status})`);
+  const data = (await res.json()) as { rows: TranslationMatchRow[] };
+  return data.rows;
 }
 
 /** Admin: list translations — canonical entity `/list` contract:

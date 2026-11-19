@@ -34,7 +34,6 @@ export type ColumnOrderState = {
 export type EntityRowActions = {
   edit?: boolean;
   duplicate?: boolean;
-  preview?: boolean;
   delete?: boolean;
   restore?: boolean;
   versionHistory?: boolean;

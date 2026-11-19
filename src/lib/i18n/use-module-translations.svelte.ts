@@ -21,7 +21,7 @@ import { uiLang, getCachedModuleDict, setCachedModuleDict } from './store.svelte
 import { mergeModuleDict, getFallbackDict, CORE_DICT_MODULES } from './index';
 import { DEFAULT_LANG, type UiLang } from './languages';
 import { shellNav } from '$lib/shell/modules-shell.svelte';
-import { fetchModuleTranslations, fetchPublicTranslations } from '$lib/api';
+import { fetchModuleTranslations, fetchPublicTranslations, fetchTranslationsFind } from '$lib/api';
 import { onConnectivityRestored } from '$lib/app-connectivity-events';
 import { pushNotification } from '$lib/errors/app-errors';
 
@@ -126,6 +126,50 @@ export async function loadModuleTranslations(
   opts?: { bestEffort?: boolean },
 ): Promise<void> {
   return ensureModuleTranslations(moduleId, lang, opts);
+}
+
+const FIND_MATCHES_CAP = 64; // BE wire bound — larger sets are chunked.
+
+/**
+ * loadTranslationsByKeys — targeted enrichment through `findTranslations`,
+ * the ONE governed cross-domain translation read. Callers pass the exact
+ * keys (or `ns.*` subtree prefixes) they are about to render — the shell
+ * never downloads a whole foreign dictionary. One request returns every
+ * language's rows, so the en-GB floor layers in for free; rows merge into
+ * the flat dict store and the matches-signature dedups for LOADED_TTL_MS.
+ */
+export async function loadTranslationsByKeys(matches: string[]): Promise<void> {
+  const unique = [...new Set(matches.filter(Boolean))].sort();
+  if (!unique.length) return;
+  const cacheKey = `keys:${unique.join(',')}`;
+  if (isLoadedFresh(cacheKey)) return;
+  try {
+    for (let i = 0; i < unique.length; i += FIND_MATCHES_CAP) {
+      const rows = await fetchTranslationsFind(unique.slice(i, i + FIND_MATCHES_CAP));
+      const byLang = new Map<string, Record<string, string>>();
+      for (const row of rows) {
+        const dict = byLang.get(row.language) ?? {};
+        dict[row.key] = row.value;
+        byLang.set(row.language, dict);
+      }
+      for (const [language, dict] of byLang) {
+        mergeModuleDict(language as UiLang, dict);
+      }
+    }
+    LOADED_MODULES.set(cacheKey, Date.now());
+  } catch (e) {
+    // Same contract as ensureModuleTranslations — never silent, never
+    // blocking: labels degrade to their fallback (raw key / registry name)
+    // and the failure is deduped for the TTL so a hiccup is not hammered.
+    LOADED_MODULES.set(cacheKey, Date.now());
+    console.warn(`[i18n] findTranslations fetch failed — labels fall back to raw keys`, e);
+    pushNotification({
+      impact: 'MEDIUM',
+      message: 'Failed to load module labels',
+      scope: 'i18n',
+      detail: String(e),
+    });
+  }
 }
 
 /**

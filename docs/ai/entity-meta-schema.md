@@ -102,6 +102,26 @@ type EntityMeta = {
   column is the ONLY opt-out — it removes the column from served meta.
   Restating derived facts (`nullable`, `max_length`, `pg_type`) throws.
 
+## Numeric columns — `uom` contract (display)
+
+- The numeric **kind** is derived, never authored: `numericKindOf(col)` maps
+  the injected `pg_type` → `bigint` | `number` | `decimal`. One resolver for
+  every surface (input, zod, filter, cell) — never re-derive locally.
+- `uom` declares unit semantics — `kind` carries the macro-category (see
+  core `MetaColumnUom`/`UNIT_CATEGORIES`): `percent` (canonical fraction),
+  `currency{field}` (sibling ISO), category kinds (`time`, `length`,
+  `digital`, …) with fixed `unit` or per-row `field` (category = picker
+  vocabulary), `custom` for non-standard vocabularies only
+  (`field`+`source`, or standalone `symbol`). Absent → plain decimal.
+- Cell display: `formatListCellValue`/`formatListNumberValue` (ui) — Intl
+  `useGrouping:'always'` (4-digit groups everywhere; `auto` skips them in
+  it-IT), `style:'percent'|'currency'|'unit'` native, `bigint` → 0 decimals.
+  `getAuditFieldValue` passes the whole `row` for `uom.field` siblings.
+- Cells right-align `type:"number"` by default (tabular digits); headers
+  stay left-aligned — never "fix" this without asking.
+- Form surface: `FormFieldDispatcher.numericUom` resolves `MetaColumn.uom`
+  → `NumericUomSpec` (fixed variants = display-only adornment).
+
 ## Closed schema
 
 - `EntityMeta`/`MetaColumn`/`TableMeta` have NO index signature — any prop not

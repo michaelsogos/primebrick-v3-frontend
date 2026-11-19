@@ -11,12 +11,12 @@
  *      pattern+format keywords zod projects for `.email()`;
  *   4. field rows are top-aligned so a hint expands its own cell only;
  *   5. the compatibility partition: `languageIso` (format:"lang") admits
- *      only `$.customer.preferred_locale`; the eye-dashed CTA inside the
+ *      only `$.entity.after.preferred_locale`; the eye-dashed CTA inside the
  *      dropdown search row reveals the rest disabled+searchable.
  *
  * Surface: /system/job/triggers/create with `emailsender.send` as the
  * target (its `to` prop is `array<string email>` — the dedup fixture)
- * and `crm.customer_changed` as the event (rich nested payload schema —
+ * and `events.crm.customer.on.changed` as the event (rich nested payload schema —
  * the icon fixture). Nothing is submitted.
  *
  * Conventions: e2e-browser-session.md — 5s expectation budget everywhere
@@ -69,12 +69,12 @@ async function pickOption(popup: Page, text: RegExp | string): Promise<void> {
   await opt.click();
 }
 
-/** Census wiring: crm.customer_changed event + emailsender.send target —
+/** Census wiring: events.crm.customer.on.changed event + emailsender.send target —
  *  the fixture pair every test in this file shares. */
 async function pickEventAndTarget(popup: Page): Promise<void> {
   const eventField = popup.getByTestId("entity-form-field-event_subject");
   await clickUntilExpanded(eventField.locator('[role="combobox"]'));
-  await pickOption(popup, "crm.customer_changed");
+  await pickOption(popup, "events.crm.customer.on.changed");
   await popup.keyboard.press("Escape");
 
   const targetField = popup.getByTestId("entity-form-field-target_subject");
@@ -116,51 +116,56 @@ test.describe("payload-map widget", () => {
     const col0 = pathPopover.locator('[data-propnv-col="0"]');
     // Column mode: root rows are the navigable containers — the full
     // path rides `data-propnv-path` (segment labels render in-column).
-    await expect(col0.locator('[data-propnv-path="$.customer"]')).toBeVisible();
+    await expect(col0.locator('[data-propnv-path="$.entity"]')).toBeVisible();
     await expect(col0.locator('[data-propnv-path="$.change"]')).toBeVisible();
-    // Descend into `$.customer` — column 1 materializes with its leafs.
-    await col0.locator('[data-propnv-path="$.customer"]').click();
+    await expect(col0.locator('[data-propnv-path="$.event"]')).toBeVisible();
+    // Descend into `$.entity.after` — column 2 materializes with the
+    // customer snapshot leafs.
+    await col0.locator('[data-propnv-path="$.entity"]').click();
     const col1 = pathPopover.locator('[data-propnv-col="1"]');
-    await expect(col1).toBeVisible();
+    await expect(col1.locator('[data-propnv-path="$.entity.after"]')).toBeVisible();
+    await col1.locator('[data-propnv-path="$.entity.after"]').click();
+    const col2 = pathPopover.locator('[data-propnv-col="2"]');
+    await expect(col2).toBeVisible();
     // Bare strings + enum stay — code, name fields, status.
-    await expect(col1.locator('[data-propnv-path="$.customer.code"]')).toBeVisible();
-    await expect(col1.locator('[data-propnv-path="$.customer.status"]')).toBeVisible();
+    await expect(col2.locator('[data-propnv-path="$.entity.after.code"]')).toBeVisible();
+    await expect(col2.locator('[data-propnv-path="$.entity.after.status"]')).toBeVisible();
     // Specialized leafs are hidden by the domain rule (reveal OFF) —
     // email, uuid, lang are NOT "strings" for a bare-string target.
-    await expect(col1.locator('[data-propnv-path="$.customer.email"]')).toHaveCount(0);
-    await expect(col1.locator('[data-propnv-path="$.customer.uuid"]')).toHaveCount(0);
-    await expect(col1.locator('[data-propnv-path="$.customer.preferred_locale"]')).toHaveCount(0);
+    await expect(col2.locator('[data-propnv-path="$.entity.after.email"]')).toHaveCount(0);
+    await expect(col2.locator('[data-propnv-path="$.entity.after.uuid"]')).toHaveCount(0);
+    await expect(col2.locator('[data-propnv-path="$.entity.after.preferred_locale"]')).toHaveCount(0);
     // Every row carries a type icon (svg inside the row).
-    await expect(col1.locator('[role="option"]').first().locator("svg").first()).toBeVisible();
+    await expect(col2.locator('[role="option"]').first().locator("svg").first()).toBeVisible();
 
     // The eye-dashed toggle (footer) reveals the hidden partition —
     // disabled but still carrying honest type icons:
-    //   changed_at  → date-time → calendar-clock
-    //   changed_by  → uuid + x_semantic:"actor.uuid" → user-cog (actor)
+    //   emitted_at  → date-time → calendar-clock (RFC 3339 timestamp)
+    //   emitted_by  → actor_token → user-cog (actor)
     //   email/uuid  → mail / file-key
     const eyeToggle = popup.getByTestId("payload-map-path-templateCode-toggle-disabled");
     await expect(eyeToggle).toBeVisible();
     await eyeToggle.click();
     await expect(
-      col1.locator('[data-propnv-path="$.customer.email"]').locator("svg.lucide-mail"),
+      col2.locator('[data-propnv-path="$.entity.after.email"]').locator("svg.lucide-mail"),
     ).toBeVisible();
     await expect(
-      col1.locator('[data-propnv-path="$.customer.uuid"]').locator("svg.lucide-file-key"),
+      col2.locator('[data-propnv-path="$.entity.after.uuid"]').locator("svg.lucide-file-key"),
     ).toBeVisible();
     await expect(
       col0.locator('[data-propnv-path="$.change"]').locator("svg.lucide-braces"),
     ).toBeVisible();
-    // `$.change`'s column shows its specialized leafs disabled.
-    await col0.locator('[data-propnv-path="$.change"]').click();
+    // `$.event`'s column shows its specialized leafs disabled.
+    await col0.locator('[data-propnv-path="$.event"]').click();
     const col1b = pathPopover.locator('[data-propnv-col="1"]');
     await expect(
-      col1b.locator('[data-propnv-path="$.change.changed_at"]').locator("svg.lucide-calendar-clock"),
+      col1b.locator('[data-propnv-path="$.event.emitted_at"]').locator("svg.lucide-calendar-clock"),
     ).toBeVisible();
     await expect(
-      col1b.locator('[data-propnv-path="$.change.changed_by"]').locator("svg.lucide-user-cog"),
+      col1b.locator('[data-propnv-path="$.event.emitted_by"]').locator("svg.lucide-user-cog"),
     ).toBeVisible();
     // All revealed specialized paths are disabled — never selectable.
-    await expect(col1b.locator('[data-propnv-path="$.change.changed_at"]')).toHaveAttribute(
+    await expect(col1b.locator('[data-propnv-path="$.event.emitted_at"]')).toHaveAttribute(
       "aria-disabled",
       "true",
     );
@@ -259,8 +264,9 @@ test.describe("payload-map widget", () => {
     await popup.keyboard.press("Escape");
     await clickUntilExpanded(popup.getByTestId("payload-map-path-templateCode"));
     const codePathPopover = popup.locator('[data-slot="popover-content"]:visible').last();
-    await codePathPopover.locator('[data-propnv-path="$.customer"]').click();
-    await codePathPopover.locator('[data-propnv-path="$.customer.code"]').click();
+    await codePathPopover.locator('[data-propnv-path="$.entity"]').click();
+    await codePathPopover.locator('[data-propnv-path="$.entity.after"]').click();
+    await codePathPopover.locator('[data-propnv-path="$.entity.after.code"]').click();
     await popup.keyboard.press("Escape");
 
     // `languageIso` is required too — "Context" auto-selects the first
@@ -358,13 +364,14 @@ test.describe("payload-map widget", () => {
       // Fill `customer_name` via a compatible path (bare-string target →
       // only unspecialized `$.` sources admitted — same compat engine as
       // the event-path lanes everywhere else). Column mode: descend
-      // `$.customer`, then the leaf.
+      // `$.entity.after`, then the leaf.
       const namePathCombo = popup.getByTestId("payload-map-path-variables-customer_name");
       await clickUntilExpanded(namePathCombo);
       const namePopover = popup.locator('[data-slot="popover-content"]:visible').last();
-      await namePopover.locator('[data-propnv-path="$.customer"]').click();
-      await expect(namePopover.locator('[data-propnv-path="$.customer.email"]')).toHaveCount(0);
-      await namePopover.locator('[data-propnv-path="$.customer.code"]').click();
+      await namePopover.locator('[data-propnv-path="$.entity"]').click();
+      await namePopover.locator('[data-propnv-path="$.entity.after"]').click();
+      await expect(namePopover.locator('[data-propnv-path="$.entity.after.email"]')).toHaveCount(0);
+      await namePopover.locator('[data-propnv-path="$.entity.after.code"]').click();
       await popup.keyboard.press("Escape");
       await expect(nameRow.locator('[role="combobox"][aria-invalid="true"]')).toHaveCount(0);
       await expect(submit).toBeDisabled(); // `amount` still unmapped
@@ -396,8 +403,9 @@ test.describe("payload-map widget", () => {
       await popup.keyboard.press("Escape");
       await clickUntilExpanded(popup.getByTestId("payload-map-path-to"));
       const toPathPopover = popup.locator('[data-slot="popover-content"]:visible').last();
-      await toPathPopover.locator('[data-propnv-path="$.customer"]').click();
-      await toPathPopover.locator('[data-propnv-path="$.customer.email"]').click();
+      await toPathPopover.locator('[data-propnv-path="$.entity"]').click();
+      await toPathPopover.locator('[data-propnv-path="$.entity.after"]').click();
+      await toPathPopover.locator('[data-propnv-path="$.entity.after.email"]').click();
       await popup.keyboard.press("Escape");
       await clickUntilExpanded(popup.getByTestId("payload-map-kind-languageIso"));
       await pickOption(popup, /context|contesto/i);
@@ -426,15 +434,16 @@ test.describe("payload-map widget", () => {
       const varsPathCombo = popup.getByTestId("payload-map-path-variables");
       await clickUntilExpanded(varsPathCombo);
       const varsPathPopover = popup.locator('[data-slot="popover-content"]:visible').last();
-      const custRow = varsPathPopover.locator('[data-propnv-path="$.customer"]');
+      const custRow = varsPathPopover.locator('[data-propnv-path="$.entity"]');
       await expect(custRow).toBeVisible();
       await expect(custRow.locator("svg.lucide-check")).toHaveCount(0);
       await custRow.click(); // still descends — navigable ≠ selectable
       await expect(varsPathPopover.locator('[data-propnv-col="1"]')).toBeVisible();
+      await varsPathPopover.locator('[data-propnv-path="$.entity.after"]').click();
       // Customer's leafs are all scalar → hidden for an object target
       // until the reveal; then they surface disabled, never committable.
       await popup.getByTestId("payload-map-path-variables-toggle-disabled").click();
-      const leafCodeRow = varsPathPopover.locator('[data-propnv-path="$.customer.code"]');
+      const leafCodeRow = varsPathPopover.locator('[data-propnv-path="$.entity.after.code"]');
       await expect(leafCodeRow).toBeVisible();
       await expect(leafCodeRow).toHaveAttribute("aria-disabled", "true");
       await popup.keyboard.press("Escape");
@@ -504,8 +513,9 @@ test.describe("payload-map widget", () => {
       await popup.keyboard.press("Escape");
       await clickUntilExpanded(popup.getByTestId("payload-map-path-templateCode"));
       const tcPopover = popup.locator('[data-slot="popover-content"]:visible').last();
-      await tcPopover.locator('[data-propnv-path="$.customer"]').click();
-      await tcPopover.locator('[data-propnv-path="$.customer.code"]').click();
+      await tcPopover.locator('[data-propnv-path="$.entity"]').click();
+      await tcPopover.locator('[data-propnv-path="$.entity.after"]').click();
+      await tcPopover.locator('[data-propnv-path="$.entity.after.code"]').click();
       await popup.keyboard.press("Escape");
       await expect(betaRow).toHaveCount(0);
       await expect(popup.getByTestId("payload-map-blocked-variables")).toBeVisible();
@@ -525,8 +535,8 @@ test.describe("payload-map widget", () => {
     await pickEventAndTarget(popup);
 
     // `languageIso` — target {type:"string", format:"lang"}. Only
-    // `$.customer.preferred_locale` survives both screens: level-1 keeps
-    // string-family paths, level-2 keeps `format:"lang"` sources.
+    // `$.entity.after.preferred_locale` survives both screens: level-1
+    // keeps string-family paths, level-2 keeps `format:"lang"` sources.
     const langRow = popup.getByTestId("payload-map-row-languageIso");
     await expect(langRow).toBeVisible();
     await clickUntilExpanded(popup.getByTestId("payload-map-kind-languageIso"));
@@ -536,12 +546,19 @@ test.describe("payload-map widget", () => {
     const langPathCombo = popup.getByTestId("payload-map-path-languageIso");
     await clickUntilExpanded(langPathCombo);
     const pathPopover = popup.locator('[data-slot="popover-content"]:visible').last();
-    // Column mode: descend `$.customer` — only `preferred_locale` stays
-    // visible in its column (the compat partition hides the rest).
-    await pathPopover.locator('[data-propnv-path="$.customer"]').click();
+    // Column mode: descend `$.entity.after` — only `preferred_locale`
+    // stays visible in its column (the compat partition hides the rest).
+    await pathPopover.locator('[data-propnv-path="$.entity"]').click();
     const langCol1 = pathPopover.locator('[data-propnv-col="1"]');
-    await expect(langCol1.locator('[role="option"]')).toHaveCount(1);
-    await expect(langCol1.locator('[data-propnv-path="$.customer.preferred_locale"]')).toBeVisible();
+    await langCol1.locator('[data-propnv-path="$.entity.after"]').click();
+    const langCol2 = pathPopover.locator('[data-propnv-col="2"]');
+    // Only `preferred_locale` is a selectable leaf — `account`/
+    // `legal_address` containers stay visible (navigable ≠ selectable)
+    // and carry the chevron, never count as committed options.
+    await expect(
+      langCol2.locator('[role="option"]:not(:has(.lucide-chevron-right))'),
+    ).toHaveCount(1);
+    await expect(langCol2.locator('[data-propnv-path="$.entity.after.preferred_locale"]')).toBeVisible();
 
     // The partition CTA lives in the FOOTER — an `eye-dashed` glyph
     // (hidden data, not a secret — `eye`/`eye-off` belong to passwords).
@@ -556,10 +573,10 @@ test.describe("payload-map widget", () => {
     // preferred_locale marked aria-disabled (shown, not selectable).
     await eyeToggle.click();
     await expect(eyeToggle).toHaveAttribute("aria-pressed", "true");
-    expect(await langCol1.locator('[role="option"]').count()).toBeGreaterThan(5);
-    await expect(langCol1.locator('[role="option"][aria-disabled="true"]')).not.toHaveCount(0);
+    expect(await langCol2.locator('[role="option"]').count()).toBeGreaterThan(5);
+    await expect(langCol2.locator('[role="option"][aria-disabled="true"]')).not.toHaveCount(0);
     await expect(
-      langCol1.locator('[data-propnv-path="$.customer.preferred_locale"]'),
+      langCol2.locator('[data-propnv-path="$.entity.after.preferred_locale"]'),
     ).not.toHaveAttribute("aria-disabled", "true");
     // A disabled option still renders its type icon — the array glyph on
     // `changed_fields`, greyed but informative.
@@ -574,25 +591,30 @@ test.describe("payload-map widget", () => {
     // greyed; clicking one must NOT select it (the trigger keeps the
     // empty value, never the blocked path).
     const searchInput = pathPopover.locator("[data-propnv-search]");
-    await searchInput.fill("changed_by");
+    await searchInput.fill("emitted_by");
     const hits = pathPopover.locator("[data-propnv-flat-row]");
     await expect(hits.first()).toBeVisible();
     await expect(hits.first()).toHaveAttribute("aria-disabled", "true");
     await hits.first().click({ force: true });
-    await expect(langPathCombo).not.toContainText("changed_by");
+    await expect(langPathCombo).not.toContainText("emitted_by");
 
     // The compatible option does select — the only legit mapping.
     await searchInput.fill("preferred_locale");
     await pathPopover.locator("[data-propnv-flat-row]").first().click();
-    await expect(langPathCombo).toContainText("$.customer.preferred_locale");
+    await expect(langPathCombo).toContainText("$.entity.after.preferred_locale");
     await popup.keyboard.press("Escape");
 
     // Fresh open resets the partition to hidden — OFF is the contract's
     // default, the toggle is a per-session reveal, not a preference.
     await clickUntilExpanded(langPathCombo);
     const reopened = popup.locator('[data-slot="popover-content"]:visible').last();
-    await reopened.locator('[data-propnv-path="$.customer"]').click();
-    await expect(reopened.locator('[data-propnv-col="1"]').locator('[role="option"]')).toHaveCount(1);
+    await reopened.locator('[data-propnv-path="$.entity"]').click();
+    await reopened.locator('[data-propnv-path="$.entity.after"]').click();
+    await expect(
+      reopened
+        .locator('[data-propnv-col="2"]')
+        .locator('[role="option"]:not(:has(.lucide-chevron-right))'),
+    ).toHaveCount(1);
     await expect(popup.getByTestId("payload-map-path-languageIso-toggle-disabled")).toHaveAttribute(
       "aria-pressed",
       "false",
@@ -600,22 +622,24 @@ test.describe("payload-map widget", () => {
     await popup.keyboard.press("Escape");
 
     // ── scalar→array broadcast on `to` (array<email>) ────────────────
-    // `$.customer.email` is a SCALAR email — pathCompatible admits it as
-    // a single-element wrap; `changed_fields` (array<string> nude) stays
-    // out because bare strings can't prove the email domain.
+    // `$.entity.after.email` is a SCALAR email — pathCompatible admits it
+    // as a single-element wrap; `changed_fields` (array<string> nude)
+    // stays out because bare strings can't prove the email domain.
     await clickUntilExpanded(popup.getByTestId("payload-map-kind-to"));
     await pickOption(popup, /event property|campo evento|propriet/i);
     await popup.keyboard.press("Escape");
     const toPathCombo = popup.getByTestId("payload-map-path-to");
     await clickUntilExpanded(toPathCombo);
     const toPopover = popup.locator('[data-slot="popover-content"]:visible').last();
-    await toPopover.locator('[data-propnv-path="$.customer"]').click();
-    await expect(toPopover.locator('[data-propnv-path="$.customer.email"]')).toHaveCount(1);
+    await toPopover.locator('[data-propnv-path="$.entity"]').click();
+    await toPopover.locator('[data-propnv-path="$.entity.after"]').click();
+    await expect(toPopover.locator('[data-propnv-path="$.entity.after.email"]')).toHaveCount(1);
     await toPopover.locator('[data-propnv-path="$.change"]').click();
     await expect(toPopover.locator('[data-propnv-path="$.change.changed_fields"]')).toHaveCount(0);
-    await toPopover.locator('[data-propnv-path="$.customer"]').click();
-    await toPopover.locator('[data-propnv-path="$.customer.email"]').click();
-    await expect(toPathCombo).toContainText("$.customer.email");
+    await toPopover.locator('[data-propnv-path="$.entity"]').click();
+    await toPopover.locator('[data-propnv-path="$.entity.after"]').click();
+    await toPopover.locator('[data-propnv-path="$.entity.after.email"]').click();
+    await expect(toPathCombo).toContainText("$.entity.after.email");
     await popup.keyboard.press("Escape");
 
     // ── meta kind partition — same compat rule, context vocabulary ────
