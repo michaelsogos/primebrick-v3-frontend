@@ -32,7 +32,7 @@
   import { createSortingHandlers } from './handlers/sorting';
   import { createClickHandlers } from './handlers/click-handlers';
   import type { MetaColumn } from '$lib/entity-list/types';
-  import { isColumnFilterable, isColumnSearchable, isColumnSortable } from '$lib/entity-list/types';
+  import { isColumnFilterable, isColumnSortable, searchableTextColumns } from '$lib/entity-list/types';
   import { setAuditColumnsContext, setActiveRolesContext, setEntitiesNsContext, setMetaUidContext, setTableEntityContext } from './context';
   import { useActiveRoles } from '$lib/composables/useActiveRoles.svelte';
   import { setEntitiesNsContext as uiSetEntitiesNsContext } from '@primebrick/ui';
@@ -235,9 +235,7 @@
   const allColumns = $derived(columns);
   const datetimeIanaToggleColumns = $derived(allColumns.filter((c) => !!c.datetime_iana_toggle));
   const sortableColumns = $derived(allColumns.filter((c) => isColumnSortable(c)));
-  const searchableColumns = $derived(
-    allColumns.filter((c) => isColumnSearchable(c) && c.type === 'text')
-  );
+  const searchableColumns = $derived(searchableTextColumns(allColumns));
   // Fields governed by a declared filter preset (their `where[].field`) are
   // owned by the toolbar preset control — exposing them again in the filters
   // panel would create a second source of truth for the same predicate.

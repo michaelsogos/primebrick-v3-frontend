@@ -45,7 +45,7 @@ test.describe("ELT columns/filter UX — job_schedule", () => {
     await page.getByTestId("columns-select-all-label").click();
     await expect(count).toHaveText(`${initial[0]}/${initial[1]}`);
     await expect(selectAll).toHaveAttribute("data-state", "indeterminate");
-    const pinToggle = page.getByTestId("columns-toggle-name");
+    const pinToggle = page.getByTestId("columns-toggle-trigger");
     await expect(pinToggle).toBeDisabled();
     await expect(pinToggle.locator('[data-state="checked"]')).toHaveCount(1);
     await page.keyboard.press("Escape");

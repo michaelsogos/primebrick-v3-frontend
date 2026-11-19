@@ -3,15 +3,12 @@ import { loginAsTestAdmin } from "./helpers/admin-login";
 
 /* Identity-column contract — job_schedule is the regression entity:
  *
- *  - `name` is the display_field (physical: the declared job identity,
- *    stamped at arm time from the owning trigger's name) — the pinned
- *    identity column: rendered FIRST, checked AND disabled in
+ *  - `trigger` is the display_field (calculated ref: the owning
+ *    trigger's display name resolved live via `trigger_uuid`) — the
+ *    pinned identity column: rendered FIRST, checked AND disabled in
  *    the picker.
  *  - `uuid` is sticky-but-hideable — user-controlled, hidden by default,
  *    present as an ENABLED toggle (the counter-case to the pin).
- *  - `created_by` is the WHO surface — label-overridden to "Armed By"
- *    (audit column relabel), a normal toggleable column rendering the
- *    resolved actor stamp.
  *  - `schedule_subject` is a NORMAL column (order:15): the zap/amber
  *    NATS-subject badge, user-toggleable.
  *  - `schedule_spec` carries its OWN label — "Cadence", not a second
@@ -26,9 +23,9 @@ test.describe("identity column contract — job_schedule", () => {
 
     // The pinned identity column is the FIRST header cell after the
     // selection column — sticky semantics = rendered before every
-    // normal column, and its value is the scheduled job's name.
+    // normal column, and its value is the owning trigger's name.
     const firstHeader = page.locator("table thead th").nth(1);
-    await expect(firstHeader).toContainText("Job Name", { timeout: 10000 });
+    await expect(firstHeader).toContainText("Trigger", { timeout: 10000 });
     const firstCell = page.locator("table tbody tr").first().locator("td").nth(1);
     await expect(firstCell).not.toBeEmpty();
 
@@ -39,20 +36,12 @@ test.describe("identity column contract — job_schedule", () => {
 
     // Picker: the pin is checked AND disabled — never toggleable.
     await page.getByRole("button", { name: "Columns" }).first().click();
-    const pinToggle = page.getByTestId("columns-toggle-name");
+    const pinToggle = page.getByTestId("columns-toggle-trigger");
     await expect(pinToggle).toBeVisible({ timeout: 15000 });
     await expect(pinToggle).toBeDisabled();
     // The checkbox is aria-hidden (visual-only) — assert its bits-ui
     // data-state instead of the a11y role.
     await expect(pinToggle.locator('[data-state="checked"]')).toHaveCount(1);
-
-    // The WHO column: armed_by is a dedicated calculated ref column
-    // (fired_at → armed_by → armed_at → disarmed_at band) — visible and
-    // user-toggleable (a normal column, not the identity).
-    const armedByToggle = page.getByTestId("columns-toggle-armed_by");
-    await expect(armedByToggle).toBeVisible();
-    await expect(armedByToggle).toContainText("Armed By");
-    await expect(armedByToggle).toBeEnabled();
 
     // Counter-case: uuid is sticky-but-hideable — enabled toggle.
     const uuidToggle = page.getByTestId("columns-toggle-uuid");

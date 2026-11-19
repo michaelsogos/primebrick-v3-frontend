@@ -386,12 +386,15 @@ test.describe("/system/job/* pages (module-owned)", () => {
     expect(keys).not.toContain("error_detail"); // hidden:true → sheet surface only
     const byKey = (k: string) => cols.find((c) => c.key === k);
 
-    // Friendly lineage: calculated ref drilling job_trigger by the stamped
-    // uuid — toggleable but off the default surface (lineage, not outcome).
+    // Identity: calculated ref drilling job_trigger by the stamped uuid —
+    // `trigger` is the display_field (the pin derives from it: sticky,
+    // never-hideable identity column), resolved live from the owning
+    // trigger's name.
     expect(byKey("trigger")).toMatchObject({
       type: "ref",
       kind: "calculated",
-      default_visible: false,
+      sticky: true,
+      hideable: false,
       ref: { entity: "job_trigger", key_field: "trigger_uuid" },
     });
     // Owning schedule — calculated ref, uuid drill like every sibling ref.
@@ -466,16 +469,17 @@ test.describe("/system/job/* pages (module-owned)", () => {
       where: [{ field: "status", op: "IN", value: ["failed", "lost", "skipped"] }],
     });
 
-    // Rendered contract — the default surface is the outcome-monitor nine:
-    // name, status, timing pair, duration, error, counters, report.
-    // Lineage columns (trigger/schedule/subjects/run_as) stay hidden until
+    // Rendered contract — the default surface opens with the pinned
+    // identity (`trigger`, the owning trigger's name) then the outcome
+    // monitor columns: status, timing pair, duration, error, counters.
+    // Secondary lineage (schedule/subjects/run_as) stays hidden until
     // toggled on.
     const headers = await page.locator("table thead th").allTextContents();
     const has = (re: RegExp) => headers.some((h) => re.test(h));
+    expect(has(/trigger|attivatore|auslöser|déclencheur|disparador|acionador/i)).toBe(true);
     expect(has(/status|stato|état|estado/i)).toBe(true);
     expect(has(/duration|durata|dauer|durée|duración/i)).toBe(true);
     expect(has(/error|errore|erreur|fehler|erro/i)).toBe(true);
-    expect(has(/trigger|attivatore|auslöser|déclencheur|disparador|acionador/i)).toBe(false);
     expect(has(/queue|coda|warteschlange|file|cola|fila/i)).toBe(false);
     expect(has(/destination|destinazione|ziel|destino/i)).toBe(false);
   });
@@ -603,7 +607,8 @@ test.describe("/system/job/* pages (module-owned)", () => {
   }) => {
     const VK = "pb:jobs:runs:visibleKeys";
     // Seed a legacy v1 resolved array — a narrow column set from an older
-    // meta. Render must match it verbatim (no new columns leaked in).
+    // meta. Render must match it verbatim (no new columns leaked in);
+    // `name` is a dead key from the pre-lineage meta — dropped as unknown.
     await page.addInitScript(([key]) => {
       sessionStorage.setItem(key, JSON.stringify(["uuid", "name", "status"]));
     }, [VK]);
@@ -612,9 +617,12 @@ test.describe("/system/job/* pages (module-owned)", () => {
 
     const headers = await page.locator("table thead th").allTextContents();
     const has = (re: RegExp) => headers.some((h) => re.test(h));
-    // The stored set renders verbatim — status visible, run_as/trigger NOT.
+    // Stored keys render verbatim (uuid+status), `run_as` NOT — the pin
+    // is the sole exception: `trigger` (display_field, hideable:false)
+    // is re-injected over any stored set by construction.
     expect(has(/status|stato|état|estado/i)).toBe(true);
-    expect(has(/trigger|attivatore|auslöser|déclencheur|disparador|acionador/i)).toBe(false);
+    expect(has(/trigger|attivatore|auslöser|déclencheur|disparador|acionador/i)).toBe(true);
+    expect(has(/run.as/i)).toBe(false);
 
     // First persist rewrites the payload into the v2 intent shape —
     // never a bare array again.
@@ -931,17 +939,18 @@ test.describe("/system/job/* pages (module-owned)", () => {
     await expect(errorPanel).toHaveCount(0);
   });
 
-  test("armed_by lazy ref: trigger-owned row → job_trigger entity.record", async ({
+  test("trigger lazy ref: trigger-owned row → job_trigger entity.record", async ({
     page,
   }) => {
     await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
 
-    // Every schedule is trigger-owned (trigger_uuid NOT NULL) — armed_by
-    // is a static ref to `job_trigger` keyed by the row's own
-    // `trigger_uuid` and drills to the canonical entity.record sheet.
+    // Every schedule is trigger-owned (trigger_uuid NOT NULL) — `trigger`
+    // is the display_field: a calculated ref to `job_trigger` keyed by
+    // the row's own `trigger_uuid`, drilling to the canonical
+    // entity.record sheet.
     const triggerRow = page.locator("tr", { hasText: "e2e-callable-dispatch" }).first();
-    const triggerCell = triggerRow.getByTestId("ref-cell-armed_by-text");
+    const triggerCell = triggerRow.getByTestId("ref-cell-trigger-text");
     await expect(triggerCell).toBeVisible({ timeout: 15000 });
     await triggerCell.click();
     const recordSheet = page.getByTestId("entity-record-sheet");
@@ -989,7 +998,11 @@ test.describe("/system/job/* pages (module-owned)", () => {
 
     const cell = page.getByTestId("ref-cell-created_by-text").first();
     await expect(cell).toBeVisible({ timeout: 15000 });
-    await expect(cell).toContainText(/Process Manager|AI Assistants Manager/);
+    // The lazy join resolved the service display name — never the raw
+    // `system:<code>` actor stamp (registry names drift with the seed).
+    const actorText = (await cell.textContent())?.trim() ?? "";
+    expect(actorText.length).toBeGreaterThan(0);
+    expect(actorText).not.toMatch(/^system:/);
     await cell.click();
 
     // Service actor → the service.record panel (registry RPC record) —
@@ -1121,7 +1134,7 @@ test.describe("/system/job/* pages (module-owned)", () => {
     await page.keyboard.press("Escape");
   });
 
-  test("name/armed_by share the owning trigger's identity — even past its deletion", async ({
+  test("trigger keeps the owning trigger's identity — even past its deletion", async ({
     page,
   }) => {
     await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
@@ -1139,20 +1152,19 @@ test.describe("/system/job/* pages (module-owned)", () => {
     // the schedule fires is a first-class fact of what it does.
     await expect(page.getByRole("columnheader", { name: "Destination Event" })).toBeVisible();
 
-    // Orphaned mirror (soft-deleted e2e-gate trigger): Armed By keeps the
-    // deleted trigger's name — the armer IS that trigger, its deletion
-    // does not rewrite provenance. The stamped `name` and the resolved
-    // `armed_by` converge on the same identity (plain text vs drillable ref).
+    // Orphaned mirror (soft-deleted e2e-gate trigger): the `trigger`
+    // column resolves through `trigger_uuid` — the join survives the
+    // trigger's soft-delete, so the schedule keeps displaying the
+    // deleted trigger's name with its drill ref.
     const orphanRow = page.locator("tr", { hasText: "e2e-gate-1793665359607" }).first();
     await expect(orphanRow).toBeVisible({ timeout: 15000 });
-    const orphanArmed = orphanRow.getByTestId("ref-cell-armed_by-text");
-    await expect(orphanArmed).toContainText("e2e-gate-1793665359607");
-    await orphanArmed.click();
+    const orphanTrigger = orphanRow.getByTestId("ref-cell-trigger-text");
+    await expect(orphanTrigger).toContainText("e2e-gate-1793665359607");
+    await orphanTrigger.click();
     await expect(page.getByTestId("entity-record-sheet")).toBeVisible({ timeout: 15000 });
     await page.keyboard.press("Escape");
 
-    // Live trigger row: `name` and `armed_by` intentionally share the
-    // trigger's display — stamped identity (plain text) vs drillable ref.
+    // Live trigger row: the same calculated ref carries its identity.
     const liveRow = page.locator("tr", { hasText: "e2e-callable-dispatch" }).first();
     await expect(liveRow).toBeVisible({ timeout: 15000 });
   });

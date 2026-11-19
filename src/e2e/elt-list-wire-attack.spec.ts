@@ -9,10 +9,12 @@ import { loginAsTestAdmin } from "./helpers/admin-login";
  * violates it (unknown fields/ops/keys, malformed shapes, injection
  * needles) and asserts the strict fail-closed verdict.
  *
- * Data anchor (dev seed, empirically read):
- *   6 rows — every mirror is trigger-owned (name≈"e2e-*" ×5 +
- *   "AI partition maintenance"); status: armed ×3, disarmed ×3;
- *   run_as: user ×5, system ×1; schedule_type: recurring ×6.
+ * Data anchor (dev seed, relational — fixture counts drift as dev data
+ * grows, so exact assertions derive their expected value from the
+ * unfiltered set itself):
+ *   every mirror is trigger-owned (`trigger` = calculated ref resolving
+ *   the owning trigger's name — searchable on its served pg_type:"text");
+ *   run_as splits user/system lanes; schedule_type is recurring-only.
  * Assertions stay relational where data may grow, exact-0 where disjoint.
  */
 
@@ -80,12 +82,12 @@ test.describe("wire attack — job_schedule list", () => {
   // ── B. search_in: every wire form + every rejection ──
   test("B — search_in wire forms and fail-closed rejections", async ({ page }) => {
     const ok: string[] = [
-      "search_in=name,schedule_subject,target_subject,schedule_spec",
+      "search_in=trigger,schedule_subject,target_subject,schedule_spec",
       "search_in=target_subject",
-      "search_in[]=name&search_in[]=schedule_subject",
-      "search_in=name&search_in=schedule_subject", // repeated
+      "search_in[]=trigger&search_in[]=schedule_subject",
+      "search_in=trigger&search_in=schedule_subject", // repeated
       "search_in=uuid",
-      "search_in=name,name", // dup keys — harmless
+      "search_in=trigger,trigger", // dup keys — harmless
     ];
     for (const si of ok) {
       const r = await wire(page, `search=e2e&${si}`);
@@ -94,11 +96,12 @@ test.describe("wire attack — job_schedule list", () => {
 
     const bad: Array<[string, string]> = [
       ["search_in=", ""],
-      ["search_in=name,", ""],                 // trailing comma → empty key
-      ["search_in=NAME", "NAME"],          // case-sensitive
+      ["search_in=trigger,", ""],              // trailing comma → empty key
+      ["search_in=TRIGGER", "TRIGGER"],     // case-sensitive
+      ["search_in=name", "name"],              // retired physical column
       ["search_in=schedule_type", "schedule_type"],// filterable ≠ searchable
-      ["search_in=name,bogus", "bogus"],
-      ["search_in=name, name", " name"],// no trim → space poisons key
+      ["search_in=trigger,bogus", "bogus"],
+      ["search_in=trigger, name", " name"],// no trim → space poisons key
       ["search_in=status", "status"],              // badge — not a text surface
       ["search_in=version", "version"],
     ];
@@ -109,24 +112,32 @@ test.describe("wire attack — job_schedule list", () => {
     }
 
     // scope without needle: legal no-op (param ignored, rows unfiltered).
-    const noNeedle = await wire(page, "search_in=name");
+    const noNeedle = await wire(page, "search_in=trigger");
     expect(noNeedle.status).toBe(200);
     expect(noNeedle.total).toBe(allRows);
   });
 
   // ── C. filters: per-type ops, typed values, rejections ──
   test("C — filters per type and operator contract", async ({ page }) => {
+    // Exact counts are derived from the unfiltered set — fixture rows
+    // grow (E2E materializes schedules), the predicate verdict stays exact.
+    const all = await wire(page, "page_size=50");
+    const rows = (all.body?.rows ?? []) as Record<string, unknown>[];
+    expect(rows.length, "the unfiltered page must cover the fixture set").toBe(allRows);
+    const emitEq = rows.filter((r) => r.target_subject === "crm.emit_fake_event").length;
+    const emitIlike = rows.filter((r) => String(r.target_subject).toLowerCase().includes("emit")).length;
+
     const ok: Array<[string, (t: number | null) => void]> = [
       [F(0, "status", "=", "armed"), (t) => expect(t).toBeGreaterThanOrEqual(3)],
       [F(0, "status", "!=", "armed"), (t) => expect(t).toBeGreaterThanOrEqual(3)],
       [F(0, "status", "=", "stopped"), (t) => expect(t).toBe(0)],
       [F(0, "schedule_type", "=", "once"), (t) => expect(t).toBe(0)],
-      [F(0, "target_subject", "=", "crm.emit_fake_event"), (t) => expect(t).toBe(2)],
+      [F(0, "target_subject", "=", "crm.emit_fake_event"), (t) => expect(t).toBe(emitEq)],
       // Wire ops are SQL-ish — `contains`/`startsWith`/`endsWith` are
       // UI-level ops the FE translates to ILIKE patterns BEFORE the wire.
-      [F(0, "target_subject", "ILIKE", "%emit%"), (t) => expect(t).toBe(2)], // emit_fake×2 — "emailsender" ∌ "emit"
+      [F(0, "target_subject", "ILIKE", "%emit%"), (t) => expect(t).toBe(emitIlike)],
       [F(0, "schedule_subject", "ILIKE", "jobs.schedule.job%"), (t) => expect(t).toBeGreaterThanOrEqual(4)],
-      [F(0, "name", "ILIKE", "%e2e%"), (t) => expect(t).toBeGreaterThanOrEqual(1)], // physical declared name
+      [F(0, "trigger", "ILIKE", "%e2e%"), (t) => expect(t).toBeGreaterThanOrEqual(1)], // calculated trigger-name projection
       [F(0, "uuid", "ILIKE", "07"), (t) => expect(t).not.toBeNull()],                    // the user's case
       [F(0, "version", ">=", "1"), (t) => expect(t).toBe(allRows)],
       [F(0, "created_at", "<", "2099-01-01"), (t) => expect(t).toBe(allRows)],
@@ -147,7 +158,8 @@ test.describe("wire attack — job_schedule list", () => {
     const bad: string[] = [
       F(0, "schedule_spec", "=", "x"),          // filterable:false authored
       F(0, "bogus_field", "=", "x"),
-      F(0, "NAME", "=", "x"),               // case
+      F(0, "TRIGGER", "=", "x"),            // case
+      F(0, "name", "=", "x"),               // retired physical column
       F(0, "created_at", ">", "not-a-date"),    // unparseable datetime → 400
       F(0, "version", "=", "not-a-number"),     // typed value → 400
       F(0, "uuid", "=", "not-a-uuid"),          // pgType:uuid declared → 400
@@ -164,20 +176,38 @@ test.describe("wire attack — job_schedule list", () => {
 
   // ── D. combinations — the classes that actually bite ──
   test("D — search × filters × scope × sort × paging combined", async ({ page }) => {
+    // Expected counts + the disjoint needle are derived from the
+    // unfiltered set — "exact-0 where disjoint" holds only if the needle
+    // provably exists in user rows' searchable surface and in NO system
+    // row's (E2E materializes schedules on both lanes, counts drift).
+    const all = await wire(page, "page_size=50");
+    const rows = (all.body?.rows ?? []) as Record<string, unknown>[];
+    const emitIlike = rows.filter((r) => String(r.target_subject).toLowerCase().includes("emit")).length;
+    const userRow = rows.find((r) => r.run_as === "user");
+    expect(userRow, "at least one user-lane schedule exists").toBeTruthy();
+    const userNeedle = String(userRow!.target_subject).split(".")[0];
+    expect(userNeedle.length).toBeGreaterThanOrEqual(3); // min-length gate
+    const sysHay = rows
+      .filter((r) => r.run_as === "system")
+      .map((r) => `${r.trigger} ${r.target_subject} ${r.schedule_subject} ${r.schedule_spec} ${r.schedule_type} ${r.uuid}`)
+      .join(" ")
+      .toLowerCase();
+    expect(sysHay, `needle "${userNeedle}" must be absent from system rows`).not.toContain(userNeedle.toLowerCase());
+
     const cases: Array<[string, (t: number | null) => void]> = [
       // search + standard filter, intersecting
       [`search=e2e&${F(0, "status", "=", "armed")}`, (t) => expect(t).toBeGreaterThanOrEqual(1)],
       // search + standard filter, disjoint → legal 0, NOT an error
-      [`search=e2e&${F(0, "run_as", "=", "system")}`, (t) => expect(t).toBe(0)],
+      [`search=${userNeedle}&${F(0, "run_as", "=", "system")}`, (t) => expect(t).toBe(0)],
       [`search=e2e&${F(0, "status", "=", "stopped")}`, (t) => expect(t).toBe(0)],
       // search scoped + quick filter on the SAME column
-      [`search=fake&search_in=target_subject&${F(0, "target_subject", "ILIKE", "%emit%")}`, (t) => expect(t).toBe(2)],
+      [`search=fake&search_in=target_subject&${F(0, "target_subject", "ILIKE", "%emit%")}`, (t) => expect(t).toBe(emitIlike)],
       // scoped-empty vs unscoped: "emit" lives in target_subject only
-      ["search=emit&search_in=target_subject", (t) => expect(t).toBe(2)],
+      ["search=emit&search_in=target_subject", (t) => expect(t).toBe(emitIlike)],
       ["search=emit&search_in=schedule_subject", (t) => expect(t).toBe(0)],
       // search + preset-style filter + scoped search_in — the user's combo
-      [`search=e2e&search_in=name,target_subject&${F(0, "schedule_type", "=", "recurring")}`, (t) => expect(t).toBeGreaterThanOrEqual(1)],
-      // scoped-empty vs unscoped: e2e lives in name, not schedule_subject
+      [`search=e2e&search_in=trigger,target_subject&${F(0, "schedule_type", "=", "recurring")}`, (t) => expect(t).toBeGreaterThanOrEqual(1)],
+      // scoped-empty vs unscoped: e2e lives in trigger, not schedule_subject
       ["search=e2e&search_in=schedule_subject", (t) => expect(t).toBe(0)],
       ["search=e2e&search_in=target_subject,schedule_subject", (t) => expect(t).toBe(0)],
       // wildcard needle + filters — a PURE `\*` has zero true chars → the

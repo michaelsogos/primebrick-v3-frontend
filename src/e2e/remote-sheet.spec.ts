@@ -56,7 +56,7 @@ test('remote sheet job.runDetail mounts and loads its run', async ({ page }) => 
   const run = await page.request
     .get('/svc/job/api/v1/entities/job_run/list?page=1&page_size=1')
     .then((r) => r.json())
-    .then((b) => (b.rows?.[0] ?? null) as { uuid?: string; name?: string } | null);
+    .then((b) => (b.rows?.[0] ?? null) as { uuid?: string; trigger?: string } | null);
   expect(run?.uuid, 'at least one job_run row exists').toBeTruthy();
 
   await openRemoteSheet(page, 'job.runDetail', { run_uuid: run!.uuid! });
@@ -66,8 +66,9 @@ test('remote sheet job.runDetail mounts and loads its run', async ({ page }) => 
   await expect(mount).toBeVisible({ timeout: 15_000 });
   await expect(page.getByTestId('remote-sheet-content')).toBeVisible({ timeout: 15_000 });
 
-  // Domain content arrived remote-side — the run's own fields rendered.
-  await expect(mount).toContainText(run!.name!, { timeout: 15_000 });
+  // Domain content arrived remote-side — the run's own fields rendered
+  // (`trigger` is the run's display_field: the owning trigger's name).
+  await expect(mount).toContainText(run!.trigger!, { timeout: 15_000 });
   await expect(mount).toContainText(run!.uuid!);
 
   // ws-bound fetch works — the remote called its owning service through ctx.api.
