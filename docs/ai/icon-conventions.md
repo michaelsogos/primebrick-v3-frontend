@@ -82,6 +82,13 @@
    pulse animation — never `CircleX` (transport failure), `Hourglass`
    (loading) or `TriangleAlert`/`Info` (empty data). First consumer:
    `VersionHistoryPanel`.
+16. **One icon may carry two meanings — but EVERY reuse requires sign-off** —
+   when the glyph wanted for a new semantic is already assigned (canonical
+   map, `FILTER_OPERATOR_ICON`, fallbacks like the PropNavigator
+   unknown-type `circle-question-mark`, CUSTOM_ICONS), the agent MUST
+   surface the collision to the user and WAIT for instructions before
+   coding — never silently reuse, never silently displace the existing
+   meaning.
 
 ## Deep dive
 
