@@ -272,15 +272,17 @@
 				{/if}
 			</div>
 			<Button
-				variant="outline"
-				size="sm"
+				variant="ghost"
+				size="icon-sm"
+				class="self-center"
 				type="button"
 				disabled={addDisabled}
 				onclick={addFilter}
+				aria-label={$t('system.entities.list.add_filter')}
+				title={$t('system.entities.list.add_filter')}
 				data-testid="rule-filter-add"
 			>
 				<Plus class="size-3.5" />
-				{$t('system.entities.list.add_filter')}
 			</Button>
 		</div>
 	{/if}
