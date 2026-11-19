@@ -173,6 +173,16 @@ test.describe("entity events choreography — trigger authored in the browser", 
     await expect(rfOp).not.toHaveAttribute("aria-disabled", "true");
     await expect(rfValue).not.toHaveAttribute("aria-disabled", "true");
     await expect(rfAdd).toBeDisabled();
+    // `event.action` is an enum leaf → the op combo offers ONLY the
+    // closed-vocabulary tests (eq/neq/exists) — contains/gt/lt would be
+    // nonsense on an enum. Conditional ops come from the schema leaf.
+    await rfOp.click();
+    const opPopover = popup.locator('[data-slot="popover-content"]:visible').last();
+    const opOptions = opPopover.locator('[role="option"]:visible');
+    await expect(opOptions.filter({ hasText: /exists|esiste/i })).toHaveCount(1);
+    await expect(opOptions.filter({ hasText: /contains|contiene/i })).toHaveCount(0);
+    await expect(opOptions).toHaveCount(3);
+    await popup.keyboard.press("Escape");
     // `action` carries an enum → the value control is a closed combo
     // (bits-ui Command.Item → role="option"; substring text — the item
     // innerText carries layout whitespace that defeats ^…$ anchors).

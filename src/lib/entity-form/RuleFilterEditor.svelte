@@ -66,14 +66,41 @@
 		...rest
 	}: Props = $props();
 
-	const OPS: readonly { op: RuleOp; icon: string }[] = [
-		{ op: 'eq', icon: 'equal' },
-		{ op: 'neq', icon: 'equal-not' },
-		{ op: 'exists', icon: 'asterisk' },
-		{ op: 'contains', icon: 'text-search' },
-		{ op: 'gt', icon: 'chevron-right' },
-		{ op: 'lt', icon: 'chevron-left' },
-	];
+	const OP_ICON: Record<RuleOp, string> = {
+		eq: 'equal',
+		neq: 'equal-not',
+		exists: 'circle-question-mark',
+		contains: 'text-search',
+		gt: 'chevron-right',
+		lt: 'chevron-left',
+	};
+
+	// Schema leaf → the ops the JH `matchFilter` can meaningfully evaluate
+	// on it. `exists` is offered on EVERY leaf — it asks about presence,
+	// not value, and is the ONLY honest test on object/array leaves.
+	function opsForLeaf(leaf: JsonSchema | undefined): RuleOp[] {
+		if (leaf?.enum || (leaf && 'const' in leaf)) return ['eq', 'neq', 'exists'];
+		const type = Array.isArray(leaf?.type)
+			? leaf.type.find((t) => t !== 'null')
+			: leaf?.type;
+		switch (type) {
+			case 'boolean':
+				return ['eq', 'neq', 'exists'];
+			case 'number':
+			case 'integer':
+				return ['eq', 'neq', 'gt', 'lt', 'exists'];
+			case 'string':
+				// `format:"uuid"` — exact match only; substring on an id lies.
+				return leaf?.format === 'uuid'
+					? ['eq', 'neq', 'exists']
+					: ['eq', 'neq', 'contains', 'exists'];
+			case 'object':
+			case 'array':
+				return ['exists'];
+			default:
+				return ['eq', 'neq', 'exists'];
+		}
+	}
 
 	const locked = $derived(readonly || disabled);
 
@@ -116,13 +143,6 @@
 	// type icons so this picker and the payload-map selector can never
 	// diverge into two presentations of the same schema.
 	const pathTree = $derived.by(() => schemaToNavNodes(source_schema as SchemaLike | undefined));
-	const opOptions = $derived(
-		OPS.map(({ op, icon }) => ({
-			value: op,
-			label: $t(`system.entities.list.operators.${op}`),
-			_icon: icon,
-		})),
-	);
 
 	// The value control is typed by the selected path's schema leaf:
 	// enum → single combo over the closed vocabulary, boolean → yes/no
@@ -154,11 +174,24 @@
 					: 'text',
 	);
 
+	// The op combobox is conditional on the leaf type — an enum leaf can
+	// only answer "is it X / isn't it X / is it set", an object leaf only
+	// the presence test.
+	const allowedOps = $derived(opsForLeaf(fieldSchema));
+	const opOptions = $derived(
+		allowedOps.map((op) => ({
+			value: op,
+			label: $t(`system.entities.list.operators.${op}`),
+			_icon: OP_ICON[op],
+		})),
+	);
+
 	let prevField = $state('');
 	$effect(() => {
 		if (newField === prevField) return;
 		prevField = newField;
 		newValue = '';
+		if (!allowedOps.includes(newOp)) newOp = allowedOps[0] ?? 'eq';
 	});
 
 	// ── single-row cascade — every control renders immediately, disabled
@@ -295,7 +328,7 @@
 					<span class="text-xs font-bold text-foreground" title={f.field}>{badgeField(f)}</span>
 					<span class="text-xs text-primary inline-flex items-center gap-0.5">
 						<DynamicIcon
-							name={OPS.find((o) => o.op === (f.op ?? 'eq'))?.icon ?? 'equal'}
+							name={OP_ICON[f.op ?? 'eq'] ?? 'equal'}
 							size={12}
 							class="shrink-0"
 						/>
