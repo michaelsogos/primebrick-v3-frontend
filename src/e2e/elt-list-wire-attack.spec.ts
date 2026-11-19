@@ -10,7 +10,7 @@ import { loginAsTestAdmin } from "./helpers/admin-login";
  * needles) and asserts the strict fail-closed verdict.
  *
  * Data anchor (dev seed, empirically read):
- *   6 rows — every mirror is trigger-owned (job_name≈"e2e-*" ×5 +
+ *   6 rows — every mirror is trigger-owned (name≈"e2e-*" ×5 +
  *   "AI partition maintenance"); status: armed ×3, disarmed ×3;
  *   run_as: user ×5, system ×1; schedule_type: recurring ×6.
  * Assertions stay relational where data may grow, exact-0 where disjoint.
@@ -80,12 +80,12 @@ test.describe("wire attack — job_schedule list", () => {
   // ── B. search_in: every wire form + every rejection ──
   test("B — search_in wire forms and fail-closed rejections", async ({ page }) => {
     const ok: string[] = [
-      "search_in=job_name,schedule_subject,target_subject,schedule_spec",
+      "search_in=name,schedule_subject,target_subject,schedule_spec",
       "search_in=target_subject",
-      "search_in[]=job_name&search_in[]=schedule_subject",
-      "search_in=job_name&search_in=schedule_subject", // repeated
+      "search_in[]=name&search_in[]=schedule_subject",
+      "search_in=name&search_in=schedule_subject", // repeated
       "search_in=uuid",
-      "search_in=job_name,job_name", // dup keys — harmless
+      "search_in=name,name", // dup keys — harmless
     ];
     for (const si of ok) {
       const r = await wire(page, `search=e2e&${si}`);
@@ -94,11 +94,11 @@ test.describe("wire attack — job_schedule list", () => {
 
     const bad: Array<[string, string]> = [
       ["search_in=", ""],
-      ["search_in=job_name,", ""],                 // trailing comma → empty key
-      ["search_in=JOB_NAME", "JOB_NAME"],          // case-sensitive
+      ["search_in=name,", ""],                 // trailing comma → empty key
+      ["search_in=NAME", "NAME"],          // case-sensitive
       ["search_in=schedule_type", "schedule_type"],// filterable ≠ searchable
-      ["search_in=job_name,bogus", "bogus"],
-      ["search_in=job_name, job_name", " job_name"],// no trim → space poisons key
+      ["search_in=name,bogus", "bogus"],
+      ["search_in=name, name", " name"],// no trim → space poisons key
       ["search_in=status", "status"],              // badge — not a text surface
       ["search_in=version", "version"],
     ];
@@ -109,7 +109,7 @@ test.describe("wire attack — job_schedule list", () => {
     }
 
     // scope without needle: legal no-op (param ignored, rows unfiltered).
-    const noNeedle = await wire(page, "search_in=job_name");
+    const noNeedle = await wire(page, "search_in=name");
     expect(noNeedle.status).toBe(200);
     expect(noNeedle.total).toBe(allRows);
   });
@@ -126,7 +126,7 @@ test.describe("wire attack — job_schedule list", () => {
       // UI-level ops the FE translates to ILIKE patterns BEFORE the wire.
       [F(0, "target_subject", "ILIKE", "%emit%"), (t) => expect(t).toBe(2)], // emit_fake×2 — "emailsender" ∌ "emit"
       [F(0, "schedule_subject", "ILIKE", "jobs.schedule.job%"), (t) => expect(t).toBeGreaterThanOrEqual(4)],
-      [F(0, "job_name", "ILIKE", "%e2e%"), (t) => expect(t).toBeGreaterThanOrEqual(1)], // calculated col, cast to text
+      [F(0, "name", "ILIKE", "%e2e%"), (t) => expect(t).toBeGreaterThanOrEqual(1)], // physical declared name
       [F(0, "uuid", "ILIKE", "07"), (t) => expect(t).not.toBeNull()],                    // the user's case
       [F(0, "version", ">=", "1"), (t) => expect(t).toBe(allRows)],
       [F(0, "created_at", "<", "2099-01-01"), (t) => expect(t).toBe(allRows)],
@@ -147,7 +147,7 @@ test.describe("wire attack — job_schedule list", () => {
     const bad: string[] = [
       F(0, "schedule_spec", "=", "x"),          // filterable:false authored
       F(0, "bogus_field", "=", "x"),
-      F(0, "JOB_NAME", "=", "x"),               // case
+      F(0, "NAME", "=", "x"),               // case
       F(0, "created_at", ">", "not-a-date"),    // unparseable datetime → 400
       F(0, "version", "=", "not-a-number"),     // typed value → 400
       F(0, "uuid", "=", "not-a-uuid"),          // pgType:uuid declared → 400
@@ -176,8 +176,8 @@ test.describe("wire attack — job_schedule list", () => {
       ["search=emit&search_in=target_subject", (t) => expect(t).toBe(2)],
       ["search=emit&search_in=schedule_subject", (t) => expect(t).toBe(0)],
       // search + preset-style filter + scoped search_in — the user's combo
-      [`search=e2e&search_in=job_name,target_subject&${F(0, "schedule_type", "=", "recurring")}`, (t) => expect(t).toBeGreaterThanOrEqual(1)],
-      // scoped-empty vs unscoped: e2e lives in job_name, not schedule_subject
+      [`search=e2e&search_in=name,target_subject&${F(0, "schedule_type", "=", "recurring")}`, (t) => expect(t).toBeGreaterThanOrEqual(1)],
+      // scoped-empty vs unscoped: e2e lives in name, not schedule_subject
       ["search=e2e&search_in=schedule_subject", (t) => expect(t).toBe(0)],
       ["search=e2e&search_in=target_subject,schedule_subject", (t) => expect(t).toBe(0)],
       // wildcard needle + filters — a PURE `\*` has zero true chars → the

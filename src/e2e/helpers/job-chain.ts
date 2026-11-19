@@ -47,7 +47,7 @@ export interface RunRow {
   uuid: string;
   schedule_subject: string;
   service_code: string;
-  job_name: string;
+  name: string;
   run_as: string;
   status: string;
   error_code: string | null;

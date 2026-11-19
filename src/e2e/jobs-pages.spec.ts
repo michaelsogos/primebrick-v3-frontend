@@ -605,7 +605,7 @@ test.describe("/system/job/* pages (module-owned)", () => {
     // Seed a legacy v1 resolved array — a narrow column set from an older
     // meta. Render must match it verbatim (no new columns leaked in).
     await page.addInitScript(([key]) => {
-      sessionStorage.setItem(key, JSON.stringify(["uuid", "job_name", "status"]));
+      sessionStorage.setItem(key, JSON.stringify(["uuid", "name", "status"]));
     }, [VK]);
     await page.goto("/system/job/runs", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 30000 });
@@ -1121,7 +1121,7 @@ test.describe("/system/job/* pages (module-owned)", () => {
     await page.keyboard.press("Escape");
   });
 
-  test("job_name/armed_by share the owning trigger's identity — even past its deletion", async ({
+  test("name/armed_by share the owning trigger's identity — even past its deletion", async ({
     page,
   }) => {
     await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
@@ -1141,8 +1141,8 @@ test.describe("/system/job/* pages (module-owned)", () => {
 
     // Orphaned mirror (soft-deleted e2e-gate trigger): Armed By keeps the
     // deleted trigger's name — the armer IS that trigger, its deletion
-    // does not rewrite provenance. Job Name and Armed By converge on the
-    // same identity (plain text vs drillable ref).
+    // does not rewrite provenance. The stamped `name` and the resolved
+    // `armed_by` converge on the same identity (plain text vs drillable ref).
     const orphanRow = page.locator("tr", { hasText: "e2e-gate-1793665359607" }).first();
     await expect(orphanRow).toBeVisible({ timeout: 15000 });
     const orphanArmed = orphanRow.getByTestId("ref-cell-armed_by-text");
@@ -1151,8 +1151,8 @@ test.describe("/system/job/* pages (module-owned)", () => {
     await expect(page.getByTestId("entity-record-sheet")).toBeVisible({ timeout: 15000 });
     await page.keyboard.press("Escape");
 
-    // Live trigger row: Job Name and Armed By intentionally share the
-    // trigger's display — identity (plain text) vs drillable ref.
+    // Live trigger row: `name` and `armed_by` intentionally share the
+    // trigger's display — stamped identity (plain text) vs drillable ref.
     const liveRow = page.locator("tr", { hasText: "e2e-callable-dispatch" }).first();
     await expect(liveRow).toBeVisible({ timeout: 15000 });
   });

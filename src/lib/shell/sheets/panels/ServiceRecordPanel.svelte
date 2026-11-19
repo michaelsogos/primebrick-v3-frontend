@@ -12,7 +12,7 @@
    * from `servicesState` (the same SSE feed the modules page consumes).
    *
    * `context_row` carries the wire row that opened the drill: when it
-   * brings the schedule arming triple (`job_name`, `schedule_spec`,
+   * brings the schedule arming triple (`name`, `schedule_spec`,
    * `run_as`) the panel surfaces it as the "armed schedule" section.
    *
    * In-sheet links are `_blank`-only by contract.
@@ -66,11 +66,11 @@
   /** The arming triple — present only when the drill came from a
    *  schedule row (e.g. its `created_by` service-actor cell). */
   const arming = $derived.by(() => {
-    const job_name = context_row?.job_name;
+    const name = context_row?.name;
     const schedule_spec = context_row?.schedule_spec;
     const run_as = context_row?.run_as;
-    if (job_name === undefined && schedule_spec === undefined && run_as === undefined) return null;
-    return { job_name, schedule_spec, run_as };
+    if (name === undefined && schedule_spec === undefined && run_as === undefined) return null;
+    return { name, schedule_spec, run_as };
   });
 
   const moduleHref = $derived(resolve('/(app)/system/settings/modules/[code]', { code }));
@@ -162,13 +162,13 @@
               {$t('system.entities.service_registry.armed_schedule')}
             </h3>
             <div class="space-y-2 rounded-lg border-primary-gradient p-3">
-              {#if arming.job_name !== undefined && arming.job_name !== null}
+              {#if arming.name !== undefined && arming.name !== null}
                 <div class="flex items-center justify-between gap-3 text-sm">
                   <!-- `job.*` dict keys — the job_schedule field labels are
                        module-owned (single source); the panel only ever
                        opens from a job_schedule row so the dict is loaded. -->
-                  <span class="text-muted-foreground">{$t('job.entities.job_schedule.fields.job_name')}</span>
-                  <span class="truncate font-mono text-xs" data-testid="service-record-arming-job">{toDisplayString(arming.job_name)}</span>
+                  <span class="text-muted-foreground">{$t('job.entities.job_schedule.fields.name')}</span>
+                  <span class="truncate font-mono text-xs" data-testid="service-record-arming-job">{toDisplayString(arming.name)}</span>
                 </div>
               {/if}
               {#if typeof arming.schedule_spec === 'string' && arming.schedule_spec !== ''}

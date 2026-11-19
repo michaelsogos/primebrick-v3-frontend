@@ -3,10 +3,9 @@ import { loginAsTestAdmin } from "./helpers/admin-login";
 
 /* Identity-column contract — job_schedule is the regression entity:
  *
- *  - `job_name` is the display_field (calculated: the scheduled job's
- *    name — live trigger name, `trigger:`/`rule:` actor stamp for
- *    deleted triggers, declared subject tail for manual/infra) — the
- *    pinned identity column: rendered FIRST, checked AND disabled in
+ *  - `name` is the display_field (physical: the declared job identity,
+ *    stamped at arm time from the owning trigger's name) — the pinned
+ *    identity column: rendered FIRST, checked AND disabled in
  *    the picker.
  *  - `uuid` is sticky-but-hideable — user-controlled, hidden by default,
  *    present as an ENABLED toggle (the counter-case to the pin).
@@ -40,7 +39,7 @@ test.describe("identity column contract — job_schedule", () => {
 
     // Picker: the pin is checked AND disabled — never toggleable.
     await page.getByRole("button", { name: "Columns" }).first().click();
-    const pinToggle = page.getByTestId("columns-toggle-job_name");
+    const pinToggle = page.getByTestId("columns-toggle-name");
     await expect(pinToggle).toBeVisible({ timeout: 15000 });
     await expect(pinToggle).toBeDisabled();
     // The checkbox is aria-hidden (visual-only) — assert its bits-ui

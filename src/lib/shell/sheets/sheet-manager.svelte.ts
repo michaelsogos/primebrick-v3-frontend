@@ -129,7 +129,7 @@ export type SheetPanelPropsMap = {
     code: string;
     /**
      * The source wire row that opened the drill (lazy-ref context) — the
-     * panel surfaces the arming triple it carries (`job_name`,
+     * panel surfaces the arming triple it carries (`name`,
      * `schedule_spec`, `run_as`) when present.
      */
     context_row?: Record<string, unknown>;

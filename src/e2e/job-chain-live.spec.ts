@@ -383,7 +383,7 @@ test.describe("job-chain-live — engine semantics end to end", () => {
       // row (observed live once): dump every observable before rethrowing.
       const recent = await getPool()
         .query(
-          `SELECT schedule_subject, job_name, status, error_code, error_detail, run_as, fire_seq, created_at
+          `SELECT schedule_subject, name, status, error_code, error_detail, run_as, fire_seq, created_at
            FROM job.job_runs WHERE created_at > now() - interval '90 seconds' ORDER BY created_at`,
         )
         .catch((err) => ({ rows: [`query failed: ${String(err)}`] }));

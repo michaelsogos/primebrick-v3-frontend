@@ -41,11 +41,11 @@ test.describe("ELT columns/filter UX — job_schedule", () => {
     await expect(selectAll).toHaveAttribute("data-state", "checked");
     await expect(page.getByTestId("columns-toggle-uuid").locator('[data-state="checked"]')).toHaveCount(1);
 
-    // Deselect → back to declared defaults (job_name stays: always-on pin).
+    // Deselect → back to declared defaults (name stays: always-on pin).
     await page.getByTestId("columns-select-all-label").click();
     await expect(count).toHaveText(`${initial[0]}/${initial[1]}`);
     await expect(selectAll).toHaveAttribute("data-state", "indeterminate");
-    const pinToggle = page.getByTestId("columns-toggle-job_name");
+    const pinToggle = page.getByTestId("columns-toggle-name");
     await expect(pinToggle).toBeDisabled();
     await expect(pinToggle.locator('[data-state="checked"]')).toHaveCount(1);
     await page.keyboard.press("Escape");
