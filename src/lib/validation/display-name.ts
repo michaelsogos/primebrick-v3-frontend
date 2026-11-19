@@ -21,7 +21,9 @@ export function startsAndEndsWithAlphanumeric(value: string): boolean {
   return alphanumericRegex.test(firstChar) && alphanumericRegex.test(lastChar);
 }
 
-export const DISPLAY_NAME_MIN = 3;
+// Display-name minimum — mirrors the display_field write-contract
+// convention (withColumnConstraints: required, min 5, max 255).
+export const DISPLAY_NAME_MIN = 5;
 export const DISPLAY_NAME_MAX = 255;
 
 export const IDP_NAME_MIN = 3;
