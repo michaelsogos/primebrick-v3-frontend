@@ -52,8 +52,18 @@ export function registerEntityServices(entries: Iterable<readonly [string, strin
   _entityService = new Map(entries);
 }
 
-export function entityApiBase(entity: string): string {
+/**
+ * The gateway's own registry code — its entities are BE-owned, so they ride
+ * the direct path. There is no 'api' instance to proxy to: mapping it to
+ * `/svc/api` makes the gateway look up itself and answer 502.
+ */
+function proxyService(entity: string): string | undefined {
   const service = _entityService.get(entity);
+  return service === 'api' ? undefined : service;
+}
+
+export function entityApiBase(entity: string): string {
+  const service = proxyService(entity);
   return service ? `/svc/${service}/api/v1/entities/${entity}` : `${ENTITY_API_PATH}/${entity}`;
 }
 
@@ -64,7 +74,7 @@ export function entityApiBase(entity: string): string {
  * proxy prefix. Single source: the `/api/v1/modules` census.
  */
 export function serviceApiPrefix(entity: string): string {
-  const service = _entityService.get(entity);
+  const service = proxyService(entity);
   return service ? `/svc/${service}` : '';
 }
 
