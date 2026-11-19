@@ -17,7 +17,6 @@
 		Badge,
 		Button,
 		ComboSelect,
-		DynamicIcon,
 		JsonValueEditor,
 		NumericInput,
 		PropNavigator,
@@ -322,18 +321,10 @@
 
 	{#if filters.length > 0}
 		<div class="flex flex-wrap items-center gap-2" data-testid="rule-filter-badges">
-			<span class="text-xs italic text-muted-foreground/70">{$t('system.entities.list.all_criteria')}</span>
 			{#each filters as f, i (i)}
 				<Badge variant="secondary" class="w-fit gap-1.5 pr-1">
 					<span class="text-xs font-bold text-foreground" title={f.field}>{badgeField(f)}</span>
-					<span class="text-xs text-primary inline-flex items-center gap-0.5">
-						<DynamicIcon
-							name={OP_ICON[f.op ?? 'eq'] ?? 'equal'}
-							size={12}
-							class="shrink-0"
-						/>
-						{$t(`system.entities.list.operators.${f.op ?? 'eq'}`)}
-					</span>
+					<span class="text-xs text-primary">{$t(`system.entities.list.operators.${f.op ?? 'eq'}`)}</span>
 					{#if f.op !== 'exists'}
 						<span class="text-xs italic text-muted-foreground">{badgeValue(f)}</span>
 					{/if}
