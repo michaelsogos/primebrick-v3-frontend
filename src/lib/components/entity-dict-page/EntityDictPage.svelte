@@ -1240,6 +1240,7 @@
               title={taintedRowTitles.join(', ')}
             >
               +{taintedRowTitles.length}
+              <span class="ml-1 font-sans text-[10px] opacity-60">{$t('app.common.modified_plural')}</span>
             </Badge>
           {:else}
             {#each taintedRowTitles as title (title)}
@@ -1256,6 +1257,7 @@
               title={pendingTitles.join(', ')}
             >
               +{pendingTitles.length}
+              <span class="ml-1 font-sans text-[10px] opacity-60">{$t('app.common.new_plural')}</span>
             </Badge>
           {:else}
             {#each pendingTitles as title (title)}
