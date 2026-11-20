@@ -74,7 +74,7 @@
     <div class="min-w-0">
       <div class="flex items-center gap-2">
         {#if codeColumn}
-          <div class="w-48 min-w-0" data-dict-cell="code">
+          <div class="flex-1 min-w-0" data-dict-cell="code">
             <DictFieldCell column={codeColumn} errors={errors['code']} required>
               {#snippet control({ id })}
                 <FormFieldDispatcher
