@@ -14,6 +14,7 @@
 import type { DeepReadonly } from '@primebrick/ui';
 import { apiFetch } from "$lib/api";
 import { onMount } from "svelte";
+import { extJsonParse } from '$lib/api-ext';
 
 export interface ActiveRole {
   idp_role: string;
@@ -40,7 +41,7 @@ export function useActiveRoles(options?: {
       try {
         const res = await apiFetch("/api/v1/system/roles/active");
         if (res.ok) {
-          const data = await res.json();
+          const data = await res.text().then((t) => extJsonParse<any>(t));
           _state.roles = (data.roles ?? []) as ActiveRole[];
         }
       } catch (e) {

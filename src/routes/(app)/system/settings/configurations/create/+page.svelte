@@ -32,6 +32,7 @@
   import TypeConfigBuilder from '$lib/components/config-builder/TypeConfigBuilder.svelte';
   import { FormLabelWithPriorityHelp } from '@primebrick/ui';
   import { Badge } from '@primebrick/ui';
+  import { extJsonParse } from '$lib/api-ext';
 
   const { notifyParentRefresh } = useSyncChannel('primebrick_config_sync', { mode: 'sender' });
 
@@ -230,7 +231,7 @@
       try {
         const res = await apiFetch(`/api/v1/entities/config_entry/list`);
         if (res.ok) {
-          const data = (await res.json()) as { rows: Array<{ key: string }> };
+          const data = (await res.text().then((t) => extJsonParse<any>(t))) as { rows: Array<{ key: string }> };
           keyExistsError = data.rows.some((r) => r.key === keyValue);
         }
       } catch {

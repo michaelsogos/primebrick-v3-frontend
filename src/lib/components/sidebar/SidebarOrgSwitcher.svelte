@@ -9,6 +9,7 @@
   import { onMount } from 'svelte';
   import { BuildingComplex } from '@primebrick/ui/vendor/lucide';
   import { ChevronsUpDown } from '@primebrick/ui/vendor/lucide';
+  import { extJsonParse } from '$lib/api-ext';
 
   let { collapsed }: { collapsed: boolean } = $props();
 
@@ -23,7 +24,7 @@
     try {
       const res = await apiFetch('/api/v1/system/organizations/active');
       if (res.ok) {
-        const data = await res.json();
+        const data = await res.text().then((t) => extJsonParse<any>(t));
         activeOrgs = data.organizations ?? [];
         if (activeOrgs.length > 0 && !selectedOrgId) {
           selectedOrgId = activeOrgs[0].idp_code;

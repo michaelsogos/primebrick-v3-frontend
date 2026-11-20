@@ -29,6 +29,8 @@
  *   />
  */
 
+import { extJsonParse, extJsonStringify } from '$lib/api-ext';
+
 interface StepUpState {
   dialogOpen: boolean;
   pendingAction: string;
@@ -62,7 +64,7 @@ export function useMfaStepUp() {
     const resp = await requestFn(null);
 
     if (resp.status === 403) {
-      const errorData = await resp.json().catch(() => null);
+      const errorData = await resp.text().then((t) => extJsonParse<any>(t)).catch(() => null);
       if (errorData?.extra?.mfa_step_up_required) {
         // Show the step-up dialog and wait for the user to verify
         return new Promise<Response>((resolve) => {
@@ -74,7 +76,7 @@ export function useMfaStepUp() {
             requestFn(token).then(resolve).catch((err) => {
               console.error('[MfaStepUp] Retry failed:', err);
               // Resolve with a synthetic error response so the caller can handle it
-              resolve(new Response(JSON.stringify({ type: '/errors/internal-error', title: 'Internal server error', status: 500, detail: 'Retry failed' }), { status: 500, headers: { 'Content-Type': 'application/json' } }));
+              resolve(new Response(extJsonStringify({ type: '/errors/internal-error', title: 'Internal server error', status: 500, detail: 'Retry failed' }), { status: 500, headers: { 'Content-Type': 'application/json' } }));
             });
           };
         });

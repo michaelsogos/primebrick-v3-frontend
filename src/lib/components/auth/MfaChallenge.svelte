@@ -13,7 +13,7 @@
   import { t } from '$lib/i18n';
   import { ShieldAlert } from '@primebrick/ui/vendor/lucide';
   import { KeyRound } from '@primebrick/ui/vendor/lucide';
-  import { extJsonStringify } from '$lib/api-ext';
+  import { extJsonParse, extJsonStringify } from '$lib/api-ext';
 
   // Props:
   //   mfa_challenge_token: from the login response (mfa_required branch)
@@ -55,7 +55,7 @@
         body: extJsonStringify({ mfa_challenge_token: mfa_challenge_token }),
       });
       if (resp.ok) {
-        const data = await resp.json();
+        const data = await resp.text().then((t) => extJsonParse<any>(t));
         challengeToken = data.mfa_challenge_token;
         factors = data.available_factors;
       }
@@ -91,7 +91,7 @@
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response.text().then((t) => extJsonParse<any>(t));
         pushNotification({ ...errorData, toast: false });
 
         const mappedError = mapRFC7807ToMessageKey({
@@ -108,7 +108,7 @@
         return;
       }
 
-      const data = await response.json();
+      const data = await response.text().then((t) => extJsonParse<any>(t));
       if (data.success && data.user) {
         userProfileStore.setSession(data.user);
       }

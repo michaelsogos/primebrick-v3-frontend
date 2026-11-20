@@ -12,6 +12,7 @@
 import { apiFetchWithTimeout } from '$lib/api';
 import { ApiListError, readApiErrorDetails } from './api-list-error';
 import type { EntityMeta } from './types';
+import { extJsonParse } from '$lib/api-ext';
 
 interface MetaCacheEntry {
   data?: EntityMeta;
@@ -44,7 +45,7 @@ export function fetchEntityMeta(basePath: string): Promise<EntityMeta> {
       const code = apiDetails.code ?? 'GET_METADATA_FAILED';
       throw new ApiListError(code, res.status, apiDetails);
     }
-    const meta = (await res.json()) as EntityMeta;
+    const meta = (await res.text().then((t) => extJsonParse<any>(t))) as EntityMeta;
     entry.data = meta;
     return meta;
   })();

@@ -28,7 +28,7 @@
   import { AlertCircle } from '@primebrick/ui/vendor/lucide';
   import { ArrowLeft } from '@primebrick/ui/vendor/lucide';
   import { ArrowRight } from '@primebrick/ui/vendor/lucide';
-  import { extJsonStringify } from '$lib/api-ext';
+  import { extJsonParse, extJsonStringify } from '$lib/api-ext';
 
   // ─── Password policy ────────────────────────────────────────────────────────
   const passwordPolicy = usePasswordPolicy();
@@ -102,7 +102,7 @@
         body: extJsonStringify({ token: _state.token }),
       });
 
-      const data = await res.json();
+      const data = await res.text().then((t) => extJsonParse<any>(t));
       if (res.ok && data.valid) {
         _state.display_name = data.display_name;
         _state.expires_at = data.expires_at;
@@ -130,7 +130,7 @@
         body: extJsonStringify({ token: _state.token }),
       });
 
-      const data = await res.json();
+      const data = await res.text().then((t) => extJsonParse<any>(t));
       if (res.ok && data.sent) {
         _state.step = 'otp-sent';
         startResendCooldown();
@@ -154,7 +154,7 @@
         body: extJsonStringify({ token: _state.token, otp_code: _state.otp_code }),
       });
 
-      const data = await res.json();
+      const data = await res.text().then((t) => extJsonParse<any>(t));
       if (res.ok && data.verified) {
         _state.step = 'otp-verified';
       } else {
@@ -184,7 +184,7 @@
       if (res.ok) {
         _state.step = 'complete';
       } else {
-        const errorData = await res.json();
+        const errorData = await res.text().then((t) => extJsonParse<any>(t));
         pushNotification({ ...errorData, toast: false });
         _state.error_message = errorData.detail ?? $t('app.auth.welcome.error.complete_failed');
       }

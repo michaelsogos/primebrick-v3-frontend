@@ -18,7 +18,7 @@
   import MfaChallenge from './MfaChallenge.svelte';
   import { isWebauthnSupported } from '$lib/webauthn/codec';
   import { authConfigState, loadAuthConfig } from '$lib/auth-config-store.svelte';
-  import { extJsonStringify } from '$lib/api-ext';
+  import { extJsonParse, extJsonStringify } from '$lib/api-ext';
 
   // Trigger the auth config fetch during component initialization.
   void loadAuthConfig();
@@ -69,7 +69,7 @@
           });
 
           if (!response.ok) {
-            const errorData = await response.json();
+            const errorData = await response.text().then((t) => extJsonParse<any>(t));
             pushNotification({ ...errorData, toast: false });
 
             if (response.status === 401) {
@@ -101,7 +101,7 @@
             return;
           }
 
-          const data = await response.json();
+          const data = await response.text().then((t) => extJsonParse<any>(t));
           if (data.mfa_required) {
             // MFA challenge required — swap form for MFA challenge UI.
             // Do NOT set cookies or call onsuccess yet — the user must verify

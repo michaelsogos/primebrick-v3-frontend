@@ -12,7 +12,7 @@
   import { ShieldCheck } from '@primebrick/ui/vendor/lucide';
   import { Smartphone } from '@primebrick/ui/vendor/lucide';
   import { TriangleAlert } from '@primebrick/ui/vendor/lucide';
-  import { extJsonStringify } from '$lib/api-ext';
+  import { extJsonParse, extJsonStringify } from '$lib/api-ext';
 
   // ─── Props ─────────────────────────────────────────────────────────────────
   let { oncomplete }: { oncomplete: () => void } = $props();
@@ -38,11 +38,11 @@
     try {
       const resp = await apiFetch('/api/v1/auth/mfa/enroll/begin', { method: 'POST' });
       if (!resp.ok) {
-        const err = await resp.json();
+        const err = await resp.text().then((t) => extJsonParse<any>(t));
         pushNotification({ ...err, toast: false });
         return;
       }
-      const data = await resp.json();
+      const data = await resp.text().then((t) => extJsonParse<any>(t));
       enrollmentToken = data.enrollment_token;
       secret = data.secret;
       qrCodeUrl = data.qr_code_url;
@@ -78,7 +78,7 @@
         }),
       });
       if (!resp.ok) {
-        const err = await resp.json();
+        const err = await resp.text().then((t) => extJsonParse<any>(t));
         enrollError = err.detail || $t('app.auth.mfa.invalid_code');
         otp.reset();
         return;

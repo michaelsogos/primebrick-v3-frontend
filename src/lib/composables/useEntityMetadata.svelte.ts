@@ -3,6 +3,7 @@ import { apiFetch } from '$lib/api';
 import { pushNotification } from '$lib/errors/app-errors';
 import type { EntityMeta } from '$lib/entity-list/types';
 import type { DeepReadonly } from '@primebrick/ui';
+import { extJsonParse } from '$lib/api-ext';
 
 /** @deprecated use `EntityMeta` from `$lib/entity-list/types` — kept as an
  *  alias during the canonical-schema migration. */
@@ -29,7 +30,7 @@ export function useEntityMetadata(options: UseEntityMetadataOptions) {
     try {
       const res = await apiFetch(endpoint);
       if (res.ok) {
-        const data = await res.json();
+        const data = await res.text().then((t) => extJsonParse<any>(t));
 
         // Code Guardrail: Check if metadata becomes null after loading
         if (!data || !data.columns || data.columns.length === 0) {

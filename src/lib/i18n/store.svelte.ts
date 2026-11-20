@@ -1,6 +1,7 @@
 import { browser } from '$app/environment';
 import { DEFAULT_LANG, normalizeLang, type UiLang } from './languages';
 import { writable, type Writable } from 'svelte/store';
+import { extJsonParse, extJsonStringify } from '$lib/api-ext';
 
 const STORAGE_KEY = 'pb.lang';
 const I18N_CACHE_PREFIX = 'pb:i18n:';
@@ -52,7 +53,7 @@ export function getCachedModuleDict(moduleId: string, lang: UiLang): CachedI18nM
     // No TTL: a stale dict is still strictly better than raw keys. Freshness
     // is restored by the always-on fetch (ETag/304) — the entry is replaced
     // only when a newer dict arrives, never discarded for age alone.
-    return JSON.parse(raw) as CachedI18nModule;
+    return extJsonParse(raw) as CachedI18nModule;
   } catch {
     return null;
   }
@@ -61,6 +62,6 @@ export function getCachedModuleDict(moduleId: string, lang: UiLang): CachedI18nM
 export function setCachedModuleDict(moduleId: string, lang: UiLang, dict: Record<string, string>): void {
   if (!browser) return;
   const entry: CachedI18nModule = { dict, cached_at: Date.now() };
-  localStorage.setItem(`${I18N_CACHE_PREFIX}${moduleId}:${lang}`, JSON.stringify(entry));
+  localStorage.setItem(`${I18N_CACHE_PREFIX}${moduleId}:${lang}`, extJsonStringify(entry));
 }
 

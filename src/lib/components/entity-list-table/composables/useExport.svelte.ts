@@ -6,6 +6,7 @@ import type { MetaColumn, AdvancedFilter, EntityAction } from '$lib/entity-list/
 import { findActionEndpoint } from '$lib/entity-list';
 import { appendListFilterParams } from '$lib/entity-list/list-filter-params';
 import type { DeepReadonly } from '@primebrick/ui';
+import { extJsonParse } from '$lib/api-ext';
 
 interface ExportOptions {
   entity: () => string;
@@ -153,7 +154,7 @@ export function useExport(options: ExportOptions) {
       const response = await apiFetch(`${exportBase}?${params.toString()}`);
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response.text().then((t) => extJsonParse<any>(t));
         throw errorData;
       }
 
@@ -259,7 +260,7 @@ export function useExport(options: ExportOptions) {
       const response = await apiFetch(`${exportBase}?${params.toString()}`);
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response.text().then((t) => extJsonParse<any>(t));
         throw errorData;
       }
 

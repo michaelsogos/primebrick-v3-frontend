@@ -253,7 +253,7 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
     try {
       const sk = storageGet(skSort);
       if (sk) {
-        const parsed = JSON.parse(sk) as { key?: unknown; dir?: unknown };
+        const parsed = extJsonParse(sk) as { key?: unknown; dir?: unknown };
         if (
           parsed &&
           typeof parsed === 'object' &&
@@ -269,7 +269,7 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
       }
       const vk = storageGet(skVisibleKeys);
       if (vk) {
-        const parsed = JSON.parse(vk) as unknown;
+        const parsed = extJsonParse(vk) as unknown;
         if (isVisibleKeyPrefs(parsed)) {
           // v2 {shown,hidden} — intent stored, set resolved once columns land.
           pendingVisiblePrefs = parsed;
@@ -281,7 +281,7 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
       }
       const sik = storageGet(skSearchInKeys);
       if (sik) {
-        const parsed = JSON.parse(sik) as unknown;
+        const parsed = extJsonParse(sik) as unknown;
         if (parsed === null || (Array.isArray(parsed) && parsed.every((x) => typeof x === 'string'))) {
           _state.searchInKeys = parsed;
         }
@@ -291,21 +291,21 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
       // feature, silently orphaned by the Phase-10 refactor: rewired here).
       const fv = storageGet(skFilterValues);
       if (fv) {
-        const parsed = JSON.parse(fv) as unknown;
+        const parsed = extJsonParse(fv) as unknown;
         if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
           _state.filterValues = parsed as Record<string, unknown>;
         }
       }
       const af = storageGet(skAdvancedFilters);
       if (af) {
-        const parsed = JSON.parse(af) as unknown;
+        const parsed = extJsonParse(af) as unknown;
         if (Array.isArray(parsed)) {
           _state.advancedFilters = parsed as AdvancedFilter[];
         }
       }
       const fp = storageGet(skFilterPresets);
       if (fp) {
-        const parsed = JSON.parse(fp) as unknown;
+        const parsed = extJsonParse(fp) as unknown;
         if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
           _state.presetSelections = parsed as Record<string, string>;
         }
@@ -316,19 +316,19 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
       }
       const sel = storageGet(skSelectedKeys);
       if (sel) {
-        const parsed = JSON.parse(sel) as unknown;
+        const parsed = extJsonParse(sel) as unknown;
         if (Array.isArray(parsed)) {
           _state.selectedKeys = parsed.filter((k): k is string => typeof k === 'string');
         }
       }
       const pg = storageGet(skPage);
       if (pg) {
-        const n = Number(JSON.parse(pg));
+        const n = Number(extJsonParse(pg));
         if (Number.isInteger(n) && n >= 1) _state.page = n;
       }
       const psz = storageGet(skPageSize);
       if (psz) {
-        const n = Number(JSON.parse(psz));
+        const n = Number(extJsonParse(psz));
         if (Number.isInteger(n) && n >= 1) {
           _state.pageSize = Math.min(n, PAGE_SIZE_MAX);
           pageSizeRestored = true;
@@ -360,16 +360,16 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
   }
 
   function persistState() {
-    storageSet(skSort, JSON.stringify({ key: _state.sortKey, dir: _state.sortDir }));
-    storageSet(skVisibleKeys, JSON.stringify(deriveVisibleKeyPrefs(_state.visibleKeys, columns)));
-    storageSet(skSearchInKeys, JSON.stringify(_state.searchInKeys));
-    storageSet(skFilterValues, JSON.stringify(_state.filterValues));
-    storageSet(skAdvancedFilters, JSON.stringify(_state.advancedFilters));
-    storageSet(skFilterPresets, JSON.stringify(_state.presetSelections));
+    storageSet(skSort, extJsonStringify({ key: _state.sortKey, dir: _state.sortDir }));
+    storageSet(skVisibleKeys, extJsonStringify(deriveVisibleKeyPrefs(_state.visibleKeys, columns)));
+    storageSet(skSearchInKeys, extJsonStringify(_state.searchInKeys));
+    storageSet(skFilterValues, extJsonStringify(_state.filterValues));
+    storageSet(skAdvancedFilters, extJsonStringify(_state.advancedFilters));
+    storageSet(skFilterPresets, extJsonStringify(_state.presetSelections));
     storageSet(skDeletionFilter, _state.deletionFilterMode);
-    storageSet(skSelectedKeys, JSON.stringify(_state.selectedKeys));
-    storageSet(skPage, JSON.stringify(_state.page));
-    storageSet(skPageSize, JSON.stringify(_state.pageSize));
+    storageSet(skSelectedKeys, extJsonStringify(_state.selectedKeys));
+    storageSet(skPage, extJsonStringify(_state.page));
+    storageSet(skPageSize, extJsonStringify(_state.pageSize));
     storageSet(skGlobalConnector, _state.globalConnector);
     storageSet(skSearch, _state.appliedSearch);
   }
@@ -420,7 +420,7 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
       _state.sortDir = defSort?.dir ?? 'asc';
     }
     if (!pageSizeRestored) {
-      _state.pageSize = Math.min(_state.meta?.table?.default_page_size ?? _state.pageSize, PAGE_SIZE_MAX);
+      _state.pageSize = Math.min(Number(_state.meta?.table?.default_page_size ?? _state.pageSize), PAGE_SIZE_MAX);
     }
     ensureVisibleKeys();
   }
@@ -552,7 +552,7 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
           15_000
         );
         if (!res.ok) continue;
-        const data = (await res.json()) as Record<string, unknown>;
+        const data = (await res.text().then((t) => extJsonParse<any>(t))) as Record<string, unknown>;
         const map = data[cfg.response_field ?? 'stats'];
         _state.sparklineData[col.key] = {
           by_key: (map ?? {}) as Record<string, unknown[]>,

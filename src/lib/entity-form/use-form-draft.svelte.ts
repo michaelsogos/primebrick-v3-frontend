@@ -22,6 +22,7 @@
 import { browser } from '$app/environment';
 import { SvelteSet } from 'svelte/reactivity';
 import type { FieldConflict } from '$lib/collaboration/merge-delta';
+import { extJsonParse, extJsonStringify } from '$lib/api-ext';
 
 const DRAFT_VERSION = 1;
 const WRITE_DEBOUNCE_MS = 400;
@@ -69,7 +70,7 @@ function readDraft(key: string): FormDraftDoc | null {
 	try {
 		const raw = localStorage.getItem(key);
 		if (!raw) return null;
-		const d = JSON.parse(raw) as FormDraftDoc;
+		const d = extJsonParse(raw) as FormDraftDoc;
 		if (d?.v !== DRAFT_VERSION || typeof d.data !== 'object' || typeof d.tainted !== 'object')
 			return null;
 		return d;
@@ -156,7 +157,7 @@ export function useFormDraft(opts: UseFormDraftOpts): FormDraftApi {
 					base_version: Number(opts.baseVersion()) || null,
 					saved_at: Date.now(),
 				};
-				localStorage.setItem(key, JSON.stringify(doc));
+				localStorage.setItem(key, extJsonStringify(doc));
 			} catch {
 				// quota/serialization — drafting is best-effort, never a form failure
 			}

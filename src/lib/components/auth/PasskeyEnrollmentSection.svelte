@@ -10,7 +10,7 @@
   import { ShieldCheck } from '@primebrick/ui/vendor/lucide';
   import { KeyRound } from '@primebrick/ui/vendor/lucide';
   import { Fingerprint } from '@primebrick/ui/vendor/lucide';
-  import { extJsonStringify } from '$lib/api-ext';
+  import { extJsonParse, extJsonStringify } from '$lib/api-ext';
 
   // ─── Props ─────────────────────────────────────────────────────────────────
   let { oncomplete }: { oncomplete: () => void } = $props();
@@ -34,12 +34,12 @@
       });
 
       if (!beginResp.ok) {
-        const err = await beginResp.json();
+        const err = await beginResp.text().then((t) => extJsonParse<any>(t));
         pushNotification({ ...err, toast: false });
         return;
       }
 
-      const { nonce, options } = await beginResp.json();
+      const { nonce, options } = await beginResp.text().then((t) => extJsonParse<any>(t));
 
       // Step 2: browser ceremony
       const decoded = decodeCredentialCreationOptions(options);
@@ -63,7 +63,7 @@
       });
 
       if (!finishResp.ok) {
-        const err = await finishResp.json();
+        const err = await finishResp.text().then((t) => extJsonParse<any>(t));
         pushNotification({ ...err, toast: false });
         return;
       }

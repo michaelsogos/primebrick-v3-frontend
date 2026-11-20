@@ -19,7 +19,7 @@
   import { lookupAaguid } from "$lib/webauthn/aaguid-registry";
   import { transportKeySuffix } from "$lib/webauthn/transports";
   import { getPlatformVersion } from "$lib/webauthn/platform-info";
-  import { extJsonStringify } from '$lib/api-ext';
+  import { extJsonParse, extJsonStringify } from '$lib/api-ext';
 
   interface WebauthnCredentialInfo {
     id: string;
@@ -45,7 +45,7 @@
     try {
       const resp = await apiFetch("/api/v1/auth/webauthn/credentials");
       if (resp.ok) {
-        const data = await resp.json();
+        const data = await resp.text().then((t) => extJsonParse<any>(t));
         credentials = (data.credentials ?? []) as WebauthnCredentialInfo[];
       }
     } catch (error) {
@@ -67,12 +67,12 @@
       });
 
       if (!beginResp.ok) {
-        const err = await beginResp.json();
+        const err = await beginResp.text().then((t) => extJsonParse<any>(t));
         pushNotification({ ...err, toast: false });
         return;
       }
 
-      const { nonce, options } = await beginResp.json();
+      const { nonce, options } = await beginResp.text().then((t) => extJsonParse<any>(t));
 
       // Step 2: browser ceremony — navigator.credentials.create() shows the
       // OS passkey enrollment prompt (FaceID / TouchID / Windows Hello / security key).
@@ -105,7 +105,7 @@
       });
 
       if (!finishResp.ok) {
-        const err = await finishResp.json();
+        const err = await finishResp.text().then((t) => extJsonParse<any>(t));
         pushNotification({ ...err, toast: false });
         return;
       }
@@ -155,7 +155,7 @@
         method: "DELETE",
       });
       if (!resp.ok) {
-        const err = await resp.json();
+        const err = await resp.text().then((t) => extJsonParse<any>(t));
         pushNotification({ ...err, toast: false });
         return;
       }

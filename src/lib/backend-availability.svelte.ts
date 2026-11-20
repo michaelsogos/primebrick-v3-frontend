@@ -6,6 +6,7 @@ import {
 } from '$lib/api-types';
 import { dispatchConnectivityRestored } from '$lib/app-connectivity-events';
 import { PUBLIC_API_ORIGIN } from '$env/static/public';
+import { extJsonParse } from '$lib/api-ext';
 
 /** Sidebar / shell: single source of truth so offline vs DB is never inconsistent. */
 export type HealthChipState =
@@ -101,7 +102,7 @@ async function rawFetchHealth(timeoutMs = 5000): Promise<HealthResult> {
       if (res.status === 503) {
         let parsed: unknown;
         try {
-          parsed = await res.json();
+          parsed = await res.text().then((t) => extJsonParse<any>(t));
         } catch {
           return { ok: false, status: 503 };
         }
@@ -113,7 +114,7 @@ async function rawFetchHealth(timeoutMs = 5000): Promise<HealthResult> {
     }
     let parsed: unknown;
     try {
-      parsed = await res.json();
+      parsed = await res.text().then((t) => extJsonParse<any>(t));
     } catch {
       return { ok: false, status: res.status };
     }

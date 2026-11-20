@@ -10,6 +10,7 @@ import {
   ApiUnreachableError
 } from '$lib/api';
 import type { AppErrorTag } from '$lib/errors/app-errors';
+import { extJsonParse } from '$lib/api-ext';
 
 /** Fetch-level error carrying the BE error code + HTTP status + RFC 7807 extras. */
 export class ApiListError extends Error {
@@ -47,7 +48,7 @@ export interface ApiErrorDetails {
 /** Parse the response body for RFC 7807 / legacy `error` fields (best-effort). */
 export async function readApiErrorDetails(res: Response): Promise<ApiErrorDetails> {
   try {
-    const data = (await res.json()) as {
+    const data = (await res.text().then((t) => extJsonParse<any>(t))) as {
       error?: unknown;
       title?: unknown;
       internal_code?: unknown;

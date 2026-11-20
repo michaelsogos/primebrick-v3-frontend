@@ -4,7 +4,7 @@ import type { RFC7807Error } from '$lib/errors/rfc7807';
 import type { MetaColumn, EntityAction, RowCustomAction } from '$lib/entity-list/types';
 import { findActionEndpoint, fillActionPath } from '$lib/entity-list';
 import type { DeepReadonly } from '@primebrick/ui';
-import { extJsonStringify } from '$lib/api-ext';
+import { extJsonParse, extJsonStringify } from '$lib/api-ext';
 
 /** Step-up MFA driver shape (useMfaStepUp) — injected by the table so
  *  endpoint-dispatched custom actions transparently pass through the
@@ -240,13 +240,13 @@ export function useRowActions<TRow extends Record<string, unknown>>(
       });
 
       if (!response.ok) {
-        const errorData = await response.json() as RFC7807Error & { duplicateResults?: { successful: string[]; failed: Array<{ uuid: string; error: string }> } };
+        const errorData = await response.text().then((t) => extJsonParse<any>(t)) as RFC7807Error & { duplicateResults?: { successful: string[]; failed: Array<{ uuid: string; error: string }> } };
         const enhancedError = { ...errorData, duplicateResults: errorData.duplicateResults };
         pushNotification(enhancedError);
         throw enhancedError;
       }
 
-      const result = await response.json() as { uuids: string[]; errors: Array<{ uuid: string; error: string }> };
+      const result = await response.text().then((t) => extJsonParse<any>(t)) as { uuids: string[]; errors: Array<{ uuid: string; error: string }> };
       if (result.errors.length > 0) {
         pushNotification({
           impact: 'MEDIUM',

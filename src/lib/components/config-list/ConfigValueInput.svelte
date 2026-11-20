@@ -25,6 +25,7 @@
     today,
     getLocalTimeZone,
   } from '@internationalized/date';
+  import { extJsonParse } from '$lib/api-ext';
 
   let {
     type,
@@ -149,7 +150,7 @@
     if (selectConfig?.api_url) {
       selectLoading = true;
       apiFetch(selectConfig.api_url, { method: selectConfig.api_verb ?? 'GET' })
-        .then((res) => res.json())
+        .then((res) => res.text().then((t) => extJsonParse<any>(t)))
         .then((data) => {
           const arr: Record<string, string>[] = Array.isArray(data)
             ? data

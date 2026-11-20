@@ -22,6 +22,7 @@
   import { usePermissionsCatalog } from '$lib/composables/usePermissionsCatalog.svelte';
   import { useRoleMappings } from '$lib/composables/useRoleMappings.svelte';
   import { apiFetch } from '$lib/api';
+  import { extJsonParse } from '$lib/api-ext';
 
   type OrgOption = {
     idp_code: string;
@@ -47,7 +48,7 @@
     try {
       const res = await apiFetch('/api/v1/system/organizations/active');
       if (res.ok) {
-        const data = await res.json();
+        const data = await res.text().then((t) => extJsonParse<any>(t));
         orgs = (data.organizations ?? []) as OrgOption[];
       }
     } catch (e) {

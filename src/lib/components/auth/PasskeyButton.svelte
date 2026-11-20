@@ -10,7 +10,7 @@
     decodeCredentialRequestOptions,
     encodeAuthenticatorAssertion,
   } from "$lib/webauthn/codec";
-  import { extJsonStringify } from '$lib/api-ext';
+  import { extJsonParse, extJsonStringify } from '$lib/api-ext';
 
   // onsuccess: called after successful passkey login. Same contract as the
   // password login path in LoginForm — the parent decides what to do (redirect
@@ -62,13 +62,13 @@
       });
 
       if (!beginResp.ok) {
-        const err = await beginResp.json();
+        const err = await beginResp.text().then((t) => extJsonParse<any>(t));
         pushNotification({ ...err, ...passkeyErrorMessage(err), toast: false });
         onerror?.();
         return;
       }
 
-      const { nonce, options } = await beginResp.json();
+      const { nonce, options } = await beginResp.text().then((t) => extJsonParse<any>(t));
 
       // Step 2: browser ceremony — navigator.credentials.get() shows the OS
       // passkey prompt (FaceID / TouchID / security key).
@@ -99,13 +99,13 @@
       });
 
       if (!finishResp.ok) {
-        const err = await finishResp.json();
+        const err = await finishResp.text().then((t) => extJsonParse<any>(t));
         pushNotification({ ...err, ...passkeyErrorMessage(err), toast: false });
         onerror?.();
         return;
       }
 
-      const data = await finishResp.json();
+      const data = await finishResp.text().then((t) => extJsonParse<any>(t));
       if (data.success && data.user) {
         userProfileStore.setSession(data.user);
       }

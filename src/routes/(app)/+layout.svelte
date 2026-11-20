@@ -18,6 +18,7 @@
   import { CORE_DICT_MODULES } from '$lib/i18n';
   import { uiLang } from '$lib/i18n/store.svelte';
   import { get } from 'svelte/store';
+  import { extJsonParse } from '$lib/api-ext';
 
   let { children }: { children: Snippet } = $props();
 
@@ -71,7 +72,7 @@
     try {
       const res = await apiFetch('/api/v1/auth/me');
       if (res.ok) {
-        const data = await res.json();
+        const data = await res.text().then((t) => extJsonParse<any>(t));
         if (data.success && data.profile) {
           userProfileStore.set({
             uuid: data.profile.uuid,

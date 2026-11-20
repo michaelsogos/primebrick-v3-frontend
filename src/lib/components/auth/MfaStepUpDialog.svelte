@@ -12,7 +12,7 @@
   import { pushNotification } from '$lib/errors/app-errors';
   import { ShieldCheck } from '@primebrick/ui/vendor/lucide';
   import { KeyRound } from '@primebrick/ui/vendor/lucide';
-  import { extJsonStringify } from '$lib/api-ext';
+  import { extJsonParse, extJsonStringify } from '$lib/api-ext';
 
   // Props:
   //   open: bindable — controls dialog visibility
@@ -61,11 +61,11 @@
         body: extJsonStringify({ action, target_resource }),
       });
       if (!resp.ok) {
-        const err = await resp.json();
+        const err = await resp.text().then((t) => extJsonParse<any>(t));
         error = err.detail || $t('app.auth.mfa_step_up.step_up_initiate_error');
         return;
       }
-      const data = await resp.json();
+      const data = await resp.text().then((t) => extJsonParse<any>(t));
       challengeToken = data.mfa_challenge_token;
       availableFactors = data.available_factors;
       factorId = availableFactors[0]?.factor_id ?? '';
@@ -95,12 +95,12 @@
         }),
       });
       if (!resp.ok) {
-        const err = await resp.json();
+        const err = await resp.text().then((t) => extJsonParse<any>(t));
         error = err.detail || $t('app.auth.mfa.invalid_code');
         otp.reset();
         return;
       }
-      const data = await resp.json();
+      const data = await resp.text().then((t) => extJsonParse<any>(t));
       pushNotification({
         impact: 'NONE',
         message: $t('app.auth.mfa_step_up.step_up_authorized'),

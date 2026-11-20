@@ -10,7 +10,7 @@
   import type { RFC7807Error } from '$lib/errors/rfc7807';
   import { usePasswordPolicy } from '$lib/composables/usePasswordPolicy.svelte';
   import PasswordChecklist from '$lib/components/forms/PasswordChecklist.svelte';
-  import { extJsonStringify } from '$lib/api-ext';
+  import { extJsonParse, extJsonStringify } from '$lib/api-ext';
 
   interface ChangePasswordDialogProps<TRow extends Record<string, unknown>> {
     open: boolean;
@@ -74,7 +74,7 @@
       });
 
       if (!res.ok) {
-        const errData = await res.json() as RFC7807Error & Record<string, unknown>;
+        const errData = await res.text().then((t) => extJsonParse<any>(t)) as RFC7807Error & Record<string, unknown>;
         pushNotification(errData);
         return;
       }

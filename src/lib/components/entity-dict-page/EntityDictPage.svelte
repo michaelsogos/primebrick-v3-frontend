@@ -44,7 +44,7 @@
   import { type MetaColumn, type EntityMeta } from '$lib/entity-list/types';
   import { entitiesNs } from '$lib/utils/entity-meta';
   import { isEntityOpAllowed } from '$lib/permissions.svelte';
-  import { extJsonStringify } from '$lib/api-ext';
+  import { extJsonParse, extJsonStringify } from '$lib/api-ext';
   import FormFieldDispatcher from '$lib/entity-form/FormFieldDispatcher.svelte';
   import DictDraftRow from './DictDraftRow.svelte';
   import { pushNotification } from '$lib/errors/app-errors';
@@ -74,7 +74,7 @@
   onMount(() => {
     try {
       const raw = sessionStorage.getItem(skSelectedKeys);
-      const parsed = raw ? (JSON.parse(raw) as unknown) : null;
+      const parsed = raw ? (extJsonParse(raw) as unknown) : null;
       if (Array.isArray(parsed)) {
         const ids = parsed.filter((k): k is string => typeof k === 'string');
         if (ids.length) selection.toggleSelectAll(ids, true);
@@ -91,7 +91,7 @@
 
   $effect(() => {
     try {
-      sessionStorage.setItem(skSelectedKeys, JSON.stringify([...selection.state.selected_ids]));
+      sessionStorage.setItem(skSelectedKeys, extJsonStringify([...selection.state.selected_ids]));
     } catch {
       // ignore quota / blocked storage
     }
@@ -432,7 +432,7 @@
             entity: { ...values[id], version: row['version'] },
           }),
         });
-        if (!res.ok) throw await res.json().catch(() => new Error(`update failed (${res.status})`));
+        if (!res.ok) throw await res.text().then((t) => extJsonParse<any>(t)).catch(() => new Error(`update failed (${res.status})`));
         originals = { ...originals, [id]: $state.snapshot(values[id]) };
       }
       for (const d of drafts) {
@@ -441,7 +441,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: extJsonStringify({ entity: d.values }),
         });
-        if (!res.ok) throw await res.json().catch(() => new Error(`create failed (${res.status})`));
+        if (!res.ok) throw await res.text().then((t) => extJsonParse<any>(t)).catch(() => new Error(`create failed (${res.status})`));
         drafts = drafts.filter((x) => x !== d);
       }
       // Pending translations → the standard translation gateway route —

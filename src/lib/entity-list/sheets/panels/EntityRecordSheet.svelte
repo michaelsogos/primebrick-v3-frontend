@@ -34,7 +34,7 @@
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import { isEntityOpAllowed } from '$lib/permissions.svelte';
   import { findActionEndpoint, fillActionPath } from '$lib/entity-list/action-endpoints';
-  import { extJsonStringify } from '$lib/api-ext';
+  import { extJsonParse, extJsonStringify } from '$lib/api-ext';
   import { Check, ExternalLink, Pencil, X } from '@primebrick/ui/vendor/lucide';
   import { LoadingBar } from '$lib/components/ui/loading-bar';
   import type { MetaColumn, EntityMeta } from '$lib/entity-list/types';
@@ -328,7 +328,7 @@
           failed = true;
           return;
         }
-        const listBody = (await listRes.json()) as { rows?: Record<string, unknown>[] };
+        const listBody = (await listRes.text().then((t) => extJsonParse<any>(t))) as { rows?: Record<string, unknown>[] };
         const hit = listBody.rows?.[0];
         if (!hit?.[uid]) {
           notFound = true;
@@ -346,7 +346,7 @@
         failed = true;
         return;
       }
-      record = (await res.json()) as Record<string, unknown>;
+      record = (await res.text().then((t) => extJsonParse<any>(t))) as Record<string, unknown>;
     } catch (e) {
       // ApiUnreachableError = the owning service (or the BE itself for
       // unmapped entities) can't be reached — proxy 502/503-scoped or a

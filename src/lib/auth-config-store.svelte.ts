@@ -12,6 +12,7 @@
  */
 
 import { apiFetch } from "$lib/api";
+import { extJsonParse } from '$lib/api-ext';
 
 export interface AuthConfigPublic {
   enable_webauthn: boolean;
@@ -36,7 +37,7 @@ export async function loadAuthConfig(): Promise<void> {
   try {
     const resp = await apiFetch("/api/v1/auth/config");
     if (resp.ok) {
-      authConfigState.config = await resp.json();
+      authConfigState.config = await resp.text().then((t) => extJsonParse<any>(t));
     }
   } catch {
     // Fail closed — config stays null, flags are all false

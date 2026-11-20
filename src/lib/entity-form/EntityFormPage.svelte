@@ -242,7 +242,7 @@
 						body: extJsonStringify({ entity }),
 					});
 					if (!res.ok) {
-						const detail = await res.json().catch(() => null);
+						const detail = await res.text().then((t) => extJsonParse<any>(t)).catch(() => null);
 						// ERR01 — optimistic lock lost: another write landed first.
 						// Realign + surface conflicts; the user saves again after
 						// resolving (version is now current).

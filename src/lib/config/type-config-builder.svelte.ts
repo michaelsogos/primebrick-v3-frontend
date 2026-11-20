@@ -14,6 +14,7 @@ import { parseTypeConfig, serializeTypeConfig, autoErrorLabelKey } from '$lib/co
 import type { ParsedTypeConfig, ConfigValidation } from '$lib/config/type-config-schema';
 import type { ConfigEntryType } from '$lib/api-types';
 import type { DeepReadonly } from '@primebrick/ui';
+import { extJsonParse, extJsonStringify } from '$lib/api-ext';
 
 interface BuilderState {
   /** The structured type_config being built. */
@@ -77,7 +78,7 @@ export function useTypeConfigBuilder(
    */
   function withAutoErrorKeys(): ParsedTypeConfig {
     // JSON round-trip to clone — $state proxies can't be structuredClone'd
-    const clone: ParsedTypeConfig = JSON.parse(JSON.stringify(_state.config));
+    const clone: ParsedTypeConfig = extJsonParse(extJsonStringify(_state.config));
     const v = clone.validation;
     if (!v || !v.rules) return clone;
     const rules = v.rules;

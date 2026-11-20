@@ -6,7 +6,7 @@ import { findActionEndpoint } from '$lib/entity-list';
 import { appendListFilterParams } from '$lib/entity-list/list-filter-params';
 import type { MetaColumn } from '$lib/entity-list/types';
 import type { DeepReadonly } from '@primebrick/ui';
-import { extJsonStringify } from '$lib/api-ext';
+import { extJsonParse, extJsonStringify } from '$lib/api-ext';
 
 /** Step-up MFA driver shape (useMfaStepUp) — injected by the table so
  *  endpoint-dispatched bulk actions transparently pass through the
@@ -118,10 +118,10 @@ export function useBulkActions(options: BulkActionsOptions) {
       params.set('deleted_records', deletedRecords);
       const res = await apiFetch(`${entityApiBase(entityFn())}/list?${params.toString()}`);
       if (!res.ok) {
-        const data = (await res.json().catch(() => null)) as RFC7807Error | null;
+        const data = (await res.text().then((t) => extJsonParse<any>(t)).catch(() => null)) as RFC7807Error | null;
         throw { ...(data ?? {}), title: data?.title || 'Bulk scope enumeration failed', status: data?.status || res.status };
       }
-      const data = (await res.json()) as { rows?: Array<Record<string, unknown>>; total?: number | bigint };
+      const data = (await res.text().then((t) => extJsonParse<any>(t))) as { rows?: Array<Record<string, unknown>>; total?: number | bigint };
       const rows = data.rows ?? [];
       for (const row of rows) items.push({ uuid: String(row[uid]), version: row.version as number });
       if (rows.length === 0 || items.length >= Number(data.total ?? 0)) break;
@@ -170,7 +170,7 @@ export function useBulkActions(options: BulkActionsOptions) {
       if (!res.ok) {
         // Propagate the RFC 7807 body verbatim — `extra.issues` carries the
         // per-row bulk detail (≤10 offenders) rendered by RfcErrorDialog.
-        const data = (await res.json().catch(() => null)) as RFC7807Error & Record<string, unknown> | null;
+        const data = (await res.text().then((t) => extJsonParse<any>(t)).catch(() => null)) as RFC7807Error & Record<string, unknown> | null;
         throw {
           type: 'about:blank',
           toneForImpact: 'danger',
@@ -182,7 +182,7 @@ export function useBulkActions(options: BulkActionsOptions) {
       }
 
       // 200 {received, affected} — success toast via the shell (no event card)
-      const result = (await res.json().catch(() => null)) as { received?: number; affected?: number } | null;
+      const result = (await res.text().then((t) => extJsonParse<any>(t)).catch(() => null)) as { received?: number; affected?: number } | null;
       pushNotification({
         impact: 'NONE',
         messageKey: 'app.common.delete_success',
@@ -255,7 +255,7 @@ export function useBulkActions(options: BulkActionsOptions) {
       });
 
       if (!res.ok) {
-        const data = (await res.json().catch(() => null)) as RFC7807Error & Record<string, unknown> | null;
+        const data = (await res.text().then((t) => extJsonParse<any>(t)).catch(() => null)) as RFC7807Error & Record<string, unknown> | null;
         throw {
           type: 'about:blank',
           toneForImpact: 'warning',
@@ -266,7 +266,7 @@ export function useBulkActions(options: BulkActionsOptions) {
         };
       }
 
-      const result = (await res.json().catch(() => null)) as { received?: number; affected?: number } | null;
+      const result = (await res.text().then((t) => extJsonParse<any>(t)).catch(() => null)) as { received?: number; affected?: number } | null;
       pushNotification({
         impact: 'NONE',
         messageKey: 'system.entities.version_history.record_restored',
@@ -339,13 +339,13 @@ export function useBulkActions(options: BulkActionsOptions) {
       });
 
       if (!response.ok) {
-        const errorData = await response.json() as RFC7807Error & { duplicateResults?: { successful: string[]; failed: Array<{ uuid: string; error: string }> } };
+        const errorData = await response.text().then((t) => extJsonParse<any>(t)) as RFC7807Error & { duplicateResults?: { successful: string[]; failed: Array<{ uuid: string; error: string }> } };
         const enhancedError = { ...errorData, duplicateResults: errorData.duplicateResults };
         pushNotification(enhancedError);
         throw enhancedError;
       }
 
-      const result = await response.json() as { uuids: string[]; errors: Array<{ uuid: string; error: string }> };
+      const result = await response.text().then((t) => extJsonParse<any>(t)) as { uuids: string[]; errors: Array<{ uuid: string; error: string }> };
       if (result.errors.length > 0) {
         pushNotification({
           impact: 'MEDIUM',

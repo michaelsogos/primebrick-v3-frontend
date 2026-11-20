@@ -38,7 +38,7 @@ import type {
   OneOffGenerationOptions,
   ProcessedResponse,
 } from './ai-assistant.types';
-import { extJsonStringify } from '$lib/api-ext';
+import { extJsonParse, extJsonStringify } from '$lib/api-ext';
 
 /**
  * Maximum number of user+assistant turns to send to the model. When exceeded,
@@ -622,7 +622,7 @@ export function useAiAssistant<TChoice = unknown>(
         // JSON round-trip: execution_config is a $state proxy — structured
         // clone (postMessage) rejects it with "could not be cloned".
         session_options: effective_params.execution_config?.ort_session_options
-          ? JSON.parse(JSON.stringify(effective_params.execution_config.ort_session_options))
+          ? extJsonParse(extJsonStringify(effective_params.execution_config.ort_session_options))
           : undefined,
         wasm_num_threads: effective_params.execution_config?.ort_num_threads,
       });

@@ -25,7 +25,7 @@
   import { pushNotification } from '$lib/errors/app-errors';
   import { onMount } from 'svelte';
   import { KeyRound } from '@primebrick/ui/vendor/lucide';
-  import { extJsonStringify } from '$lib/api-ext';
+  import { extJsonParse, extJsonStringify } from '$lib/api-ext';
 
   const passwordPolicy = usePasswordPolicy();
 
@@ -76,7 +76,7 @@
           });
           reset();
         } else {
-          const err = await resp.json();
+          const err = await resp.text().then((t) => extJsonParse<any>(t));
           pushNotification({ ...err, toast: false });
           cancel();
         }

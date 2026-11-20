@@ -33,7 +33,7 @@
   import { buildAuditData } from "$lib/utils/audit-data";
   import MetadataLoading from "$lib/components/ui/metadata-loading/MetadataLoading.svelte";
   import { displayNameSchema } from "$lib/validation/display-name";
-  import { extJsonStringify } from '$lib/api-ext';
+  import { extJsonParse, extJsonStringify } from '$lib/api-ext';
 
   // Zod schema for profile form
   const profileSchema = z.object({
@@ -76,13 +76,13 @@
         });
 
         if (!response.ok) {
-          const errorData = await response.json();
+          const errorData = await response.text().then((t) => extJsonParse<any>(t));
           console.error("Failed to update profile:", errorData);
           cancel();
           return;
         }
 
-        const data = await response.json();
+        const data = await response.text().then((t) => extJsonParse<any>(t));
         if (data.success && data.profile) {
           console.log("Profile updated successfully");
 
@@ -228,7 +228,7 @@
     try {
       const response = await apiFetch("/api/v1/auth/me");
       if (response.ok) {
-        const data = await response.json();
+        const data = await response.text().then((t) => extJsonParse<any>(t));
         if (data.success && data.profile) {
           // Update store with fresh data from server
           userProfileStore.set({

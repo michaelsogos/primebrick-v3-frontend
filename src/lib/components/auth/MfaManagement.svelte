@@ -19,7 +19,7 @@
   import { QrCode } from '@primebrick/ui/vendor/lucide';
   import { ShieldCheck } from '@primebrick/ui/vendor/lucide';
   import LoadingWatermark from "./LoadingWatermark.svelte";
-  import { extJsonStringify } from '$lib/api-ext';
+  import { extJsonParse, extJsonStringify } from '$lib/api-ext';
 
   // Trigger the auth config fetch to check if MFA is enabled.
   void loadAuthConfig();
@@ -60,7 +60,7 @@
     try {
       const resp = await apiFetch("/api/v1/auth/mfa/factors");
       if (resp.ok) {
-        const data = await resp.json();
+        const data = await resp.text().then((t) => extJsonParse<any>(t));
         factors = (data.factors ?? []) as MfaFactorInfo[];
       }
     } catch (error) {
@@ -78,11 +78,11 @@
     try {
       const resp = await apiFetch("/api/v1/auth/mfa/enroll/begin", { method: "POST" });
       if (!resp.ok) {
-        const err = await resp.json();
+        const err = await resp.text().then((t) => extJsonParse<any>(t));
         pushNotification({ ...err, toast: false });
         return;
       }
-      const data = await resp.json();
+      const data = await resp.text().then((t) => extJsonParse<any>(t));
       enrollmentToken = data.enrollment_token;
       secret = data.secret;
       qrCodeUrl = data.qr_code_url;
@@ -119,7 +119,7 @@
         }),
       });
       if (!resp.ok) {
-        const err = await resp.json();
+        const err = await resp.text().then((t) => extJsonParse<any>(t));
         enrollError = err.detail || $t("app.auth.mfa.invalid_code");
         otp.reset();
         return;
@@ -158,7 +158,7 @@
         method: "DELETE",
       });
       if (!resp.ok) {
-        const err = await resp.json();
+        const err = await resp.text().then((t) => extJsonParse<any>(t));
         pushNotification({ ...err, toast: false });
         return;
       }
