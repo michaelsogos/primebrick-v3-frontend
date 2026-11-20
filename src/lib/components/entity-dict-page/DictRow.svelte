@@ -47,6 +47,7 @@
     errors = {},
     tainted = false,
     selected = false,
+    pending = false,
     deleted = false,
     can_update = true,
     can_delete = false,
@@ -59,6 +60,7 @@
     ontoggle,
     ondelete,
     onrestore,
+    onpendingundo,
     onmoveup,
     onmovedown,
   }: {
@@ -80,6 +82,9 @@
     errors?: Record<string, string[]>;
     tainted?: boolean;
     selected?: boolean;
+    /** Confirmed-not-yet-saved row (composer→pending lifecycle): INFO
+     *  accent = "da salvare" marking, undo-drop CTA instead of delete. */
+    pending?: boolean;
     deleted?: boolean;
     can_update?: boolean;
     can_delete?: boolean;
@@ -92,6 +97,8 @@
     ontoggle?: (checked: boolean) => void;
     ondelete?: () => void;
     onrestore?: () => void;
+    /** Pending undo-drop — local drop only (zero server request). */
+    onpendingundo?: () => void;
     onmoveup?: () => void;
     onmovedown?: () => void;
   } = $props();
@@ -177,6 +184,7 @@
   id={row_uid}
   {selected}
   warning={tainted}
+  info={pending}
   on_toggle_select={(_id, checked) => ontoggle?.(checked)}
   class="grid grid-cols-12 items-center gap-4"
 >
@@ -317,7 +325,20 @@
         <Undo2 class="size-4 text-warning" />
       </Button>
     {/if}
-    {#if deleted}
+    {#if pending}
+      {#if onpendingundo}
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onclick={onpendingundo}
+          title={$t('app.common.discard')}
+          aria-label={$t('app.common.discard')}
+          data-testid="dict-pending-undo"
+        >
+          <Undo2 class="size-4 text-warning" />
+        </Button>
+      {/if}
+    {:else if deleted}
       {#if can_restore}
         <Button
           variant="ghost"

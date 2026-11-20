@@ -53,10 +53,17 @@ test.describe.serial("dict lifecycle — UI-only on an ad-hoc row", () => {
     await expect(page.getByTestId("entity-dict-page")).toBeVisible({ timeout: 30000 });
     await expect(page.locator('[data-testid^="selectable-row-"]').first()).toBeVisible();
 
-    // ── 1. CREATE via the draft row ──────────────────────────────────
-    await page.getByTestId("dict-toolbar-add").click();
+    // ── 1. CREATE via the composer→pending lifecycle ─────────────────
+    const addBtn = page.getByTestId("dict-toolbar-add");
+    await addBtn.click();
     const draft = page.getByTestId("dict-draft-row");
     await expect(draft).toBeVisible();
+
+    // Single-composer gate: NEW stays disabled while the composer is
+    // open; ✓ is gated on composer validity (code + label_key).
+    await expect(addBtn).toBeDisabled();
+    const confirmBtn = draft.getByTestId("dict-draft-confirm");
+    await expect(confirmBtn).toBeDisabled();
 
     await draft.locator('[data-dict-cell="code"] input').fill(CODE);
     // The label_key cell is the TranslationKeyCell combo — a custom.*
@@ -66,10 +73,22 @@ test.describe.serial("dict lifecycle — UI-only on an ad-hoc row", () => {
     await keySearch.fill(BASE_KEY);
     await keySearch.press("Enter");
 
+    // Valid composer → ✓ arms → confirm pushes a pending row (client
+    // move, zero server): composer gone, NEW re-enabled, the pending
+    // renders appended as a DictRow with the INFO "da salvare" accent.
+    await expect(confirmBtn).toBeEnabled();
+    await confirmBtn.click();
+    await expect(draft).toHaveCount(0);
+    await expect(addBtn).toBeEnabled();
+    const pending = page.getByTestId("selectable-row-d1");
+    await expect(pending).toBeVisible();
+    await expect(pending).toHaveClass(/border-l-info/);
+    await expect(pending.getByTestId("dict-pending-undo")).toBeVisible();
+
     const saveBtn = page.getByTestId("dict-bulk-save");
     await expect(saveBtn).toBeEnabled();
     await saveBtn.click();
-    await expect(draft).toHaveCount(0);
+    await expect(pending).toHaveCount(0);
 
     // The saved row carries the code badge — capture its row testid
     // (selectable-row-<uuid>) once; it is our anchor for the whole run.
@@ -136,6 +155,8 @@ test.describe.serial("dict lifecycle — UI-only on an ad-hoc row", () => {
 
     // ── 5. SOFT-DELETE via the row CTA ──────────────────────────────
     await ourRow(page).getByTestId("dict-row-delete").click();
+    // Governed confirm gate — the op cannot run without the Delete click.
+    await page.getByRole("dialog").getByRole("button", { name: "Delete" }).click();
     await expect(page.locator(`[title="${CODE}"]`)).toHaveCount(0);
 
     // ── 6. DELETION FILTER → deleted view → BULK RESTORE ────────────
@@ -150,6 +171,8 @@ test.describe.serial("dict lifecycle — UI-only on an ad-hoc row", () => {
     await expect(bulkRestore).toBeVisible();
     await expect(bulkRestore).toBeEnabled();
     await bulkRestore.click();
+    // Governed confirm gate — restore cannot run without the click.
+    await page.getByRole("dialog").getByRole("button", { name: "Restore" }).click();
     await expect(deletedRow).toHaveCount(0); // leaves the deleted view
 
     // Back to live view — the row is restored.
@@ -158,6 +181,68 @@ test.describe.serial("dict lifecycle — UI-only on an ad-hoc row", () => {
 
     // ── 7. FINAL UI DELETE → physical cleanup rides afterAll ────────
     await ourRow(page).getByTestId("dict-row-delete").click();
+    await page.getByRole("dialog").getByRole("button", { name: "Delete" }).click();
     await expect(page.locator(`[title="${CODE}"]`)).toHaveCount(0);
+  });
+
+  test("composer discard + pending undo + pending-only bulk delete", async ({ page }) => {
+    test.setTimeout(60_000);
+    await loginAsTestAdmin(page);
+    await page.goto(DICT_URL, { waitUntil: "domcontentloaded" });
+    await expect(page.getByTestId("entity-dict-page")).toBeVisible({ timeout: 30000 });
+    await expect(page.locator('[data-testid^="selectable-row-"]').first()).toBeVisible();
+
+    // Zero-server proof: discard, undo and pending bulk-drop are pure
+    // client operations — no POST to the entities endpoint may fire.
+    const posts: string[] = [];
+    page.on("request", (r) => {
+      if (r.method() === "POST" && r.url().includes("/entities/")) posts.push(r.url());
+    });
+
+    const addBtn = page.getByTestId("dict-toolbar-add");
+
+    // ── ✕ discard: composer dies, no pending created, NEW re-arms ──
+    await addBtn.click();
+    const draft = page.getByTestId("dict-draft-row");
+    await draft.locator('[data-dict-cell="code"] input').fill(`${CODE}_x`);
+    await draft.getByTestId("dict-draft-discard").click();
+    await expect(draft).toHaveCount(0);
+    await expect(addBtn).toBeEnabled();
+    await expect(page.locator('[data-testid="selectable-row-d1"]')).toHaveCount(0);
+
+    // ── ✓ confirm → pending d2 (seq never reuses); undo drops it ──
+    await addBtn.click();
+    const draft2 = page.getByTestId("dict-draft-row");
+    await draft2.locator('[data-dict-cell="code"] input').fill(`${CODE}_y`);
+    await draft2.locator('[data-dict-cell="label_key"]').click();
+    const keySearch = page.getByPlaceholder(/entities\.customer_type\.rows\./);
+    await keySearch.fill(`custom.entities.customer_type.rows.${CODE}_y`);
+    await keySearch.press("Enter");
+    await draft2.getByTestId("dict-draft-confirm").click();
+    const pending = page.locator('[data-testid="selectable-row-d2"]');
+    await expect(pending).toBeVisible();
+    await pending.getByTestId("dict-pending-undo").click();
+    await expect(pending).toHaveCount(0);
+
+    // ── pending selection → bulk delete partitions: local drop only ──
+    await addBtn.click();
+    const draft3 = page.getByTestId("dict-draft-row");
+    await draft3.locator('[data-dict-cell="code"] input').fill(`${CODE}_z`);
+    await draft3.locator('[data-dict-cell="label_key"]').click();
+    await keySearch.fill(`custom.entities.customer_type.rows.${CODE}_z`);
+    await keySearch.press("Enter");
+    await draft3.getByTestId("dict-draft-confirm").click();
+    const pending3 = page.locator('[data-testid="selectable-row-d3"]');
+    await expect(pending3).toBeVisible();
+
+    // The pending participates in selection like any saved row; a
+    // pending-only selection drops locally — no confirm dialog, no request.
+    await pending3.getByRole("checkbox").check();
+    await page.getByTestId("entity-bulk-delete").click();
+    await expect(pending3).toHaveCount(0);
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await expect(page.getByTestId("dict-bulk-save")).toBeDisabled();
+
+    expect(posts).toEqual([]);
   });
 });

@@ -48,7 +48,7 @@
   import FormFieldDispatcher from '$lib/entity-form/FormFieldDispatcher.svelte';
   import DictDraftRow from './DictDraftRow.svelte';
   import { pushNotification } from '$lib/errors/app-errors';
-  import { clearPendingTranslations } from '$lib/i18n/pending-translations.svelte';
+  import { clearPendingTranslations, dropPendingTranslation } from '$lib/i18n/pending-translations.svelte';
   import { flushPendingTranslations } from '$lib/i18n/flush-pending-translations';
   import { runEntityOp } from '$lib/entity-list/use-entity-op.svelte';
   import DictRow from './DictRow.svelte';
@@ -172,29 +172,83 @@
   const canRestore = $derived(isEntityOpAllowed(meta?.actions, 'restore.single'));
   const canBulkDelete = $derived(isEntityOpAllowed(meta?.actions, 'delete.bulk'));
 
-  // ─── Drafts (add-row) — local rows not yet persisted ──────────────────
+  // ─── Drafts (composer) + pendings — the create-flow state machine ────
+  // NEW → ONE composer (`drafts`, ≤1 — single-composer gate) → ✓ confirm
+  // pushes a `pending[]` row (client-only, renders as a DictRow appended
+  // after the saved stream) → bulk save POSTs every pending → real rows.
   type Draft = { __draft: string; values: Record<string, unknown> };
   let drafts = $state<Draft[]>([]);
+  let pendings = $state<Draft[]>([]);
   let draftSeq = 0;
 
   function requiredColumns(): MetaColumn[] {
     return editableColumns.filter((c) => c.nullable === false);
   }
 
+  /** Composer-rendered fields — `code` + the value column (display_field
+   *  or label_key). The ✓ gate is scoped to THESE required fields only
+   *  (D1): extras the composer cannot render gate the SAVE, not confirm. */
+  const composerKeys = $derived(
+    new Set(
+      [displayField, 'code', 'label_key'].filter((k): k is string => typeof k === 'string'),
+    ),
+  );
+
+  function composerValid(d: Draft): boolean {
+    for (const c of requiredColumns()) {
+      if (!composerKeys.has(c.key)) continue;
+      const v = d.values[c.key];
+      if (v === null || v === undefined || String(v).trim() === '') return false;
+    }
+    return true;
+  }
+
+  /** Translations queued for a dying row's `*_key` values must die with
+   *  it — otherwise they flush at the next save onto orphan keys (G3). */
+  function dropQueuedTranslations(v: Record<string, unknown>) {
+    for (const [k, val] of Object.entries(v)) {
+      if (k.endsWith('_key') && typeof val === 'string' && val) {
+        dropPendingTranslation(basePath, val);
+      }
+    }
+  }
+
   function handleAddRow() {
+    if (drafts.length > 0) return; // single-composer gate — one at a time
     const values: Record<string, unknown> = {};
     for (const c of editableColumns) values[c.key] = c.nullable === true ? null : '';
     if (orderField) {
       const maxSort = Math.max(
         0,
         ...list.rows.map((r) => Number(r[orderField] ?? 0)),
-        ...drafts.map((d) => Number(d.values[orderField] ?? 0)),
+        ...pendings.map((d) => Number(d.values[orderField] ?? 0)),
       );
       // Seed convention is a ×10 step (10/20/30…) so later reorders have
-      // integer room between neighbours — drafts continue the convention.
+      // integer room between neighbours — pendings continue the convention.
       values[orderField] = maxSort + 10;
     }
     drafts = [...drafts, { __draft: `d${++draftSeq}`, values }];
+  }
+
+  /** ✓ confirm — composer → pending[] (client move, zero server). */
+  function handleConfirmDraft(d: Draft) {
+    if (!composerValid(d)) return;
+    pendings = [...pendings, d];
+    drafts = drafts.filter((x) => x !== d);
+  }
+
+  /** ✕ discard — the composer dies; its queued translations die with it. */
+  function handleDiscardDraft(d: Draft) {
+    dropQueuedTranslations(d.values);
+    drafts = drafts.filter((x) => x !== d);
+  }
+
+  /** Pending undo-drop — "morte definitiva" (never persisted, zero
+   *  server): drop the row, its selection entry and queued translations. */
+  function handleDropPending(d: Draft) {
+    dropQueuedTranslations(d.values);
+    pendings = pendings.filter((x) => x !== d);
+    if (selection.isSelected(d.__draft)) selection.toggleSelect(d.__draft, false);
   }
 
   // ─── Taint tracking — per-row value maps over the served rows ─────────
@@ -224,7 +278,7 @@
       const curr = values[id];
       const orig = originals[id];
       if (!curr || !orig) continue;
-      for (const c of editableColumns) {
+      for (const c of updateEditableColumns) {
         if (String(curr[c.key] ?? '') !== String(orig[c.key] ?? '')) {
           tainted.add(id);
           break;
@@ -234,7 +288,7 @@
     return tainted;
   });
 
-  const hasChanges = $derived(taintedUids.size > 0 || drafts.length > 0);
+  const hasChanges = $derived(taintedUids.size > 0 || pendings.length > 0);
   let saving = $state(false);
 
   /** Required-empty errors for one values map — same shape as the row
@@ -251,7 +305,7 @@
     return errs;
   }
 
-  function draftValid(d: Draft): boolean {
+  function pendingValid(d: Draft): boolean {
     return Object.keys(missingRequired(d.values)).length === 0;
   }
 
@@ -265,7 +319,7 @@
   });
 
   const canSave = $derived(
-    hasChanges && !saving && drafts.every(draftValid) && invalidRowUids.size === 0,
+    hasChanges && !saving && pendings.every(pendingValid) && invalidRowUids.size === 0,
   );
 
   function cellChange(id: string, key: string, value: unknown) {
@@ -297,18 +351,40 @@
       : list.rows,
   );
 
+  /** The full reorder chain — saved rows (sorted) THEN pendings (append
+   *  order, D2). Swaps cross the saved/pending boundary: saved endpoints
+   *  write `values[uid]` (taint), pending endpoints write `d.values`
+   *  directly, so the rendered order equals the post-save order. */
+  const renderChain = $derived([
+    ...displayRows.map((r) => String(r[uid])),
+    ...pendings.map((p) => p.__draft),
+  ]);
+
+  function orderValueOf(chainId: string): unknown {
+    const p = pendings.find((x) => x.__draft === chainId);
+    if (p) return p.values[orderField!];
+    const row = list.rows.find((r) => String(r[uid]) === chainId);
+    return values[chainId]?.[orderField!] ?? row?.[orderField!];
+  }
+
+  function setOrderValue(chainId: string, v: unknown) {
+    const p = pendings.find((x) => x.__draft === chainId);
+    if (p) {
+      p.values[orderField!] = v;
+      return;
+    }
+    cellChange(chainId, orderField!, v);
+  }
+
   function move(id: string, dir: -1 | 1) {
     if (!orderField) return;
-    const idx = displayRows.findIndex((r) => String(r[uid]) === id);
-    const other = displayRows[idx + dir];
-    if (idx < 0 || !other) return;
-    const a = displayRows[idx];
-    const aId = String(a[uid]);
-    const bId = String(other[uid]);
-    const aSort = values[aId]?.[orderField] ?? a[orderField];
-    const bSort = values[bId]?.[orderField] ?? other[orderField];
-    cellChange(aId, orderField, bSort);
-    cellChange(bId, orderField, aSort);
+    const idx = renderChain.indexOf(id);
+    const other = renderChain[idx + dir];
+    if (idx < 0 || other === undefined) return;
+    const aSort = orderValueOf(id);
+    const bSort = orderValueOf(other);
+    setOrderValue(id, bSort);
+    setOrderValue(other, aSort);
   }
 
   // ─── Grouping — flat unless meta.dict.group_field is declared ─────────
@@ -336,7 +412,8 @@
 
   // ─── Selection + bulk actions ────────────────────────────────────────
   const selection = useSelection();
-  const selectableUids = $derived(displayRows.map((r) => String(r[uid])));
+  /** Selectable ids — saved rows + pendings (select-all parity, D3). */
+  const selectableUids = $derived(renderChain);
   const allSelected = $derived(
     selectableUids.length > 0 && selectableUids.every((id) => selection.isSelected(id)),
   );
@@ -425,24 +502,28 @@
       for (const id of taintedUids) {
         const row = list.rows.find((r) => String(r[uid]) === id);
         if (!row) continue;
+        // Update envelope = the update-mode editable set only — `immutable`
+        // columns (create-set, e.g. `code`) never ride a PUT payload
+        // (entity-metadata.mdx contract); the update schema .strict()-rejects
+        // them server-side.
+        const entityBody: Record<string, unknown> = { version: row['version'] };
+        for (const c of updateEditableColumns) entityBody[c.key] = values[id]?.[c.key];
         const res = await apiFetch(`${basePath}/${encodeURIComponent(id)}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: extJsonStringify({
-            entity: { ...values[id], version: row['version'] },
-          }),
+          body: extJsonStringify({ entity: entityBody }),
         });
         if (!res.ok) throw await res.text().then((t) => extJsonParse<any>(t)).catch(() => new Error(`update failed (${res.status})`));
         originals = { ...originals, [id]: $state.snapshot(values[id]) };
       }
-      for (const d of drafts) {
+      for (const d of pendings) {
         const res = await apiFetch(basePath, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: extJsonStringify({ entity: d.values }),
         });
         if (!res.ok) throw await res.text().then((t) => extJsonParse<any>(t)).catch(() => new Error(`create failed (${res.status})`));
-        drafts = drafts.filter((x) => x !== d);
+        pendings = pendings.filter((x) => x !== d);
       }
       // Pending translations → the standard translation gateway route —
       // the module is resolved PER KEY (prefix == module code: `custom.*`
@@ -452,7 +533,7 @@
       // below — never silently dropped, never auto-retried.
       const failedTranslations = await flushPendingTranslations(basePath);
       originals = $state.snapshot(values);
-      drafts = [];
+      pendings = [];
       if (failedTranslations.length > 0) {
         pushNotification({
           impact: 'HIGH',
@@ -520,18 +601,34 @@
     void ok;
   }
 
+  /** Bulk delete partitions the selection (D3): saved rows ride the
+   *  governed `delete.bulk` path (confirm + soft-delete); selected
+   *  pendings drop locally on confirm — "morte definitiva", they were
+   *  never persisted (zero server work). A pending-only selection drops
+   *  immediately — no request exists to confirm. */
   async function bulkDelete() {
-    if (selectedRows.length === 0) return;
-    await runEntityOp({
-      op: 'delete.bulk',
-      entity,
-      meta,
-      rows: selectedRows,
-      onDone: () => {
-        selection.clearSelection();
-        void list.refreshRows();
-      },
-    });
+    const pendingIds = new Set(
+      [...selection.state.selected_ids].filter((id) =>
+        pendings.some((p) => p.__draft === id),
+      ),
+    );
+    if (selectedRows.length === 0 && pendingIds.size === 0) return;
+    if (selectedRows.length > 0) {
+      const ok = await runEntityOp({
+        op: 'delete.bulk',
+        entity,
+        meta,
+        rows: selectedRows,
+        onDone: () => {
+          selection.clearSelection();
+          void list.refreshRows();
+        },
+      });
+      if (!ok) return;
+    }
+    for (const p of pendings.filter((x) => pendingIds.has(x.__draft))) {
+      handleDropPending(p);
+    }
   }
 
   // ─── Pagination — bounded: meta.table.page_size_options ───────────────
@@ -546,7 +643,7 @@
       : Math.min(list.page * list.pageSize, Number(list.total)),
   );
 
-  const rowProps = (r: Record<string, unknown>, idx: number) => ({
+  const rowProps = (r: Record<string, unknown>) => ({
     row: r,
     uid,
     entity,
@@ -568,8 +665,8 @@
     can_delete: canDelete,
     can_restore: canRestore,
     orderable: orderField !== undefined,
-    reorder_first: idx === 0,
-    reorder_last: idx === displayRows.length - 1,
+    reorder_first: renderChain[0] === String(r[uid]),
+    reorder_last: renderChain[renderChain.length - 1] === String(r[uid]),
     onchange: (key: string, v: unknown) => cellChange(String(r[uid]), key, v),
     onrevert: () => revertRow(String(r[uid])),
     ontoggle: (checked: boolean) => selection.toggleSelect(String(r[uid]), checked),
@@ -577,6 +674,42 @@
     onrestore: () => void restoreRow(r),
     onmoveup: () => move(String(r[uid]), -1),
     onmovedown: () => move(String(r[uid]), 1),
+  });
+
+  /** Pending rows — a confirmed-not-yet-saved `Draft` rendered through
+   *  DictRow with the `pending` variant (D2 appended after the saved
+   *  stream, D3 shared selection, D4 info accent). The row record is
+   *  synthesized from `d.values` + the client `__draft` id under `uid`
+   *  (`"d1"` never collides with a real uuid); no version/audit fields →
+   *  L3 stays empty by construction. */
+  const pendingProps = (p: Draft) => ({
+    row: { ...p.values, [uid]: p.__draft },
+    uid,
+    entity,
+    title_text: rowTitle({ ...p.values, [uid]: p.__draft }),
+    translation_key: translationKey,
+    entities_ns,
+    pending_owner: basePath,
+    display_field: displayField,
+    editable_columns: updateEditableColumns,
+    columns_map: columnMap,
+    values: p.values,
+    errors: missingRequired(p.values),
+    pending: true as const,
+    selected: selection.isSelected(p.__draft),
+    can_update: canUpdate,
+    can_delete: false,
+    can_restore: false,
+    orderable: orderField !== undefined,
+    reorder_first: renderChain[0] === p.__draft,
+    reorder_last: renderChain[renderChain.length - 1] === p.__draft,
+    onchange: (key: string, v: unknown) => {
+      p.values[key] = v;
+    },
+    ontoggle: (checked: boolean) => selection.toggleSelect(p.__draft, checked),
+    onpendingundo: () => handleDropPending(p),
+    onmoveup: () => move(p.__draft, -1),
+    onmovedown: () => move(p.__draft, 1),
   });
 </script>
 
@@ -586,10 +719,13 @@
        the shared lower bar's leading zone).
        Level 2 is the shared ELT FILTER | BULK ACTIONS bar below — it owns
        the bottom border, so this wrapper stays borderless. -->
-  <div class="shrink-0 bg-background/90 backdrop-blur-sm supports-backdrop-filter:bg-background/70">
-    <div class="flex flex-wrap items-center justify-between gap-3 px-4 py-2">
-      <div class="flex min-w-0 flex-1 items-center gap-2">
-        <div class="min-w-0 flex-1 basis-0 sm:min-w-[200px] sm:max-w-[520px]">
+  <div class="shrink-0">
+    <!-- Level 1 — the canonical `Toolbar card={false}` strip (task-19
+         locked contract: muted/30 like every toolbar strip). Same ELT
+         composition: left=search | CTA children | refresh | primary. -->
+    <Toolbar card={false} class="rounded-none">
+      {#snippet left()}
+        <div class="min-w-0 flex-1 basis-0 sm:min-w-[260px] sm:max-w-[520px]">
           <SearchBar
             search={list.search}
             onSearchInput={list.onSearchInput}
@@ -600,49 +736,49 @@
             data_testid="dict-search"
           />
         </div>
-      </div>
-
-      <!-- Right cluster — the ELT divider contract: a gradient divider
-           AFTER every button group (the deletion view group here), single
-           CTAs (filters, refresh) flow free, divider before the primary
-           New CTA. -->
-      <div class="flex items-center justify-end gap-2">
-        {#if hasSoftDelete}
-          <DeletionFilterToggle
-            deletionFilterMode={list.deletionFilterMode}
-            onDeletionFilterModeChange={list.onDeletionFilterModeChange}
-            test_id="dict-deletion-filter"
-          />
-          <div class="h-6 w-px divider-primary-gradient" aria-hidden="true"></div>
-        {/if}
-        {#if filterableColumns.length > 0}
-          <Button
-            variant="ghost"
-            size="sm"
-            type="button"
-            onclick={sheetSync.toggleFiltersSheet}
-            aria-label={$t('system.entities.list.filters')}
-            title={$t('system.entities.list.filters')}
-            data-testid="dict-filters"
-          >
-            <Funnel class="size-4" />
-            <span class="hidden lg:inline">{$t('system.entities.list.filters')}</span>
-          </Button>
-        {/if}
-        <RefreshButton
-          onclick={() => void list.refreshRows()}
-          loading={list.rowsLoading}
-          testid="dict-refresh"
+      {/snippet}
+      {#if hasSoftDelete}
+        <DeletionFilterToggle
+          deletionFilterMode={list.deletionFilterMode}
+          onDeletionFilterModeChange={list.onDeletionFilterModeChange}
+          test_id="dict-deletion-filter"
         />
         <div class="h-6 w-px divider-primary-gradient" aria-hidden="true"></div>
-        {#if canCreate}
-          <Button variant="default" size="sm" onclick={handleAddRow} data-testid="dict-toolbar-add">
-            <Plus class="size-4" />
-            {$t('app.common.new')}
-          </Button>
-        {/if}
-      </div>
-    </div>
+      {/if}
+      {#if filterableColumns.length > 0}
+        <Button
+          variant="ghost"
+          size="sm"
+          type="button"
+          onclick={sheetSync.toggleFiltersSheet}
+          aria-label={$t('system.entities.list.filters')}
+          title={$t('system.entities.list.filters')}
+          data-testid="dict-filters"
+        >
+          <Funnel class="size-4" />
+          <span class="hidden lg:inline">{$t('system.entities.list.filters')}</span>
+        </Button>
+      {/if}
+      <RefreshButton
+        onclick={() => void list.refreshRows()}
+        loading={list.rowsLoading}
+        testid="dict-refresh"
+      />
+      <div class="h-6 w-px divider-primary-gradient" aria-hidden="true"></div>
+      {#if canCreate}
+        <Button
+          variant="default"
+          size="sm"
+          disabled={drafts.length > 0}
+          title={drafts.length > 0 ? $t('system.entities.dict.composer_open') : $t('app.common.new')}
+          onclick={handleAddRow}
+          data-testid="dict-toolbar-add"
+        >
+          <Plus class="size-4" />
+          {$t('app.common.new')}
+        </Button>
+      {/if}
+    </Toolbar>
 
     <!-- Level 2 — the shared ELT lower bar. Leading zones: select-all
          only. NO `sort` here on purpose: dict ordering is semantic — the
@@ -718,22 +854,33 @@
             bind:values={d.values}
             errors={missingRequired(d.values)}
             readonly={!canCreate}
+            confirm_disabled={!composerValid(d)}
+            onconfirm={() => handleConfirmDraft(d)}
+            ondiscard={() => handleDiscardDraft(d)}
           />
         {/each}
 
-        {#each ungrouped as r, i (String(r[uid]))}
-          <DictRow {...rowProps(r, i)} />
+        {#each ungrouped as r (String(r[uid]))}
+          <DictRow {...rowProps(r)} />
         {/each}
 
         {#each [...grouped.keys()] as gk (gk)}
           <SelectableFieldset label={gk}>
             {#each grouped.get(gk) ?? [] as r (String(r[uid]))}
-              <DictRow {...rowProps(r, displayRows.indexOf(r))} />
+              <DictRow {...rowProps(r)} />
             {/each}
           </SelectableFieldset>
         {/each}
 
-        {#if list.rows.length === 0 && drafts.length === 0}
+        <!-- Pendings — appended after the saved stream in insertion order
+             (D2 todo-list semantics): the rendered order equals the
+             post-save order, so the pending→saved transition is nearly
+             invisible. -->
+        {#each pendings as p (p.__draft)}
+          <DictRow {...pendingProps(p)} />
+        {/each}
+
+        {#if list.rows.length === 0 && drafts.length === 0 && pendings.length === 0}
           <div class="py-8 text-center text-sm text-muted-foreground">
             {$t('app.common.no_results')}
           </div>
@@ -761,8 +908,11 @@
     />
   </Toolbar>
 
-  <!-- Footer: taint explanation left, atomic save right -->
-  <div class="shrink-0 border-t bg-muted p-4">
+  <!-- Footer: taint explanation left, atomic save right — the form-page
+       action-bar tone (bg-muted/50, FormPageLayout contract: dict is the
+       list+form hybrid — strips are list-muted/30, save footer is
+       form-muted/50). -->
+  <div class="shrink-0 border-t bg-muted/50 p-4">
     <div class="grid grid-cols-2 gap-4">
       <div class="flex flex-wrap items-center gap-2">
         {#if hasChanges}
@@ -779,9 +929,9 @@
               +{taintedRowTitles.length - 5}
             </Badge>
           {/if}
-          {#if drafts.length > 0}
+          {#if pendings.length > 0}
             <Badge variant="outline" class="border-primary/40 bg-primary/10 text-xs font-mono text-muted-foreground">
-              +{drafts.length} {$t('app.common.new')}
+              +{pendings.length} {$t('app.common.new')}
             </Badge>
           {/if}
         {:else}

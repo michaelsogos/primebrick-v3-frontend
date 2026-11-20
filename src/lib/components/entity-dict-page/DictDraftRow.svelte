@@ -11,7 +11,8 @@
    * No version/audit lines — the row is not persisted yet.
    */
   import { t } from '$lib/i18n';
-  import { Badge } from '@primebrick/ui';
+  import { Badge, Button } from '@primebrick/ui';
+  import { Check, X } from '@primebrick/ui/vendor/lucide';
   import FormFieldDispatcher from '$lib/entity-form/FormFieldDispatcher.svelte';
   import TranslationKeyCell from './TranslationKeyCell.svelte';
   import type { MetaColumn } from '@primebrick/ui';
@@ -25,6 +26,9 @@
     values = $bindable(),
     errors = {},
     readonly = false,
+    confirm_disabled = true,
+    onconfirm,
+    ondiscard,
   }: {
     /** meta.display_field — the row's VALUE column (label_key on dicts). */
     display_field?: string;
@@ -39,6 +43,14 @@
      *  save gate surfaces here, never silently. */
     errors?: Record<string, string[]>;
     readonly?: boolean;
+    /** Composer-confirm gate — the composer-scoped required fields must
+     *  all be filled before ✓ arms (task-1/D1: `code`+`label_key`, never
+     *  extras the composer cannot render). */
+    confirm_disabled?: boolean;
+    /** ✓ confirm → pending[] (client-side only, zero server work). */
+    onconfirm?: () => void;
+    /** ✕ discard → the composer dies (client-side only). */
+    ondiscard?: () => void;
   } = $props();
 
   const codeColumn = $derived(editable_columns.find((c) => c.key === 'code'));
@@ -108,6 +120,34 @@
     {/if}
   </div>
 
-  <!-- Right 2/12: reserved — no item CTAs on drafts -->
-  <div class="col-span-2"></div>
+  <!-- Right 2/12: composer CTAs — ✓ confirm (→pending) + ✕ discard.
+       The ✓ rides the rule-filter-add precedent: ghost icon-sm, info
+       tone, gated on composer validity. -->
+  <div class="col-span-2 flex items-center justify-end gap-1">
+    <Button
+      variant="ghost"
+      size="icon-sm"
+      class="text-info hover:bg-info/10 hover:text-info"
+      type="button"
+      disabled={confirm_disabled || readonly}
+      onclick={onconfirm}
+      title={$t('app.common.confirm')}
+      aria-label={$t('app.common.confirm')}
+      data-testid="dict-draft-confirm"
+    >
+      <Check class="size-4" />
+    </Button>
+    <Button
+      variant="ghost"
+      size="icon-sm"
+      type="button"
+      disabled={readonly}
+      onclick={ondiscard}
+      title={$t('app.common.discard')}
+      aria-label={$t('app.common.discard')}
+      data-testid="dict-draft-discard"
+    >
+      <X class="size-4" />
+    </Button>
+  </div>
 </div>

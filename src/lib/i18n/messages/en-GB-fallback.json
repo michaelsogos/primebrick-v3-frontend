@@ -238,6 +238,7 @@
   "app.common.date": "Date",
   "app.common.db_unavailable": "Database temporarily unavailable. Some data may not load.",
   "app.common.delete": "Delete",
+  "app.common.discard": "Discard",
   "app.common.delete_confirm": "This action cannot be undone.",
   "app.common.delete_confirm_title": "Are you sure you want to delete this record?",
   "app.common.delete_entities_confirm": "Are you sure you want to delete {count} {entity}? This action cannot be undone.",
