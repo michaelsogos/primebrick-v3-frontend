@@ -40,6 +40,18 @@ describe("DynamicIcon — CUSTOM_ICONS (trash-arrow-up)", () => {
   });
 });
 
+// list-dictionary — POC detached-rows variant: 3 independent h=4 rows
+// (y=3/10/17, 3px gaps), each split code x3w6 + label x12w9 (real 3px
+// column gap → 40/60 kept). list-* subject-qualifier family name.
+const LIST_DICTIONARY_RECTS = [
+  { x: "3", y: "3", width: "6" },
+  { x: "12", y: "3", width: "9" },
+  { x: "3", y: "10", width: "6" },
+  { x: "12", y: "10", width: "9" },
+  { x: "3", y: "17", width: "6" },
+  { x: "12", y: "17", width: "9" },
+];
+
 describe("DynamicIcon — CUSTOM_ICONS (table-dictionary)", () => {
   it("renders the authored glyph — divider path + rect + two row lines", async () => {
     const { container } = render(DynamicIcon, { props: { name: "table-dictionary", size: 16 } });
@@ -52,5 +64,22 @@ describe("DynamicIcon — CUSTOM_ICONS (table-dictionary)", () => {
     expect(rect).toHaveAttribute("width", "18");
     expect(rect).toHaveAttribute("x", "3");
     expect(rect).toHaveAttribute("rx", "2");
+  });
+});
+
+describe("DynamicIcon — CUSTOM_ICONS (list-dictionary)", () => {
+  it("renders the authored glyph — six detached code|label cells in 3 rows", async () => {
+    const { container } = render(DynamicIcon, { props: { name: "list-dictionary", size: 16 } });
+    await waitFor(() => expect(container.querySelector("svg")).toBeInTheDocument());
+    const svg = container.querySelector("svg")!;
+    expect(svg).toHaveAttribute("width", "16");
+    expect(svg).toHaveAttribute("stroke", "currentColor");
+    const rects = [...svg.querySelectorAll("rect")].map((r) => ({
+      x: r.getAttribute("x"),
+      y: r.getAttribute("y"),
+      width: r.getAttribute("width"),
+    }));
+    expect(rects).toEqual(LIST_DICTIONARY_RECTS);
+    expect(svg.querySelectorAll("rect[height='4'][rx='1']")).toHaveLength(6);
   });
 });
