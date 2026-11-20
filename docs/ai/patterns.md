@@ -255,6 +255,14 @@ component **enforces** the presentation order — do not reorder manually:
    (`default`/semantic), secondary emphasis = `outline`, muted utility
    controls = `ghost`. `soft` never appears here — see
    `docs/ai/button-variant-standard.md` (location rule).
+9. **Strip tones (locked contract)** — every list-strip surface shares
+   ONE tone: toolbar L1/L2, the bulk-actions bar, pagination and the
+   list footer are `bg-muted/30` **always**, on ELT and dict pages alike
+   (dict must not diverge). The form-style action footer — the
+   FormPageLayout "super footer" hosting save/revert CTAs, also mounted
+   by dict pages — is `bg-muted/50`, identical everywhere. `bg-muted`
+   (100%) and `bg-background` strips exist nowhere in the canonical
+   anatomy.
 
 Canonical example: `/ai` models header in
 `ai/fe/src/AiSettingsPage.svelte` (remote page mounted at `/system/ai`)
