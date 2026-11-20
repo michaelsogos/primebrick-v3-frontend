@@ -746,6 +746,9 @@
       .map((r) => rowTitle(r)),
   );
 
+  /** Pending titles — same identity resolution as saved rows. */
+  const pendingTitles = $derived(pendings.map((p) => rowTitle(p.values)));
+
   function rowTitle(r: Record<string, unknown>): string {
     if (displayField) {
       const v = r[displayField];
@@ -1227,28 +1230,38 @@
           <span class="text-xs text-primary">
             {$t('system.settings.configurations.changes_pending_fields')}
           </span>
-          {#if taintedRowTitles.length > 5}
-            <!-- UX guard: past the individual-badge threshold the taint
-                 list collapses into ONE aggregate badge — count + the
-                 affected-row titles on the tooltip. -->
+          <!-- UX guard: up to 3 individual badges per taint kind; at the
+               4th the whole group collapses into ONE "+N" badge (total
+               count, titles on the tooltip). -->
+          {#if taintedRowTitles.length > 3}
             <Badge
               variant="outline"
               class="border-warning/40 bg-warning/10 text-xs font-mono text-muted-foreground"
               title={taintedRowTitles.join(', ')}
             >
-              {taintedRowTitles.length} {$t('system.entities.dict.footer_edited')}
+              +{taintedRowTitles.length}
             </Badge>
           {:else}
             {#each taintedRowTitles as title (title)}
               <Badge variant="outline" class="border-warning/40 bg-warning/10 text-xs font-mono text-muted-foreground">
-                {title}
+                {$t('app.common.modified')} {title}
               </Badge>
             {/each}
           {/if}
-          {#if pendings.length > 0}
-            <Badge variant="outline" class="border-primary/40 bg-primary/10 text-xs font-mono text-muted-foreground">
-              +{pendings.length} {$t('app.common.new')}
+          {#if pendingTitles.length > 3}
+            <Badge
+              variant="outline"
+              class="border-primary/40 bg-primary/10 text-xs font-mono text-muted-foreground"
+              title={pendingTitles.join(', ')}
+            >
+              +{pendingTitles.length}
             </Badge>
+          {:else}
+            {#each pendingTitles as title (title)}
+              <Badge variant="outline" class="border-primary/40 bg-primary/10 text-xs font-mono text-muted-foreground">
+                {$t('app.common.new')} {title}
+              </Badge>
+            {/each}
           {/if}
         {:else}
           <span class="text-xs text-muted-foreground/60">{$t('system.settings.configurations.no_changes')}</span>
