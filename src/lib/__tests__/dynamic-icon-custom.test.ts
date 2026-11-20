@@ -40,7 +40,7 @@ describe("DynamicIcon — CUSTOM_ICONS (trash-arrow-up)", () => {
   });
 });
 
-// list-dictionary — POC detached-rows variant: 3 independent h=4 rows
+// list-dictionary — detached-rows variant: 3 independent h=4 rows
 // (y=3/10/17, 3px gaps), each split code x3w6 + label x12w9 (real 3px
 // column gap → 40/60 kept). list-* subject-qualifier family name.
 const LIST_DICTIONARY_RECTS = [
