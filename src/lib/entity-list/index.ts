@@ -8,5 +8,7 @@ export { useEntitySheetSync } from './use-entity-sheet-sync.svelte';
 export type { UseEntitySheetSyncOptions, EntitySheetPanelId } from './use-entity-sheet-sync.svelte';
 export { fetchEntityMeta, clearEntityMetaCache } from './meta-cache';
 export { findActionEndpoint, fillActionPath, isCustomActionVisible } from './action-endpoints';
+export { runEntityOp, entityOpState, entityOpMfa, settleEntityOpConfirm } from './use-entity-op.svelte';
+export type { EntityOpChrome, EntityOpFamily, EntityOpScope, EntityOpConfirmRequest, RunEntityOpArgs } from './use-entity-op.svelte';
 export { resolvePresetSelection, resolvePresetConditions, serviceApiBase } from '@primebrick/ui';
 export type { FilterPreset, FilterPresetOption, FilterCondition } from './types';

@@ -35,6 +35,40 @@ an `isDeleting`/`isRestoring` busy state on the confirm CTA.
 
 ## Usage
 
+### Governed invoker — `runEntityOp` (required for entity ops)
+
+Entity delete/restore/custom-confirm ops do not call `apiFetch`
+directly — they dispatch through `runEntityOp`
+(`src/lib/entity-list/use-entity-op.svelte.ts`):
+
+```ts
+await runEntityOp({
+  op: 'delete.single',          // meta.actions op name
+  entity: 'customer_link_type', // snake_case entity key
+  meta,                          // EntityMeta (endpoint + chrome source)
+  row,                           // or `rows` for bulk scope
+  onDone: () => list.refreshRows(),
+});
+```
+
+The invoker owns the whole path:
+
+- **mandatory confirm** for `delete.*`/`purge.*`/`restore.*` ops, every op
+  whose declared `endpoint.method === 'DELETE'`, and every op with a
+  `confirm_key` — it renders the matching standard dialog via the ONE
+  `<EntityOpConfirmHost>` mounted in `(app)/+layout.svelte`;
+- endpoint resolution from `meta.actions[].endpoint` (`:param`
+  substitution), `/api/v1/entities/{entity}` convention fallback;
+- MFA step-up (`executeWithToken`) on every request;
+- optimistic-concurrency `?version=` from the row (ext-json
+  number|string|bigint all accepted);
+- RFC7807 failure → `pushNotification`, delete success toast.
+
+It returns `Promise<boolean>` — `true` iff the request ran and
+succeeded; cancel is a silent `false` (zero requests leave the gate).
+Severity comes from the op's `chrome?.color`: `destructive` for
+delete/purge, `warning` for restore — callers never choose it.
+
 ### Single record — `/system/ai` (canonical, remote `ai` module page)
 
 ```svelte
@@ -113,8 +147,13 @@ the second line of `DeleteDialog` — keep it alive.
 
 ## Rules
 
+- **Entity ops dispatch through `runEntityOp`** — a raw `apiFetch` delete/
+  restore bypasses the gate; the confirm channel is app-shell-global by
+  construction, so no page can "forget" the dialog.
 - **Never pass a custom title/body** to these dialogs — there is no such prop.
 - **Never use `DialogBordered` directly** for entity delete/restore.
+- **Native `confirm()`/`alert()`/`prompt()` are lint-banned**
+  (`no-native-dialog`, non-exempt) — notices use `pushNotification`.
 - Non-entity destructive dialogs (model cache files, MFA reset, sessions) MAY
   keep custom titles via `DialogBordered` — they are not entity records.
 
