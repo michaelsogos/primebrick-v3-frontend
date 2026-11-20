@@ -34,30 +34,41 @@ in production via `svelte.config.js` `onwarn`) and produces stale values.
 </script>
 ```
 
-## When to use `svelte-ignore state_referenced_locally`
+## Intentional one-time reads — `untrack()`
 
-Only when the value is genuinely static and you intentionally want the initial
-value. Add a comment explaining why:
+When a value must snapshot a reactive source ONCE (never re-track), express
+the intent in code with `untrack()` — the sanctioned escape hatch. Never
+with `svelte-ignore`: a suppression states intent in a comment the linter
+cannot verify; `untrack()` states it in code that IS the behavior.
 
 ```svelte
 <script lang="ts">
+  import { untrack } from 'svelte';
   let { data } = $props();
-  // svelte-ignore state_referenced_locally
-  // service is local mutable state initialized from the SvelteKit load prop.
-  // It is reassigned on save, so $derived cannot be used.
-  let service = $state(data.service);
+  // service is a local mutable draft initialized from the load prop —
+  // reassigned on save (panels remount to re-snapshot), so $derived
+  // cannot be used.
+  let service = $state(untrack(() => data.service));
 </script>
 ```
 
-Valid reasons for `svelte-ignore`:
-- Local mutable state initialized from a prop (form data, then reassigned on save)
-- One-time registration calls (e.g., `ctx.registerTab(value)`)
-- Test fixtures where the prop never changes
+`untrack()` semantics: evaluates the expression without registering
+dependency reads — exactly what `$state(prop)` did implicitly and warned
+about. Same runtime behavior, explicit intent, zero warnings.
 
-Invalid reasons for `svelte-ignore`:
+Valid uses of `untrack()`:
+- Local mutable draft state initialized from a prop (form data, toggles —
+  reassigned by the user; panels remount to re-snapshot)
+- One-time reads at initialization (guards, registrations, context sets):
+  `untrack(() => ctx.registerTab(value))`
+- Module-level caches initialized once from a reactive source
+
+`svelte-ignore state_referenced_locally` is NOT sanctioned for these cases —
+`untrack()` always expresses the same intent in verifiable code.
+
+Invalid reasons for `untrack()` (they mean you wanted `$derived`):
 - "I'm too lazy to use `$derived`"
 - "The prop probably won't change" (use `$derived` anyway — it's future-proof)
-- No comment explaining why the initial value is intentional
 
 ## Decision Table
 
@@ -65,8 +76,8 @@ Invalid reasons for `svelte-ignore`:
 |----------|-----|
 | Value is a simple expression reading reactive sources | `$derived(expr)` |
 | Value needs loops, multiple statements, or complex logic | `$derived.by(() => { ... return value; })` |
-| Local mutable state initialized from a prop, then reassigned | `$state(prop)` + `svelte-ignore` |
-| One-time registration/initialization with a prop | `svelte-ignore` |
+| Local mutable state initialized from a prop, then reassigned | `$state(untrack(() => prop))` |
+| One-time registration/initialization with a reactive source | `untrack(() => call())` |
 | Side effects (DOM, fetch, subscriptions) | `$effect(() => { ... })` |
 | Computed state that you also need to reassign | `$derived` (overridable since Svelte 5.25) or `$state` + `$effect` |
 
@@ -90,8 +101,10 @@ relying on web search or memory.
   `pnpm run lint` (see `eslint.config.js`).
 - The `svelte/prefer-derived-over-derived-by` ESLint rule is set to `error`.
 - Agents MUST use `$derived` for any expression reading reactive sources.
-- Agents MUST NOT suppress `state_referenced_locally` with `svelte-ignore`
-  unless the value is genuinely static (with a comment explaining why).
+- Agents MUST NOT use `svelte-ignore state_referenced_locally` — intentional
+  one-time reads go through `untrack()` (same semantics, explicit in code).
+  Any residual suppression must carry an explicit reason — the always-on
+  `suppress-no-reason` check-standards rule flags bare suppression tags.
 - Agents MUST use `svelte-autofixer` before writing `.svelte` files.
 
 ## References

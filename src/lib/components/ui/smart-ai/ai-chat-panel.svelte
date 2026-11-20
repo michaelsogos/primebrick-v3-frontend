@@ -20,9 +20,10 @@
    * - `create_composable` — factory: (model_id) => assistant composable
    * - `choices` — snippet: renders an assistant message with choices
    */
-  import { onMount, type Snippet } from 'svelte';
+  import { onMount, untrack, type Snippet } from 'svelte';
   import { browser } from '$app/environment';
   import { Button } from '@primebrick/ui';
+  import { SafeHtml } from '@primebrick/ui';
   import { Textarea } from '@primebrick/ui';
   import { ComboSelect } from '@primebrick/ui';
   import { Popover } from '@primebrick/ui';
@@ -37,7 +38,7 @@
   import { modelVariantKey, type AiModel } from '$lib/api-types';
   import type { ChatMessage } from './ai-assistant.types';
   import { marked } from 'marked';
-  import DOMPurify from 'dompurify';
+
   import type { useAiAssistant } from './use-ai-assistant.svelte';
   import { ModelCachePanel } from '@primebrick/ui';
   import { useModelCache } from '@primebrick/ui';
@@ -69,13 +70,12 @@
   }
 
   /**
-   * Render assistant markdown to sanitized HTML. `breaks` maps single
-   * newlines to <br> (chat prose convention); DOMPurify strips any HTML
-   * injection coming from the model output.
+   * Render assistant markdown to RAW html — sanitization is owned by
+   * <SafeHtml> at render. `breaks` maps single newlines to <br> (chat
+   * prose convention).
    */
   function mdToHtml(text: string): string {
-    const html = marked.parse(text, { async: false, breaks: true, gfm: true });
-    return DOMPurify.sanitize(html as string);
+    return marked.parse(text, { async: false, breaks: true, gfm: true }) as string;
   }
 
   type AiHandle = ReturnType<typeof useAiAssistant<TChoice>>;
@@ -114,9 +114,8 @@
 
   const aiModels = useAiModels();
   // assistant_key is a static prop for the lifetime of the panel
-  // (the chat is remounted on change).
-  // svelte-ignore state_referenced_locally
-  const cerebellum = assistant_key ? useAiCerebellum(assistant_key) : null;
+  // (the chat is remounted on change) — untrack marks the one-time capture.
+  const cerebellum = untrack(() => (assistant_key ? useAiCerebellum(assistant_key) : null));
 
   let ai = $state<AiHandle | null>(null);
   let modelId = $state<string | null>(null);
@@ -524,8 +523,7 @@
               <BotIcon size={26} stroke_width={1.8} class="mt-1 shrink-0" />
               <div class="min-w-0 max-w-full space-y-1.5">
                 <div class="ai-md rounded-lg px-3 py-2 text-xs gradient-ring" style={aiBubbleStyle} data-testid="{testid_prefix}-answer-{msg_idx}">
-                  <!-- eslint-disable-next-line svelte/no-at-html-tags -- mdToHtml runs DOMPurify.sanitize on the marked output -->
-                  {@html mdToHtml(message.content)}
+                  <SafeHtml html={mdToHtml(message.content)} />
                 </div>
                 {#if message.sources && message.sources.length > 0}
                   <!-- RAG citations — any assistant can attach sources to an answer -->

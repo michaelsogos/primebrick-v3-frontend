@@ -9,6 +9,19 @@
 
 ## Mandatory conventions
 
+### Headed browser — ALWAYS, no exceptions
+- Every Playwright E2E run MUST be headed — a visible browser window.
+  Headless runs are forbidden: the suite's evidence model (observable
+  mid-flight behavior, shared-session reuse) requires a real window, and
+  an unobservable run hides the very problems the test exists to expose.
+- Enforced by construction: `playwright.config.ts` sets `use.headless:
+  false` for every project. Do NOT pass `--headless`, do NOT set
+  `headless: true` in specs or helpers, and NEVER add a `CI → headless`
+  env carve-out — the rule has no exceptions.
+- Specs attaching to the shared Edge session (CDP :9333 or
+  `launchPersistentContext(E2E_PROFILE, { headless: false })`) are
+  already compliant — that session is a real window by design.
+
 ### Final specs only — no temporary probes
 - E2E specs are deliverables, not scratchpads. The FIRST spec written
   for a behavior must be the FINAL persistent spec in its canonical
@@ -148,6 +161,8 @@ session shapes — the shape is part of the product contract under test:
 - Testid convention: `.devin/rules/e2e-testid-convention.md`
 
 ## Enforcement
+- AI agent MUST run E2E specs headed (visible browser window) — headless
+  runs are a rule violation, always, on every project.
 - AI agent MUST write final persistent E2E specs from the first run —
   temporary probe specs destined for deletion are forbidden.
 - AI agent MUST NOT add `sleep`/`waitForTimeout` outside the 5s poll slots.

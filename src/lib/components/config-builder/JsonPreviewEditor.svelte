@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import { t } from '$lib/i18n';
   import { JsonCodeBlock, JsonEditor } from '@primebrick/ui';
   import { AiIcon } from '@primebrick/ui';
@@ -25,10 +26,9 @@
   // The editor works on PRETTY JSON; the builder keeps the compact
   // storage serialization (type_config is emitted verbatim in advanced mode).
   // Seed only; kept in sync by toggleAdvanced on mode entry, never re-read
-  // upstream afterwards.
-  // svelte-ignore state_referenced_locally
+  // upstream afterwards — untrack marks the intentional one-time read.
   let rawJsonInput = $state(
-    builder.state.advancedMode ? prettyJson(builder.json) : ''
+    untrack(() => (builder.state.advancedMode ? prettyJson(builder.json) : ''))
   );
 
   function prettyJson(json: string): string {

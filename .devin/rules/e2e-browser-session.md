@@ -10,6 +10,9 @@
 pointer; the normative text lives in the canonical doc.
 
 ## Enforcement
+- AI agent MUST run E2E specs headed (visible window) — headless runs are
+  forbidden on every project, always (`use.headless: false` is enforced
+  in `playwright.config.ts`).
 - AI agent MUST NOT add `sleep`/`waitForTimeout` outside the 5s poll slots.
 - AI agent MUST NOT modify production components to make a test pass — fix
   the test against the existing DOM contract.

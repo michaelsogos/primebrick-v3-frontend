@@ -30,7 +30,7 @@
    *   - reorder: chevrons mutate the order_field, mark rows tainted, and
    *     persist in the SAME bulk save (no dedicated endpoint).
    */
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import { SvelteMap, SvelteSet } from 'svelte/reactivity';
   import { t } from '$lib/i18n';
   import { apiFetch, entityApiBase } from '$lib/api';
@@ -58,10 +58,8 @@
   let { decl }: { decl: CensusRoute } = $props();
 
   // decl is stable within a mount — the caller {#key pathname} remounts
-  // the page per route change, so plain captures are the honest contract.
-  // svelte-ignore state_referenced_locally
-  const entity = decl.entity ?? '';
-  // svelte-ignore state_referenced_locally
+  // the page per route change; untrack marks the intentional one-time read.
+  const entity = untrack(() => decl.entity ?? '');
   const basePath = entityApiBase(entity);
   /** Translation writes resolve their module PER KEY (prefix == module
    *  code) — `custom.*` keys land in custom.translations. */

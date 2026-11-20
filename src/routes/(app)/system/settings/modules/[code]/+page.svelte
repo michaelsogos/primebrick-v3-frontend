@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import { t } from '$lib/i18n';
   import { Button } from '@primebrick/ui';
   import { TextInput } from '@primebrick/ui';
@@ -15,15 +16,14 @@
 
 
   let { data } = $props();
-  // svelte-ignore state_referenced_locally
-  // service is local mutable state initialized from the SvelteKit load prop.
-  // It is reassigned on save (handleSaveServiceInfo), so $derived cannot be used.
-  let service = $state<ServiceInfo>(data.service);
+  // service is local mutable state initialized from the SvelteKit load prop —
+  // reassigned on save (handleSaveServiceInfo), so $derived cannot be used.
+  // untrack marks the intentional one-time read.
+  let service = $state<ServiceInfo>(untrack(() => data.service));
 
-  // svelte-ignore state_referenced_locally
-  // formData is local form state initialized from service fields.
-  // It is mutated via bind:value in the form, so $derived cannot be used.
-  let formData = $state({
+  // formData is local form state initialized from service fields, mutated
+  // via bind:value — same one-time-read contract, expressed via untrack.
+  let formData = $state(untrack(() => ({
     name: service.name || '',
     description: service.description || '',
     base_url: service.base_url,
@@ -31,7 +31,7 @@
     icon_type: (service.icon_type || 'icon') as IconType,
     author: service.author || '',
     github_repo_url: service.github_repo_url || '',
-  });
+  })));
 
   let configEntries = $state<ModuleConfigEntry[]>([]);
   let configLoading = $state(false);

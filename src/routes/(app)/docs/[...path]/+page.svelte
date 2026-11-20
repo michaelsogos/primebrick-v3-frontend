@@ -16,6 +16,7 @@
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
   import { fetchDocsIndex, fetchDoc, type DocsIndexRepo } from '$lib/api';
   import { renderDoc, hydrateMermaid } from '$lib/shell/docs/docs-render';
+  import { SafeHtml } from '@primebrick/ui';
   import { cn } from '$lib/utils';
   import { FileText } from '@primebrick/ui/vendor/lucide';
   import { LoaderCircle } from '@primebrick/ui/vendor/lucide';
@@ -147,8 +148,7 @@
         <article class="docs-page mx-auto max-w-3xl">
           <div class="mb-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{doc.repo}</div>
           <h1 class="mb-4 text-2xl font-semibold leading-tight">{doc.title}</h1>
-          <!-- eslint-disable-next-line svelte/no-at-html-tags -- KB content is DOMPurify-sanitized in renderDoc -->
-          <div class="docs-md">{@html doc.html}</div>
+          <div class="docs-md"><SafeHtml html={doc.html} profile="docs" /></div>
         </article>
       {:else}
         <div class="flex items-center gap-2 py-16 justify-center text-muted-foreground">

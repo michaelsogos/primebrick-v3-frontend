@@ -23,6 +23,7 @@
   import { Accordion } from '@primebrick/ui';
   import { Input } from '@primebrick/ui';
   import { SheetPanelLayout } from '@primebrick/ui';
+  import { SafeHtml } from '@primebrick/ui';
   import SheetHeaderAction from '$lib/shell/sheets/SheetHeaderAction.svelte';
   import { sheetState, setSheetExpanded } from '$lib/shell/sheets/sheet-manager.svelte';
   import { docsContext } from '$lib/shell/docs/docs-context.svelte';
@@ -526,8 +527,7 @@
           </nav>
         {/if}
 
-        <!-- eslint-disable-next-line svelte/no-at-html-tags -- KB content is DOMPurify-sanitized in renderDoc -->
-        <div class="docs-md" data-testid="docs-content">{@html doc.html}</div>
+        <div class="docs-md" data-testid="docs-content"><SafeHtml html={doc.html} profile="docs" /></div>
 
         {#if doc.links.length}
           <div class="mt-6 border-t border-border pt-3" data-testid="docs-see-also">
