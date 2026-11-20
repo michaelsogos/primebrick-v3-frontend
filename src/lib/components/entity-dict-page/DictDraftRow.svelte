@@ -2,7 +2,7 @@
   /**
    * DictDraftRow — the add-row surface, SAME anatomy as DictRow:
    *
-   *   left 6/12:  `New` badge + icon + the `code` input living in the TAG
+   *   left 6/12:  `Draft` chip + icon + the `code` input living in the TAG
    *               zone — the key is authored here (it becomes the row's
    *               tag once saved and is immutable from then on).
    *   center 4/12: the VALUE field (display_field → label_key cell).
@@ -62,16 +62,19 @@
 </script>
 
 <div
-  class="grid grid-cols-12 items-center gap-4 rounded-lg border bg-background p-3 border-l-[5px] border-l-primary/50"
+  class="grid grid-cols-12 items-center gap-4 rounded-lg border bg-background p-3 border-l-[5px] border-l-info/40"
   data-testid="dict-draft-row"
 >
-  <!-- Left 6/12: New badge + code input in the tag zone -->
+  <!-- Left 6/12: draft-state chip + code input in the tag zone. The
+       `border-l-info/40` accent is the immature leg of the same "to be
+       saved" pipeline the pending rows carry as solid `border-l-info`
+       (composer → pending → saved: info/40 → info → none). -->
   <div class="col-span-6 flex items-start gap-3 min-w-0">
     <div class="mt-1 size-4 shrink-0" aria-hidden="true"></div>
     <div class="min-w-0">
       <div class="flex items-center gap-2">
-        <Badge variant="outline" class="shrink-0 border-primary/40 bg-primary/10 text-xs">
-          {$t('app.common.new')}
+        <Badge variant="outline" class="shrink-0 border-info/40 bg-info/10 text-xs">
+          {$t('system.entities.dict.draft')}
         </Badge>
         {#if codeColumn}
           <div class="w-48 min-w-0" data-dict-cell="code">

@@ -1,9 +1,14 @@
 /**
- * entity-dict-page-lifecycle — the whole dict-page row lifecycle driven
- * through the UI only: create via the draft row → edit → per-row revert
- * → re-edit → bulk revert → chevron reorder → save → persisted order →
- * soft-delete → deletion-filter view → bulk restore → final soft-delete.
+ * entity-dict-page-lifecycle — the saved-row lifecycle driven through
+ * the UI only: create via the composer→pending flow → edit → per-row
+ * revert → re-edit → bulk revert → chevron reorder → save → persisted
+ * order → soft-delete → deletion-filter view → bulk restore → final
+ * soft-delete. Plus the extras sheet end-to-end (pending AND saved).
  * No API calls for anything the page can do itself, no mocks.
+ *
+ * The composer→pending leg (discard, gates, validation, accents) lives
+ * in `entity-dict-draft-lifecycle.spec.ts` — this file's `e2e_lc_` code
+ * prefix is its cleanup boundary.
  *
  * The ONLY non-UI step is the physical cleanup: dict entities expose no
  * purge CTA (delete is soft-only), so the ad-hoc row is removed by a
@@ -188,114 +193,6 @@ test.describe.serial("dict lifecycle — UI-only on an ad-hoc row", () => {
     await ourRow(page).getByTestId("dict-row-delete").click();
     await page.getByRole("dialog").getByRole("button", { name: "Delete" }).click();
     await expect(page.locator(`[title="${CODE}"]`)).toHaveCount(0);
-  });
-
-  test("composer discard + pending undo + pending-only bulk delete", async ({ page }) => {
-    test.setTimeout(60_000);
-    await loginAsTestAdmin(page);
-    await page.goto(DICT_URL, { waitUntil: "domcontentloaded" });
-    await expect(page.getByTestId("entity-dict-page")).toBeVisible({ timeout: 30000 });
-    await expect(page.locator('[data-testid^="selectable-row-"]').first()).toBeVisible();
-
-    // Zero-server proof: discard, undo and pending bulk-drop are pure
-    // client operations — no POST to the entities endpoint may fire.
-    const posts: string[] = [];
-    page.on("request", (r) => {
-      if (r.method() === "POST" && r.url().includes("/entities/")) posts.push(r.url());
-    });
-
-    const addBtn = page.getByTestId("dict-toolbar-add");
-
-    // ── ✕ discard: composer dies, no pending created, NEW re-arms ──
-    await addBtn.click();
-    const draft = page.getByTestId("dict-draft-row");
-    await draft.locator('[data-dict-cell="code"] input').fill(`${CODE}_x`);
-    await draft.getByTestId("dict-draft-discard").click();
-    await expect(draft).toHaveCount(0);
-    await expect(addBtn).toBeEnabled();
-    await expect(page.locator('[data-testid="selectable-row-d1"]')).toHaveCount(0);
-
-    // ── ✓ confirm → pending d2 (seq never reuses); undo drops it ──
-    await addBtn.click();
-    const draft2 = page.getByTestId("dict-draft-row");
-    await draft2.locator('[data-dict-cell="code"] input').fill(`${CODE}_y`);
-    await draft2.locator('[data-dict-cell="label_key"]').click();
-    const keySearch = page.getByPlaceholder(/entities\.customer_type\.rows\./);
-    await keySearch.fill(`custom.entities.customer_type.rows.${CODE}_y`);
-    await keySearch.press("Enter");
-    await draft2.getByTestId("dict-draft-confirm").click();
-    const pending = page.locator('[data-testid="selectable-row-d2"]');
-    await expect(pending).toBeVisible();
-    await pending.getByTestId("dict-pending-undo").click();
-    await expect(pending).toHaveCount(0);
-
-    // ── pending selection → bulk delete partitions: local drop only ──
-    await addBtn.click();
-    const draft3 = page.getByTestId("dict-draft-row");
-    await draft3.locator('[data-dict-cell="code"] input').fill(`${CODE}_z`);
-    await draft3.locator('[data-dict-cell="label_key"]').click();
-    await keySearch.fill(`custom.entities.customer_type.rows.${CODE}_z`);
-    await keySearch.press("Enter");
-    await draft3.getByTestId("dict-draft-confirm").click();
-    const pending3 = page.locator('[data-testid="selectable-row-d3"]');
-    await expect(pending3).toBeVisible();
-
-    // The pending participates in selection like any saved row; a
-    // pending-only selection drops locally — no confirm dialog, no request.
-    await pending3.getByRole("checkbox").check();
-    await page.getByTestId("entity-bulk-delete").click();
-    await expect(pending3).toHaveCount(0);
-    await expect(page.getByRole("dialog")).toHaveCount(0);
-    await expect(page.getByTestId("dict-bulk-save")).toBeDisabled();
-
-    expect(posts).toEqual([]);
-  });
-
-  test("code uniqueness probe + label_key suggestion commit", async ({ page }) => {
-    test.setTimeout(60_000);
-    await loginAsTestAdmin(page);
-    await page.goto(DICT_URL, { waitUntil: "domcontentloaded" });
-    await expect(page.getByTestId("entity-dict-page")).toBeVisible({ timeout: 30000 });
-    await expect(page.locator('[data-testid^="selectable-row-"]').first()).toBeVisible();
-
-    const addBtn = page.getByTestId("dict-toolbar-add");
-
-    // ── probe: an EXISTING code → inline dict-cell-error + ✓ stays gated ──
-    // The seeded row's code badge carries title=<code> (mono font).
-    const existingCode = await page
-      .locator('[data-testid^="selectable-row-"] .font-mono[title]')
-      .first()
-      .getAttribute("title");
-    expect(existingCode).toBeTruthy();
-
-    await addBtn.click();
-    const draft = page.getByTestId("dict-draft-row");
-    await draft.locator('[data-dict-cell="code"] input').fill(existingCode!);
-    await expect(draft.getByTestId("dict-cell-error")).toBeVisible({ timeout: 10_000 });
-    await expect(draft.getByTestId("dict-draft-confirm")).toBeDisabled();
-
-    // ── suggestion: unique code + EMPTY label_key → ✓ arms → save commits
-    //    the `custom.entities.<tk>.rows.<code>` convention key ──
-    const sugCode = `${CODE}_sug`;
-    await draft.locator('[data-dict-cell="code"] input').fill(sugCode);
-    await expect(draft.getByTestId("dict-cell-error")).toHaveCount(0, { timeout: 10_000 });
-    await expect(draft.getByTestId("dict-draft-confirm")).toBeEnabled();
-    await draft.getByTestId("dict-draft-confirm").click();
-
-    const pending = page.locator('[data-testid="selectable-row-d1"]');
-    await expect(pending).toBeVisible();
-    await expect(page.getByTestId("dict-bulk-save")).toBeEnabled();
-    await page.getByTestId("dict-bulk-save").click();
-    await expect(pending).toHaveCount(0, { timeout: 15_000 });
-
-    // The saved row exists with the convention key committed — assert the
-    // persisted label_key, not a UI echo of the pending draft.
-    const { rows } = await getPool().query(
-      `SELECT label_key FROM crm.customer_types WHERE code = $1`,
-      [sugCode],
-    );
-    expect(rows).toHaveLength(1);
-    expect(rows[0].label_key).toBe(`custom.entities.customer_type.rows.${sugCode}`);
   });
 
   test("extras sheet — pending AND saved rows edit inverse_label_key", async ({ page }) => {
