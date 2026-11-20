@@ -227,8 +227,16 @@
   on_toggle_select={(_id, checked) => ontoggle?.(checked)}
   class="grid grid-cols-12 items-center gap-4"
 >
-  <!-- Left 6/12: checkbox + 3-line identity -->
+  <!-- Left 6/12: drag grip | checkbox | 3-line identity -->
   <div class="col-span-6 flex items-start gap-3 min-w-0">
+    {#if sortable}
+      <span
+        data-testid="dict-row-drag"
+        class="-ml-1 mt-0.5 shrink-0 {deleted ? 'pointer-events-none opacity-40' : ''}"
+      >
+        <SortableHandle />
+      </span>
+    {/if}
     <Checkbox
       checked={selected}
       onCheckedChange={(c) => ontoggle?.(c === true)}
@@ -350,11 +358,6 @@
       >
         <SlidersHorizontal class="size-4 {extrasError ? 'text-destructive' : ''}" />
       </Button>
-    {/if}
-    {#if sortable}
-      <span data-testid="dict-row-drag" class={deleted ? 'pointer-events-none opacity-40' : ''}>
-        <SortableHandle />
-      </span>
     {/if}
     {#if orderable}
       <Button

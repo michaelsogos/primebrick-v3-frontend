@@ -1117,6 +1117,7 @@
             bind:values={d.values}
             errors={composerErrors(d)}
             readonly={!canCreate}
+            sortable={orderField !== undefined && !groupField}
             confirm_disabled={!composerValid(d)}
             onconfirm={() => handleConfirmDraft(d)}
             ondiscard={() => handleDiscardDraft(d)}

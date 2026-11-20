@@ -27,6 +27,7 @@
     values = $bindable(),
     errors = {},
     readonly = false,
+    sortable = false,
     confirm_disabled = true,
     onconfirm,
     ondiscard,
@@ -44,6 +45,9 @@
      *  save gate surfaces here, never silently. */
     errors?: Record<string, string[]>;
     readonly?: boolean;
+    /** Rows render a leading drag grip when sortable — the composer keeps
+     *  a same-size invisible spacer so its code input stays column-aligned. */
+    sortable?: boolean;
     /** Composer-confirm gate — the composer-scoped required fields must
      *  all be filled before ✓ arms (task-1/D1: `code`+`label_key`, never
      *  extras the composer cannot render). */
@@ -70,6 +74,9 @@
        pending rows carry as solid `border-l-info`
        (composer → pending → saved: info/40 → info → none). -->
   <div class="col-span-6 flex items-start gap-3 min-w-0">
+    {#if sortable}
+      <span class="-ml-1 mt-0.5 w-6 shrink-0" aria-hidden="true"></span>
+    {/if}
     <div class="mt-1 size-4 shrink-0" aria-hidden="true"></div>
     <div class="min-w-0 flex-1">
       <div class="flex items-center gap-2">
