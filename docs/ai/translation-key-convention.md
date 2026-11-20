@@ -105,6 +105,30 @@ $t('entities.user_profiles.fields.is_admin')
 - AI agent MUST NOT use snake_case plural in translation key entity segments.
 - When reviewing existing code, flag any camelCase or plural entity segments in translation keys as violations.
 
+## Dict `label_key` — the convention-suggestion contract
+
+`TranslationKeyCell` (entity-dict-page) offers the computed key
+`custom.entities.<translation_key>.rows.<slug(code)>` — `custom.*` is the
+only user-writable namespace; selecting an existing `*.entities.<tk>.rows.*`
+key commits it verbatim. The suggestion surfaces through THREE channels
+that must stay coherent:
+
+- **Trigger placeholder** — `suggestedKey || select_value` while the value is empty.
+- **`defaultSearch`** — `suggestedKey || rowsPrefix`: with a code typed the
+  search field opens showing the FULL computed key and the filtered list is
+  the suggestion itself. With no code it falls back to the prefix
+  (pre-filters the already `rowsPrefix`-scoped option pool).
+- **First option** — the suggestion is pinned at index 0; alphabetical sort
+  would bury `custom.*` under `crm.*`/`system.*` below the fold.
+- **Save-time** — `EntityDictPage.saveAll` commits the suggestion when
+  `label_key` is left empty.
+
+`defaultSearch` must NEVER carry the bare prefix while a code exists:
+a non-empty seeded search feeds the `allowCreate` row verbatim, producing
+a bogus `Create "…rows."` offer that would commit the prefix as a key —
+and `truncateFrom="start"` renders only the unreadable `…rows.` tail.
+(See the ComboSelect `defaultSearch` contract in `@primebrick/ui`.)
+
 ## Deep dive
 
 The normative rules live here; the full mechanics and rationale are in `docs/dev-guide/i18n.mdx` — link, do not duplicate.
