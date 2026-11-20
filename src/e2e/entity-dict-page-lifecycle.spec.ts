@@ -225,7 +225,7 @@ test.describe.serial("dict lifecycle — UI-only on an ad-hoc row", () => {
     const pending = page.locator('[data-testid="selectable-row-d1"]');
     await expect(pending).toBeVisible();
 
-    await pending.getByTestId("dict-row-extras").click();
+    await pending.getByTestId("dict-row-extras").click({ timeout: 5000 });
     await expect(sheet).toBeVisible();
     // inverse_label_key is a *_key extra → TranslationKeyCell combo.
     await sheet.getByTestId("dict-cell-label-key").click();
