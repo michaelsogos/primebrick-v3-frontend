@@ -22,6 +22,7 @@
   import FormFieldDispatcher from '$lib/entity-form/FormFieldDispatcher.svelte';
   import TranslationKeyCell from './TranslationKeyCell.svelte';
   import DictFieldCell from './DictFieldCell.svelte';
+  import { Handle as SortableHandle } from '$lib/components/ui/sortable';
   import type { MetaColumn } from '@primebrick/ui';
   import {
     ChevronUp,
@@ -56,6 +57,7 @@
     can_delete = false,
     can_restore = false,
     orderable = false,
+    sortable = false,
     reorder_first = false,
     reorder_last = false,
     onchange,
@@ -97,6 +99,10 @@
     can_delete?: boolean;
     can_restore?: boolean;
     orderable?: boolean;
+    /** Render the drag grip — only meaningful inside a `Sortable.Item`
+     *  subtree (flat orderable dict pages); absent there the grip would
+     *  be a dead affordance, so callers pass false in grouped mode. */
+    sortable?: boolean;
     reorder_first?: boolean;
     reorder_last?: boolean;
     onchange: (key: string, value: unknown) => void;
@@ -344,6 +350,11 @@
       >
         <SlidersHorizontal class="size-4 {extrasError ? 'text-destructive' : ''}" />
       </Button>
+    {/if}
+    {#if sortable}
+      <span data-testid="dict-row-drag" class={deleted ? 'pointer-events-none opacity-40' : ''}>
+        <SortableHandle />
+      </span>
     {/if}
     {#if orderable}
       <Button

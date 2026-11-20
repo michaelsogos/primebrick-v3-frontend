@@ -146,6 +146,15 @@ test.describe.serial("dict lifecycle — UI-only on an ad-hoc row", () => {
     const ourIdx = orderBeforeMove.indexOf(ourTestid);
     const neighbourTestid = orderBeforeMove[ourIdx - 1];
     await row.getByTestId("dict-row-move-up").click();
+    // The swap is visible IMMEDIATELY — the chain is sorted by the
+    // effective order value (taint shadows the server row), not by the
+    // last-saved server values.
+    await expect
+      .poll(async () => {
+        const o = await rowOrder(page);
+        return o.indexOf(ourTestid) < o.indexOf(neighbourTestid);
+      })
+      .toBe(true);
     // Both swapped rows are tainted; ours shows the per-row revert.
     await expect(row.getByTestId("dict-row-revert")).toBeVisible();
     await expect(saveBtn).toBeEnabled();

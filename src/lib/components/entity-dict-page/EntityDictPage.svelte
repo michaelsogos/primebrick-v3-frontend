@@ -38,6 +38,7 @@
   import { useSelection, Button, Badge, Toolbar, RefreshButton, DynamicIcon } from '@primebrick/ui';
   import { SelectableFieldset, DeletionFilterToggle } from '@primebrick/ui';
   import { LoadingBar } from '$lib/components/ui/loading-bar';
+  import * as Sortable from '$lib/components/ui/sortable';
   import { SearchBar, BulkActionsToolbar, PaginationControls, RangeLabel, useToolbarMode } from '$lib/components/entity-list-table';
   import { isColumnFilterable, searchableTextColumns, useEntitySheetSync } from '$lib/entity-list';
   import { Plus, Undo2, LoaderCircle, Funnel } from '@primebrick/ui/vendor/lucide';
@@ -549,22 +550,51 @@
   }
 
   // ─── Reorder — swap order_field values on adjacent rows, mark tainted ──
+  /** Saved rows sorted by the EFFECTIVE order value — `values[uid]` taints
+   *  shadow the server row, so an unsaved move is visible immediately and
+   *  the rendered order equals the post-save order. */
   const displayRows = $derived(
     orderField
       ? [...list.rows].sort(
-          (a, b) => Number(a[orderField] ?? 0) - Number(b[orderField] ?? 0),
+          (a, b) =>
+            Number(
+              values[String(a[uid])]?.[orderField] ?? a[orderField] ?? 0,
+            ) -
+            Number(
+              values[String(b[uid])]?.[orderField] ?? b[orderField] ?? 0,
+            ),
         )
       : list.rows,
   );
 
-  /** The full reorder chain — saved rows (sorted) THEN pendings (append
-   *  order, D2). Swaps cross the saved/pending boundary: saved endpoints
-   *  write `values[uid]` (taint), pending endpoints write `d.values`
-   *  directly, so the rendered order equals the post-save order. */
-  const renderChain = $derived([
-    ...displayRows.map((r) => String(r[uid])),
-    ...pendings.map((p) => p.__draft),
-  ]);
+  /** The full reorder chain — one interleaved list of saved rows and
+   *  pendings sorted by effective `order_field` (ties keep source order:
+   *  saved first, then pending insertion order — D2 append semantics).
+   *  Swaps cross the saved/pending boundary: saved endpoints write
+   *  `values[uid]` (taint), pending endpoints write `d.values` directly. */
+  const renderEntries = $derived.by(() => {
+    const saved = displayRows.map((r, i) => ({
+      id: String(r[uid]),
+      kind: 'saved' as const,
+      row: r,
+      sort: orderField
+        ? Number(values[String(r[uid])]?.[orderField] ?? r[orderField] ?? 0)
+        : 0,
+      seq: i,
+    }));
+    const pend = pendings.map((p, i) => ({
+      id: p.__draft,
+      kind: 'pending' as const,
+      draft: p,
+      sort: orderField ? Number(p.values[orderField] ?? 0) : 0,
+      seq: displayRows.length + i,
+    }));
+    const all = [...saved, ...pend];
+    if (orderField) all.sort((a, b) => a.sort - b.sort || a.seq - b.seq);
+    return all;
+  });
+  const renderChain = $derived(renderEntries.map((e) => e.id));
+  const sortableItems = $derived(renderChain.map((id) => ({ id })));
 
   function orderValueOf(chainId: string): unknown {
     const p = pendings.find((x) => x.__draft === chainId);
@@ -591,6 +621,22 @@
     const bSort = orderValueOf(other);
     setOrderValue(id, bSort);
     setOrderValue(other, aSort);
+  }
+
+  /** Drag-drop reorder — the multiset of order values stays fixed: each
+   *  position keeps its rank value and only the occupying row changes, so
+   *  a drag writes taint solely on the rows whose value actually moves
+   *  (no bulk renumber of untouched rows). */
+  function applyDragOrder(next: { id: string }[]) {
+    if (!orderField) return;
+    const ranks = renderChain
+      .map((id) => Number(orderValueOf(id) ?? 0))
+      .sort((a, b) => a - b);
+    next.forEach(({ id }, i) => {
+      const v = ranks[i];
+      if (v !== undefined && Number(orderValueOf(id) ?? 0) !== v)
+        setOrderValue(id, v);
+    });
   }
 
   // ─── Grouping — flat unless meta.dict.group_field is declared ─────────
@@ -879,6 +925,7 @@
     can_delete: canDelete,
     can_restore: canRestore,
     orderable: orderField !== undefined,
+    sortable: orderField !== undefined && !groupField,
     reorder_first: renderChain[0] === String(r[uid]),
     reorder_last: renderChain[renderChain.length - 1] === String(r[uid]),
     onchange: (key: string, v: unknown) => cellChange(String(r[uid]), key, v),
@@ -916,6 +963,7 @@
     can_delete: false,
     can_restore: false,
     orderable: orderField !== undefined,
+    sortable: orderField !== undefined && !groupField,
     reorder_first: renderChain[0] === p.__draft,
     reorder_last: renderChain[renderChain.length - 1] === p.__draft,
     onchange: (key: string, v: unknown) => {
@@ -1075,25 +1123,57 @@
           />
         {/each}
 
-        {#each ungrouped as r (String(r[uid]))}
-          <DictRow {...rowProps(r)} />
-        {/each}
+        {#if groupField}
+          <!-- Grouped mode — saved rows in group sections, pendings
+               appended after the saved stream (D2). Reorder chevrons
+               stay enabled; drag-drop is not offered here (a cross-group
+               drag would silently alter group membership). -->
+          {#each ungrouped as r (String(r[uid]))}
+            <DictRow {...rowProps(r)} />
+          {/each}
 
-        {#each [...grouped.keys()] as gk (gk)}
-          <SelectableFieldset label={gk}>
-            {#each grouped.get(gk) ?? [] as r (String(r[uid]))}
-              <DictRow {...rowProps(r)} />
+          {#each [...grouped.keys()] as gk (gk)}
+            <SelectableFieldset label={gk}>
+              {#each grouped.get(gk) ?? [] as r (String(r[uid]))}
+                <DictRow {...rowProps(r)} />
+              {/each}
+            </SelectableFieldset>
+          {/each}
+
+          {#each pendings as p (p.__draft)}
+            <DictRow {...pendingProps(p)} />
+          {/each}
+        {:else if orderField}
+          <!-- Flat orderable mode — one interleaved chain of saved rows
+               and pendings sorted by the EFFECTIVE order_field value
+               (taints shadow the server row, so an unsaved move is
+               visible immediately and the rendered order equals the
+               post-save order). Drag-drop via the shared Sortable
+               primitive; chevron nudges stay for keyboard users. -->
+          <Sortable.Root
+            items={sortableItems}
+            onSort={applyDragOrder}
+            class="space-y-3"
+          >
+            {#each renderEntries as e (e.id)}
+              <Sortable.Item id={e.id}>
+                {#if e.kind === 'saved'}
+                  <DictRow {...rowProps(e.row)} />
+                {:else}
+                  <DictRow {...pendingProps(e.draft)} />
+                {/if}
+              </Sortable.Item>
             {/each}
-          </SelectableFieldset>
-        {/each}
-
-        <!-- Pendings — appended after the saved stream in insertion order
-             (D2 todo-list semantics): the rendered order equals the
-             post-save order, so the pending→saved transition is nearly
-             invisible. -->
-        {#each pendings as p (p.__draft)}
-          <DictRow {...pendingProps(p)} />
-        {/each}
+          </Sortable.Root>
+        {:else}
+          {#each renderEntries as e (e.id)}
+            {#if e.kind === 'saved'}
+              <DictRow {...rowProps(e.row)} />
+            {:else}
+              <DictRow {...pendingProps(e.draft)} />
+            {/if}
+          {/each}
+        {/if}
 
         {#if list.rows.length === 0 && drafts.length === 0 && pendings.length === 0}
           <div class="py-8 text-center text-sm text-muted-foreground">

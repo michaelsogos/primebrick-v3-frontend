@@ -21,6 +21,13 @@ const DICT_URL = "/crm/settings/customer_types";
 /** Unique run code — also the afterAll cleanup predicate. */
 const CODE = `e2e_dl_${Date.now().toString(36)}`;
 
+/** DOM-ordered row testids — the order the page actually renders. */
+async function rowOrder(page: import("@playwright/test").Page): Promise<string[]> {
+  return page
+    .locator('[data-testid^="selectable-row-"]')
+    .evaluateAll((els) => els.map((e) => e.getAttribute("data-testid") ?? ""));
+}
+
 test.describe.serial("dict draft lifecycle — composer → pending", () => {
   test.afterAll(async () => {
     await getPool().query(
@@ -232,6 +239,66 @@ test.describe.serial("dict draft lifecycle — composer → pending", () => {
       )
       .toBe(false);
     expect(posts).toEqual([]);
+  });
+
+  test("drag-drop reorders a pending row across the saved boundary", async ({ page }) => {
+    test.setTimeout(90_000);
+    await loginAsTestAdmin(page);
+    await page.goto(DICT_URL, { waitUntil: "domcontentloaded" });
+    await expect(page.getByTestId("entity-dict-page")).toBeVisible({ timeout: 30000 });
+    await expect(page.locator('[data-testid^="selectable-row-"]').first()).toBeVisible();
+
+    // ── Confirm a pending row — appended LAST (sort seed = max+10) ──
+    await page.getByTestId("dict-toolbar-add").click();
+    const draft = page.getByTestId("dict-draft-row");
+    const dragCode = `${CODE}_dnd`;
+    await draft.locator('[data-dict-cell="code"] input').fill(dragCode);
+    await draft.locator('[data-dict-cell="label_key"]').click();
+    const keySearch = page.getByPlaceholder(/entities\.customer_type\.rows\./);
+    await keySearch.fill(`custom.entities.customer_type.rows.${dragCode}`);
+    await keySearch.press("Enter");
+    await draft.getByTestId("dict-draft-confirm").click();
+    const pending = page.getByTestId("selectable-row-d1");
+    await expect(pending).toBeVisible();
+    const beforeDrag = await rowOrder(page);
+    expect(beforeDrag.at(-1)).toBe("selectable-row-d1");
+
+    // ── Drag the pending's grip ABOVE the saved neighbour right before
+    //    it — a pending crosses the saved boundary mid-drag; the visual
+    //    order must change immediately (effective-sort chain). Both rows
+    //    must be in-viewport for the drag, so the pending is scrolled
+    //    into view first and the target is its previous sibling. ──
+    await pending.scrollIntoViewIfNeeded();
+    const prevTestid = beforeDrag[beforeDrag.length - 2];
+    const prevRow = page.getByTestId(prevTestid);
+    await pending.getByTestId("dict-row-drag").dragTo(prevRow, {
+      targetPosition: { x: 8, y: 4 },
+    });
+    await expect
+      .poll(async () => {
+        const o = await rowOrder(page);
+        return o.indexOf("selectable-row-d1") === o.indexOf(prevTestid) - 1;
+      })
+      .toBe(true);
+
+    // ── Save → reload → the dragged order persisted: our row still sits
+    //    immediately before that same neighbour. ──
+    await page.getByTestId("dict-bulk-save").click();
+    await expect(pending).toHaveCount(0, { timeout: 15_000 });
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await expect(page.getByTestId("entity-dict-page")).toBeVisible({ timeout: 30000 });
+    await expect(page.locator('[data-testid^="selectable-row-"]').first()).toBeVisible({
+      timeout: 30000,
+    });
+    const ourRow = page
+      .locator('[data-testid^="selectable-row-"]')
+      .filter({ has: page.locator(`[title="${dragCode}"]`) });
+    const ourTestid = await ourRow.getAttribute("data-testid");
+    expect(ourTestid).toBeTruthy();
+    const reloadedOrder = await rowOrder(page);
+    expect(reloadedOrder.indexOf(ourTestid!)).toBe(
+      reloadedOrder.indexOf(prevTestid) - 1,
+    );
   });
 
   test("empty label_key commits the convention suggestion at save", async ({ page }) => {
