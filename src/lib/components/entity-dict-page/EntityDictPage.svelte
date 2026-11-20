@@ -35,7 +35,7 @@
   import { t } from '$lib/i18n';
   import { apiFetch, entityApiBase } from '$lib/api';
   import { useEntityList } from '$lib/composables/useEntityList.svelte';
-  import { useSelection, Button, Badge, Toolbar, RefreshButton } from '@primebrick/ui';
+  import { useSelection, Button, Badge, Toolbar, RefreshButton, DynamicIcon } from '@primebrick/ui';
   import { SelectableFieldset, DeletionFilterToggle } from '@primebrick/ui';
   import { LoadingBar } from '$lib/components/ui/loading-bar';
   import { SearchBar, BulkActionsToolbar, PaginationControls, RangeLabel, useToolbarMode } from '$lib/components/entity-list-table';
@@ -48,8 +48,10 @@
   import FormFieldDispatcher from '$lib/entity-form/FormFieldDispatcher.svelte';
   import DictDraftRow from './DictDraftRow.svelte';
   import { pushNotification } from '$lib/errors/app-errors';
-  import { clearPendingTranslations, dropPendingTranslation } from '$lib/i18n/pending-translations.svelte';
+  import { clearPendingTranslations, dropPendingTranslation, getPendingTranslations, addPendingTranslation } from '$lib/i18n/pending-translations.svelte';
   import { flushPendingTranslations } from '$lib/i18n/flush-pending-translations';
+  import { useDictDraft } from './use-dict-draft.svelte';
+  import { userProfileState } from '$lib/user-profile-store.svelte';
   import { runEntityOp } from '$lib/entity-list/use-entity-op.svelte';
   import DictRow from './DictRow.svelte';
   import { isSnakeKey } from '@primebrick/ui';
@@ -360,6 +362,7 @@
       values = next;
       originals = $state.snapshot(next);
       lastRowsKey = key;
+      baselined = true;
     }
   });
 
@@ -432,6 +435,117 @@
     for (const id of selection.state.selected_ids) {
       if (taintedUids.has(id)) revertRow(id);
     }
+  }
+
+  // ─── Draft persistence — refresh-surviving working state. Same
+  //     useFormDraft contract (scoped key, debounced write, self-delete
+  //     on pristine, replay tainted-keys-only) on the dict's three legs:
+  //     taints + pendings + open composer. The translation queue rides
+  //     along so restored label_keys never flush orphan keys. ──────────
+  let baselined = $state(false);
+  let draftRestored = $state(false);
+
+  const taintMap = $derived.by<Record<string, Record<string, unknown>>>(() => {
+    const m: Record<string, Record<string, unknown>> = {};
+    for (const id of taintedUids) {
+      const curr = values[id];
+      const orig = originals[id];
+      if (!curr || !orig) continue;
+      const d: Record<string, unknown> = {};
+      for (const c of updateEditableColumns) {
+        if (String(curr[c.key] ?? '') !== String(orig[c.key] ?? '')) d[c.key] = curr[c.key];
+      }
+      if (Object.keys(d).length > 0) m[id] = d;
+    }
+    return m;
+  });
+
+  /** Composer worth persisting — any authored value (the seeded skeleton
+   *  of nulls/empties is not work). */
+  const composerHasContent = $derived(
+    drafts.some((d) => Object.values(d.values).some((v) => v !== null && String(v ?? '') !== '')),
+  );
+
+  const dictDraft = useDictDraft({
+    storageKey: () => {
+      const org = userProfileState.current?.organization ?? userProfileState.current?.idp_org;
+      const actor = userProfileState.current?.uuid;
+      if (!actor || !entity) return null;
+      return `pb:dict-draft:${org ?? 'local'}:${actor}:${entity}`;
+    },
+    // Writes gate until restore has RUN — a mount-time pristine read
+    // must never delete the slot before it is read.
+    ready: () => baselined && draftRestored,
+    taints: () => taintMap,
+    rowVersions: () => {
+      const m: Record<string, number> = {};
+      for (const id of Object.keys(taintMap)) {
+        const r = list.rows.find((row) => String(row[uid]) === id);
+        if (r) m[id] = Number(r['version'] ?? 0);
+      }
+      return m;
+    },
+    pendings: () => pendings.map((p) => ({ id: p.__draft, values: $state.snapshot(p.values) })),
+    composer: () => {
+      const d = drafts[0];
+      return d && composerHasContent ? { values: $state.snapshot(d.values) } : null;
+    },
+    draftSeq: () => draftSeq,
+    translations: () => {
+      const m = getPendingTranslations(basePath);
+      return m ? $state.snapshot(m) : undefined;
+    },
+    dirty: () => taintedUids.size > 0 || pendings.length > 0 || composerHasContent,
+    restoreTaints: (tainted, _versions) => {
+      const next = { ...values };
+      let applied = 0;
+      for (const [id, fields] of Object.entries(tainted)) {
+        const curr = next[id];
+        if (!curr || !originals[id]) continue; // row gone — anti-stale drop
+        next[id] = { ...curr, ...fields };
+        applied += Object.keys(fields).length;
+      }
+      values = next;
+      return applied;
+    },
+    restorePendings: (rows, seq) => {
+      draftSeq = Math.max(draftSeq, seq);
+      pendings = [...pendings, ...rows.map((r) => ({ __draft: r.id, values: r.values }))];
+    },
+    restoreComposer: (c) => {
+      if (drafts.length > 0) return; // single-composer gate
+      drafts = [{ __draft: `d${++draftSeq}`, values: c.values }];
+    },
+    restoreTranslation: (key, langs) => addPendingTranslation(basePath, key, langs),
+  });
+
+  /** One-shot replay — after the rows baseline exists AND the actor has
+   *  resolved (the storage key needs it); the composable's `restored`
+   *  flag keeps it single-fire. */
+  $effect(() => {
+    if (!baselined || draftRestored || !userProfileState.current?.uuid) return;
+    const n = dictDraft.restore();
+    draftRestored = true;
+    if (n > 0) {
+      pushNotification({
+        impact: 'NONE',
+        toastImpact: 'LOW',
+        message: $t('app.common.draft_restored', { count: n }),
+        scopeKey: 'app.common.draft_restored_title',
+        tags: [{ label: entity, tone: 'info' }],
+      });
+    }
+  });
+
+  /** RESET — the FormPageLayout footer contract: discard ALL unsaved work
+   *  (tainted rows re-baseline, pendings + composer die with their queued
+   *  translations, the draft slot clears) and the page returns pristine. */
+  function handleReset() {
+    values = $state.snapshot(originals);
+    for (const p of [...pendings]) handleDropPending(p);
+    for (const d of [...drafts]) handleDiscardDraft(d);
+    clearPendingTranslations(basePath);
+    dictDraft.clear();
   }
 
   // ─── Reorder — swap order_field values on adjacent rows, mark tainted ──
@@ -632,6 +746,7 @@
       const failedTranslations = await flushPendingTranslations(basePath);
       originals = $state.snapshot(values);
       pendings = [];
+      dictDraft.clear();
       if (failedTranslations.length > 0) {
         pushNotification({
           impact: 'HIGH',
@@ -1038,7 +1153,17 @@
           <span class="text-xs text-muted-foreground/60">{$t('system.settings.configurations.no_changes')}</span>
         {/if}
       </div>
-      <div class="flex items-center justify-end">
+      <div class="flex items-center justify-end gap-2">
+        <Button
+          variant="outline"
+          disabled={(!hasChanges && drafts.length === 0) || saving}
+          onclick={handleReset}
+          title={$t('app.common.reset')}
+          data-testid="dict-reset"
+        >
+          <DynamicIcon name="eraser" size={16} />
+          {$t('app.common.reset')}
+        </Button>
         <Button onclick={() => void saveAll()} disabled={!canSave} data-testid="dict-bulk-save">
           {saving ? $t('app.common.saving') : $t('app.common.save_changes')}
         </Button>

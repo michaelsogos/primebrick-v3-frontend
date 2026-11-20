@@ -161,6 +161,81 @@ test.describe.serial("dict draft lifecycle — composer → pending", () => {
     expect(posts).toEqual([]);
   });
 
+  test("draft persistence — taints + pending survive reload, RESET clears all", async ({
+    page,
+  }) => {
+    test.setTimeout(90_000);
+    await loginAsTestAdmin(page);
+    await page.goto(DICT_URL, { waitUntil: "domcontentloaded" });
+    await expect(page.getByTestId("entity-dict-page")).toBeVisible({ timeout: 30000 });
+    await expect(page.locator('[data-testid^="selectable-row-"]').first()).toBeVisible();
+
+    // ── Taint a saved row (label_key edit → taint marker) ──
+    const firstRow = page.locator('[data-testid^="selectable-row-"]').first();
+    await firstRow.getByTestId("dict-cell-label-key").click();
+    const keySearch = page.getByPlaceholder(/entities\.customer_type\.rows\./);
+    await keySearch.fill(`custom.entities.customer_type.rows.${CODE}_taint`);
+    await keySearch.press("Enter");
+    await expect(firstRow.getByTestId("dict-row-revert")).toBeVisible();
+
+    // ── Confirm a pending row ──
+    await page.getByTestId("dict-toolbar-add").click();
+    const draft = page.getByTestId("dict-draft-row");
+    await draft.locator('[data-dict-cell="code"] input').fill(`${CODE}_rs`);
+    await draft.locator('[data-dict-cell="label_key"]').click();
+    await keySearch.fill(`custom.entities.customer_type.rows.${CODE}_rs`);
+    await keySearch.press("Enter");
+    await draft.getByTestId("dict-draft-confirm").click();
+    const pending = page.getByTestId("selectable-row-d1");
+    await expect(pending).toBeVisible();
+    await expect(page.getByTestId("dict-reset")).toBeEnabled();
+
+    // Draft write is debounced 400ms — wait until the slot carries the
+    // pending entry `"id":"d1"` (composer-only docs have no pendings
+    // entries; the pending's code alone can't discriminate the write
+    // that ran while the composer was still open).
+    await page.waitForFunction(() => {
+      const k = Object.keys(localStorage).find((x) => x.startsWith("pb:dict-draft:"));
+      return !!k && (localStorage.getItem(k) ?? "").includes('"id":"d1"');
+    });
+
+    // ── RELOAD → both legs restore: the pending row (same d1 id) and
+    //    the tainted row (revert marker back). ──
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await expect(page.getByTestId("entity-dict-page")).toBeVisible({ timeout: 30000 });
+    await expect(page.locator('[data-testid^="selectable-row-"]').first()).toBeVisible({
+      timeout: 30000,
+    });
+    const restoredPending = page.getByTestId("selectable-row-d1");
+    await expect(restoredPending).toBeVisible();
+    await expect(restoredPending.locator(`[title="${CODE}_rs"]`)).toBeVisible();
+    await expect(restoredPending).toHaveClass(/border-l-info(?!\/)/);
+    // The taint survived — the row's revert marker is back (the saved
+    // row carries no _rs title; locate by its revert icon count).
+    await expect(page.getByTestId("dict-row-revert").first()).toBeVisible();
+    await expect(page.getByTestId("dict-bulk-save")).toBeEnabled();
+
+    // ── RESET → all work dies locally: pending gone, taint reverted,
+    //    save+reset disarm, draft slot removed — zero server requests. ──
+    const posts: string[] = [];
+    page.on("request", (r) => {
+      if (r.method() === "POST" && r.url().includes("/entities/")) posts.push(r.url());
+    });
+    await page.getByTestId("dict-reset").click();
+    await expect(restoredPending).toHaveCount(0);
+    await expect(page.getByTestId("dict-row-revert")).toHaveCount(0);
+    await expect(page.getByTestId("dict-bulk-save")).toBeDisabled();
+    await expect(page.getByTestId("dict-reset")).toBeDisabled();
+    await expect
+      .poll(() =>
+        page.evaluate(() =>
+          Object.keys(localStorage).some((k) => k.startsWith("pb:dict-draft:")),
+        ),
+      )
+      .toBe(false);
+    expect(posts).toEqual([]);
+  });
+
   test("empty label_key commits the convention suggestion at save", async ({ page }) => {
     test.setTimeout(60_000);
     await loginAsTestAdmin(page);

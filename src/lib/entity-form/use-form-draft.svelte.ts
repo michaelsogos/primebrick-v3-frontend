@@ -71,7 +71,9 @@ function readDraft(key: string): FormDraftDoc | null {
 		const raw = localStorage.getItem(key);
 		if (!raw) return null;
 		const d = extJsonParse(raw) as FormDraftDoc;
-		if (d?.v !== DRAFT_VERSION || typeof d.data !== 'object' || typeof d.tainted !== 'object')
+		// ext-json decodes EVERY integer as native bigint — `d.v` arrives
+		// as `1n`; compare numerically or the doc never validates.
+		if (Number(d?.v) !== DRAFT_VERSION || typeof d.data !== 'object' || typeof d.tainted !== 'object')
 			return null;
 		return d;
 	} catch {
