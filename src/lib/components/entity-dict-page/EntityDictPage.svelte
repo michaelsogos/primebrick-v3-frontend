@@ -678,7 +678,6 @@
 
   /** Modified rows = tainted saved rows; pendings count as modified too. */
   const modifiedUids = $derived([...taintedUids]);
-  const modifiedCount = $derived(modifiedUids.length + pendings.length);
 
   const modClient = useClientSelection<Record<string, unknown>>({
     selectedKeys: () => modifiedUids,
@@ -1356,18 +1355,6 @@
           showSelectedOnly={showSelectedOnly}
           onShowSelectedOnlyChange={(v) => { showSelectedOnly = v; if (v) clientFilterPage = 1; }}
         />
-        <!-- Dict-scoped predicate counter — tainted + pending rows under
-             the warning tone; same eye affordance. -->
-        <SelectionCounter
-          selectionCount={modifiedCount}
-          selectionLabelKey="app.common.modified_plural"
-          selectionLabelSingularKey="app.common.modified"
-          tone="warning"
-          title_off_key="system.entities.list.view_modified_only_title"
-          test_id="dict-filter-modified"
-          showSelectedOnly={showModifiedOnly}
-          onShowSelectedOnlyChange={(v) => { showModifiedOnly = v; if (v) clientFilterPage = 1; }}
-        />
       </div>
     {/snippet}
     <PaginationControls
@@ -1429,6 +1416,26 @@
               </Badge>
             {/each}
           {/if}
+          <!-- Eye link after the badges — same affordance as the pager's
+               selected-only eye, scoped to the modified set it sits
+               next to (tainted + pending rows, client-side filter). -->
+          <Button
+            type="button"
+            variant="ghost"
+            size="xs"
+            class="shrink-0 text-warning hover:bg-warning/10 hover:text-warning"
+            aria-pressed={showModifiedOnly}
+            title={showModifiedOnly
+              ? $t('system.entities.list.view_all_rows_title')
+              : $t('system.entities.list.view_modified_only_title')}
+            aria-label={showModifiedOnly
+              ? $t('system.entities.list.view_all_rows_title')
+              : $t('system.entities.list.view_modified_only_title')}
+            onclick={() => { showModifiedOnly = !showModifiedOnly; if (showModifiedOnly) clientFilterPage = 1; }}
+            data-testid="dict-filter-modified"
+          >
+            <DynamicIcon name={showModifiedOnly ? 'eye-off' : 'eye'} size={16} />
+          </Button>
         {:else}
           <span class="text-xs text-muted-foreground/60">{$t('system.settings.configurations.no_changes')}</span>
         {/if}
