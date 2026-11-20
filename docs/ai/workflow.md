@@ -113,6 +113,15 @@ final, persistent test in its canonical location — the first draft is
 already the deliverable and is refined incrementally; it is never a
 throwaway probe deleted after it passes.
 
+- **E2E doc pre-read — MANDATORY before writing OR running specs.** Any
+  turn that writes, modifies, or executes specs in `src/e2e/` first
+  re-reads `e2e-browser-session.md` + `e2e-testid-convention.md` (and
+  `e2e-test-users.md` / `e2e-webauthn-auth.md` when the spec touches
+  auth). Locators, wait budgets, session/auth contracts and polling
+  shapes are settled there — a locator invented without the doc, a
+  captured-array `expect.poll`, or a 60s blind click is a protocol
+  violation. The 5-second expectation budget is not negotiable.
+
 - Writing the same check twice — a temporary script now, the real
   spec later — is forbidden wasted work.
 - A deleted probe deletes its proof: any behavior only ever verified
@@ -142,7 +151,10 @@ once per session. A turn that skips any of them is a protocol violation.
 - **Definitive tests only** — every verification lands as a final,
   persistent spec in its canonical location. E2E involving the FE
   always runs against the real dev stack and is committed as the
-  regression spec — never a throwaway probe.
+  regression spec — never a throwaway probe. Writing or running an
+  E2E spec without first re-reading `e2e-browser-session.md` +
+  `e2e-testid-convention.md` is a protocol violation (see "Tests are
+  deliverables").
 - **Empirical or nothing** — zero assumptions. If a claim is checkable
   (run it, query it, read it), it is checked before it is stated.
   "Should be" is not evidence.

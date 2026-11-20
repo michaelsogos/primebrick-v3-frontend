@@ -450,6 +450,43 @@ test.describe.serial("dict draft lifecycle — composer → pending", () => {
     await expect(secondRow).toBeVisible();
   });
 
+  test("composer label_key offers the convention suggestion as first option", async ({ page }) => {
+    test.setTimeout(60_000);
+    await loginAsTestAdmin(page);
+    await page.goto(DICT_URL, { waitUntil: "domcontentloaded" });
+    await expect(page.getByTestId("entity-dict-page")).toBeVisible({ timeout: 30000 });
+    await expect(page.locator('[data-testid^="selectable-row-"]').first()).toBeVisible();
+
+    await page.getByTestId("dict-toolbar-add").click();
+    const draft = page.getByTestId("dict-draft-row");
+    const probeCode = `${CODE}_sg`;
+    await draft.locator('[data-dict-cell="code"] input').fill(probeCode);
+    const expectedKey = `custom.entities.customer_type.rows.${probeCode}`;
+
+    // The suggestion is the trigger placeholder while the value is empty.
+    await expect(draft.getByTestId("dict-cell-label-key")).toContainText("rows.");
+
+    // Open the combo: defaultSearch = the computed convention key — the
+    // search field shows it (not the bare prefix), the filtered list is the
+    // suggestion itself, exact-match so no bogus "Create <prefix>" row.
+    await draft.locator('[data-dict-cell="label_key"]').click();
+    const items = page.getByRole("option");
+    await expect(items.first()).toBeVisible();
+    const searchInput = page.getByPlaceholder(/entities\.customer_type\.rows\./);
+    await expect(searchInput).toHaveValue(expectedKey);
+    await expect(items.first()).toContainText(`rows.${probeCode}`);
+    const itemTexts = await items.allTextContents();
+    expect(itemTexts.every((s) => !/^(create|crea)\b/i.test(s.trim()))).toBe(true);
+
+    // Selecting the suggestion commits the full custom.* key.
+    await items.first().click();
+    await expect(draft.getByTestId("dict-cell-label-key")).toContainText("rows.");
+    await draft.getByTestId("dict-draft-confirm").click();
+    await expect(page.getByTestId("dict-draft-row")).toHaveCount(0);
+    const row = page.locator(`[data-testid^="selectable-row-"]`, { hasText: probeCode }).first();
+    await expect(row).toContainText(expectedKey);
+  });
+
   test("empty label_key commits the convention suggestion at save", async ({ page }) => {
     test.setTimeout(60_000);
     await loginAsTestAdmin(page);

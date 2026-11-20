@@ -50,7 +50,15 @@
     if (value) list.add(value);
     // Every item carries the i18n archetype icon — `languages` in the same
     // `sky-500` token as the trigger-page `send` icon (census callables).
-    return [...list].sort().map((key) => ({ key, _icon: 'languages', _icon_color: 'sky-500' }));
+    const sorted = [...list].sort();
+    // The convention suggestion pins FIRST — it's the action the composer
+    // exists for; sorted keys would bury `custom.*` under `crm.*`/`system.*`.
+    if (suggestedKey) {
+      const i = sorted.indexOf(suggestedKey);
+      if (i >= 0) sorted.splice(i, 1);
+      sorted.unshift(suggestedKey);
+    }
+    return sorted.map((key) => ({ key, _icon: 'languages', _icon_color: 'sky-500' }));
   });
 
   /**
@@ -101,7 +109,7 @@
       iconField="_icon"
       iconColorField="_icon_color"
       allowCreate
-      defaultSearch={rowsPrefix}
+      defaultSearch={suggestedKey || rowsPrefix}
       placeholder={suggestedKey || $t('app.common.select_value')}
       searchPlaceholder={rowsPrefix}
       truncateFrom="start"
