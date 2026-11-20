@@ -384,6 +384,72 @@ test.describe.serial("dict draft lifecycle — composer → pending", () => {
     );
   });
 
+  test("pager eye filters — modified-only + selected-only client views", async ({
+    page,
+  }) => {
+    test.setTimeout(90_000);
+    await loginAsTestAdmin(page);
+    await page.goto(DICT_URL, { waitUntil: "domcontentloaded" });
+    await expect(page.getByTestId("entity-dict-page")).toBeVisible({ timeout: 30000 });
+    await expect(page.locator('[data-testid^="selectable-row-"]').first()).toBeVisible();
+    const allRows = await page.locator('[data-testid^="selectable-row-"]').count();
+    expect(allRows).toBeGreaterThan(2);
+
+    // ── Taint one saved row + confirm a pending → modified count = 2 ──
+    const firstRow = page.locator('[data-testid^="selectable-row-"]').first();
+    await firstRow.getByTestId("dict-cell-label-key").click();
+    const keySearch = page.getByPlaceholder(/entities\.customer_type\.rows\./);
+    await keySearch.fill(`custom.entities.customer_type.rows.${CODE}_ef`);
+    await keySearch.press("Enter");
+    await expect(firstRow.getByTestId("dict-row-revert")).toBeVisible();
+
+    await page.getByTestId("dict-toolbar-add").click();
+    const draft = page.getByTestId("dict-draft-row");
+    await draft.locator('[data-dict-cell="code"] input').fill(`${CODE}_ef`);
+    await draft.locator('[data-dict-cell="label_key"]').click();
+    await keySearch.fill(`custom.entities.customer_type.rows.${CODE}_ef2`);
+    await keySearch.press("Enter");
+    await draft.getByTestId("dict-draft-confirm").click();
+    await expect(page.getByTestId("selectable-row-d1")).toBeVisible();
+
+    // ── Modified-only eye → exactly the 2 modified entries render;
+    //    every untouched row is hidden — pure client filter. ──
+    const modEye = page.getByTestId("dict-filter-modified");
+    await expect(modEye).toBeVisible();
+    await modEye.click();
+    await expect(page.locator('[data-testid^="selectable-row-"]')).toHaveCount(2);
+    await expect(page.getByTestId("selectable-row-d1")).toBeVisible();
+    // The range label reports the filtered subset, not the server total.
+    await expect(page.getByTestId("dict-range")).toContainText("/ 2");
+    // Reorder affordances are gated off in the filtered view.
+    await expect(page.getByTestId("dict-row-move-up")).toHaveCount(0);
+
+    // ── Toggle off → the full chain is back. ──
+    await modEye.click();
+    await expect(page.locator('[data-testid^="selectable-row-"]')).toHaveCount(
+      allRows + 1,
+    );
+
+    // ── ELT parity: selection eye — select 2 rows (1 saved + pending),
+    //    filter shows exactly those. ──
+    const secondRow = page.locator('[data-testid^="selectable-row-"]').nth(1);
+    await firstRow.getByRole("checkbox").check();
+    await page.getByTestId("selectable-row-d1").getByRole("checkbox").check();
+    const selEye = page.getByTestId("dict-filter-selected");
+    await expect(selEye).toBeVisible();
+    await selEye.click();
+    await expect(page.locator('[data-testid^="selectable-row-"]')).toHaveCount(2);
+    await expect(page.getByTestId("dict-range")).toContainText("/ 2");
+    // The tainted row still shows its revert affordance inside the
+    // filtered subset — filters never strip row chrome.
+    await expect(firstRow.getByTestId("dict-row-revert")).toBeVisible();
+    await selEye.click();
+    await expect(page.locator('[data-testid^="selectable-row-"]')).toHaveCount(
+      allRows + 1,
+    );
+    await expect(secondRow).toBeVisible();
+  });
+
   test("empty label_key commits the convention suggestion at save", async ({ page }) => {
     test.setTimeout(60_000);
     await loginAsTestAdmin(page);

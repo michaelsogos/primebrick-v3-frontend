@@ -39,7 +39,7 @@
   import { SelectableFieldset, DeletionFilterToggle } from '@primebrick/ui';
   import { LoadingBar } from '$lib/components/ui/loading-bar';
   import * as Sortable from '$lib/components/ui/sortable';
-  import { SearchBar, BulkActionsToolbar, PaginationControls, RangeLabel, useToolbarMode } from '$lib/components/entity-list-table';
+  import { SearchBar, BulkActionsToolbar, PaginationControls, RangeLabel, SelectionCounter, useToolbarMode, useClientSelection } from '$lib/components/entity-list-table';
   import { isColumnFilterable, searchableTextColumns, useEntitySheetSync } from '$lib/entity-list';
   import { Plus, Undo2, LoaderCircle, Funnel } from '@primebrick/ui/vendor/lucide';
   import { type MetaColumn, type EntityMeta } from '$lib/entity-list/types';
@@ -550,21 +550,18 @@
   }
 
   // ─── Reorder — swap order_field values on adjacent rows, mark tainted ──
-  /** Saved rows sorted by the EFFECTIVE order value — `values[uid]` taints
-   *  shadow the server row, so an unsaved move is visible immediately and
-   *  the rendered order equals the post-save order. */
+  /** Effective order value of a saved row — `values[uid]` taints shadow
+   *  the server row, so an unsaved move is visible immediately and the
+   *  rendered order equals the post-save order. */
+  function effectiveOrderOf(r: Record<string, unknown>): number {
+    return orderField
+      ? Number(values[String(r[uid])]?.[orderField] ?? r[orderField] ?? 0)
+      : 0;
+  }
+
+  /** Saved rows sorted by effective order. */
   const displayRows = $derived(
-    orderField
-      ? [...list.rows].sort(
-          (a, b) =>
-            Number(
-              values[String(a[uid])]?.[orderField] ?? a[orderField] ?? 0,
-            ) -
-            Number(
-              values[String(b[uid])]?.[orderField] ?? b[orderField] ?? 0,
-            ),
-        )
-      : list.rows,
+    orderField ? [...list.rows].sort((a, b) => effectiveOrderOf(a) - effectiveOrderOf(b)) : list.rows,
   );
 
   /** The full reorder chain — one interleaved list of saved rows and
@@ -651,20 +648,140 @@
     });
   }
 
+  // ─── Selection + filtered views — hoisted before grouping/render so
+  //     filteredRows can feed every downstream derivation. ──────────────
+  const selection = useSelection();
+  const selectedKeys = $derived([...selection.state.selected_ids]);
+
+  /** ELT parity: eye CTAs in the pager strip flip the list to a
+   *  client-side subset (selected-only / modified-only) with client-side
+   *  paging. `useClientSelection` owns the retained-row map (a
+   *  tainted/selected row keeps rendering even if its server page isn't
+   *  the current one), the auto-exit on reload and the page clamp on its
+   *  own subset. */
+  let showSelectedOnly = $state(false);
+  let showModifiedOnly = $state(false);
+  let clientFilterPage = $state(1);
+
+  const selClient = useClientSelection<Record<string, unknown>>({
+    selectedKeys: () => selectedKeys,
+    rows: () => list.rows,
+    rowKey: (r) => String(r[uid]),
+    pageSize: () => list.pageSize,
+    rowsLoading: () => list.rowsLoading,
+    rowSelectionEnabled: () => true,
+    showSelectedOnly: () => showSelectedOnly,
+    clientSelectedPage: () => clientFilterPage,
+    setShowSelectedOnly: (v) => { showSelectedOnly = v; },
+    setClientSelectedPage: (p) => { clientFilterPage = p; },
+  });
+
+  /** Modified rows = tainted saved rows; pendings count as modified too. */
+  const modifiedUids = $derived([...taintedUids]);
+  const modifiedCount = $derived(modifiedUids.length + pendings.length);
+
+  const modClient = useClientSelection<Record<string, unknown>>({
+    selectedKeys: () => modifiedUids,
+    rows: () => list.rows,
+    rowKey: (r) => String(r[uid]),
+    pageSize: () => list.pageSize,
+    rowsLoading: () => list.rowsLoading,
+    rowSelectionEnabled: () => true,
+    showSelectedOnly: () => showModifiedOnly,
+    clientSelectedPage: () => clientFilterPage,
+    setShowSelectedOnly: (v) => { showModifiedOnly = v; },
+    setClientSelectedPage: (p) => { clientFilterPage = p; },
+  });
+
+  const filterActive = $derived(showModifiedOnly || showSelectedOnly);
+
+  /** Saved rows under the active filters — the pool merges the current
+   *  page with the retained maps so off-page tainted/selected rows still
+   *  render. Both filters on → intersection. */
+  const filteredRows = $derived.by(() => {
+    if (!filterActive) return displayRows;
+    const pool = new SvelteMap<string, Record<string, unknown>>();
+    for (const r of displayRows) pool.set(String(r[uid]), r);
+    for (const r of selClient.orderedSelectedRows) pool.set(String(r[uid]), r);
+    for (const r of modClient.orderedSelectedRows) pool.set(String(r[uid]), r);
+    const mod = new SvelteSet(modifiedUids);
+    const sel = new SvelteSet(selectedKeys);
+    const out = [...pool.values()].filter((r) => {
+      const k = String(r[uid]);
+      return (!showModifiedOnly || mod.has(k)) && (!showSelectedOnly || sel.has(k));
+    });
+    if (orderField) out.sort((a, b) => effectiveOrderOf(a) - effectiveOrderOf(b));
+    return out;
+  });
+
+  /** Pendings are modified by nature — under the selection filter they
+   *  stay only when their draft is selected. */
+  const filteredPendings = $derived(
+    !filterActive
+      ? pendings
+      : showSelectedOnly
+        ? pendings.filter((p) => selection.isSelected(p.__draft))
+        : pendings,
+  );
+
+  /** Filtered render chain — same entry shape + effective-order sort as
+   *  renderEntries, built on the filtered sets. */
+  const filteredEntries = $derived.by(() => {
+    if (!filterActive) return renderEntries;
+    const saved = filteredRows.map((r, i) => ({
+      id: String(r[uid]),
+      kind: 'saved' as const,
+      row: r,
+      sort: effectiveOrderOf(r),
+      seq: i,
+    }));
+    const pend = filteredPendings.map((p, i) => ({
+      id: p.__draft,
+      kind: 'pending' as const,
+      draft: p,
+      sort: orderField ? Number(p.values[orderField] ?? 0) : 0,
+      seq: filteredRows.length + i,
+    }));
+    const all = [...saved, ...pend];
+    if (orderField) all.sort((a, b) => a.sort - b.sort || a.seq - b.seq);
+    return all;
+  });
+
+  /** Client-side paging while a filter is on — the server pager never
+   *  fires (a filtered page is a slice of the local subset). The shared
+   *  page clamps against the FILTERED total (each client-selection
+   *  instance can only clamp against its own count, not the
+   *  intersection). */
+  const clientTotalPages = $derived(
+    Math.max(1, Math.ceil(filteredEntries.length / Math.max(1, list.pageSize))),
+  );
+  $effect(() => {
+    if (filterActive && clientFilterPage > clientTotalPages) clientFilterPage = clientTotalPages;
+  });
+
+  const visibleEntries = $derived(
+    filterActive
+      ? filteredEntries.slice(
+          (clientFilterPage - 1) * list.pageSize,
+          clientFilterPage * list.pageSize,
+        )
+      : renderEntries,
+  );
+
   // ─── Grouping — flat unless meta.dict.group_field is declared ─────────
   const ungrouped = $derived(
     groupField
-      ? displayRows.filter((r) => {
+      ? filteredRows.filter((r) => {
           const g = r[groupField];
           return g === null || g === undefined || String(g).trim() === '';
         })
-      : displayRows,
+      : filteredRows,
   );
 
   const grouped = $derived.by<ReadonlyMap<string, Record<string, unknown>[]>>(() => {
     const map = new SvelteMap<string, Record<string, unknown>[]>();
     if (!groupField) return map;
-    for (const r of displayRows) {
+    for (const r of filteredRows) {
       const g = r[groupField];
       if (g === null || g === undefined || String(g).trim() === '') continue;
       const k = String(g);
@@ -674,10 +791,12 @@
     return map;
   });
 
-  // ─── Selection + bulk actions ────────────────────────────────────────
-  const selection = useSelection();
+  // ─── Selection + bulk actions (selection/selectedKeys hoisted above
+  //     — filteredRows feeds grouping and this block) ──────────────────
   /** Selectable ids — saved rows + pendings (select-all parity, D3). */
-  const selectableUids = $derived(renderChain);
+  const selectableUids = $derived(
+    filterActive ? visibleEntries.map((e) => e.id) : renderChain,
+  );
   const allSelected = $derived(
     selectableUids.length > 0 && selectableUids.every((id) => selection.isSelected(id)),
   );
@@ -688,7 +807,6 @@
   const selectedRows = $derived(
     displayRows.filter((r) => selection.isSelected(String(r[uid]))),
   );
-  const selectedKeys = $derived([...selection.state.selected_ids]);
   const hasDeletedSelected = $derived(
     selectedRows.some((r) => r['deleted_at'] !== null && r['deleted_at'] !== undefined),
   );
@@ -917,6 +1035,19 @@
       : Math.min(list.page * list.pageSize, Number(list.total)),
   );
 
+  /** Filtered-view pager values — ELT's footerUsesClientPaging contract:
+   *  while an eye filter is on, range/pages/total describe the local
+   *  subset and the pager never hits the server. */
+  const pagerPage = $derived(filterActive ? clientFilterPage : list.page);
+  const pagerTotalPages = $derived(filterActive ? clientTotalPages : totalPages);
+  const pagerTotal = $derived(filterActive ? filteredEntries.length : Number(list.total));
+  const pagerRangeStart = $derived(
+    pagerTotal === 0 ? 0 : (pagerPage - 1) * list.pageSize + 1,
+  );
+  const pagerRangeEnd = $derived(
+    pagerTotal === 0 ? 0 : Math.min(pagerPage * list.pageSize, pagerTotal),
+  );
+
   const rowProps = (r: Record<string, unknown>) => ({
     row: r,
     uid,
@@ -939,8 +1070,8 @@
     can_update: canUpdate,
     can_delete: canDelete,
     can_restore: canRestore,
-    orderable: orderField !== undefined,
-    sortable: orderField !== undefined && !groupField,
+    orderable: orderField !== undefined && !filterActive,
+    sortable: orderField !== undefined && !groupField && !filterActive,
     reorder_first: renderChain[0] === String(r[uid]),
     reorder_last: renderChain[renderChain.length - 1] === String(r[uid]),
     onchange: (key: string, v: unknown) => cellChange(String(r[uid]), key, v),
@@ -977,8 +1108,8 @@
     can_update: canUpdate,
     can_delete: false,
     can_restore: false,
-    orderable: orderField !== undefined,
-    sortable: orderField !== undefined && !groupField,
+    orderable: orderField !== undefined && !filterActive,
+    sortable: orderField !== undefined && !groupField && !filterActive,
     reorder_first: renderChain[0] === p.__draft,
     reorder_last: renderChain[renderChain.length - 1] === p.__draft,
     onchange: (key: string, v: unknown) => {
@@ -1132,7 +1263,7 @@
             bind:values={d.values}
             errors={composerErrors(d)}
             readonly={!canCreate}
-            sortable={orderField !== undefined && !groupField}
+            sortable={orderField !== undefined && !groupField && !filterActive}
             confirm_disabled={!composerValid(d)}
             onconfirm={() => handleConfirmDraft(d)}
             ondiscard={() => handleDiscardDraft(d)}
@@ -1156,10 +1287,10 @@
             </SelectableFieldset>
           {/each}
 
-          {#each pendings as p (p.__draft)}
+          {#each filteredPendings as p (p.__draft)}
             <DictRow {...pendingProps(p)} />
           {/each}
-        {:else if orderField}
+        {:else if orderField && !filterActive}
           <!-- Flat orderable mode — one interleaved chain of saved rows
                and pendings sorted by the EFFECTIVE order_field value
                (taints shadow the server row, so an unsaved move is
@@ -1182,7 +1313,11 @@
             {/each}
           </Sortable.Root>
         {:else}
-          {#each renderEntries as e (e.id)}
+          <!-- Filtered flat view (or no-order fallback) — client-sliced
+               subset, no sortable wrapper (drag/chevrons are gated off
+               by `filterActive` upstream: reordering a partial chain
+               would corrupt global order values). -->
+          {#each visibleEntries as e (e.id)}
             {#if e.kind === 'saved'}
               <DictRow {...rowProps(e.row)} />
             {:else}
@@ -1206,14 +1341,41 @@
        keyboard legend (no bound keys). -->
   <Toolbar card={false} class="gap-3 rounded-t-none border-t text-xs">
     {#snippet left()}
-      <RangeLabel start={rangeStart} end={rangeEnd} total={Number(list.total)} test_id="dict-range" />
+      <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <RangeLabel start={pagerRangeStart} end={pagerRangeEnd} total={pagerTotal} test_id="dict-range" />
+        <!-- ELT parity — the selected-only eye: same counter phrase
+             ({n} {plural} {selected}), same client-paging mechanics. -->
+        <SelectionCounter
+          selectionCount={selection.selected_count}
+          selectionLabelKey={entities_ns ? `${entities_ns}.entities.${entity}.plural` : undefined}
+          selectionLabelSingularKey={entities_ns ? `${entities_ns}.entities.${entity}.singular` : undefined}
+          selectionPastParticipleKey={selection.selected_count === 1
+            ? 'system.entities.list.selected_singular'
+            : 'system.entities.list.selected_plural'}
+          test_id="dict-filter-selected"
+          showSelectedOnly={showSelectedOnly}
+          onShowSelectedOnlyChange={(v) => { showSelectedOnly = v; if (v) clientFilterPage = 1; }}
+        />
+        <!-- Dict-scoped predicate counter — tainted + pending rows under
+             the warning tone; same eye affordance. -->
+        <SelectionCounter
+          selectionCount={modifiedCount}
+          selectionLabelKey="app.common.modified_plural"
+          selectionLabelSingularKey="app.common.modified"
+          tone="warning"
+          title_off_key="system.entities.list.view_modified_only_title"
+          test_id="dict-filter-modified"
+          showSelectedOnly={showModifiedOnly}
+          onShowSelectedOnlyChange={(v) => { showModifiedOnly = v; if (v) clientFilterPage = 1; }}
+        />
+      </div>
     {/snippet}
     <PaginationControls
-      page={list.page}
-      totalPages={totalPages}
+      page={pagerPage}
+      totalPages={pagerTotalPages}
       pageSize={list.pageSize}
       pageSizeOptions={pageSizeOptions}
-      onPageChange={list.onPageChange}
+      onPageChange={filterActive ? (p) => { clientFilterPage = p; } : list.onPageChange}
       onPageSizeChange={list.onPageSizeChange}
       test_id_prefix="dict"
     />
@@ -1228,7 +1390,7 @@
       <div class="flex flex-wrap items-center gap-2">
         {#if hasChanges}
           <span class="text-xs text-primary">
-            {$t('system.settings.configurations.changes_pending_fields')}
+            {$t('system.entities.dict.changes_pending')}
           </span>
           <!-- UX guard: up to 3 individual badges per taint kind; at the
                4th the whole group collapses into ONE "+N" badge (total
