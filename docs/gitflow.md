@@ -3,17 +3,40 @@
 This repository follows GitFlow. AI agents MUST follow these rules.
 (`.devin/rules/gitflow.md` is a pointer to this page — canonical text.)
 
-## ⚠️ CRITICAL: NEVER COMMIT AUTOMATICALLY
+## ⚠️ CRITICAL: COMMIT ⇒ PUSH — origin always aligned
 
-**AI agents MUST NEVER commit changes without explicit user instruction.**
+Every commit MUST be pushed immediately. A commit that stays local serves
+no one — `git push` is part of the commit, not a separate decision.
+The commit cadence itself lives in `docs/ai/commit-verification.md`;
+this section adds the mandatory push half.
 
-- **WAIT for the user to explicitly tell you to commit** before running any `git commit` command
-- This applies to ALL situations - no exceptions
-- The user must explicitly say "commit", "procedi con il commit", or equivalent
-- Do NOT commit even if you think the work is complete
-- Do NOT commit even if you think it's "obvious"
-- **ALWAYS wait for explicit user instruction before committing**
+## ⚠️ CRITICAL: Governed branch lifecycle — `tools/gitflow.ts`
 
+Closing a `feature/*`, `release/*` or `hotfix/*` branch via raw
+`git merge` / `git branch -d` / `git push --delete` is FORBIDDEN.
+The only path is the canonical tool (same pattern as check-standards):
+
+    bun ../primebrick-v3-sdk/tools/gitflow.ts finish [name]
+
+which merges `--no-ff` into the base, pushes the base, deletes the
+branch locally AND on origin, then audits the final state.
+
+## ⚠️ CRITICAL: One open work branch — never orphans
+
+At most ONE branch across `feature/*`, `release/*`, `hotfix/*` may be
+open at a time (zero is the cleanest state: `/main` + `/develop` only).
+Before starting or closing work — and at every session start — run:
+
+    bun ../primebrick-v3-sdk/tools/gitflow.ts audit
+
+- An open branch fully merged into its base is an **ORPHAN** (landed,
+  never closed) — a STOP condition: report and ask the user.
+- An unexpected open work branch is the same class of anomaly — STOP,
+  notify, ask. Never resolve silently.
+- Release/Hotfix follow the same law: one open at a time, closed via
+  `gitflow finish` (merge to main, tag, back-merge to develop, delete
+  local + remote).
+- Origin must carry only `main`, `develop` and the one open branch.
 ## Branch Creation Rules
 
 - **NEVER work directly on `develop` or `main`** - always create feature branches first

@@ -153,3 +153,15 @@ once per session. A turn that skips any of them is a protocol violation.
   evidence contradicting the model halts the turn and is explained to
   the user before continuing. An anomaly absorbed silently is a bug
   shipped silently.
+
+## Gitflow gate — every turn that touches a repo
+
+The governed lifecycle in `docs/gitflow.md` is operational, not advisory:
+
+- **Session start / before any branch or merge op** — run
+  `bun ../primebrick-v3-sdk/tools/gitflow.ts audit` in the repo you are
+  about to touch. An orphan (merged-but-unclosed work branch) or an
+  unexpected open work branch is a **STOP**: report and ask the user.
+- **Every commit is pushed immediately** — origin is always aligned.
+- **Closing is only via `gitflow finish`** — raw merge/delete commands
+  on feature/release/hotfix branches are forbidden.
