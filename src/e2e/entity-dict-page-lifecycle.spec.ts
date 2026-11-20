@@ -15,6 +15,8 @@ import { loginAsTestAdmin } from "./helpers/admin-login";
 import { getPool } from "./helpers/db";
 
 const DICT_URL = "/crm/settings/customer_types";
+/** link_types carries `inverse_label_key` — the live extras surface. */
+const LINK_DICT_URL = "/crm/settings/customer_link_types";
 /** Unique run code — also the afterAll cleanup predicate. */
 const CODE = `e2e_lc_${Date.now().toString(36)}`;
 const BASE_KEY = `custom.entities.customer_type.rows.${CODE}`;
@@ -43,6 +45,9 @@ test.describe.serial("dict lifecycle — UI-only on an ad-hoc row", () => {
     // (current run + any previously crashed run).
     await getPool().query(
       `DELETE FROM crm.customer_types WHERE code LIKE 'e2e_lc_%'`,
+    );
+    await getPool().query(
+      `DELETE FROM crm.customer_link_types WHERE code LIKE 'e2e_lc_%'`,
     );
   });
 
@@ -291,5 +296,72 @@ test.describe.serial("dict lifecycle — UI-only on an ad-hoc row", () => {
     );
     expect(rows).toHaveLength(1);
     expect(rows[0].label_key).toBe(`custom.entities.customer_type.rows.${sugCode}`);
+  });
+
+  test("extras sheet — pending AND saved rows edit inverse_label_key", async ({ page }) => {
+    test.setTimeout(90_000);
+    await loginAsTestAdmin(page);
+    await page.goto(LINK_DICT_URL, { waitUntil: "domcontentloaded" });
+    await expect(page.getByTestId("entity-dict-page")).toBeVisible({ timeout: 30000 });
+    await expect(page.locator('[data-testid^="selectable-row-"]').first()).toBeVisible();
+
+    const sheet = page.getByTestId("sheet-primary-pane");
+    const exCode = `${CODE}_ex`;
+    const inverseKey = `custom.entities.customer_link_type.rows.inverse.${exCode}`;
+
+    // ── extras on the PENDING row (task 8): the CTA exists before save,
+    //    edits bind to d.values and ride the pending POST ──
+    await page.getByTestId("dict-toolbar-add").click();
+    const draft = page.getByTestId("dict-draft-row");
+    await draft.locator('[data-dict-cell="code"] input').fill(exCode);
+    // label_key stays EMPTY — the suggestion commits at save (task 7).
+    await draft.getByTestId("dict-draft-confirm").click();
+    const pending = page.locator('[data-testid="selectable-row-d1"]');
+    await expect(pending).toBeVisible();
+
+    await pending.getByTestId("dict-row-extras").click();
+    await expect(sheet).toBeVisible();
+    // inverse_label_key is a *_key extra → TranslationKeyCell combo.
+    await sheet.getByTestId("dict-cell-label-key").click();
+    const keySearch = page.getByPlaceholder(/entities\.customer_link_type\.rows\./);
+    await keySearch.fill(inverseKey);
+    await keySearch.press("Enter");
+    await page.keyboard.press("Escape"); // close the sheet — state persists
+
+    await page.getByTestId("dict-bulk-save").click();
+    await expect(pending).toHaveCount(0, { timeout: 15_000 });
+    let { rows } = await getPool().query(
+      `SELECT inverse_label_key FROM crm.customer_link_types WHERE code = $1`,
+      [exCode],
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0].inverse_label_key).toBe(inverseKey);
+
+    // ── extras on the SAVED row: edit → taint → PUT persists ──
+    const saved = page
+      .locator('[data-testid^="selectable-row-"]')
+      .filter({ has: page.locator(`[title="${exCode}"]`) });
+    await expect(saved).toBeVisible();
+    const inverseKey2 = `${inverseKey}_edited`;
+    await saved.getByTestId("dict-row-extras").click();
+    await expect(sheet).toBeVisible();
+    await sheet.getByTestId("dict-cell-label-key").click();
+    await keySearch.fill(inverseKey2);
+    await keySearch.press("Enter");
+    await page.keyboard.press("Escape");
+
+    await expect(saved.getByTestId("dict-row-revert")).toBeVisible(); // taint marker
+    await page.getByTestId("dict-bulk-save").click();
+    await expect(saved.getByTestId("dict-row-revert")).toHaveCount(0, { timeout: 15_000 });
+    ({ rows } = await getPool().query(
+      `SELECT inverse_label_key FROM crm.customer_link_types WHERE code = $1`,
+      [exCode],
+    ));
+    expect(rows[0].inverse_label_key).toBe(inverseKey2);
+
+    // ── customer_types has NO extras → no extras CTA anywhere ──
+    await page.goto(DICT_URL, { waitUntil: "domcontentloaded" });
+    await expect(page.locator('[data-testid^="selectable-row-"]').first()).toBeVisible();
+    await expect(page.getByTestId("dict-row-extras")).toHaveCount(0);
   });
 });

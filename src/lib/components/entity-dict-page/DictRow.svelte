@@ -28,6 +28,7 @@
     ChevronDown,
     Info,
     RotateCcw,
+    SlidersHorizontal,
     Trash2,
     Undo2,
   } from '@primebrick/ui/vendor/lucide';
@@ -43,6 +44,7 @@
     pending_owner,
     display_field,
     editable_columns,
+    extras_columns = [],
     columns_map,
     values,
     errors = {},
@@ -78,6 +80,10 @@
     /** meta.display_field — the row's VALUE column (label_key on dicts). */
     display_field?: string;
     editable_columns: MetaColumn[];
+    /** Update-editable columns NOT rendered inline — the `entity.dictExtras`
+     *  sheet's field set (empty → no extras CTA). Same set on saved and
+     *  pending rows. */
+    extras_columns?: MetaColumn[];
     columns_map?: ReadonlyMap<string, MetaColumn>;
     values: Record<string, unknown>;
     errors?: Record<string, string[]>;
@@ -178,6 +184,30 @@
 
   function openVersionHistory() {
     openSheet('entity.versionHistory', { entity, entities_ns, rowUuid: row_uid });
+  }
+
+  /** Extras affordance — a column outside the inline anatomy carries an
+   *  inline-row error (e.g. a required extra missing on a pending row):
+   *  the CTA turns destructive so the remediation path is visible from
+   *  the row, never a silent `canSave` block. */
+  const extrasError = $derived(
+    extras_columns.some((c) => (errors[c.key]?.length ?? 0) > 0),
+  );
+
+  function openExtras() {
+    openSheet('entity.dictExtras', {
+      columns: extras_columns,
+      columns_map: columns_map ?? new Map(),
+      // Live getters — the page replaces the row map on every commit;
+      // closures over the $props reads always resolve the CURRENT one.
+      values: () => values,
+      errors: () => errors,
+      onchange,
+      translation_key,
+      pending_owner,
+      title: title_text,
+      readonly: !can_update || deleted,
+    });
   }
 </script>
 
@@ -299,8 +329,20 @@
     {/if}
   </div>
 
-  <!-- Right 2/12: chevrons → taint-undo → single item CTA -->
+  <!-- Right 2/12: extras CTA → chevrons → taint-undo → single item CTA -->
   <div class="col-span-2 flex items-center justify-end gap-1">
+    {#if extras_columns.length > 0}
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        onclick={openExtras}
+        title={$t('system.entities.dict.extras')}
+        aria-label={$t('system.entities.dict.extras')}
+        data-testid="dict-row-extras"
+      >
+        <SlidersHorizontal class="size-4 {extrasError ? 'text-destructive' : ''}" />
+      </Button>
+    {/if}
     {#if orderable}
       <Button
         variant="ghost"

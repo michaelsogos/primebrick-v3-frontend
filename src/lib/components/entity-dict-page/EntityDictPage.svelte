@@ -140,6 +140,15 @@
   );
   const groupField = $derived(dictFacet?.group_field);
 
+  /** Extras — update-editable columns outside the inline anatomy: the
+   *  `entity.dictExtras` sheet's field set (value column stays inline;
+   *  `order_field` is seeded + reorder-managed, never hand-edited). */
+  const extrasColumns = $derived(
+    updateEditableColumns.filter(
+      (c) => c.key !== displayField && c.key !== 'label_key' && c.key !== orderField,
+    ),
+  );
+
   /**
    * The dict label convention — `label_key` is rendered by the dedicated
    * TranslationKeyCell (key pick/create over `*.entities.<tk>.rows.*`,
@@ -742,6 +751,7 @@
     pending_owner: basePath,
     display_field: displayField,
     editable_columns: updateEditableColumns,
+    extras_columns: extrasColumns,
     columns_map: columnMap,
     values: values[String(r[uid])] ?? {},
     errors: invalidRowUids.has(String(r[uid]))
@@ -781,6 +791,7 @@
     pending_owner: basePath,
     display_field: displayField,
     editable_columns: updateEditableColumns,
+    extras_columns: extrasColumns,
     columns_map: columnMap,
     values: p.values,
     errors: columnErrors(p.values, editableColumns, new Set([displayField ?? 'label_key'])),

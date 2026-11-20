@@ -24,6 +24,7 @@ export const SHEET_PANEL_IDS = [
   'entity.jsonViewer',
   'entity.mapperViewer',
   'entity.record',
+  'entity.dictExtras',
   'service.record',
   'config.currencySelect',
   'config.protocolSelect',
@@ -123,6 +124,23 @@ export type SheetPanelPropsMap = {
     value: unknown;
     /** The column's ref contract — drives business-key resolution. */
     ref?: import('$lib/entity-list/types').MetaColumn['ref'];
+  };
+  /**
+   * Dict-row extras — the update-editable columns beyond the inline
+   * code+label anatomy, edited in the sheet on saved and pending rows.
+   * Values/errors arrive as LIVE getters (the page replaces the row map
+   * on every commit — a snapshot goes stale while the sheet is open).
+   */
+  'entity.dictExtras': {
+    values: () => Record<string, unknown>;
+    errors: () => Record<string, string[]>;
+    onchange: (key: string, value: unknown) => void;
+    columns: MetaColumn[];
+    columns_map: ReadonlyMap<string, MetaColumn>;
+    translation_key: string;
+    pending_owner: string;
+    title?: string;
+    readonly?: boolean;
   };
   'service.record': {
     /** `service_registry` business key — the service code. */

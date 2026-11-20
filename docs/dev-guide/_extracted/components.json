@@ -3449,6 +3449,228 @@
     }
   },
   {
+    "file": "src/lib/components/entity-dict-page/DictExtrasPanel.svelte",
+    "component": "DictExtrasPanel",
+    "data": {
+      "source": {
+        "start": {
+          "line": 1,
+          "column": 0
+        },
+        "end": {
+          "line": 120,
+          "column": 0
+        }
+      },
+      "syntaxMode": "runes",
+      "scriptLanguage": "ts",
+      "props": [
+        {
+          "name": "values",
+          "kind": "let",
+          "type": "() => Record<string, unknown>",
+          "typeSource": "typescript",
+          "isFunction": true,
+          "isFunctionDeclaration": false,
+          "isRequired": true,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 26,
+              "column": 4
+            },
+            "end": {
+              "line": 26,
+              "column": 10
+            }
+          }
+        },
+        {
+          "name": "errors",
+          "kind": "let",
+          "type": "() => Record<string, string[]>",
+          "typeSource": "typescript",
+          "isFunction": true,
+          "isFunctionDeclaration": false,
+          "isRequired": true,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 27,
+              "column": 4
+            },
+            "end": {
+              "line": 27,
+              "column": 10
+            }
+          }
+        },
+        {
+          "name": "onchange",
+          "kind": "let",
+          "type": "(key: string, value: unknown) => void",
+          "typeSource": "typescript",
+          "isFunction": true,
+          "isFunctionDeclaration": false,
+          "isRequired": true,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 28,
+              "column": 4
+            },
+            "end": {
+              "line": 28,
+              "column": 12
+            }
+          }
+        },
+        {
+          "name": "columns",
+          "kind": "let",
+          "type": "MetaColumn[]",
+          "typeSource": "typescript",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": true,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 29,
+              "column": 4
+            },
+            "end": {
+              "line": 29,
+              "column": 11
+            }
+          }
+        },
+        {
+          "name": "columns_map",
+          "kind": "let",
+          "type": "ReadonlyMap<string, MetaColumn>",
+          "typeSource": "typescript",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": true,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 30,
+              "column": 4
+            },
+            "end": {
+              "line": 30,
+              "column": 15
+            }
+          }
+        },
+        {
+          "name": "translation_key",
+          "kind": "let",
+          "type": "string",
+          "typeSource": "typescript",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": true,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 31,
+              "column": 4
+            },
+            "end": {
+              "line": 31,
+              "column": 19
+            }
+          }
+        },
+        {
+          "name": "pending_owner",
+          "kind": "let",
+          "type": "string",
+          "typeSource": "typescript",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": true,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 32,
+              "column": 4
+            },
+            "end": {
+              "line": 32,
+              "column": 17
+            }
+          }
+        },
+        {
+          "name": "title",
+          "kind": "let",
+          "type": "string",
+          "typeSource": "typescript",
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 33,
+              "column": 4
+            },
+            "end": {
+              "line": 33,
+              "column": 9
+            }
+          }
+        },
+        {
+          "name": "readonly",
+          "kind": "let",
+          "type": "boolean",
+          "typeSource": "typescript",
+          "value": "false",
+          "defaultValue": {
+            "raw": "false",
+            "kind": "literal",
+            "value": false
+          },
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 34,
+              "column": 4
+            },
+            "end": {
+              "line": 34,
+              "column": 20
+            }
+          }
+        }
+      ],
+      "moduleExports": [],
+      "slots": [],
+      "events": [],
+      "typedefs": [],
+      "generics": null,
+      "contexts": [],
+      "diagnostics": []
+    }
+  },
+  {
     "file": "src/lib/components/entity-dict-page/DictFieldCell.svelte",
     "component": "DictFieldCell",
     "data": {
@@ -3603,7 +3825,7 @@
           "column": 0
         },
         "end": {
-          "line": 380,
+          "line": 422,
           "column": 0
         }
       },
@@ -3622,11 +3844,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 37,
+              "line": 38,
               "column": 4
             },
             "end": {
-              "line": 37,
+              "line": 38,
               "column": 7
             }
           }
@@ -3643,11 +3865,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 38,
+              "line": 39,
               "column": 4
             },
             "end": {
-              "line": 38,
+              "line": 39,
               "column": 7
             }
           }
@@ -3664,11 +3886,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 39,
+              "line": 40,
               "column": 4
             },
             "end": {
-              "line": 39,
+              "line": 40,
               "column": 10
             }
           }
@@ -3685,11 +3907,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 40,
+              "line": 41,
               "column": 4
             },
             "end": {
-              "line": 40,
+              "line": 41,
               "column": 14
             }
           }
@@ -3706,11 +3928,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 41,
+              "line": 42,
               "column": 4
             },
             "end": {
-              "line": 41,
+              "line": 42,
               "column": 19
             }
           }
@@ -3727,11 +3949,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 42,
+              "line": 43,
               "column": 4
             },
             "end": {
-              "line": 42,
+              "line": 43,
               "column": 15
             }
           }
@@ -3748,11 +3970,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 43,
+              "line": 44,
               "column": 4
             },
             "end": {
-              "line": 43,
+              "line": 44,
               "column": 17
             }
           }
@@ -3769,11 +3991,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 44,
+              "line": 45,
               "column": 4
             },
             "end": {
-              "line": 44,
+              "line": 45,
               "column": 17
             }
           }
@@ -3790,12 +4012,39 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 45,
+              "line": 46,
               "column": 4
             },
             "end": {
-              "line": 45,
+              "line": 46,
               "column": 20
+            }
+          }
+        },
+        {
+          "name": "extras_columns",
+          "kind": "let",
+          "type": "MetaColumn[]",
+          "typeSource": "typescript",
+          "value": "[]",
+          "defaultValue": {
+            "raw": "[]",
+            "kind": "array",
+            "value": []
+          },
+          "isFunction": false,
+          "isFunctionDeclaration": false,
+          "isRequired": false,
+          "constant": false,
+          "reactive": false,
+          "source": {
+            "start": {
+              "line": 47,
+              "column": 4
+            },
+            "end": {
+              "line": 47,
+              "column": 23
             }
           }
         },
@@ -3811,11 +4060,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 46,
+              "line": 48,
               "column": 4
             },
             "end": {
-              "line": 46,
+              "line": 48,
               "column": 15
             }
           }
@@ -3832,11 +4081,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 47,
+              "line": 49,
               "column": 4
             },
             "end": {
-              "line": 47,
+              "line": 49,
               "column": 10
             }
           }
@@ -3859,11 +4108,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 48,
+              "line": 50,
               "column": 4
             },
             "end": {
-              "line": 48,
+              "line": 50,
               "column": 15
             }
           }
@@ -3886,11 +4135,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 49,
+              "line": 51,
               "column": 4
             },
             "end": {
-              "line": 49,
+              "line": 51,
               "column": 19
             }
           }
@@ -3913,11 +4162,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 50,
+              "line": 52,
               "column": 4
             },
             "end": {
-              "line": 50,
+              "line": 52,
               "column": 20
             }
           }
@@ -3940,11 +4189,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 51,
+              "line": 53,
               "column": 4
             },
             "end": {
-              "line": 51,
+              "line": 53,
               "column": 19
             }
           }
@@ -3967,11 +4216,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 52,
+              "line": 54,
               "column": 4
             },
             "end": {
-              "line": 52,
+              "line": 54,
               "column": 19
             }
           }
@@ -3994,11 +4243,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 53,
+              "line": 55,
               "column": 4
             },
             "end": {
-              "line": 53,
+              "line": 55,
               "column": 21
             }
           }
@@ -4021,11 +4270,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 54,
+              "line": 56,
               "column": 4
             },
             "end": {
-              "line": 54,
+              "line": 56,
               "column": 22
             }
           }
@@ -4048,11 +4297,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 55,
+              "line": 57,
               "column": 4
             },
             "end": {
-              "line": 55,
+              "line": 57,
               "column": 23
             }
           }
@@ -4075,11 +4324,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 56,
+              "line": 58,
               "column": 4
             },
             "end": {
-              "line": 56,
+              "line": 58,
               "column": 21
             }
           }
@@ -4102,11 +4351,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 57,
+              "line": 59,
               "column": 4
             },
             "end": {
-              "line": 57,
+              "line": 59,
               "column": 25
             }
           }
@@ -4129,11 +4378,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 58,
+              "line": 60,
               "column": 4
             },
             "end": {
-              "line": 58,
+              "line": 60,
               "column": 24
             }
           }
@@ -4150,11 +4399,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 59,
+              "line": 61,
               "column": 4
             },
             "end": {
-              "line": 59,
+              "line": 61,
               "column": 12
             }
           }
@@ -4171,11 +4420,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 60,
+              "line": 62,
               "column": 4
             },
             "end": {
-              "line": 60,
+              "line": 62,
               "column": 12
             }
           }
@@ -4192,11 +4441,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 61,
+              "line": 63,
               "column": 4
             },
             "end": {
-              "line": 61,
+              "line": 63,
               "column": 12
             }
           }
@@ -4213,11 +4462,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 62,
+              "line": 64,
               "column": 4
             },
             "end": {
-              "line": 62,
+              "line": 64,
               "column": 12
             }
           }
@@ -4234,11 +4483,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 63,
+              "line": 65,
               "column": 4
             },
             "end": {
-              "line": 63,
+              "line": 65,
               "column": 13
             }
           }
@@ -4255,11 +4504,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 64,
+              "line": 66,
               "column": 4
             },
             "end": {
-              "line": 64,
+              "line": 66,
               "column": 17
             }
           }
@@ -4276,11 +4525,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 65,
+              "line": 67,
               "column": 4
             },
             "end": {
-              "line": 65,
+              "line": 67,
               "column": 12
             }
           }
@@ -4297,11 +4546,11 @@
           "reactive": false,
           "source": {
             "start": {
-              "line": 66,
+              "line": 68,
               "column": 4
             },
             "end": {
-              "line": 66,
+              "line": 68,
               "column": 14
             }
           }
@@ -4326,7 +4575,7 @@
           "column": 0
         },
         "end": {
-          "line": 1039,
+          "line": 1050,
           "column": 0
         }
       },
