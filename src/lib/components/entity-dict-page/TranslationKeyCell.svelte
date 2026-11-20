@@ -42,6 +42,16 @@
   /** Convention suggestion — `custom.*` is the only user-writable namespace. */
   const suggestedKey = $derived(suggestedKeyFor(translation_key, record['code']));
 
+  /**
+   * Config-entry-create pattern: placeholder/searchPlaceholder carry the
+   * FULL computed leaf key (sample while code is empty), `defaultSearch`
+   * carries the prefix INCLUDING the key segment — it pre-filters to the
+   * keys of THIS code and the Create row offers the scoped path.
+   */
+  const keyLeaf = $derived(slugifyKey(String(record['code'] ?? '')) || 'my_custom_code');
+  const placeholderKey = $derived(`custom.${rowsPrefix}${keyLeaf}`);
+  const defaultSearch = $derived(`${rowsPrefix}${keyLeaf}`);
+
   const options = $derived.by(() => {
     const list = new SvelteSet(
       Object.keys($dict as Record<string, string>).filter((k) => k.includes(rowsPrefix)),
@@ -72,9 +82,13 @@
     const raw = Array.isArray(v) ? (v[0] ?? '') : v;
     const trimmed = raw.trim();
     if (!trimmed) return onchange('');
-    if (trimmed.startsWith('custom.') || trimmed.includes(rowsPrefix)) {
-      return onchange(trimmed);
-    }
+    // Fully namespaced `*.entities.*` key (an existing option or a typed
+    // full key) → verbatim; never rewritten.
+    if (/^[a-z_]+\.entities\./.test(trimmed)) return onchange(trimmed);
+    // Namespace-less `entities.<tk>.rows.<leaf>` — the defaultSearch seed /
+    // Create offer → convention-scoped under `custom.*`.
+    if (trimmed.startsWith('entities.')) return onchange(`custom.${trimmed}`);
+    // Free text → new `custom.*` convention key.
     const slug = slugifyKey(trimmed);
     onchange(slug ? `custom.${rowsPrefix}${slug}` : trimmed);
   }
@@ -109,9 +123,9 @@
       iconField="_icon"
       iconColorField="_icon_color"
       allowCreate
-      defaultSearch={suggestedKey || rowsPrefix}
-      placeholder={suggestedKey || $t('app.common.select_value')}
-      searchPlaceholder={rowsPrefix}
+      defaultSearch={defaultSearch}
+      placeholder={placeholderKey}
+      searchPlaceholder={placeholderKey}
       truncateFrom="start"
       disabled={readonly}
       trailing_ctas={languagesCta}

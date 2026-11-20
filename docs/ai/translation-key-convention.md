@@ -109,24 +109,27 @@ $t('entities.user_profiles.fields.is_admin')
 
 `TranslationKeyCell` (entity-dict-page) offers the computed key
 `custom.entities.<translation_key>.rows.<slug(code)>` — `custom.*` is the
-only user-writable namespace; selecting an existing `*.entities.<tk>.rows.*`
-key commits it verbatim. The suggestion surfaces through THREE channels
-that must stay coherent:
+only user-writable namespace. The cell MUST mirror the config-entry-create
+pattern (`create/+page.svelte`, `ValidationRulesSection`) exactly:
 
-- **Trigger placeholder** — `suggestedKey || select_value` while the value is empty.
-- **`defaultSearch`** — `suggestedKey || rowsPrefix`: with a code typed the
-  search field opens showing the FULL computed key and the filtered list is
-  the suggestion itself. With no code it falls back to the prefix
-  (pre-filters the already `rowsPrefix`-scoped option pool).
-- **First option** — the suggestion is pinned at index 0; alphabetical sort
-  would bury `custom.*` under `crm.*`/`system.*` below the fold.
-- **Save-time** — `EntityDictPage.saveAll` commits the suggestion when
-  `label_key` is left empty.
+- **`placeholder` / `searchPlaceholder`** — the FULL computed leaf key
+  `custom.entities.<tk>.rows.<code>`, with `my_custom_code` as the sample
+  leaf while code is empty (same idiom as `my_custom_setting`).
+- **`defaultSearch`** — the prefix INCLUDING the key segment:
+  `entities.<tk>.rows.<code|sample>` — pre-filters to THIS code's keys and
+  the Create row offers that same scoped path.
+- **First option** — the real suggestion (code-typed only) pins at index 0;
+  alphabetical sort would bury `custom.*` under `crm.*`/`system.*`.
+- **`handleChange`** — namespaced `*.entities.*` keys pass verbatim; the
+  namespace-less seed `entities.<tk>.rows.<leaf>` maps to `custom.` + the
+  path; free text maps to `custom.entities.<tk>.rows.<slug>`.
+- **Save-time** — `EntityDictPage.saveAll` commits `suggestedKey` when
+  `label_key` is left empty (real code only — never the sample).
 
-`defaultSearch` must NEVER carry the bare prefix while a code exists:
-a non-empty seeded search feeds the `allowCreate` row verbatim, producing
-a bogus `Create "…rows."` offer that would commit the prefix as a key —
-and `truncateFrom="start"` renders only the unreadable `…rows.` tail.
+`defaultSearch` must NEVER carry the bare `rows.` prefix: a non-empty
+seeded search feeds the `allowCreate` row verbatim, producing a bogus
+`Create "…rows."` offer that would commit the prefix as a key — and
+`truncateFrom="start"` renders only the unreadable `…rows.` tail.
 (See the ComboSelect `defaultSearch` contract in `@primebrick/ui`.)
 
 ## Deep dive

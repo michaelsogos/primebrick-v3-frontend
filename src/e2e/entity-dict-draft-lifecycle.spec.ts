@@ -459,6 +459,17 @@ test.describe.serial("dict draft lifecycle — composer → pending", () => {
 
     await page.getByTestId("dict-toolbar-add").click();
     const draft = page.getByTestId("dict-draft-row");
+    const searchInput = page.getByPlaceholder(/custom\.entities\.customer_type\.rows\./);
+    const items = page.getByRole("option");
+
+    // ── Config-create pattern, EMPTY code: placeholder/search show the
+    // sample convention key, defaultSearch seeds the code-scoped prefix
+    // and the Create row offers that same scoped path.
+    await draft.locator('[data-dict-cell="label_key"]').click();
+    await expect(searchInput).toHaveValue("entities.customer_type.rows.my_custom_code");
+    await page.keyboard.press("Escape");
+
+    // ── Code typed → defaultSearch = prefix INCLUDING the code segment.
     const probeCode = `${CODE}_sg`;
     await draft.locator('[data-dict-cell="code"] input').fill(probeCode);
     const expectedKey = `custom.entities.customer_type.rows.${probeCode}`;
@@ -466,17 +477,11 @@ test.describe.serial("dict draft lifecycle — composer → pending", () => {
     // The suggestion is the trigger placeholder while the value is empty.
     await expect(draft.getByTestId("dict-cell-label-key")).toContainText("rows.");
 
-    // Open the combo: defaultSearch = the computed convention key — the
-    // search field shows it (not the bare prefix), the filtered list is the
-    // suggestion itself, exact-match so no bogus "Create <prefix>" row.
     await draft.locator('[data-dict-cell="label_key"]').click();
-    const items = page.getByRole("option");
     await expect(items.first()).toBeVisible();
-    const searchInput = page.getByPlaceholder(/entities\.customer_type\.rows\./);
-    await expect(searchInput).toHaveValue(expectedKey);
+    await expect(searchInput).toHaveValue(`entities.customer_type.rows.${probeCode}`);
+    // The suggestion option matches the scoped filter and stays first.
     await expect(items.first()).toContainText(`rows.${probeCode}`);
-    const itemTexts = await items.allTextContents();
-    expect(itemTexts.every((s) => !/^(create|crea)\b/i.test(s.trim()))).toBe(true);
 
     // Selecting the suggestion commits the full custom.* key.
     await items.first().click();
