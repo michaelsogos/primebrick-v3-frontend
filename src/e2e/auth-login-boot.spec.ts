@@ -16,9 +16,10 @@
 import { test, expect, type Page } from "@playwright/test";
 import { loginAsTestAdmin, E2E_ADMIN_USERNAME, E2E_ADMIN_PASSWORD } from "./helpers/admin-login";
 
+import { extJsonStringify, extJsonParse } from '@primebrick/core/ext-json';
 /** Read the mirrored session user from sessionStorage. */
 async function sessionUser(page: Page) {
-  return page.evaluate(() => JSON.parse(sessionStorage.getItem("user") ?? "null"));
+  return page.evaluate(() => extJsonParse<any>(sessionStorage.getItem("user") ?? "null"));
 }
 
 /** Cookie names present in the browser context. */
@@ -49,9 +50,9 @@ test.describe.serial("Login boot, redirect & logout", () => {
   test("expired token → refresh → redirect_path honored", async () => {
     // Force expires_at into the past — boot must take the refresh branch.
     await page.evaluate(() => {
-      const u = JSON.parse(sessionStorage.getItem("user")!);
+      const u = extJsonParse<any>(sessionStorage.getItem("user")!);
       u.expires_at = Date.now() - 1000;
-      sessionStorage.setItem("user", JSON.stringify(u));
+      sessionStorage.setItem("user", extJsonStringify(u));
     });
     await page.goto("/login?redirect_path=%2Fsystem%2Fsettings", { waitUntil: "domcontentloaded" });
     // Refresh succeeds via the HttpOnly cookie → lands on the sanitized path
@@ -105,7 +106,7 @@ test.describe.serial("Login boot, redirect & logout", () => {
     // session mirror so apiFetch takes the refresh path, which now fails →
     // the SessionExpiredDialog opens.
     await page.evaluate(() => {
-      sessionStorage.setItem("user", JSON.stringify({ username: "e2e_test_admin", expires_at: Date.now() - 1000 }));
+      sessionStorage.setItem("user", extJsonStringify({ username: "e2e_test_admin", expires_at: Date.now() - 1000 }));
     });
     await page.goto("/system/settings/profile", { waitUntil: "domcontentloaded" });
 

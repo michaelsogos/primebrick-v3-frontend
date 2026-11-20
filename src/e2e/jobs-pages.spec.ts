@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { loginAsTestAdmin } from "./helpers/admin-login";
 
+import { extJsonStringify, extJsonParse } from '@primebrick/core/ext-json';
 /**
  * /system/job — the job module's pages E2E.
  *
@@ -46,7 +47,7 @@ const SIDEBAR_LINKS = "[data-sidebar='content'] a[href]";
  */
 async function expectedJobModuleLabel(page: import("@playwright/test").Page): Promise<string> {
   const modsRes = await page.request.get("/api/v1/modules");
-  const mods = (((await modsRes.json()).modules ?? []) as Array<{
+  const mods = (((await modsRes.text().then((t) => extJsonParse<any>(t))).modules ?? []) as Array<{
     id: string;
     name: string;
     label_key?: string;
@@ -54,7 +55,7 @@ async function expectedJobModuleLabel(page: import("@playwright/test").Page): Pr
   const job = mods.find((m) => m.id === "job");
   if (!job?.label_key) return job?.name ?? "job";
   const dictRes = await page.request.get(`/api/v1/system/translations/${job.id}/en-GB`);
-  const dict: Record<string, string> = dictRes.ok() ? await dictRes.json() : {};
+  const dict: Record<string, string> = dictRes.ok() ? await dictRes.text().then((t) => extJsonParse<any>(t)) : {};
   return dict[job.label_key] ?? job.name;
 }
 
@@ -246,7 +247,7 @@ test.describe("/system/job/* pages (module-owned)", () => {
     // array stays in declaration order; orderedColumns sorts by `order`.
     const meta = await page.evaluate(async () => {
       const res = await fetch("/svc/job/api/v1/entities/job_trigger/meta");
-      const body = await res.json();
+      const body = await res.text().then((t) => extJsonParse<any>(t));
       return (body.columns ?? []) as { key: string; order: number }[];
     });
     const ord = (k: string) => meta.find((c) => c.key === k)?.order ?? -1;
@@ -274,7 +275,7 @@ test.describe("/system/job/* pages (module-owned)", () => {
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
     const flags = await page.evaluate(async () => {
       const res = await fetch("/svc/job/api/v1/entities/job_trigger/meta");
-      const cols = ((await res.json()).columns ?? []) as {
+      const cols = ((await res.text().then((t) => extJsonParse<any>(t))).columns ?? []) as {
         key: string;
         default_visible?: boolean;
         hideable?: boolean;
@@ -364,7 +365,7 @@ test.describe("/system/job/* pages (module-owned)", () => {
     // Served-meta contract — the physical drop + calculated projections.
     const meta = await page.evaluate(async () => {
       const res = await fetch("/svc/job/api/v1/entities/job_run/meta");
-      return res.json();
+      return res.text().then((t) => extJsonParse<any>(t));
     });
     const cols = (meta.columns ?? []) as {
       key: string;
@@ -565,7 +566,7 @@ test.describe("/system/job/* pages (module-owned)", () => {
     const failed = await page
       .request
       .get("/svc/job/api/v1/entities/job_run/list?filters[0][field]=status&filters[0][op]=%3D&filters[0][value]=failed&page_size=5")
-      .then((r) => r.json())
+      .then((r) => r.text().then((t) => extJsonParse<any>(t)))
       .then((b) => (b.rows ?? []) as { error_code?: string | null }[]);
     test.skip(
       !failed.some((r) => r.error_code),
@@ -610,7 +611,7 @@ test.describe("/system/job/* pages (module-owned)", () => {
     // meta. Render must match it verbatim (no new columns leaked in);
     // `name` is a dead key from the pre-lineage meta — dropped as unknown.
     await page.addInitScript(([key]) => {
-      sessionStorage.setItem(key, JSON.stringify(["uuid", "name", "status"]));
+      sessionStorage.setItem(key, extJsonStringify(["uuid", "name", "status"]));
     }, [VK]);
     await page.goto("/system/job/runs", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 30000 });
@@ -628,7 +629,7 @@ test.describe("/system/job/* pages (module-owned)", () => {
     // never a bare array again.
     await expect(async () => {
       const raw = await page.evaluate((k) => sessionStorage.getItem(k), VK);
-      const parsed = JSON.parse(raw ?? "null") as { v?: number; shown?: unknown; hidden?: unknown } | null;
+      const parsed = extJsonParse<any>(raw ?? "null") as { v?: number; shown?: unknown; hidden?: unknown } | null;
       expect(parsed?.v).toBe(2);
       expect(Array.isArray(parsed?.shown)).toBe(true);
       expect(Array.isArray(parsed?.hidden)).toBe(true);
@@ -652,7 +653,7 @@ test.describe("/system/job/* pages (module-owned)", () => {
       const list = await fetch(
         "/svc/job/api/v1/entities/job_run/list?page=1&page_size=1",
       )
-        .then((r) => r.json())
+        .then((r) => r.text().then((t) => extJsonParse<any>(t)))
         .catch(() => null);
       const row = list?.rows?.[0] ?? null;
       if (!row?.uuid) return { status: -1, body: "no job_run row" };
@@ -740,7 +741,7 @@ test.describe("/system/job/* pages (module-owned)", () => {
       const list = await fetch(
         "/svc/job/api/v1/entities/job_trigger/list?page=1&page_size=25",
       )
-        .then((r) => r.json())
+        .then((r) => r.text().then((t) => extJsonParse<any>(t)))
         .catch(() => null);
       const rows = (list?.rows ?? []) as { uuid?: string }[];
       for (const row of rows) {
@@ -750,13 +751,13 @@ test.describe("/system/job/* pages (module-owned)", () => {
         );
         if (res.status !== 200) return { status: res.status, body: await res.text() };
         const body = await res.text();
-        if ((JSON.parse(body).data ?? []).length > 0)
+        if ((extJsonParse<any>(body).data ?? []).length > 0)
           return { status: res.status, body };
       }
       return { status: -1, body: "no job_trigger row with audit history" };
     });
     expect(result.status).toBe(200);
-    const payload = JSON.parse(result.body) as {
+    const payload = extJsonParse<any>(result.body) as {
       data: { uuid: string; action: string; changed_at: string }[];
       pagination: { hasMore: boolean };
     };

@@ -31,6 +31,7 @@ import { loginAsTestAdmin } from "./helpers/admin-login";
 import { getPool } from "./helpers/db";
 import { getNats } from "./helpers/nats";
 
+import { extJsonParse } from '@primebrick/core/ext-json';
 const TS = Date.now();
 const TRIG_NAME = `e2e-evt-choreo-${TS}`;
 const DUMMY_NAME = `e2e-evt-dummy-${TS}`;
@@ -226,7 +227,7 @@ test.describe("entity events choreography — trigger authored in the browser", 
     // event.action=create is what test 2's emitted event matches on.
     const postedBody = postRes.request().postDataJSON() as { entity?: Record<string, unknown> };
     const postedRaw = postedBody.entity?.filter;
-    const postedFilter = typeof postedRaw === "string" ? JSON.parse(postedRaw) : postedRaw;
+    const postedFilter = typeof postedRaw === "string" ? extJsonParse<any>(postedRaw) : postedRaw;
     expect(postedFilter).toEqual([{ field: "event.action", op: "eq", value: "create" }]);
     await popup.waitForEvent("close", { timeout: 15000 });
     await expect(page.locator("table")).toContainText(TRIG_NAME, { timeout: 15000 });
@@ -236,7 +237,7 @@ test.describe("entity events choreography — trigger authored in the browser", 
       `${JOB_BASE}/job_trigger/list?filters[0][field]=name&filters[0][op]==&filters[0][value]=${encodeURIComponent(TRIG_NAME)}`,
     );
     expect(listRes.ok()).toBeTruthy();
-    const rows = ((await listRes.json()).rows ?? []) as Array<{ uuid: string; version: number }>;
+    const rows = ((await listRes.text().then((t) => extJsonParse<any>(t))).rows ?? []) as Array<{ uuid: string; version: number }>;
     expect(rows.length).toBe(1);
     trigUuid = rows[0].uuid;
     trigVersion = rows[0].version;
@@ -281,7 +282,7 @@ test.describe("entity events choreography — trigger authored in the browser", 
       },
     });
     expect(create.status(), await create.text()).toBe(201);
-    const created = (await create.json()) as { uuid: string };
+    const created = (await create.text().then((t) => extJsonParse<any>(t))) as { uuid: string };
     dummyUuid = created.uuid;
 
     // 1) The entity event must be IN THE STREAM — schema-1 payload emitted
@@ -294,7 +295,7 @@ test.describe("entity events choreography — trigger authored in the browser", 
         async () => {
           try {
             const m = await jsm.streams.getMessage(EVENTS_STREAM, { last_by_subj: evtSubject });
-            streamPayload = m ? (JSON.parse(new TextDecoder().decode(m.data)) as Record<string, unknown>) : null;
+            streamPayload = m ? (extJsonParse<any>(new TextDecoder().decode(m.data)) as Record<string, unknown>) : null;
             return streamPayload !== null;
           } catch {
             return false;
@@ -362,7 +363,7 @@ test.describe("entity events choreography — trigger authored in the browser", 
         },
       });
       expect(r.status(), await r.text()).toBe(201);
-      return (await r.json()) as { uuid: string; version: number };
+      return (await r.text().then((t) => extJsonParse<any>(t))) as { uuid: string; version: number };
     };
     const d1 = await mk(`e2e-evt-bulk-a-${TS}`);
     const d2 = await mk(`e2e-evt-bulk-b-${TS}`);
@@ -388,7 +389,7 @@ test.describe("entity events choreography — trigger authored in the browser", 
       },
     });
     expect(w.status(), await w.text()).toBe(201);
-    const watcher = (await w.json()) as { uuid: string };
+    const watcher = (await w.text().then((t) => extJsonParse<any>(t))) as { uuid: string };
     bulkWatcherUuid = watcher.uuid;
 
     // 3) Wait for the watcher's fresh durable — watcher is live by then.
@@ -430,7 +431,7 @@ test.describe("entity events choreography — trigger authored in the browser", 
       const m = await jsm.streams.getMessage(EVENTS_STREAM, {
         last_by_subj: `events.job.job_trigger.${uuid}`,
       });
-      return m ? (JSON.parse(new TextDecoder().decode(m.data)) as Record<string, unknown>) : null;
+      return m ? (extJsonParse<any>(new TextDecoder().decode(m.data)) as Record<string, unknown>) : null;
     };
     await expect
       .poll(
@@ -480,20 +481,20 @@ test.describe("entity events choreography — trigger authored in the browser", 
 
     if (bulkWatcherUuid) {
       const cur = await page.request.get(`${JOB_BASE}/job_trigger/${bulkWatcherUuid}`);
-      const v = ((await cur.json()) as { version?: number }).version;
+      const v = ((await cur.text().then((t) => extJsonParse<any>(t))) as { version?: number }).version;
       const del = await page.request.delete(`${JOB_BASE}/job_trigger/${bulkWatcherUuid}?version=${v}`);
       expect(del.ok()).toBeTruthy();
     }
 
     if (dummyUuid) {
       const cur = await page.request.get(`${JOB_BASE}/job_trigger/${dummyUuid}`);
-      const v = ((await cur.json()) as { version?: number }).version ?? dummyVersion;
+      const v = ((await cur.text().then((t) => extJsonParse<any>(t))) as { version?: number }).version ?? dummyVersion;
       const del = await page.request.delete(`${JOB_BASE}/job_trigger/${dummyUuid}?version=${v}`);
       expect(del.ok()).toBeTruthy();
     }
     if (trigUuid) {
       const cur = await page.request.get(`${JOB_BASE}/job_trigger/${trigUuid}`);
-      const v = ((await cur.json()) as { version?: number }).version ?? trigVersion;
+      const v = ((await cur.text().then((t) => extJsonParse<any>(t))) as { version?: number }).version ?? trigVersion;
       const del = await page.request.delete(`${JOB_BASE}/job_trigger/${trigUuid}?version=${v}`);
       expect(del.ok()).toBeTruthy();
     }

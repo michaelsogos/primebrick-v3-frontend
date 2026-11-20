@@ -18,8 +18,7 @@
  */
 import { expect, type APIRequestContext, type TestInfo } from "@playwright/test";
 import { getPool } from "./db";
-import { purgeScheduleDecl, extJsonStringify } from "./nats";
-
+import { purgeScheduleDecl, extJsonStringify, extJsonParse } from "./nats";
 export const JOB_API = "/svc/job/api/v1";
 export const TRIGGER_SCHEDULE_PREFIX = "jobs.schedule.job.";
 
@@ -148,7 +147,7 @@ export async function declareTrigger(
   if (!res.ok()) {
     throw new Error(`trigger create failed ${res.status()}: ${await res.text()}`);
   }
-  const row = (await res.json()) as { uuid: string };
+  const row = (await res.text().then((t) => extJsonParse<any>(t))) as { uuid: string };
   return { uuid: row.uuid, schedule_subject: `${TRIGGER_SCHEDULE_PREFIX}${row.uuid}` };
 }
 
@@ -158,7 +157,7 @@ export async function deleteTrigger(request: APIRequestContext, uuid: string): P
   // live declaration firing forever (the exact drift the spec hunts).
   const cur = await request.get(`${JOB_API}/entities/job_trigger/${uuid}`);
   if (cur.status() === 404) return;
-  const j = (await cur.json()) as { version?: number; row?: { version?: number } };
+  const j = (await cur.text().then((t) => extJsonParse<any>(t))) as { version?: number; row?: { version?: number } };
   const version = j.version ?? j.row?.version ?? 0;
   const res = await request.delete(`${JOB_API}/entities/job_trigger/${uuid}?version=${version}`);
   if (!res.ok() && res.status() !== 404) {
@@ -174,7 +173,7 @@ export async function postJobAction(
   const res = await request.post(`${JOB_API}/actions/${action}`, { data: body });
   let parsed: unknown = null;
   try {
-    parsed = await res.json();
+    parsed = await res.text().then((t) => extJsonParse<any>(t));
   } catch {
     parsed = await res.text();
   }

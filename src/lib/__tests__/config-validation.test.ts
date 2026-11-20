@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { buildConfigValueSchema, buildConfigFormSchema, buildConfigFormInitialValues } from "$lib/validation/config-validation";
 import type { ConfigEntry } from "$lib/api-types";
 
+import { extJsonStringify } from '$lib/api-ext';
 function safeParse(schema: ReturnType<typeof buildConfigValueSchema>, value: string) {
   return schema.safeParse(value);
 }
@@ -25,7 +26,7 @@ describe("buildConfigValueSchema — bigint", () => {
   });
 
   it("enforces min rule (numeric value)", () => {
-    const tc = JSON.stringify({
+    const tc = extJsonStringify({
       validation: { required: true, rules: { min: { value: 1, error_label_key: "err.min" } } },
     });
     const schema = buildConfigValueSchema("bigint", tc);
@@ -35,7 +36,7 @@ describe("buildConfigValueSchema — bigint", () => {
   });
 
   it("enforces max rule (numeric value)", () => {
-    const tc = JSON.stringify({
+    const tc = extJsonStringify({
       validation: { required: true, rules: { max: { value: 90, error_label_key: "err.max" } } },
     });
     const schema = buildConfigValueSchema("bigint", tc);
@@ -49,7 +50,7 @@ describe("buildConfigValueSchema — bigint", () => {
   });
 
   it("rejects empty string with only the required error (not invalidBigint) when required", () => {
-    const tc = JSON.stringify({ validation: { required: true, rules: {} } });
+    const tc = extJsonStringify({ validation: { required: true, rules: {} } });
     const schema = buildConfigValueSchema("bigint", tc);
     const result = safeParse(schema, "");
     expect(result.success).toBe(false);
@@ -74,7 +75,7 @@ describe("buildConfigValueSchema — number", () => {
   });
 
   it("enforces min rule (numeric value)", () => {
-    const tc = JSON.stringify({
+    const tc = extJsonStringify({
       validation: { required: true, rules: { min: { value: 0, error_label_key: "err.min" } } },
     });
     const schema = buildConfigValueSchema("number", tc);
@@ -97,7 +98,7 @@ describe("buildConfigValueSchema — money", () => {
   });
 
   it("enforces min rule (numeric value)", () => {
-    const tc = JSON.stringify({
+    const tc = extJsonStringify({
       validation: { required: true, rules: { min: { value: 0, error_label_key: "err.min" } } },
     });
     const schema = buildConfigValueSchema("money", tc);
@@ -106,7 +107,7 @@ describe("buildConfigValueSchema — money", () => {
   });
 
   it("enforces max rule (numeric value)", () => {
-    const tc = JSON.stringify({
+    const tc = extJsonStringify({
       validation: { required: true, rules: { max: { value: 1000, error_label_key: "err.max" } } },
     });
     const schema = buildConfigValueSchema("money", tc);
@@ -154,13 +155,13 @@ describe("buildConfigValueSchema — json", () => {
 
 describe("buildConfigValueSchema — required", () => {
   it("rejects empty string when required=true", () => {
-    const tc = JSON.stringify({ validation: { required: true, rules: {} } });
+    const tc = extJsonStringify({ validation: { required: true, rules: {} } });
     const schema = buildConfigValueSchema("string", tc);
     expect(safeParse(schema, "").success).toBe(false);
   });
 
   it("allows empty string when required=false", () => {
-    const tc = JSON.stringify({ validation: { required: false, rules: {} } });
+    const tc = extJsonStringify({ validation: { required: false, rules: {} } });
     const schema = buildConfigValueSchema("string", tc);
     expect(safeParse(schema, "").success).toBe(true);
   });
@@ -168,7 +169,7 @@ describe("buildConfigValueSchema — required", () => {
 
 describe("buildConfigValueSchema — string min/max (length)", () => {
   it("enforces min length", () => {
-    const tc = JSON.stringify({
+    const tc = extJsonStringify({
       validation: { required: true, rules: { min: { value: 6, error_label_key: "err.min" } } },
     });
     const schema = buildConfigValueSchema("string", tc);
@@ -177,7 +178,7 @@ describe("buildConfigValueSchema — string min/max (length)", () => {
   });
 
   it("enforces max length", () => {
-    const tc = JSON.stringify({
+    const tc = extJsonStringify({
       validation: { required: true, rules: { max: { value: 5, error_label_key: "err.max" } } },
     });
     const schema = buildConfigValueSchema("string", tc);
@@ -268,26 +269,26 @@ describe("buildConfigFormInitialValues", () => {
 
 describe("buildConfigValueSchema — unsigned bigint", () => {
   it("rejects negative sign when unsigned=true", () => {
-    const tc = JSON.stringify({ validation: { unsigned: true, required: true, rules: {} } });
+    const tc = extJsonStringify({ validation: { unsigned: true, required: true, rules: {} } });
     const schema = buildConfigValueSchema("bigint", tc);
     expect(safeParse(schema, "-5").success).toBe(false);
   });
 
   it("rejects plus sign when unsigned=true", () => {
-    const tc = JSON.stringify({ validation: { unsigned: true, required: true, rules: {} } });
+    const tc = extJsonStringify({ validation: { unsigned: true, required: true, rules: {} } });
     const schema = buildConfigValueSchema("bigint", tc);
     expect(safeParse(schema, "+5").success).toBe(false);
   });
 
   it("accepts positive value when unsigned=true", () => {
-    const tc = JSON.stringify({ validation: { unsigned: true, required: true, rules: {} } });
+    const tc = extJsonStringify({ validation: { unsigned: true, required: true, rules: {} } });
     const schema = buildConfigValueSchema("bigint", tc);
     expect(safeParse(schema, "5").success).toBe(true);
     expect(safeParse(schema, "0").success).toBe(true);
   });
 
   it("defaults min to 0 when unsigned=true and no explicit min rule", () => {
-    const tc = JSON.stringify({ validation: { unsigned: true, required: true, rules: {} } });
+    const tc = extJsonStringify({ validation: { unsigned: true, required: true, rules: {} } });
     const schema = buildConfigValueSchema("bigint", tc);
     // The regex already rejects negatives, but the default-min=0 adds a second guard
     expect(safeParse(schema, "0").success).toBe(true);
@@ -295,7 +296,7 @@ describe("buildConfigValueSchema — unsigned bigint", () => {
   });
 
   it("respects explicit min rule over default 0 when unsigned=true", () => {
-    const tc = JSON.stringify({
+    const tc = extJsonStringify({
       validation: { unsigned: true, required: true, rules: { min: { value: 10, error_label_key: "err.min" } } },
     });
     const schema = buildConfigValueSchema("bigint", tc);
@@ -304,13 +305,13 @@ describe("buildConfigValueSchema — unsigned bigint", () => {
   });
 
   it("allows negative when unsigned is absent (default signed)", () => {
-    const tc = JSON.stringify({ validation: { required: true, rules: {} } });
+    const tc = extJsonStringify({ validation: { required: true, rules: {} } });
     const schema = buildConfigValueSchema("bigint", tc);
     expect(safeParse(schema, "-5").success).toBe(true);
   });
 
   it("allows negative when unsigned=false (explicit signed)", () => {
-    const tc = JSON.stringify({ validation: { unsigned: false, required: true, rules: {} } });
+    const tc = extJsonStringify({ validation: { unsigned: false, required: true, rules: {} } });
     const schema = buildConfigValueSchema("bigint", tc);
     expect(safeParse(schema, "-5").success).toBe(true);
   });
@@ -318,7 +319,7 @@ describe("buildConfigValueSchema — unsigned bigint", () => {
 
 describe("buildConfigValueSchema — regex with flags", () => {
   it("validates case-insensitive with flags: 'i'", () => {
-    const tc = JSON.stringify({
+    const tc = extJsonStringify({
       validation: { required: true, rules: { regex: { pattern: "^[a-z]+$", flags: "i" } } },
     });
     const schema = buildConfigValueSchema("string", tc);
@@ -329,7 +330,7 @@ describe("buildConfigValueSchema — regex with flags", () => {
   });
 
   it("rejects case mismatch without 'i' flag", () => {
-    const tc = JSON.stringify({
+    const tc = extJsonStringify({
       validation: { required: true, rules: { regex: { pattern: "^[a-z]+$" } } },
     });
     const schema = buildConfigValueSchema("string", tc);
@@ -338,7 +339,7 @@ describe("buildConfigValueSchema — regex with flags", () => {
   });
 
   it("uses regexMismatch fallback for mismatch when no custom error key", () => {
-    const tc = JSON.stringify({
+    const tc = extJsonStringify({
       validation: { required: true, rules: { regex: { pattern: "^[a-z]+$" } } },
     });
     const schema = buildConfigValueSchema("string", tc);
@@ -350,7 +351,7 @@ describe("buildConfigValueSchema — regex with flags", () => {
   });
 
   it("uses custom error key for mismatch (not for invalid pattern)", () => {
-    const tc = JSON.stringify({
+    const tc = extJsonStringify({
       validation: { required: true, rules: { regex: { pattern: "^[a-z]+$", error_label_key: "err.regex" } } },
     });
     const schema = buildConfigValueSchema("string", tc);
@@ -362,7 +363,7 @@ describe("buildConfigValueSchema — regex with flags", () => {
   });
 
   it("uses invalidRegexPattern for invalid pattern (even with custom error key)", () => {
-    const tc = JSON.stringify({
+    const tc = extJsonStringify({
       validation: { required: true, rules: { regex: { pattern: "[invalid", error_label_key: "err.regex" } } },
     });
     const schema = buildConfigValueSchema("string", tc);
@@ -376,19 +377,19 @@ describe("buildConfigValueSchema — regex with flags", () => {
 
 describe("buildConfigValueSchema — unsigned number", () => {
   it("rejects negative sign when unsigned=true", () => {
-    const tc = JSON.stringify({ validation: { unsigned: true, required: true, rules: {} } });
+    const tc = extJsonStringify({ validation: { unsigned: true, required: true, rules: {} } });
     const schema = buildConfigValueSchema("number", tc);
     expect(safeParse(schema, "-3.14").success).toBe(false);
   });
 
   it("rejects plus sign when unsigned=true", () => {
-    const tc = JSON.stringify({ validation: { unsigned: true, required: true, rules: {} } });
+    const tc = extJsonStringify({ validation: { unsigned: true, required: true, rules: {} } });
     const schema = buildConfigValueSchema("number", tc);
     expect(safeParse(schema, "+3.14").success).toBe(false);
   });
 
   it("accepts positive decimal when unsigned=true", () => {
-    const tc = JSON.stringify({ validation: { unsigned: true, required: true, rules: {} } });
+    const tc = extJsonStringify({ validation: { unsigned: true, required: true, rules: {} } });
     const schema = buildConfigValueSchema("number", tc);
     expect(safeParse(schema, "3.14").success).toBe(true);
     expect(safeParse(schema, "0").success).toBe(true);
@@ -397,20 +398,20 @@ describe("buildConfigValueSchema — unsigned number", () => {
 
 describe("buildConfigValueSchema — unsigned money", () => {
   it("rejects negative sign when unsigned=true", () => {
-    const tc = JSON.stringify({ validation: { unsigned: true, required: true, rules: {} } });
+    const tc = extJsonStringify({ validation: { unsigned: true, required: true, rules: {} } });
     const schema = buildConfigValueSchema("money", tc);
     expect(safeParse(schema, "-99.99").success).toBe(false);
   });
 
   it("accepts positive amount when unsigned=true", () => {
-    const tc = JSON.stringify({ validation: { unsigned: true, required: true, rules: {} } });
+    const tc = extJsonStringify({ validation: { unsigned: true, required: true, rules: {} } });
     const schema = buildConfigValueSchema("money", tc);
     expect(safeParse(schema, "99.99").success).toBe(true);
     expect(safeParse(schema, "0").success).toBe(true);
   });
 
   it("defaults min to 0 when unsigned=true and no explicit min rule", () => {
-    const tc = JSON.stringify({ validation: { unsigned: true, required: true, rules: {} } });
+    const tc = extJsonStringify({ validation: { unsigned: true, required: true, rules: {} } });
     const schema = buildConfigValueSchema("money", tc);
     expect(safeParse(schema, "0").success).toBe(true);
     expect(safeParse(schema, "0.01").success).toBe(true);
@@ -419,7 +420,7 @@ describe("buildConfigValueSchema — unsigned money", () => {
 
 describe("buildConfigValueSchema — unsigned only affects numeric types", () => {
   it("does not affect string type", () => {
-    const tc = JSON.stringify({ validation: { unsigned: true, required: true, rules: {} } });
+    const tc = extJsonStringify({ validation: { unsigned: true, required: true, rules: {} } });
     const schema = buildConfigValueSchema("string", tc);
     // String with a minus sign is fine — unsigned is a no-op for non-numeric types
     expect(safeParse(schema, "-hello-").success).toBe(true);
@@ -427,7 +428,7 @@ describe("buildConfigValueSchema — unsigned only affects numeric types", () =>
 });
 
 describe("buildConfigValueSchema — phone", () => {
-  const withIt = JSON.stringify({ country: "IT" });
+  const withIt = extJsonStringify({ country: "IT" });
 
   it("accepts a valid Italian number when country=IT", () => {
     const schema = buildConfigValueSchema("phone", withIt);

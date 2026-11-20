@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { loginAsCollabAdmin, loginAsTestAdmin } from "./helpers/admin-login";
 
+import { extJsonParse } from '@primebrick/core/ext-json';
 /**
  * ref-cell-sheet — the DECIDED `type:"ref"` "link" anatomy (POC: audit
  * `*_by` actor columns → `user_profile`, inherited by every entity via
@@ -57,7 +58,9 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
       const url = res.url();
       if (/\/entities\/customer\/list/.test(url)) {
         void res
-          .json()
+          .text()
+
+          .then((t) => extJsonParse<any>(t))
           .then((j) => {
             if (Array.isArray(j?.rows)) listRows = j.rows as ListRow[];
           })
@@ -258,7 +261,9 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
     page.on("response", (res) => {
       if (/\/entities\/user_profile\/[^/]+\/audit/.test(res.url())) {
         void res
-          .json()
+          .text()
+
+          .then((t) => extJsonParse<any>(t))
           .then((j) => {
             if (Array.isArray(j?.data)) auditRows.push(...j.data);
           })
@@ -570,7 +575,7 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
         },
       });
       expect(res.ok()).toBeTruthy();
-      const body = await res.json();
+      const body = await res.text().then((t) => extJsonParse<any>(t));
       suspendedUuid = (body?.created_by ?? body?.row?.created_by ?? body?.entity?.created_by) as
         | string
         | undefined;
@@ -586,7 +591,7 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
       const res = await page.request.get(
         `/api/v1/entities/user_profile/list?filters[0][field]=uuid&filters[0][op]=%3D&filters[0][value]=${suspendedUuid}`,
       );
-      const j = await res.json();
+      const j = await res.text().then((t) => extJsonParse<any>(t));
       return j?.rows?.[0] as { uuid: string; version: number } | undefined;
     };
     const before = await profileOf();
@@ -621,7 +626,7 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
         const custRes = await page.request.get(
           `/svc/crm/api/v1/entities/customer/list?filters[0][field]=uuid&filters[0][op]=%3D&filters[0][value]=${customerUuid}`,
         );
-        const cust = (await custRes.json())?.rows?.[0] as { version: number } | undefined;
+        const cust = (await custRes.text().then((t) => extJsonParse<any>(t)))?.rows?.[0] as { version: number } | undefined;
         if (cust) {
           await page.request.delete(
             `/svc/crm/api/v1/entities/customer/${customerUuid}?version=${cust.version}`,

@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { loginAsTestAdmin } from "./helpers/admin-login";
 
+import { extJsonStringify, extJsonParse } from '@primebrick/core/ext-json';
 /* ELT list-UX regression locks — the served-meta/wire consolidation:
  *
  *  - ColumnsPanel select-all: tri-state checkbox + rendered-count badge;
@@ -91,12 +92,12 @@ test.describe("ELT columns/filter UX — job_schedule", () => {
     // would 400 every call without the bootstrap sanitize.
     await page.addInitScript((sk) => {
       const poison = {
-        [`${sk}columnOrder:filterValues`]: JSON.stringify({ bogus_field: "x", schedule_spec: "y" }),
-        [`${sk}columnOrder:advancedFilters`]: JSON.stringify([
+        [`${sk}columnOrder:filterValues`]: extJsonStringify({ bogus_field: "x", schedule_spec: "y" }),
+        [`${sk}columnOrder:advancedFilters`]: extJsonStringify([
           { id: "p1", field: "bogus_field", operator: "=", value: 1 },
           { id: "p2", field: "status", operator: "=", value: "ACTIVE" }
         ]),
-        [`${sk}searchInKeys`]: JSON.stringify(["version", "bogus_key"])
+        [`${sk}searchInKeys`]: extJsonStringify(["version", "bogus_key"])
       };
       for (const [k, v] of Object.entries(poison)) {
         window.sessionStorage.setItem(k, v);
@@ -143,7 +144,7 @@ test.describe("ELT columns/filter UX — job_schedule", () => {
       const u = new URL(url);
       if (!u.searchParams.get("search")) return;
       try {
-        const body = await res.json();
+        const body = await res.text().then((t) => extJsonParse<any>(t));
         searchCalls.push({
           status: res.status(),
           total: Number(body.total ?? -1),

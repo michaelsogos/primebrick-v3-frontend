@@ -22,36 +22,11 @@
  */
 import { connect, headers as natsHeaders, type NatsConnection, type MsgHdrs } from "@nats-io/transport-node";
 import { jetstream, jetstreamManager, JetStreamApiError, AckPolicy, type JetStreamClient, type JetStreamManager } from "@nats-io/jetstream";
-import JSONBig from "json-bigint";
+import { extJsonParse, extJsonStringify } from "@primebrick/core/ext-json";
 
-const jsonBig = JSONBig({ strict: true });
-
-/** extJsonStringify equivalent — bigint values serialize as JSON numbers. */
-export function extJsonStringify(data: unknown): string {
-  return jsonBig.stringify(data);
-}
-
-/** extJsonParse equivalent — safe integers revive to native bigint. */
-export function extJsonParse<T = unknown>(text: string): T {
-  return jsonBig.parse(text, (_key, value) => {
-    if (typeof value === "number") {
-      return Number.isSafeInteger(value) ? BigInt(value) : value;
-    }
-    if (
-      typeof value === "object" &&
-      value !== null &&
-      (value as object).constructor?.name === "BigNumber"
-    ) {
-      const bn = value as { toString(): string; toNumber(): number };
-      try {
-        return BigInt(bn.toString());
-      } catch {
-        return bn.toNumber();
-      }
-    }
-    return value;
-  }) as T;
-}
+// Re-exported for spec files that assert on nats payloads — one codec,
+// no local re-implementation.
+export { extJsonParse, extJsonStringify };
 
 export const JOBS_STREAM = "JOBS";
 export const CLIENT_SHIELD_KEY_HEADER = "x-primebrick-client-shield-key";

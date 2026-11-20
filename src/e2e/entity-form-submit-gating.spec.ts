@@ -15,6 +15,7 @@
 import { test, expect } from "@playwright/test";
 import { loginAsTestAdmin } from "./helpers/admin-login";
 
+import { extJsonParse } from '@primebrick/core/ext-json';
 const TS = Date.now();
 const RULE_NAME = `e2e-gate-${TS}`;
 const JOB_BASE = "/svc/job/api/v1/entities";
@@ -113,7 +114,7 @@ test.describe("entity-form submit gating", () => {
       `${JOB_BASE}/job_trigger/list?filters[0][field]=name&filters[0][op]==&filters[0][value]=${encodeURIComponent(RULE_NAME)}`,
     );
     expect(listRes.ok()).toBeTruthy();
-    const rows = ((await listRes.json()).rows ?? []) as Array<{ uuid: string; version: number }>;
+    const rows = ((await listRes.text().then((t) => extJsonParse<any>(t))).rows ?? []) as Array<{ uuid: string; version: number }>;
     expect(rows.length).toBe(1);
     createdUuid = rows[0].uuid;
     createdVersion = rows[0].version;

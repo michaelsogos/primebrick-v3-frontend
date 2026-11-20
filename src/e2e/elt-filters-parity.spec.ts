@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { extJsonParse } from "@primebrick/core/ext-json";
 import { loginAsTestAdmin } from "./helpers/admin-login";
 
 /**
@@ -202,7 +203,7 @@ test.describe("elt filters widget parity", () => {
     await page.goto(TRIGGERS, { waitUntil: "domcontentloaded" });
     await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 30_000 });
     await openFiltersSheet(page);
-    const items = (await (await respPromise).json()).items as { value: string; label: string }[];
+    const items = (await (await respPromise).text().then((t) => extJsonParse<any>(t))).items as { value: string; label: string }[];
     expect(items.length).toBeGreaterThan(0);
 
     const { control } = await labeledControl(page, /created.?by/i);

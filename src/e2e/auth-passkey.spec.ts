@@ -49,6 +49,7 @@ import {
   type CapturedPasskey,
 } from "./helpers/webauthn";
 
+import { extJsonParse } from '@primebrick/core/ext-json';
 // ─── Test data helpers ──────────────────────────────────────────────────────
 
 function makeTestUser() {
@@ -316,7 +317,7 @@ test.describe.serial("Suite B — User creation + passkey enrollment + passkey l
     // Assert: /api/v1/auth/me returns the test user.
     const meResponse = await freshPage.request.get("/api/v1/auth/me");
     expect(meResponse.ok()).toBeTruthy();
-    const meBody = await meResponse.json();
+    const meBody = await meResponse.text().then((t) => extJsonParse<any>(t));
     expect(meBody.profile?.idp_username ?? meBody.username).toBe(testUser.username);
 
     // Cleanup: clear the virtual authenticator.

@@ -15,6 +15,7 @@
 import { test, expect, type Page, type Request } from "@playwright/test";
 import { loginAsTestAdmin } from "./helpers/admin-login";
 
+import { extJsonParse } from '@primebrick/core/ext-json';
 const DICT_URL = "/crm/settings/customer_link_types";
 const API = "/svc/crm/api/v1/entities/customer_link_type";
 let seq = 0;
@@ -53,7 +54,7 @@ async function createTempRow(page: Page, code: string): Promise<{ uuid: string; 
     },
   });
   expect(res.ok(), `temp row create failed: ${res.status()} ${await res.text()}`).toBeTruthy();
-  const body = (await res.json()) as {
+  const body = (await res.text().then((t) => extJsonParse<any>(t))) as {
     uuid?: string;
     version?: number;
     entity?: { uuid?: string; version?: number };
@@ -75,7 +76,7 @@ async function cleanupTempRow(page: Page, code: string): Promise<void> {
       .get(`${API}/list?deleted_records=${deleted}&page_size=50`)
       .catch(() => null);
     if (!list?.ok()) return undefined;
-    const body = (await list.json().catch(() => null)) as {
+    const body = (await list.text().then((t) => extJsonParse<any>(t)).catch(() => null)) as {
       rows?: Array<{ uuid?: string; code?: string; version?: number }>;
       items?: Array<{ uuid?: string; code?: string; version?: number }>;
     } | null;

@@ -18,6 +18,7 @@
 import { createServer, type Server } from "node:http";
 import { randomUUID } from "node:crypto";
 
+import { extJsonStringify, extJsonParse } from '@primebrick/core/ext-json';
 export interface FakeBrevoServer {
   server: Server;
   port: number;
@@ -46,7 +47,7 @@ export async function startFakeBrevoServer(fixedPort?: number): Promise<FakeBrev
     // emailsender reads).
     if (req.method === "GET" && req.url === "/__captures") {
       res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify(receivedRequests));
+      res.end(extJsonStringify(receivedRequests));
       return;
     }
     let body = "";
@@ -56,7 +57,7 @@ export async function startFakeBrevoServer(fixedPort?: number): Promise<FakeBrev
     req.on("end", () => {
       receivedRequests.push({
         headers: req.headers as Record<string, string>,
-        body: body ? JSON.parse(body) : null,
+        body: body ? extJsonParse<any>(body) : null,
         // Host-clock stamp — comparable to NATS tap `received_at` and the
         // DB timestamps (same machine): pipeline-latency measurements.
         received_at: Date.now(),
@@ -65,7 +66,7 @@ export async function startFakeBrevoServer(fixedPort?: number): Promise<FakeBrev
       // Mimic Brevo's success response shape.
       // Real Brevo returns { messageId: "..." } on 200.
       res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ messageId: `fake-${randomUUID()}` }));
+      res.end(extJsonStringify({ messageId: `fake-${randomUUID()}` }));
     });
   });
 

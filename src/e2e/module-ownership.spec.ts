@@ -1,6 +1,7 @@
 import { test, expect, type Page, type Response } from "@playwright/test";
 import { loginAsTestAdmin } from "./helpers/admin-login";
 
+import { extJsonStringify, extJsonParse } from '@primebrick/core/ext-json';
 /**
  * Module-ownership hardening suite — the observable contract of the
  * module/nav architecture, verified bidirectionally.
@@ -102,7 +103,7 @@ function expectedOwner(modules: ModuleInfo[], pathname: string): string | null {
 async function fetchModules(page: Page): Promise<ModuleInfo[]> {
   const res = await page.request.get("/api/v1/modules");
   expect(res.ok(), "GET /api/v1/modules must succeed").toBeTruthy();
-  const body = await res.json();
+  const body = await res.text().then((t) => extJsonParse<any>(t));
   const mods: ModuleInfo[] = body.modules ?? body;
   return mods.filter((m) => m.enabled !== false);
 }
@@ -186,7 +187,7 @@ async function expectedModuleLabel(page: Page, m: ModuleInfo): Promise<string> {
     `/api/v1/system/translations/${dictModuleOf(m)}/en-GB`
   );
   if (!res.ok()) return m.name;
-  const dict: Record<string, string> = await res.json();
+  const dict: Record<string, string> = await res.text().then((t) => extJsonParse<any>(t));
   return dict[m.label_key] ?? m.name;
 }
 
@@ -339,7 +340,7 @@ test.describe("module ownership — observable contract", () => {
       for (const href of flattenHrefs(nav)) {
         expect(
           prefixes.some((px) => href === px || href.startsWith(px + "/")),
-          `module '${m.id}' nav link '${href}' must live under one of ${JSON.stringify(prefixes)}`
+          `module '${m.id}' nav link '${href}' must live under one of ${extJsonStringify(prefixes)}`
         ).toBeTruthy();
       }
     }
@@ -393,7 +394,7 @@ test.describe("module ownership — observable contract", () => {
         `/api/v1/system/translations/${dictId}/en-GB`
       );
       expect(res.ok(), `dict endpoint for '${dictId}' must succeed`).toBeTruthy();
-      const dict = await res.json();
+      const dict = await res.text().then((t) => extJsonParse<any>(t));
       const size = Object.keys(dict?.dict ?? dict ?? {}).length;
       expect(size, `module '${dictId}' dictionary must not be empty`).toBeGreaterThan(0);
     }
@@ -485,13 +486,13 @@ test.describe("module ownership — observable contract", () => {
   }) => {
     const modules = await fetchModules(page);
     const appDictRes = await page.request.get("/api/v1/system/translations/public/en-GB");
-    const appDict: Record<string, string> = appDictRes.ok() ? await appDictRes.json() : {};
+    const appDict: Record<string, string> = appDictRes.ok() ? await appDictRes.text().then((t) => extJsonParse<any>(t)) : {};
 
     for (const m of pageModules(modules)) {
       const nav = await fetchModuleNav(page, m.id);
       const moduleLabel = await expectedModuleLabel(page, m);
       const dictRes = await page.request.get(`/api/v1/system/translations/${dictModuleOf(m)}/en-GB`);
-      const dict: Record<string, string> = dictRes.ok() ? await dictRes.json() : {};
+      const dict: Record<string, string> = dictRes.ok() ? await dictRes.text().then((t) => extJsonParse<any>(t)) : {};
 
       // One probe per root slice — the first declared nav link of each
       // root the module serves (crm → /crm/customers + /system/crm/pipeline).

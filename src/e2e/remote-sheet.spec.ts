@@ -13,6 +13,7 @@
 import { test, expect } from '@playwright/test';
 import { loginAsTestAdmin } from './helpers/admin-login';
 
+import { extJsonParse } from '@primebrick/core/ext-json';
 /** Import the sheet-manager instance the app itself is using. */
 async function sheetManager(page: import('@playwright/test').Page) {
   const url = await page.evaluate(() => {
@@ -55,7 +56,7 @@ test('remote sheet job.runDetail mounts and loads its run', async ({ page }) => 
   // time; a hardcoded uuid rots with it).
   const run = await page.request
     .get('/svc/job/api/v1/entities/job_run/list?page=1&page_size=1')
-    .then((r) => r.json())
+    .then((r) => r.text().then((t) => extJsonParse<any>(t)))
     .then((b) => (b.rows?.[0] ?? null) as { uuid?: string; trigger?: string } | null);
   expect(run?.uuid, 'at least one job_run row exists').toBeTruthy();
 

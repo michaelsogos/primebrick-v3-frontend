@@ -11,6 +11,7 @@
 import { test, expect } from "@playwright/test";
 import { loginAsTestAdmin } from "./helpers/admin-login";
 
+import { extJsonStringify } from '@primebrick/core/ext-json';
 test.describe("rfc error extras (entity list)", () => {
   test("list 400 surfaces extra.issues in the error detail dialog", async ({ page }) => {
     await loginAsTestAdmin(page);
@@ -19,7 +20,7 @@ test.describe("rfc error extras (entity list)", () => {
       route.fulfill({
         status: 400,
         contentType: "application/problem+json",
-        body: JSON.stringify({
+        body: extJsonStringify({
           type: "https://primebrick.io/errors/VALIDATION_ERROR",
           title: "Validation Error",
           status: 400,

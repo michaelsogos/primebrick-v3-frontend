@@ -5,6 +5,7 @@ import {
 } from "../components/entity-list-table/composables/useColumnOrder.svelte";
 import type { MetaColumn } from "../entity-list/types";
 
+import { extJsonStringify } from '$lib/api-ext';
 const auditCol = (key: string): MetaColumn => ({ key }) as MetaColumn;
 
 describe("parseColumnOrderState", () => {
@@ -23,7 +24,7 @@ describe("parseColumnOrderState", () => {
   });
 
   it("parses a full valid payload", () => {
-    const raw = JSON.stringify({
+    const raw = extJsonStringify({
       sticky: ["uuid"],
       data: ["name", "email"],
       auditing: ["created_at"],
@@ -36,7 +37,7 @@ describe("parseColumnOrderState", () => {
   });
 
   it("filters non-string keys out of group arrays", () => {
-    const raw = JSON.stringify({
+    const raw = extJsonStringify({
       sticky: ["a", 1, null, "b", true],
       data: ["c", {}, "d"],
     });
@@ -48,7 +49,7 @@ describe("parseColumnOrderState", () => {
   });
 
   it("yields undefined for groups that are not arrays", () => {
-    const raw = JSON.stringify({ sticky: "nope", data: 7 });
+    const raw = extJsonStringify({ sticky: "nope", data: 7 });
     const parsed = parseColumnOrderState(raw);
     expect(parsed.sticky).toBeUndefined();
     expect(parsed.data).toBeUndefined();
@@ -56,7 +57,7 @@ describe("parseColumnOrderState", () => {
   });
 
   it("accepts payloads with extra unknown keys", () => {
-    const raw = JSON.stringify({ sticky: ["a"], somethingElse: { deep: 1 } });
+    const raw = extJsonStringify({ sticky: ["a"], somethingElse: { deep: 1 } });
     expect(parseColumnOrderState(raw).sticky).toEqual(["a"]);
   });
 });

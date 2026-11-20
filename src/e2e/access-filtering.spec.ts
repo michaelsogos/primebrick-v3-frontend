@@ -1,6 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 import { loginAsTestAdmin, loginAsTestUser } from "./helpers/admin-login";
 
+import { extJsonParse } from '@primebrick/core/ext-json';
 /**
  * Access-axis E2E — `access.{app}.{module}.{leaf}`.
  *
@@ -41,7 +42,7 @@ type ModuleInfo = {
 async function fetchModules(page: Page): Promise<ModuleInfo[]> {
   const res = await page.request.get("/api/v1/modules");
   expect(res.ok(), "GET /api/v1/modules must succeed for any authenticated user").toBeTruthy();
-  const body = await res.json();
+  const body = await res.text().then((t) => extJsonParse<any>(t));
   return (body.modules ?? body) as ModuleInfo[];
 }
 

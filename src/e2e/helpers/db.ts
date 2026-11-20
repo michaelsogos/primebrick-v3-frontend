@@ -15,6 +15,7 @@
 import { createHash } from "crypto";
 import { Pool, type PoolClient } from "pg";
 
+import { extJsonStringify } from '@primebrick/core/ext-json';
 export const DATABASE_URL =
   process.env.DATABASE_URL ??
   "postgres://primebrick:primebrick_dev@127.0.0.1:5432/primebrick";
@@ -210,7 +211,7 @@ export async function upsertEmailTemplateFixture(template: {
       template.code,
       template.language_iso ?? "en-GB",
       template.subject ?? template.code,
-      template.variables ? JSON.stringify(template.variables) : null,
+      template.variables ? extJsonStringify(template.variables) : null,
     ],
   );
 }

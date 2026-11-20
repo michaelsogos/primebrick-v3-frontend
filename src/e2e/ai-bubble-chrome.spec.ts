@@ -8,6 +8,7 @@ import { deleteMfaFactorsByUsername, setAuthMethodEnforcerDismissed, getPool } f
 import { E2E_ADMIN_USERNAME, E2E_ADMIN_PASSWORD } from "./helpers/admin-login";
 import { getSharedContext, focusedPage } from "./helpers/edge-context";
 
+import { extJsonStringify, extJsonParse } from '@primebrick/core/ext-json';
 const PREFIX = "smart-guide-ai";
 const BASE_URL = process.env.E2E_BASE_URL ?? "http://localhost:5173";
 const log = (m: string) => console.log(`[spec] ${new Date().toISOString().slice(11, 19)} ${m}`);
@@ -84,7 +85,7 @@ test.describe("bubble chrome — empirical DOM verification", () => {
 
     const me = await page.evaluate(async () => {
       const r = await fetch("/api/v1/auth/me", { credentials: "include" });
-      return r.ok ? await r.json() : null;
+      return r.ok ? await r.text().then((t) => extJsonParse<any>(t)) : null;
     });
     log(`[auth/me] avatar_color=${me?.profile?.avatar_color} initials=${me?.profile?.avatar_initials}`);
 
@@ -136,6 +137,6 @@ test.describe("bubble chrome — empirical DOM verification", () => {
       };
     });
     log("=== USER BUBBLE EVIDENCE ===");
-    console.log(JSON.stringify(res, null, 1));
+    console.log(extJsonStringify(res,1));
   });
 });

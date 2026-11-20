@@ -1,6 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 import { loginAsTestAdmin } from "./helpers/admin-login";
 
+import { extJsonParse } from '@primebrick/core/ext-json';
 /* Wire-contract attack matrix — /entities/job_schedule/list.
  *
  * Not a happy-path suite: every case either exercises the contract edges
@@ -22,7 +23,7 @@ const LIST = "/svc/job/api/v1/entities/job_schedule/list";
 
 async function wire(page: Page, qs: string) {
   const res = await page.request.get(`${LIST}?${qs}`);
-  const body = await res.json().catch(() => null);
+  const body = await res.text().then((t) => extJsonParse<any>(t)).catch(() => null);
   return { status: res.status(), body, total: body?.total !== undefined ? Number(body.total) : null };
 }
 
@@ -303,7 +304,7 @@ test.describe("wire attack — job_schedule list", () => {
   test("F — audit-actors resolves on an audit-columns entity without history table", async ({ page }) => {
     const res = await page.request.get("/svc/job/api/v1/entities/job_schedule/audit-actors");
     expect(res.status()).toBe(200);
-    const body = await res.json();
+    const body = await res.text().then((t) => extJsonParse<any>(t));
     expect(Array.isArray(body.items)).toBe(true);
   });
 });

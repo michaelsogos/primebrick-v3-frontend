@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { loginAsTestAdmin } from "./helpers/admin-login";
 
+import { extJsonStringify } from '@primebrick/core/ext-json';
 test("probe — kbd legend median layout", async ({ page }) => {
   await loginAsTestAdmin(page);
   await page.goto("/system/job/triggers", { waitUntil: "domcontentloaded" });
@@ -21,6 +22,6 @@ test("probe — kbd legend median layout", async ({ page }) => {
       };
     });
   });
-  console.log("[probe] median rows:", JSON.stringify(rows, null, 1));
+  console.log("[probe] median rows:", extJsonStringify(rows,1));
   await panel.screenshot({ path: "probe-kbd-median.png" });
 });

@@ -25,6 +25,7 @@ import { generateTotp } from "./helpers/totp";
 import { E2E_MFA_USERNAME, E2E_MFA_PASSWORD } from "./helpers/admin-login";
 import { deleteMfaFactorsByUsername, setAuthMethodEnforcerDismissed } from "./helpers/db";
 
+import { extJsonParse } from '@primebrick/core/ext-json';
 // ─── Suite ──────────────────────────────────────────────────────────────────
 
 test.describe.serial("Suite C — MFA enrollment + login MFA challenge", () => {
@@ -127,7 +128,7 @@ test.describe.serial("Suite C — MFA enrollment + login MFA challenge", () => {
   test("Step 3: verify /api/v1/auth/me reports has_mfa=true", async () => {
     const resp = await adminPage.request.get("/api/v1/auth/me");
     expect(resp.ok()).toBeTruthy();
-    const body = await resp.json();
+    const body = await resp.text().then((t) => extJsonParse<any>(t));
     expect(body.has_mfa).toBe(true);
   });
 

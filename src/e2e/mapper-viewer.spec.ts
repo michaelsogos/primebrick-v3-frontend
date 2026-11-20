@@ -24,6 +24,7 @@ import { test, expect } from "@playwright/test";
 import { loginAsTestAdmin } from "./helpers/admin-login";
 import { declareTrigger, deleteTrigger, JOB_API } from "./helpers/job-chain";
 
+import { extJsonParse } from '@primebrick/core/ext-json';
 test.use({ actionTimeout: 5000 });
 
 const MAP = {
@@ -226,7 +227,7 @@ test.describe("mapper viewer", () => {
 
     try {
       const cur = await page.request.get(`${JOB_API}/entities/job_trigger/${trig.uuid}`);
-      const { version } = (await cur.json()) as { version: number };
+      const { version } = (await cur.text().then((t) => extJsonParse<any>(t))) as { version: number };
       const put = await page.request.put(`${JOB_API}/entities/job_trigger/${trig.uuid}`, {
         data: { entity: { name: `e2e-audit-ref-renamed-${Date.now()}`, version } },
       });
@@ -236,7 +237,7 @@ test.describe("mapper viewer", () => {
         `${JOB_API}/entities/job_trigger/${trig.uuid}/audit?page=1&limit=10`,
       );
       expect(audit.status()).toBe(200);
-      const { data } = (await audit.json()) as {
+      const { data } = (await audit.text().then((t) => extJsonParse<any>(t))) as {
         data: { action: string; delta: Record<string, { old_display_name?: string; new_display_name?: string }> }[];
       };
 

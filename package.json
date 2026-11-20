@@ -42,6 +42,7 @@
     "@nats-io/jetstream": "3.4.0",
     "@nats-io/transport-node": "3.4.0",
     "@playwright/test": "1.64.1",
+    "@primebrick/core": "workspace:*",
     "@sveltejs/adapter-auto": "7.0.1",
     "@sveltejs/kit": "2.69.2",
     "@sveltejs/vite-plugin-svelte": "7.3.1",

@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { parseGuideResponse } from '$lib/components/ui/smart-guide/guide-response';
 
+import { extJsonStringify } from '$lib/api-ext';
 describe('parseGuideResponse', () => {
   it('parses markdown answers and generic navigate/tool actions', () => {
-    const parsed = parseGuideResponse(JSON.stringify({
+    const parsed = parseGuideResponse(extJsonStringify({
       answer_markdown: '1. Open **Users**.\n2. Select the role.',
       actions: [
         { kind: 'navigate', route: '/system/settings/users', label: 'Open users' },
@@ -37,14 +38,14 @@ describe('parseGuideResponse', () => {
       route: `/system/settings/page-${i}`,
       label: `Page ${i}`,
     }));
-    const parsed = parseGuideResponse(`\`\`\`json\n${JSON.stringify({ answer_markdown: 'Answer', actions })}\n\`\`\``);
+    const parsed = parseGuideResponse(`\`\`\`json\n${extJsonStringify({ answer_markdown: 'Answer', actions })}\n\`\`\``);
 
     expect(parsed?.answer_markdown).toBe('Answer');
     expect(parsed?.actions).toHaveLength(5);
   });
 
   it('ignores invalid action entries without losing a valid answer', () => {
-    const parsed = parseGuideResponse(JSON.stringify({
+    const parsed = parseGuideResponse(extJsonStringify({
       answer_markdown: 'The docs explain the concept.',
       actions: [
         { kind: 'navigate', route: 'https://external.example', label: 'External' },
@@ -68,7 +69,7 @@ describe('parseGuideResponse', () => {
 
   it('keeps navigation actions only when their route is present in retrieved context', () => {
     const parsed = parseGuideResponse(
-      JSON.stringify({
+      extJsonStringify({
         answer_markdown: 'Open the users page.',
         actions: [
           { kind: 'navigate', route: '/system/settings/users', label: 'Open users' },

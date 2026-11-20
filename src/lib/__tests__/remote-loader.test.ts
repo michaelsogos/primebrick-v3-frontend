@@ -13,6 +13,7 @@ import {
 } from '../components/remote-page/remote-loader';
 import { webcrypto } from 'node:crypto';
 
+import { extJsonStringify } from '$lib/api-ext';
 beforeAll(() => {
 	// jsdom may not expose webcrypto.subtle / blob URLs — stub what the
 	// integrity path needs (Node's own crypto is fine).
@@ -189,7 +190,7 @@ describe('loadRemoteModule', () => {
 describe('loadRemoteModule — vendor handshake', () => {
 	const url = '/svc/job/api/v1/module-assets/pages/jobs-page.js';
 	const mod = { mountPage: () => ({}) };
-	const manifest = JSON.stringify({
+	const manifest = extJsonStringify({
 		svelte: { url: '/vendor/svelte.js', version: '5.57.2' },
 		'@primebrick/ui': { url: '/vendor/primebrick-ui.js', version: '3.0.0' },
 	});
@@ -204,7 +205,7 @@ describe('loadRemoteModule — vendor handshake', () => {
 
 	it('passes when required versions match the host manifest', async () => {
 		const fetch_fn = fetchWith(
-			JSON.stringify({ vendor_requires: { svelte: '5.57.2', '@primebrick/ui': '3.0.0' } }),
+			extJsonStringify({ vendor_requires: { svelte: '5.57.2', '@primebrick/ui': '3.0.0' } }),
 		);
 		const result = await loadRemoteModule(url, undefined, {
 			fetch_fn,
@@ -222,7 +223,7 @@ describe('loadRemoteModule — vendor handshake', () => {
 	});
 
 	it('fails vendor on version mismatch — before fetching the chunk', async () => {
-		const fetch_fn = fetchWith(JSON.stringify({ vendor_requires: { svelte: '5.58.0' } }));
+		const fetch_fn = fetchWith(extJsonStringify({ vendor_requires: { svelte: '5.58.0' } }));
 		const import_fn = vi.fn(async () => mod);
 		await expect(loadRemoteModule(url, undefined, { fetch_fn, import_fn })).rejects.toMatchObject({
 			kind: 'vendor',
@@ -238,7 +239,7 @@ describe('loadRemoteModule — vendor handshake', () => {
 	it('fails vendor when a required specifier is not vendored', async () => {
 		await expect(
 			loadRemoteModule(url, undefined, {
-				fetch_fn: fetchWith(JSON.stringify({ vendor_requires: { '@primebrick/core': '3.0.0' } })),
+				fetch_fn: fetchWith(extJsonStringify({ vendor_requires: { '@primebrick/core': '3.0.0' } })),
 				import_fn: async () => mod,
 			}),
 		).rejects.toMatchObject({
@@ -269,7 +270,7 @@ describe('loadRemoteModule — vendor handshake', () => {
 		const fetch_fn = vi.fn(async (u: RequestInfo | URL) => {
 			const s = String(u);
 			if (s.endsWith('.deps.json'))
-				return new Response(JSON.stringify({ vendor_requires: { svelte: '5.57.2' } }), {
+				return new Response(extJsonStringify({ vendor_requires: { svelte: '5.57.2' } }), {
 					status: 200,
 				});
 			if (s.endsWith('vendor-manifest.json')) return new Response('down', { status: 503 });

@@ -32,6 +32,7 @@ import {
 } from "./helpers/db";
 import { cleanupCasdoorUser } from "./helpers/test-users";
 
+import { extJsonParse } from '@primebrick/core/ext-json';
 // ─── Test data helpers ──────────────────────────────────────────────────────
 
 /** Generate a unique test user identity for this run. */
@@ -208,7 +209,7 @@ test.describe.serial("Suite A — User creation + password login", () => {
     // Assert: /api/v1/auth/me returns the user (session is established).
     const meResponse = await loginPage.request.get("/api/v1/auth/me");
     expect(meResponse.ok()).toBeTruthy();
-    const meBody = await meResponse.json();
+    const meBody = await meResponse.text().then((t) => extJsonParse<any>(t));
     expect(meBody.profile?.idp_username ?? meBody.username).toBe(testUser.username);
 
     await loginContext.close();

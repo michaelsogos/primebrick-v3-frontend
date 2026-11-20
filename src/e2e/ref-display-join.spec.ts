@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { loginAsTestAdmin } from "./helpers/admin-login";
 
+import { extJsonParse } from '@primebrick/core/ext-json';
 /* ref display join — `@Ref` emits an automatic `{key}_name` projection
  * off the target entity's display template (`${display_field}` here:
  * job_trigger.name → trigger_uuid_name).
@@ -21,7 +22,7 @@ test.describe("ref display join — job_schedule.trigger_uuid", () => {
 
     const res = await page.request.get(`${LIST}?page_size=25`);
     expect(res.status()).toBe(200);
-    const rows = (await res.json()).rows as Record<string, unknown>[];
+    const rows = (await res.text().then((t) => extJsonParse<any>(t))).rows as Record<string, unknown>[];
     const named = rows.find((r) => r.trigger_uuid_name != null);
     expect(named, "expected ≥1 row with a resolved trigger name").toBeTruthy();
     expect(named!.trigger_uuid_name).not.toBe(named!.trigger_uuid);
@@ -51,7 +52,7 @@ test.describe("ref display join — job_schedule.trigger_uuid", () => {
     // Pick a real name first, then search_in for it — server-side ILIKE on
     // the COALESCE'd display expression, not the raw uuid.
     const probe = await page.request.get(`${LIST}?page_size=25`);
-    const rows = (await probe.json()).rows as { trigger_uuid_name?: string }[];
+    const rows = (await probe.text().then((t) => extJsonParse<any>(t))).rows as { trigger_uuid_name?: string }[];
     const name = rows.find((r) => r.trigger_uuid_name)?.trigger_uuid_name;
     expect(name).toBeTruthy();
 
@@ -59,7 +60,7 @@ test.describe("ref display join — job_schedule.trigger_uuid", () => {
       `${LIST}?page_size=5&search_in=trigger_uuid&search=${encodeURIComponent(name!.slice(0, 12))}`,
     );
     expect(searched.status()).toBe(200);
-    const hits = (await searched.json()).rows as { trigger_uuid_name?: string }[];
+    const hits = (await searched.text().then((t) => extJsonParse<any>(t))).rows as { trigger_uuid_name?: string }[];
     expect(hits.length).toBeGreaterThan(0);
   });
 });

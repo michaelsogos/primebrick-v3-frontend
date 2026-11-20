@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { loginAsTestAdmin } from "./helpers/admin-login";
 
+import { extJsonStringify, extJsonParse } from '@primebrick/core/ext-json';
 /**
  * /system/job/triggers — the deletion-filter button group regression.
  *
@@ -35,7 +36,8 @@ test.describe("/system/job/triggers deletion filter", () => {
     page.on("response", (res) => {
       if (res.url().includes("/entities/job_trigger/list") && res.ok())
         res
-          .json()
+          .text()
+          .then((t) => extJsonParse<any>(t))
           .then((body) => listTotals.push(Number(body?.total)))
           .catch(() => {});
     });
@@ -83,7 +85,7 @@ test.describe("/system/job/triggers deletion filter", () => {
         const fresh = listUrls.slice(mark);
         expect(
           fresh.some((u) => u.includes(`deleted_records=${expected}`)),
-          `expected a fresh /list request with deleted_records=${expected}, got: ${JSON.stringify(fresh)}`,
+          `expected a fresh /list request with deleted_records=${expected}, got: ${extJsonStringify(fresh)}`,
         ).toBe(true);
       }).toPass({ timeout: 15000 });
       // The service must HONOR the param — capture the echoed total.
@@ -293,7 +295,7 @@ test.describe("/system/job/triggers deletion filter", () => {
       await route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({ received: 1, affected: 1 }),
+        body: extJsonStringify({ received: 1, affected: 1 }),
       });
     });
 
@@ -306,7 +308,7 @@ test.describe("/system/job/triggers deletion filter", () => {
     page.on("response", (res) => {
       const u = res.url();
       if (u.includes("/entities/job_trigger/list") && u.includes("deleted_records=EXCLUDED") && res.ok())
-        res.json().then((b) => { excludedTotal = Number(b?.total ?? -1); }).catch(() => {});
+        res.text().then((t) => extJsonParse<any>(t)).then((b) => { excludedTotal = Number(b?.total ?? -1); }).catch(() => {});
     });
 
     await page.goto("/system/job/triggers", { waitUntil: "domcontentloaded" });
@@ -377,7 +379,7 @@ test.describe("/system/job/triggers deletion filter", () => {
       const fresh = listUrls.slice(mark);
       expect(
         fresh.some((u) => u.includes("deleted_records=EXCLUDED")),
-        `scope=all must re-enumerate /list with deleted_records=EXCLUDED, got: ${JSON.stringify(fresh)}`,
+        `scope=all must re-enumerate /list with deleted_records=EXCLUDED, got: ${extJsonStringify(fresh)}`,
       ).toBe(true);
     }).toPass({ timeout: 15000 });
 

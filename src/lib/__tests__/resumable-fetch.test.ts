@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { extJsonStringify, extJsonParse } from '$lib/api-ext';
 // SHARD_SIZE is 64MB — too big to cross in a test with real data.
 // We re-mock the module constant by testing behavior with small buffers via
 // a tiny internal seam: the module reads SHARD_SIZE at call time, so we
@@ -140,8 +141,8 @@ describe("resumableFetch", () => {
     await reader.cancel();
 
     const cache = cachesRegistry.get("hf-resumable")!;
-    const manifest = await (await cache.match(`${FILE_URL}?__resume_manifest`))!.json();
-    expect(manifest.done_count).toBe(1);
+    const manifest = await (await cache.match(`${FILE_URL}?__resume_manifest`))!.text().then((t) => extJsonParse<any>(t));
+    expect(manifest.done_count).toBe(1n);
     expect(await cache.match(`${FILE_URL}?__resume_shard=0`)).toBeTruthy();
     releaseSecondChunk!();
   });
@@ -153,7 +154,7 @@ describe("resumableFetch", () => {
     const cache = cachesRegistry.get("hf-resumable") ?? new MemCache();
     cachesRegistry.set("hf-resumable", cache);
     await cache.put(`${FILE_URL}?__resume_shard=0`, new Response(new Uint8Array(SHARD_SIZE)));
-    await cache.put(`${FILE_URL}?__resume_manifest`, new Response(JSON.stringify({
+    await cache.put(`${FILE_URL}?__resume_manifest`, new Response(extJsonStringify({
       etag: '"v1"', size, done_count: 1,
     })));
 
@@ -178,7 +179,7 @@ describe("resumableFetch", () => {
     const cache = new MemCache();
     cachesRegistry.set("hf-resumable", cache);
     await cache.put(`${FILE_URL}?__resume_shard=0`, new Response(new Uint8Array(SHARD_SIZE)));
-    await cache.put(`${FILE_URL}?__resume_manifest`, new Response(JSON.stringify({
+    await cache.put(`${FILE_URL}?__resume_manifest`, new Response(extJsonStringify({
       etag: '"old"', size, done_count: 1,
     })));
 
@@ -201,7 +202,7 @@ describe("resumableFetch", () => {
     const cache = new MemCache();
     cachesRegistry.set("hf-resumable", cache);
     await cache.put(`${FILE_URL}?__resume_shard=0`, new Response(new Uint8Array(SHARD_SIZE)));
-    await cache.put(`${FILE_URL}?__resume_manifest`, new Response(JSON.stringify({
+    await cache.put(`${FILE_URL}?__resume_manifest`, new Response(extJsonStringify({
       etag: '"v1"', size, done_count: 1,
     })));
 

@@ -26,6 +26,7 @@ import { E2E_ADMIN_USERNAME, E2E_ADMIN_PASSWORD } from "./helpers/admin-login";
 import { mergeTestScoreTurns, type E2ETurn } from "./helpers/test-scores";
 import { getSharedContext, focusedPage } from "./helpers/edge-context";
 
+import { extJsonParse } from '@primebrick/core/ext-json';
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:5173";
 const PAGE_URL = `${BASE_URL}/system/settings/configurations/create`;
 const PREFIX = "smart-json-ai";
@@ -105,9 +106,9 @@ async function expectedTree(page: Page, configType: string): Promise<{ roots: To
   // only need a flat key→string lookup, so we rebuild `t` from the same
   // module dicts the app merges (system + public).
   const [meta, sysDict, pubDict] = await Promise.all([
-    page.request.get(`${BASE_URL}/api/v1/entities/config_entry/meta`).then((r) => r.json()),
-    page.request.get(`${BASE_URL}/api/v1/system/translations/system/it-IT`).then((r) => (r.ok() ? r.json() : {})),
-    page.request.get(`${BASE_URL}/api/v1/system/translations/public/it-IT`).then((r) => (r.ok() ? r.json() : {})),
+    page.request.get(`${BASE_URL}/api/v1/entities/config_entry/meta`).then((r) => r.text().then((t) => extJsonParse<any>(t))),
+    page.request.get(`${BASE_URL}/api/v1/system/translations/system/it-IT`).then((r) => (r.ok() ? r.text().then((t) => extJsonParse<any>(t)) : {})),
+    page.request.get(`${BASE_URL}/api/v1/system/translations/public/it-IT`).then((r) => (r.ok() ? r.text().then((t) => extJsonParse<any>(t)) : {})),
   ]);
   return page.evaluate(async ({ type, meta, dicts }) => {
     const mods: any[] = [];

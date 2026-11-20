@@ -18,6 +18,7 @@
 import { test, expect, type Page, type BrowserContext } from "@playwright/test";
 import { loginAsTestAdmin } from "./helpers/admin-login";
 
+import { extJsonParse } from '@primebrick/core/ext-json';
 test.describe.configure({ mode: "serial" });
 test.use({ actionTimeout: 5000 });
 
@@ -71,7 +72,7 @@ test("detail: stale-base draft becomes a conflict; reset refetches the live row"
     data: { entity: baseEntity },
   });
   expect(create.status(), await create.text()).toBe(201);
-  const { uuid } = (await create.json()) as { uuid: string };
+  const { uuid } = (await create.text().then((t) => extJsonParse<any>(t))) as { uuid: string };
 
   try {
     await page.goto(`/system/job/triggers/${uuid}`, { waitUntil: "domcontentloaded" });
@@ -90,7 +91,7 @@ test("detail: stale-base draft becomes a conflict; reset refetches the live row"
     // Foreign write via the API: `schedule_spec` changes, `version`
     // bumps — the stored draft's base_version is now stale.
     const cur = await page.request.get(`${JOB_BASE}/job_trigger/${uuid}`);
-    const row = (await cur.json()) as { version: number };
+    const row = (await cur.text().then((t) => extJsonParse<any>(t))) as { version: number };
     const put = await page.request.put(`${JOB_BASE}/job_trigger/${uuid}`, {
       data: { entity: { ...baseEntity, schedule_spec: "@every 2h", version: row.version } },
     });
@@ -124,7 +125,7 @@ test("detail: stale-base draft becomes a conflict; reset refetches the live row"
   } finally {
     const get = await page.request.get(`${JOB_BASE}/job_trigger/${uuid}`);
     if (get.ok()) {
-      const row = (await get.json()) as { version: number };
+      const row = (await get.text().then((t) => extJsonParse<any>(t))) as { version: number };
       await page.request.delete(`${JOB_BASE}/job_trigger/${uuid}?version=${row.version}`);
     }
   }
