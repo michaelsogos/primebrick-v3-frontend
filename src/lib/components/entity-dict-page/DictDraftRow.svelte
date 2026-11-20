@@ -66,48 +66,50 @@
 </script>
 
 <div
-  class="flex items-start gap-4 rounded-lg border bg-background p-3 border-l-[5px] border-l-info/40"
+  class="grid grid-cols-12 items-start gap-4 rounded-lg border bg-background p-3 border-l-[5px] border-l-info/40"
   data-testid="dict-draft-row"
 >
-  <!-- Leading spacers mirror the saved-row grip+checkbox footprint so
-       the code field stays column-aligned with the rows below. The
+  <!-- Left 6/12: code input in the tag zone — `w-2/3` of the column
+       makes it exactly the center combobox's 4/12 width (the combobox
+       keeps its canonical size; the code field adapts to it). The
        `border-l-info/40` accent is the immature leg of the "to be saved"
        pipeline (composer → pending → saved: info/40 → info → none). -->
-  {#if sortable}
-    <span class="-ml-1 mt-0.5 w-6 shrink-0" aria-hidden="true"></span>
-  {/if}
-  <div class="mt-1 size-4 shrink-0" aria-hidden="true"></div>
+  <div class="col-span-6 flex items-start gap-3 min-w-0">
+    {#if sortable}
+      <span class="-ml-1 mt-0.5 w-6 shrink-0" aria-hidden="true"></span>
+    {/if}
+    <div class="mt-1 size-4 shrink-0" aria-hidden="true"></div>
+    {#if codeColumn}
+      <div class="w-2/3 min-w-0" data-dict-cell="code">
+        <DictFieldCell column={codeColumn} errors={errors['code']} required>
+          {#snippet control({ id })}
+            <FormFieldDispatcher
+              column={codeColumn}
+              bind:value={() => values['code'], (v) => { values['code'] = v; }}
+              record={values}
+              columns={columns_map}
+              {readonly}
+              controlProps={{
+                id,
+                'aria-invalid': (errors['code']?.length ?? 0) > 0 || undefined,
+                'aria-describedby': errors['code']?.length ? `${id}-error` : undefined,
+              }}
+            />
+          {/snippet}
+        </DictFieldCell>
+      </div>
+    {/if}
+  </div>
 
-  <!-- Code + value cells share `flex-1` — the two inputs are the SAME
-       width by construction. -->
-  {#if codeColumn}
-    <div class="flex-1 min-w-0" data-dict-cell="code">
-      <DictFieldCell column={codeColumn} errors={errors['code']} required>
-        {#snippet control({ id })}
-          <FormFieldDispatcher
-            column={codeColumn}
-            bind:value={() => values['code'], (v) => { values['code'] = v; }}
-            record={values}
-            columns={columns_map}
-            {readonly}
-            controlProps={{
-              id,
-              'aria-invalid': (errors['code']?.length ?? 0) > 0 || undefined,
-              'aria-describedby': errors['code']?.length ? `${id}-error` : undefined,
-            }}
-          />
-        {/snippet}
-      </DictFieldCell>
-    </div>
-  {/if}
-
-  {#if valueColumn}
-    <div class="flex-1 min-w-0" data-dict-cell={valueColumn.key}>
-      <DictFieldCell
-        column={valueColumn}
-        errors={errors[valueColumn.key]}
-        suggestion_optional={valueColumn.key === 'label_key'}
-      >
+  <!-- Center 4/12: the VALUE field — canonical combobox width -->
+  <div class="col-span-4 flex items-center justify-center" data-dict-cell={valueColumn?.key}>
+    {#if valueColumn}
+      <div class="w-full min-w-0">
+        <DictFieldCell
+          column={valueColumn}
+          errors={errors[valueColumn.key]}
+          suggestion_optional={valueColumn.key === 'label_key'}
+        >
           {#snippet control({ id })}
             {#if valueColumn.key === 'label_key'}
               <TranslationKeyCell
@@ -136,15 +138,15 @@
             {/if}
           {/snippet}
         </DictFieldCell>
-    </div>
-  {/if}
+      </div>
+    {/if}
+  </div>
 
-  <!-- Composer CTAs — ✓ confirm (→pending) + ✕ discard. The ✓ rides the
-       rule-filter-add precedent: ghost icon-sm, info tone, gated on
-       composer validity. `items-start` + `pt-7` aligns the CTAs with
-       the input row, not the label row, so an error line growing a
-       cell never recenters them. -->
-  <div class="flex shrink-0 items-center justify-end gap-1 pt-7">
+  <!-- Right 2/12: composer CTAs — ✓ confirm (→pending) + ✕ discard.
+       `items-start` + `pt-7` aligns the CTAs with the input row, not
+       the label row, so an error line growing a cell never recenters
+       them. -->
+  <div class="col-span-2 flex items-center justify-end gap-1 pt-7">
     <Button
       variant="ghost"
       size="icon-sm"
