@@ -4,6 +4,7 @@ import type { RFC7807Error } from '$lib/errors/rfc7807';
 import type { MetaColumn, EntityAction, RowCustomAction } from '$lib/entity-list/types';
 import { findActionEndpoint, fillActionPath } from '$lib/entity-list';
 import type { DeepReadonly } from '@primebrick/ui';
+import { extJsonStringify } from '$lib/api-ext';
 
 /** Step-up MFA driver shape (useMfaStepUp) — injected by the table so
  *  endpoint-dispatched custom actions transparently pass through the
@@ -235,7 +236,7 @@ export function useRowActions<TRow extends Record<string, unknown>>(
       const response = await apiFetch(url, {
         method: method || 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ uuids: [uuidValue] })
+        body: extJsonStringify({ uuids: [uuidValue] })
       });
 
       if (!response.ok) {

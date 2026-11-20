@@ -20,6 +20,7 @@
 import type { DeepReadonly } from '@primebrick/ui';
 import { apiFetch } from "$lib/api";
 import { pushNotification } from "$lib/errors/app-errors";
+import { extJsonStringify } from '$lib/api-ext';
 
 export interface RoleMapping {
   id: string;
@@ -103,7 +104,7 @@ export function useRoleMappings() {
       const res = await apiFetch("/api/v1/entities/role_mapping", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ entity: input }),
+        body: extJsonStringify({ entity: input }),
       });
       if (res.ok) {
         const role = (await res.json()) as RoleMapping;
@@ -126,7 +127,7 @@ export function useRoleMappings() {
       const res = await apiFetch(`/api/v1/entities/role_mapping/${encodeURIComponent(uuid)}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ entity: input }),
+        body: extJsonStringify({ entity: input }),
       });
       if (res.ok) {
         await list();

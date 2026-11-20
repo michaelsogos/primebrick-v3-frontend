@@ -12,6 +12,7 @@
   import { pushNotification } from '$lib/errors/app-errors';
   import { ShieldCheck } from '@primebrick/ui/vendor/lucide';
   import { KeyRound } from '@primebrick/ui/vendor/lucide';
+  import { extJsonStringify } from '$lib/api-ext';
 
   // Props:
   //   open: bindable — controls dialog visibility
@@ -57,7 +58,7 @@
       const resp = await apiFetch('/api/v1/auth/mfa/step-up/initiate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, target_resource }),
+        body: extJsonStringify({ action, target_resource }),
       });
       if (!resp.ok) {
         const err = await resp.json();
@@ -87,7 +88,7 @@
       const resp = await apiFetch('/api/v1/auth/mfa/step-up/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: extJsonStringify({
           mfa_challenge_token: challengeToken,
           factor_id: factorId,
           code: otp.code,

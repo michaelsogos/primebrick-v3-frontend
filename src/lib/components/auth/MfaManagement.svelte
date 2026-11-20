@@ -19,6 +19,7 @@
   import { QrCode } from '@primebrick/ui/vendor/lucide';
   import { ShieldCheck } from '@primebrick/ui/vendor/lucide';
   import LoadingWatermark from "./LoadingWatermark.svelte";
+  import { extJsonStringify } from '$lib/api-ext';
 
   // Trigger the auth config fetch to check if MFA is enabled.
   void loadAuthConfig();
@@ -111,7 +112,7 @@
       const resp = await apiFetch("/api/v1/auth/mfa/enroll/finish", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+        body: extJsonStringify({
           enrollment_token: enrollmentToken,
           passcode: otp.code,
           label: enrollLabel || undefined,

@@ -17,6 +17,7 @@ import { SvelteDate } from 'svelte/reactivity';
 import { apiFetch, callMcpTool, listMcpTools, type McpToolDef } from '$lib/api';
 import { createSsePostStream, parseSseData } from '$lib/sse/create-sse-connection';
 import { invokeClientTool, type ClientToolResult } from './client-tool-registry';
+import { extJsonStringify } from '$lib/api-ext';
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -629,7 +630,7 @@ export const aiChatStore = {
       await apiFetch('/api/v1/ai/feedback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: extJsonStringify({
           message_uuid: messageUuid,
           conversation_uuid: state.currentConversationUuid,
           rating,

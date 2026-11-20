@@ -22,7 +22,7 @@
  */
 
 import { fetchEventSource, type EventSourceMessage } from '@microsoft/fetch-event-source';
-import { extJsonParse } from '$lib/api-ext';
+import { extJsonParse, extJsonStringify } from '$lib/api-ext';
 import { hasLocalSession, isTokenExpired, triggerRefresh } from '$lib/auth/session-check';
 import { sessionExpiredStore } from '$lib/auth/session-expired-store.svelte';
 import { userProfileStore } from '$lib/user-profile-store.svelte';
@@ -308,7 +308,7 @@ export function createSsePostStream(opts: SsePostStreamOptions): () => void {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: extJsonStringify(body),
         signal: ctrl.signal,
 
         onopen: async (res) => {

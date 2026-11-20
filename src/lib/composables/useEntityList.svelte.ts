@@ -37,7 +37,7 @@
 import { browser } from '$app/environment';
 import { SvelteURLSearchParams } from 'svelte/reactivity';
 import { apiFetchWithTimeout } from '$lib/api';
-import { extJsonParse } from '$lib/api-ext';
+import { extJsonParse, extJsonStringify } from '$lib/api-ext';
 import { pushNotification } from '$lib/errors/app-errors';
 import type { AppErrorTag } from '$lib/errors/app-errors';
 import {
@@ -547,7 +547,7 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
           {
             method: 'POST',
             headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ [cfg.request_field]: keys })
+            body: extJsonStringify({ [cfg.request_field]: keys })
           },
           15_000
         );

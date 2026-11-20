@@ -10,6 +10,7 @@
   import { ShieldCheck } from '@primebrick/ui/vendor/lucide';
   import { KeyRound } from '@primebrick/ui/vendor/lucide';
   import { Fingerprint } from '@primebrick/ui/vendor/lucide';
+  import { extJsonStringify } from '$lib/api-ext';
 
   // ─── Props ─────────────────────────────────────────────────────────────────
   let { oncomplete }: { oncomplete: () => void } = $props();
@@ -29,7 +30,7 @@
       const beginResp = await apiFetch('/api/v1/auth/webauthn/signup/begin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
+        body: extJsonStringify({}),
       });
 
       if (!beginResp.ok) {
@@ -54,7 +55,7 @@
       const finishResp = await apiFetch('/api/v1/auth/webauthn/signup/finish', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: extJsonStringify({
           nonce,
           credential: encodeAuthenticatorAttestation(credential as PublicKeyCredential),
           ...(platformVersion ? { platform_version: platformVersion } : {}),

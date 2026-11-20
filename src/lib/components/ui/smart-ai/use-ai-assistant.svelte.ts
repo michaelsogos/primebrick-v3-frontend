@@ -38,6 +38,7 @@ import type {
   OneOffGenerationOptions,
   ProcessedResponse,
 } from './ai-assistant.types';
+import { extJsonStringify } from '$lib/api-ext';
 
 /**
  * Maximum number of user+assistant turns to send to the model. When exceeded,
@@ -658,7 +659,7 @@ export function useAiAssistant<TChoice = unknown>(
       const res = await apiFetch(`/svc/ai/api/v1/entities/ai_model/${row.uuid}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: extJsonStringify({
           entity: {
             working_set_mb,
             working_set_source: 'e2e_measured',

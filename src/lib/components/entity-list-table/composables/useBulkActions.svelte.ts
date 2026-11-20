@@ -6,6 +6,7 @@ import { findActionEndpoint } from '$lib/entity-list';
 import { appendListFilterParams } from '$lib/entity-list/list-filter-params';
 import type { MetaColumn } from '$lib/entity-list/types';
 import type { DeepReadonly } from '@primebrick/ui';
+import { extJsonStringify } from '$lib/api-ext';
 
 /** Step-up MFA driver shape (useMfaStepUp) — injected by the table so
  *  endpoint-dispatched bulk actions transparently pass through the
@@ -163,7 +164,7 @@ export function useBulkActions(options: BulkActionsOptions) {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ items })
+        body: extJsonStringify({ items })
       });
 
       if (!res.ok) {
@@ -250,7 +251,7 @@ export function useBulkActions(options: BulkActionsOptions) {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ items })
+        body: extJsonStringify({ items })
       });
 
       if (!res.ok) {
@@ -334,7 +335,7 @@ export function useBulkActions(options: BulkActionsOptions) {
       const response = await apiFetch(url, {
         method: method || 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ uuids: selectedKeys })
+        body: extJsonStringify({ uuids: selectedKeys })
       });
 
       if (!response.ok) {
@@ -414,7 +415,7 @@ export function useBulkActions(options: BulkActionsOptions) {
             'Content-Type': 'application/json',
             ...(token ? { 'X-MFA-Action-Authorization': token } : {})
           },
-          body: selection.length > 0 ? JSON.stringify({ uuids: selection }) : undefined
+          body: selection.length > 0 ? extJsonStringify({ uuids: selection }) : undefined
         });
       const stepUp = getMfaStepUp?.();
       const res = stepUp

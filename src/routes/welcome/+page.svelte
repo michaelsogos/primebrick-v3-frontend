@@ -28,6 +28,7 @@
   import { AlertCircle } from '@primebrick/ui/vendor/lucide';
   import { ArrowLeft } from '@primebrick/ui/vendor/lucide';
   import { ArrowRight } from '@primebrick/ui/vendor/lucide';
+  import { extJsonStringify } from '$lib/api-ext';
 
   // ─── Password policy ────────────────────────────────────────────────────────
   const passwordPolicy = usePasswordPolicy();
@@ -98,7 +99,7 @@
       const res = await apiFetch('/api/v1/auth/welcome/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: _state.token }),
+        body: extJsonStringify({ token: _state.token }),
       });
 
       const data = await res.json();
@@ -126,7 +127,7 @@
       const res = await apiFetch('/api/v1/auth/welcome/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: _state.token }),
+        body: extJsonStringify({ token: _state.token }),
       });
 
       const data = await res.json();
@@ -150,7 +151,7 @@
       const res = await apiFetch('/api/v1/auth/welcome/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: _state.token, otp_code: _state.otp_code }),
+        body: extJsonStringify({ token: _state.token, otp_code: _state.otp_code }),
       });
 
       const data = await res.json();
@@ -173,7 +174,7 @@
       const res = await apiFetch('/api/v1/auth/welcome/complete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: extJsonStringify({
           token: _state.token,
           otp_code: _state.otp_code,
           new_password: _state.new_password,

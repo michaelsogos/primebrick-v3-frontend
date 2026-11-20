@@ -401,7 +401,7 @@ export async function updateService(code: string, data: Partial<ServiceInfo>): P
   const res = await apiFetch(`/api/v1/system/services/${encodeURIComponent(code)}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
+    body: extJsonStringify(data),
   });
   if (!res.ok) throw new Error(`Update failed (${res.status})`);
   const result = (await res.json()) as { service: ServiceInfo };
@@ -551,7 +551,7 @@ export async function searchDocs(params: {
   const res = await apiFetch('/svc/ai/api/v1/system/docs/search', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(params),
+    body: extJsonStringify(params),
   });
   if (!res.ok) throw new Error(`Docs search failed (${res.status})`);
   const data = (await res.json()) as { results: DocsSearchHit[] };
@@ -578,7 +578,7 @@ export async function fetchDocsIndex(): Promise<DocsIndexRepo[]> {
   const res = await apiFetch('/svc/ai/api/v1/system/docs/index', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({}),
+    body: extJsonStringify({}),
   });
   if (!res.ok) throw new Error(`Docs index failed (${res.status})`);
   const data = (await res.json()) as { repos: DocsIndexRepo[] };
@@ -594,7 +594,7 @@ export async function fetchDoc(params: {
   const res = await apiFetch('/svc/ai/api/v1/system/docs/document', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(params),
+    body: extJsonStringify(params),
   });
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`Doc fetch failed (${res.status})`);
@@ -678,7 +678,7 @@ export async function callMcpTool(
   const res = await apiFetch('/api/v1/system/mcp/call', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ tool, args }),
+    body: extJsonStringify({ tool, args }),
   });
   const data = (await res.json()) as McpCallResponse;
   if (!res.ok) return { ok: false, error: data.error ?? `Tool call failed (${res.status})` };
@@ -764,7 +764,7 @@ export async function bulkDeleteConfigEntries(items: Array<{ uuid: string; versi
       'Content-Type': 'application/json',
       ...(mfaActionAuthorization ? { 'x-mfa-action-authorization': mfaActionAuthorization } : {}),
     },
-    body: JSON.stringify({ items }),
+    body: extJsonStringify({ items }),
   });
 }
 
@@ -852,7 +852,7 @@ export async function createTranslation(moduleCode: string, data: {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     // `{entity}` envelope — a `translations` sibling is rejected by the BE.
-    body: JSON.stringify({ entity: data }),
+    body: extJsonStringify({ entity: data }),
   });
   if (!res.ok) throw new Error(`Translation create failed (${res.status})`);
   return await res.json();
@@ -868,7 +868,7 @@ export async function updateTranslation(moduleCode: string, uuid: string, data: 
   const res = await apiFetch(`/api/v1/entities/translation/${encodeURIComponent(uuid)}?module=${encodeURIComponent(moduleCode)}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ entity: data }),
+    body: extJsonStringify({ entity: data }),
   });
   if (!res.ok) throw new Error(`Translation update failed (${res.status})`);
   return await res.json();

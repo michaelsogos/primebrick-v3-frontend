@@ -33,6 +33,7 @@
   import { buildAuditData } from "$lib/utils/audit-data";
   import MetadataLoading from "$lib/components/ui/metadata-loading/MetadataLoading.svelte";
   import { displayNameSchema } from "$lib/validation/display-name";
+  import { extJsonStringify } from '$lib/api-ext';
 
   // Zod schema for profile form
   const profileSchema = z.object({
@@ -71,7 +72,7 @@
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(requestData),
+          body: extJsonStringify(requestData),
         });
 
         if (!response.ok) {

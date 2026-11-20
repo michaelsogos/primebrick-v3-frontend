@@ -12,6 +12,7 @@
   import { ShieldCheck } from '@primebrick/ui/vendor/lucide';
   import { Smartphone } from '@primebrick/ui/vendor/lucide';
   import { TriangleAlert } from '@primebrick/ui/vendor/lucide';
+  import { extJsonStringify } from '$lib/api-ext';
 
   // ─── Props ─────────────────────────────────────────────────────────────────
   let { oncomplete }: { oncomplete: () => void } = $props();
@@ -70,7 +71,7 @@
       const resp = await apiFetch('/api/v1/auth/mfa/enroll/finish', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: extJsonStringify({
           enrollment_token: enrollmentToken,
           passcode: otp.code,
           label: enrollLabel || undefined,

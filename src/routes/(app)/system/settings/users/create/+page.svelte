@@ -44,6 +44,7 @@
   import { useUnsavedChangesGuard } from '$lib/composables/useUnsavedChangesGuard.svelte';
   import { buildAuditData } from '$lib/utils/audit-data';
   import { usePasswordPolicy } from '$lib/composables/usePasswordPolicy.svelte';
+  import { extJsonStringify } from '$lib/api-ext';
 
   const { notifyParentRefresh } = useSyncChannel('primebrick_users_sync', { mode: 'sender' });
 
@@ -192,7 +193,7 @@
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(body),
+          body: extJsonStringify(body),
         });
 
         if (!response.ok) {

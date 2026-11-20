@@ -1,5 +1,6 @@
 import { browser } from '$app/environment';
 import { apiFetch } from '$lib/api';
+import { extJsonStringify } from '$lib/api-ext';
 
 /**
  * useUserPreferences — the consolidated-cache-chain store for the
@@ -65,7 +66,7 @@ async function set(key: string, value: unknown): Promise<void> {
 	const res = await apiFetch(`/api/v1/auth/me/preferences/${encodeURIComponent(key)}`, {
 		method: 'PUT',
 		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ value }),
+		body: extJsonStringify({ value }),
 	});
 	if (!res.ok) return;
 	_state.data = { ..._state.data, [key]: value };

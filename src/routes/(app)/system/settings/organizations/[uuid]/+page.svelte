@@ -24,6 +24,7 @@
   import { buildAuditData } from '$lib/utils/audit-data';
   import { maxMsg } from '$lib/validation/zod-messages';
   import { displayNameSchema, idpNameSchema } from '$lib/validation/display-name';
+  import { extJsonStringify } from '$lib/api-ext';
 
   const uuid = $derived(page.params.uuid);
 
@@ -95,7 +96,7 @@
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ entity: body }),
+          body: extJsonStringify({ entity: body }),
         });
 
         if (!response.ok) {

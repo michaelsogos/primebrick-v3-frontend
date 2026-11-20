@@ -34,6 +34,7 @@
   import { displayNameSchema } from '$lib/validation/display-name';
   import { ShieldUser } from '@primebrick/ui/vendor/lucide';
   import { ShieldOff } from '@primebrick/ui/vendor/lucide';
+  import { extJsonStringify } from '$lib/api-ext';
 
   const uuid = $derived(page.params.uuid);
 
@@ -145,7 +146,7 @@
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ entity: body }),
+          body: extJsonStringify({ entity: body }),
         });
 
         if (!response.ok) {

@@ -13,6 +13,7 @@
   import { t } from '$lib/i18n';
   import { ShieldAlert } from '@primebrick/ui/vendor/lucide';
   import { KeyRound } from '@primebrick/ui/vendor/lucide';
+  import { extJsonStringify } from '$lib/api-ext';
 
   // Props:
   //   mfa_challenge_token: from the login response (mfa_required branch)
@@ -51,7 +52,7 @@
       const resp = await apiFetch('/api/v1/auth/mfa/challenge/refresh', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mfa_challenge_token: mfa_challenge_token }),
+        body: extJsonStringify({ mfa_challenge_token: mfa_challenge_token }),
       });
       if (resp.ok) {
         const data = await resp.json();
@@ -82,7 +83,7 @@
       const response = await apiFetch('/api/v1/auth/mfa/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: extJsonStringify({
           mfa_challenge_token: challengeToken,
           factor_id: factor.factor_id,
           code: otp.code,

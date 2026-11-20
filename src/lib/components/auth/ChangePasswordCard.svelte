@@ -25,6 +25,7 @@
   import { pushNotification } from '$lib/errors/app-errors';
   import { onMount } from 'svelte';
   import { KeyRound } from '@primebrick/ui/vendor/lucide';
+  import { extJsonStringify } from '$lib/api-ext';
 
   const passwordPolicy = usePasswordPolicy();
 
@@ -61,7 +62,7 @@
         const resp = await apiFetch('/api/v1/auth/me/change-password', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
+          body: extJsonStringify({
             current_password: form.data.current_password,
             newPassword: form.data.new_password,
           }),

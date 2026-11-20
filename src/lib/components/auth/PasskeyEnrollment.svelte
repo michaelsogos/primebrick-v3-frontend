@@ -19,6 +19,7 @@
   import { lookupAaguid } from "$lib/webauthn/aaguid-registry";
   import { transportKeySuffix } from "$lib/webauthn/transports";
   import { getPlatformVersion } from "$lib/webauthn/platform-info";
+  import { extJsonStringify } from '$lib/api-ext';
 
   interface WebauthnCredentialInfo {
     id: string;
@@ -62,7 +63,7 @@
       const beginResp = await apiFetch("/api/v1/auth/webauthn/signup/begin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
+        body: extJsonStringify({}),
       });
 
       if (!beginResp.ok) {
@@ -94,7 +95,7 @@
       const finishResp = await apiFetch("/api/v1/auth/webauthn/signup/finish", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+        body: extJsonStringify({
           nonce,
           credential: encodeAuthenticatorAttestation(
             credential as PublicKeyCredential,

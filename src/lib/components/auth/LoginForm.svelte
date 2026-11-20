@@ -18,6 +18,7 @@
   import MfaChallenge from './MfaChallenge.svelte';
   import { isWebauthnSupported } from '$lib/webauthn/codec';
   import { authConfigState, loadAuthConfig } from '$lib/auth-config-store.svelte';
+  import { extJsonStringify } from '$lib/api-ext';
 
   // Trigger the auth config fetch during component initialization.
   void loadAuthConfig();
@@ -64,7 +65,7 @@
           const response = await apiFetch('/api/v1/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(updateForm.data),
+            body: extJsonStringify(updateForm.data),
           });
 
           if (!response.ok) {

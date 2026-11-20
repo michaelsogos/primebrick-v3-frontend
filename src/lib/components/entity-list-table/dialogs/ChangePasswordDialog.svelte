@@ -10,6 +10,7 @@
   import type { RFC7807Error } from '$lib/errors/rfc7807';
   import { usePasswordPolicy } from '$lib/composables/usePasswordPolicy.svelte';
   import PasswordChecklist from '$lib/components/forms/PasswordChecklist.svelte';
+  import { extJsonStringify } from '$lib/api-ext';
 
   interface ChangePasswordDialogProps<TRow extends Record<string, unknown>> {
     open: boolean;
@@ -69,7 +70,7 @@
       const res = await apiFetch(`/api/v1/auth/users/${uuid}/change-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ newPassword }),
+        body: extJsonStringify({ newPassword }),
       });
 
       if (!res.ok) {

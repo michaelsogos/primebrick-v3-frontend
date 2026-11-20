@@ -28,6 +28,7 @@
   import { buildAuditData } from '$lib/utils/audit-data';
   import { maxMsg } from '$lib/validation/zod-messages';
   import { displayNameSchema, idpNameSchema, startsAndEndsWithAlphanumeric } from '$lib/validation/display-name';
+  import { extJsonStringify } from '$lib/api-ext';
 
   const { notifyParentRefresh } = useSyncChannel('primebrick_organizations_sync', { mode: 'sender' });
 
@@ -70,7 +71,7 @@
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ entity: body }),
+          body: extJsonStringify({ entity: body }),
         });
 
         if (!response.ok) {
