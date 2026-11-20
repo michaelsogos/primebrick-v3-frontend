@@ -22,12 +22,14 @@ which merges `--no-ff` into the base, pushes the base, deletes the
 branch locally AND on origin, then audits the final state.
 
 
-**On the bundled `git flow` binary** (nvie 0.4.2 in Git for Windows):
-`feature finish` fast-forwards linear merges — no `--no-ff` bubble —
-so closing is never delegated to it. `git flow` remains fine for
-`feature start`/`release start`/`hotfix start`/`publish`/`track`
-(each repo carries the gitflow config: master→main, develop, standard
-prefixes, no version-tag prefix).
+**On the `git flow` binary** (AVH edition 1.12.3, installed in `~/bin`
+— upstream nvie 0.4.2 fast-forwards feature finishes; AVH defaults to
+`--no-ff` for multi-commit features but still fast-forwards single-commit
+ones, so every repo carries `gitflow.feature.finish.no-ff=true` plus the
+standard config: master→main, develop, prefixes, no version-tag).
+`git flow` is then fine for `feature start`/`publish`/`track` —
+but closing stays ONLY via the governed tool: native `finish` neither
+pushes the base nor deletes the remote branch nor audits.
 
 ## ⚠️ CRITICAL: One open work branch — never orphans
 
