@@ -8,7 +8,8 @@
   },
   "scripts": {
     "predev": "node scripts/i18n-fallback.mjs",
-    "dev": "pnpm vendor:build && vite dev",
+    "dev": "node vendor/vendor-ensure.mjs && vite dev",
+    "vendor:ensure": "node vendor/vendor-ensure.mjs",
     "vendor:build": "vite build --config vendor/vite.vendor.config.ts",
     "version:auto": "node scripts/version-sync.mjs",
     "i18n:fallback": "node scripts/i18n-fallback.mjs",

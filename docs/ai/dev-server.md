@@ -90,6 +90,22 @@ Installs run at the **workspace root**, never inside a single repo dir
 deps MUST be `workspace:*` — plain semver resolves from npm and silently
 replaces the link with a stale published copy.
 
+## Vendor-plane build gating
+
+`pnpm run dev` runs `vendor/vendor-ensure.mjs` before `vite dev`: it
+hashes the vendor build's real inputs (vendor config + entries, ui's
+`vendor-map.json`, `package.json` + `pnpm-lock.yaml`, and a
+relpath:size:mtime fingerprint of the `dist/` trees of `@primebrick/ui`
+and `@primebrick/core` — the vendor build resolves workspace packages
+through their dist) and **skips the ~20s build when nothing changed**
+(~0.1s). The mechanism, outputs, and manifest handshake are untouched —
+the stamp in `static/vendor/.stamp` only gates WHEN the build runs.
+
+Force a full rebuild anytime with `pnpm vendor:build`. If the stamp
+ever misfires (bundle stale while inputs look equal), that is a bug in
+the input list — report it, and extend the hash inputs in
+`vendor-ensure.mjs` rather than deleting the gate.
+
 ## E2E note
 
 Playwright specs (`src/e2e/`) connect to an already-running stack —
