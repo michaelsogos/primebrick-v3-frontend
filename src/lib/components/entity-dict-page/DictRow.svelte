@@ -21,6 +21,7 @@
   import { Badge, Button, Checkbox, DynamicIcon, SelectableRow } from '@primebrick/ui';
   import FormFieldDispatcher from '$lib/entity-form/FormFieldDispatcher.svelte';
   import TranslationKeyCell from './TranslationKeyCell.svelte';
+  import DictFieldCell from './DictFieldCell.svelte';
   import type { MetaColumn } from '@primebrick/ui';
   import {
     ChevronUp,
@@ -261,28 +262,39 @@
   <div class="col-span-4 flex items-center justify-center" data-dict-cell={valueColumn?.key}>
     {#if valueColumn}
       <div class="w-full min-w-0">
-        {#if valueColumn.key === 'label_key'}
-          <TranslationKeyCell
-            column={valueColumn}
-            value={String(values[valueColumn.key] ?? '')}
-            record={values}
-            {translation_key}
-            {pending_owner}
-            readonly={!can_update || deleted}
-            onchange={(v) => onchange(valueColumn.key, v)}
-          />
-        {:else}
-          <FormFieldDispatcher
-            column={valueColumn}
-            bind:value={() => values[valueColumn.key], (v) => onchange(valueColumn.key, v)}
-            record={values}
-            columns={columns_map}
-            readonly={!can_update || deleted}
-          />
-        {/if}
-        {#if valueColumn && errors[valueColumn.key]?.length}
-          <p class="mt-1 text-xs text-destructive">{errors[valueColumn.key][0]}</p>
-        {/if}
+        <DictFieldCell
+          column={valueColumn}
+          errors={errors[valueColumn.key]}
+          required={valueColumn.nullable === false}
+        >
+          {#snippet control({ id })}
+            {#if valueColumn.key === 'label_key'}
+              <TranslationKeyCell
+                column={valueColumn}
+                value={String(values[valueColumn.key] ?? '')}
+                record={values}
+                {translation_key}
+                {pending_owner}
+                readonly={!can_update || deleted}
+                {id}
+                onchange={(v) => onchange(valueColumn.key, v)}
+              />
+            {:else}
+              <FormFieldDispatcher
+                column={valueColumn}
+                bind:value={() => values[valueColumn.key], (v) => onchange(valueColumn.key, v)}
+                record={values}
+                columns={columns_map}
+                readonly={!can_update || deleted}
+                controlProps={{
+                  id,
+                  'aria-invalid': (errors[valueColumn.key]?.length ?? 0) > 0 || undefined,
+                  'aria-describedby': errors[valueColumn.key]?.length ? `${id}-error` : undefined,
+                }}
+              />
+            {/if}
+          {/snippet}
+        </DictFieldCell>
       </div>
     {/if}
   </div>

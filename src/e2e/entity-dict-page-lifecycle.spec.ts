@@ -245,4 +245,51 @@ test.describe.serial("dict lifecycle — UI-only on an ad-hoc row", () => {
 
     expect(posts).toEqual([]);
   });
+
+  test("code uniqueness probe + label_key suggestion commit", async ({ page }) => {
+    test.setTimeout(60_000);
+    await loginAsTestAdmin(page);
+    await page.goto(DICT_URL, { waitUntil: "domcontentloaded" });
+    await expect(page.getByTestId("entity-dict-page")).toBeVisible({ timeout: 30000 });
+    await expect(page.locator('[data-testid^="selectable-row-"]').first()).toBeVisible();
+
+    const addBtn = page.getByTestId("dict-toolbar-add");
+
+    // ── probe: an EXISTING code → inline dict-cell-error + ✓ stays gated ──
+    // The seeded row's code badge carries title=<code> (mono font).
+    const existingCode = await page
+      .locator('[data-testid^="selectable-row-"] .font-mono[title]')
+      .first()
+      .getAttribute("title");
+    expect(existingCode).toBeTruthy();
+
+    await addBtn.click();
+    const draft = page.getByTestId("dict-draft-row");
+    await draft.locator('[data-dict-cell="code"] input').fill(existingCode!);
+    await expect(draft.getByTestId("dict-cell-error")).toBeVisible({ timeout: 10_000 });
+    await expect(draft.getByTestId("dict-draft-confirm")).toBeDisabled();
+
+    // ── suggestion: unique code + EMPTY label_key → ✓ arms → save commits
+    //    the `custom.entities.<tk>.rows.<code>` convention key ──
+    const sugCode = `${CODE}_sug`;
+    await draft.locator('[data-dict-cell="code"] input').fill(sugCode);
+    await expect(draft.getByTestId("dict-cell-error")).toHaveCount(0, { timeout: 10_000 });
+    await expect(draft.getByTestId("dict-draft-confirm")).toBeEnabled();
+    await draft.getByTestId("dict-draft-confirm").click();
+
+    const pending = page.locator('[data-testid="selectable-row-d1"]');
+    await expect(pending).toBeVisible();
+    await expect(page.getByTestId("dict-bulk-save")).toBeEnabled();
+    await page.getByTestId("dict-bulk-save").click();
+    await expect(pending).toHaveCount(0, { timeout: 15_000 });
+
+    // The saved row exists with the convention key committed — assert the
+    // persisted label_key, not a UI echo of the pending draft.
+    const { rows } = await getPool().query(
+      `SELECT label_key FROM crm.customer_types WHERE code = $1`,
+      [sugCode],
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0].label_key).toBe(`custom.entities.customer_type.rows.${sugCode}`);
+  });
 });

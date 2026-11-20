@@ -11,6 +11,7 @@
   import { ComboSelect, Badge } from '@primebrick/ui';
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import { getPendingTranslation } from '$lib/i18n/pending-translations.svelte';
+  import { slugifyKey, suggestedKeyFor } from './dict-suggestion';
   import type { MetaColumn } from '$lib/entity-list/types';
 
   let {
@@ -20,6 +21,7 @@
     translation_key,
     pending_owner,
     readonly = false,
+    id,
     onchange,
   }: {
     column: MetaColumn;
@@ -30,24 +32,15 @@
     /** Pending-queue owner — queued entries flush with the page that supplied it. */
     pending_owner: string;
     readonly?: boolean;
+    /** DictFieldCell-generated id — `for`/`id` label wiring. */
+    id?: string;
     onchange: (value: string) => void;
   } = $props();
 
   const rowsPrefix = $derived(`entities.${translation_key}.rows.`);
 
-  function slugify(text: string): string {
-    return text
-      .trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9_]+/g, '_')
-      .replace(/^_+|_+$/g, '');
-  }
-
   /** Convention suggestion — `custom.*` is the only user-writable namespace. */
-  const suggestedKey = $derived.by(() => {
-    const code = slugify(String(record['code'] ?? ''));
-    return code ? `custom.${rowsPrefix}${code}` : '';
-  });
+  const suggestedKey = $derived(suggestedKeyFor(translation_key, record['code']));
 
   const options = $derived.by(() => {
     const list = new SvelteSet(
@@ -74,7 +67,7 @@
     if (trimmed.startsWith('custom.') || trimmed.includes(rowsPrefix)) {
       return onchange(trimmed);
     }
-    const slug = slugify(trimmed);
+    const slug = slugifyKey(trimmed);
     onchange(slug ? `custom.${rowsPrefix}${slug}` : trimmed);
   }
 
@@ -97,6 +90,7 @@
 <div class="min-w-0 flex-1">
   <ComboSelect
       mode="single"
+      {id}
       {value}
       onChange={handleChange}
       {options}

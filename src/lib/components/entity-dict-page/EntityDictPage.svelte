@@ -52,6 +52,8 @@
   import { flushPendingTranslations } from '$lib/i18n/flush-pending-translations';
   import { runEntityOp } from '$lib/entity-list/use-entity-op.svelte';
   import DictRow from './DictRow.svelte';
+  import { isSnakeKey } from '@primebrick/ui';
+  import { suggestedKeyFor } from './dict-suggestion';
   import type { CensusRoute } from '$lib/api';
 
   let { decl }: { decl: CensusRoute } = $props();
@@ -181,27 +183,108 @@
   let pendings = $state<Draft[]>([]);
   let draftSeq = 0;
 
-  function requiredColumns(): MetaColumn[] {
-    return editableColumns.filter((c) => c.nullable === false);
-  }
-
   /** Composer-rendered fields — `code` + the value column (display_field
-   *  or label_key). The ✓ gate is scoped to THESE required fields only
-   *  (D1): extras the composer cannot render gate the SAVE, not confirm. */
+   *  or label_key). The ✓ gate is scoped to THESE fields only (D1):
+   *  extras the composer cannot render gate the SAVE, not confirm. */
   const composerKeys = $derived(
     new Set(
       [displayField, 'code', 'label_key'].filter((k): k is string => typeof k === 'string'),
     ),
   );
 
-  function composerValid(d: Draft): boolean {
-    for (const c of requiredColumns()) {
-      if (!composerKeys.has(c.key)) continue;
-      const v = d.values[c.key];
-      if (v === null || v === undefined || String(v).trim() === '') return false;
+  /** Meta-derived cell validation (task 5): required (nullable===false),
+   *  `max_length`/`min_length`, authored `pattern`, and the dict `code`
+   *  charset (`isSnakeKey` — the seeded vocabulary is lowercase snake).
+   *  `suggestion_eligible` names the columns whose empty value commits a
+   *  convention suggestion at write — `label_key`/display_field on create;
+   *  never on update (saved rows keep the hard-required gate). */
+  function columnErrors(
+    v: Record<string, unknown>,
+    cols: MetaColumn[],
+    suggestion_eligible?: ReadonlySet<string>,
+  ): Record<string, string[]> {
+    const errs: Record<string, string[]> = {};
+    for (const c of cols) {
+      const raw = v[c.key];
+      const s = raw === null || raw === undefined ? '' : String(raw).trim();
+      if (!s) {
+        if (c.nullable === false && !suggestion_eligible?.has(c.key)) {
+          errs[c.key] = [$t('app.common.errors.required')];
+        }
+        continue;
+      }
+      if (c.max_length !== undefined && s.length > c.max_length) {
+        (errs[c.key] ??= []).push($t('app.common.validation.max_chars', { count: c.max_length }));
+      }
+      if (c.min_length !== undefined && s.length < c.min_length) {
+        (errs[c.key] ??= []).push($t('app.common.validation.min_chars', { count: c.min_length }));
+      }
+      if (c.pattern && !new RegExp(c.pattern).test(s)) {
+        (errs[c.key] ??= []).push($t('app.common.validation.regex_mismatch'));
+      }
+      if (c.key === 'code' && !isSnakeKey(s)) {
+        (errs[c.key] ??= []).push($t('app.common.validation.snake_key'));
+      }
     }
-    return true;
+    return errs;
   }
+
+  /** Composer errors — scoped to the fields the composer actually renders
+   *  (D1); `label_key` is suggestion-eligible (empty → convention commit
+   *  at save), `code` additionally carries the debounced unique probe. */
+  function composerErrors(d: Draft): Record<string, string[]> {
+    const errs = columnErrors(
+      d.values,
+      editableColumns.filter((c) => composerKeys.has(c.key)),
+      new Set([displayField ?? 'label_key']),
+    );
+    if (codeProbe.exists) (errs['code'] ??= []).push($t('system.entities.dict.code_exists'));
+    return errs;
+  }
+
+  function composerValid(d: Draft): boolean {
+    return Object.keys(composerErrors(d)).length === 0 && !codeProbe.checking;
+  }
+
+  /** Code uniqueness probe (task 6) — debounced `/list` equality filter
+   *  on the composer code; `exists` feeds the inline error, `checking`
+   *  gates confirm (config-create `handleKeyInput` precedent, filters
+   *  bracket-notation on the canonical wire format). */
+  let codeProbe = $state({ checking: false, exists: false });
+  let codeProbeTimer: ReturnType<typeof setTimeout> | null = null;
+  const composerCode = $derived(String(drafts[0]?.values['code'] ?? '').trim());
+  $effect(() => {
+    const code = composerCode;
+    if (codeProbeTimer) clearTimeout(codeProbeTimer);
+    codeProbe.checking = false;
+    codeProbe.exists = false;
+    if (!code || !isSnakeKey(code)) return;
+    codeProbe.checking = true;
+    codeProbeTimer = setTimeout(() => {
+      void (async () => {
+        try {
+          const qs = new URLSearchParams();
+          qs.set('filters[0][field]', 'code');
+          qs.set('filters[0][op]', '=');
+          qs.set('filters[0][value]', code);
+          qs.set('page_size', '1');
+          const res = await apiFetch(`${basePath}/list?${qs}`);
+          if (res.ok) {
+            const data = (await res.text().then((t) => extJsonParse(t))) as { rows?: unknown[] };
+            // Still the live composer value — a stale probe never sticks.
+            if (String(drafts[0]?.values['code'] ?? '').trim() === code) {
+              codeProbe.exists = (data.rows?.length ?? 0) > 0;
+            }
+          }
+        } catch {
+          // probe failure never blocks — the server unique constraint
+          // still catches a duplicate at save (409 surfaces as error).
+        } finally {
+          codeProbe.checking = false;
+        }
+      })();
+    }, 500);
+  });
 
   /** Translations queued for a dying row's `*_key` values must die with
    *  it — otherwise they flush at the next save onto orphan keys (G3). */
@@ -294,26 +377,26 @@
   /** Required-empty errors for one values map — same shape as the row
    *  `errors` prop so the failing cell carries the reason inline, never
    *  a silent save gate. */
-  function missingRequired(v: Record<string, unknown>): Record<string, string[]> {
-    const errs: Record<string, string[]> = {};
-    for (const c of requiredColumns()) {
-      const val = v[c.key];
-      if (val === null || val === undefined || String(val).trim() === '') {
-        errs[c.key] = [$t('app.common.errors.required')];
-      }
-    }
-    return errs;
-  }
-
+  /** Pending save-gate — full meta validation over the create-editable
+   *  set; `label_key` stays suggestion-eligible (empty commits the
+   *  convention suggestion in `saveAll`, same promise the cell makes). */
   function pendingValid(d: Draft): boolean {
-    return Object.keys(missingRequired(d.values)).length === 0;
+    return (
+      Object.keys(
+        columnErrors(d.values, editableColumns, new Set([displayField ?? 'label_key'])),
+      ).length === 0
+    );
   }
 
-  /** Tainted rows whose required columns went empty — same gate as drafts. */
+  /** Tainted rows whose required columns went empty or invalid — updates
+   *  carry NO suggestion eligibility: empty label_key on a saved row is
+   *  a real error. */
   const invalidRowUids = $derived.by<ReadonlySet<string>>(() => {
     const invalid = new SvelteSet<string>();
     for (const id of taintedUids) {
-      if (Object.keys(missingRequired(values[id] ?? {})).length > 0) invalid.add(id);
+      if (Object.keys(columnErrors(values[id] ?? {}, updateEditableColumns)).length > 0) {
+        invalid.add(id);
+      }
     }
     return invalid;
   });
@@ -517,6 +600,12 @@
         originals = { ...originals, [id]: $state.snapshot(values[id]) };
       }
       for (const d of pendings) {
+        // Empty label_key commits the convention suggestion — the
+        // "(optional)" chip's promise (task 7, config-create parity).
+        if (displayField && !String(d.values[displayField] ?? '').trim()) {
+          const suggested = suggestedKeyFor(translationKey, d.values['code']);
+          if (suggested) d.values[displayField] = suggested;
+        }
         const res = await apiFetch(basePath, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -656,7 +745,7 @@
     columns_map: columnMap,
     values: values[String(r[uid])] ?? {},
     errors: invalidRowUids.has(String(r[uid]))
-      ? missingRequired(values[String(r[uid])] ?? {})
+      ? columnErrors(values[String(r[uid])] ?? {}, updateEditableColumns)
       : {},
     tainted: taintedUids.has(String(r[uid])),
     selected: selection.isSelected(String(r[uid])),
@@ -694,7 +783,7 @@
     editable_columns: updateEditableColumns,
     columns_map: columnMap,
     values: p.values,
-    errors: missingRequired(p.values),
+    errors: columnErrors(p.values, editableColumns, new Set([displayField ?? 'label_key'])),
     pending: true as const,
     selected: selection.isSelected(p.__draft),
     can_update: canUpdate,
@@ -852,7 +941,7 @@
             translation_key={translationKey}
             pending_owner={basePath}
             bind:values={d.values}
-            errors={missingRequired(d.values)}
+            errors={composerErrors(d)}
             readonly={!canCreate}
             confirm_disabled={!composerValid(d)}
             onconfirm={() => handleConfirmDraft(d)}
