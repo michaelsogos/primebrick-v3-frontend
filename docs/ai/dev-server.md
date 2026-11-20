@@ -18,8 +18,13 @@
 4. **The stack must survive the turn**: BE, FE, job-handler and CRM stay
    running across agent turns — a service started inside an agent shell
    dies with the session, so services MUST be started **detached** via
-   `primebrick-workspace/scripts/dev-stack.ps1` (idempotent, skips ports
-   already listening, logs to `primebrick-workspace/temp/logs/`). If a
+   `primebrick-workspace/scripts/dev-stack.ps1` (delegates to
+   `dev-stack.mjs` — genuinely idempotent: per-service state files in
+   `temp/dev/<name>.json`, serialized lock, process-TREE kill via
+   `taskkill /T`, `status`/`stop`/`restart`/`reap` subcommands;
+   `reap` kills untracked primebrick dev processes — zombies — while a
+   chain that reaches an IDE terminal is classified USER-STARTED and
+   never touched. Logs to `primebrick-workspace/temp/logs/`). If a
    turn finds a service down, restart it detached — never leave the only
    copy of the stack inside an ephemeral shell.
 5. **Releases and branch churn kill the stack — restart it after**:
