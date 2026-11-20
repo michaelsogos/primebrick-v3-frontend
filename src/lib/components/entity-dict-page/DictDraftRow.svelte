@@ -66,53 +66,48 @@
 </script>
 
 <div
-  class="grid grid-cols-12 items-start gap-4 rounded-lg border bg-background p-3 border-l-[5px] border-l-info/40"
+  class="flex items-start gap-4 rounded-lg border bg-background p-3 border-l-[5px] border-l-info/40"
   data-testid="dict-draft-row"
 >
-  <!-- Left 6/12: code input in the tag zone. The `border-l-info/40`
-       accent is the immature leg of the same "to be saved" pipeline the
-       pending rows carry as solid `border-l-info`
-       (composer → pending → saved: info/40 → info → none). -->
-  <div class="col-span-6 flex items-start gap-3 min-w-0">
-    {#if sortable}
-      <span class="-ml-1 mt-0.5 w-6 shrink-0" aria-hidden="true"></span>
-    {/if}
-    <div class="mt-1 size-4 shrink-0" aria-hidden="true"></div>
-    <div class="min-w-0 flex-1">
-      <div class="flex items-center gap-2">
-        {#if codeColumn}
-          <div class="flex-1 min-w-0" data-dict-cell="code">
-            <DictFieldCell column={codeColumn} errors={errors['code']} required>
-              {#snippet control({ id })}
-                <FormFieldDispatcher
-                  column={codeColumn}
-                  bind:value={() => values['code'], (v) => { values['code'] = v; }}
-                  record={values}
-                  columns={columns_map}
-                  {readonly}
-                  controlProps={{
-                    id,
-                    'aria-invalid': (errors['code']?.length ?? 0) > 0 || undefined,
-                    'aria-describedby': errors['code']?.length ? `${id}-error` : undefined,
-                  }}
-                />
-              {/snippet}
-            </DictFieldCell>
-          </div>
-        {/if}
-      </div>
-    </div>
-  </div>
+  <!-- Leading spacers mirror the saved-row grip+checkbox footprint so
+       the code field stays column-aligned with the rows below. The
+       `border-l-info/40` accent is the immature leg of the "to be saved"
+       pipeline (composer → pending → saved: info/40 → info → none). -->
+  {#if sortable}
+    <span class="-ml-1 mt-0.5 w-6 shrink-0" aria-hidden="true"></span>
+  {/if}
+  <div class="mt-1 size-4 shrink-0" aria-hidden="true"></div>
 
-  <!-- Center 4/12: the VALUE field -->
-  <div class="col-span-4 flex items-center justify-center" data-dict-cell={valueColumn?.key}>
-    {#if valueColumn}
-      <div class="w-full min-w-0">
-        <DictFieldCell
-          column={valueColumn}
-          errors={errors[valueColumn.key]}
-          suggestion_optional={valueColumn.key === 'label_key'}
-        >
+  <!-- Code + value cells share `flex-1` — the two inputs are the SAME
+       width by construction. -->
+  {#if codeColumn}
+    <div class="flex-1 min-w-0" data-dict-cell="code">
+      <DictFieldCell column={codeColumn} errors={errors['code']} required>
+        {#snippet control({ id })}
+          <FormFieldDispatcher
+            column={codeColumn}
+            bind:value={() => values['code'], (v) => { values['code'] = v; }}
+            record={values}
+            columns={columns_map}
+            {readonly}
+            controlProps={{
+              id,
+              'aria-invalid': (errors['code']?.length ?? 0) > 0 || undefined,
+              'aria-describedby': errors['code']?.length ? `${id}-error` : undefined,
+            }}
+          />
+        {/snippet}
+      </DictFieldCell>
+    </div>
+  {/if}
+
+  {#if valueColumn}
+    <div class="flex-1 min-w-0" data-dict-cell={valueColumn.key}>
+      <DictFieldCell
+        column={valueColumn}
+        errors={errors[valueColumn.key]}
+        suggestion_optional={valueColumn.key === 'label_key'}
+      >
           {#snippet control({ id })}
             {#if valueColumn.key === 'label_key'}
               <TranslationKeyCell
@@ -141,16 +136,15 @@
             {/if}
           {/snippet}
         </DictFieldCell>
-      </div>
-    {/if}
-  </div>
+    </div>
+  {/if}
 
-  <!-- Right 2/12: composer CTAs — ✓ confirm (→pending) + ✕ discard.
-       The ✓ rides the rule-filter-add precedent: ghost icon-sm, info
-       tone, gated on composer validity. `items-start` grid + `pt-7`
-       aligns the CTAs with the input row, not the label row, so an
-       error line growing a cell never recenters them. -->
-  <div class="col-span-2 flex items-center justify-end gap-1 pt-7">
+  <!-- Composer CTAs — ✓ confirm (→pending) + ✕ discard. The ✓ rides the
+       rule-filter-add precedent: ghost icon-sm, info tone, gated on
+       composer validity. `items-start` + `pt-7` aligns the CTAs with
+       the input row, not the label row, so an error line growing a
+       cell never recenters them. -->
+  <div class="flex shrink-0 items-center justify-end gap-1 pt-7">
     <Button
       variant="ghost"
       size="icon-sm"
