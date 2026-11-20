@@ -63,7 +63,7 @@
     ontoggle,
     ondelete,
     onrestore,
-    onpendingundo,
+    onpendingdelete,
     onmoveup,
     onmovedown,
   }: {
@@ -104,8 +104,10 @@
     ontoggle?: (checked: boolean) => void;
     ondelete?: () => void;
     onrestore?: () => void;
-    /** Pending undo-drop — local drop only (zero server request). */
-    onpendingundo?: () => void;
+    /** Pending drop — destructive local delete (zero server request,
+     *  the row never existed server-side): Trash2 + destructive tone,
+     *  same affordance as `dict-row-delete`, NOT an undo/revert. */
+    onpendingdelete?: () => void;
     onmoveup?: () => void;
     onmovedown?: () => void;
   } = $props();
@@ -380,16 +382,16 @@
       </Button>
     {/if}
     {#if pending}
-      {#if onpendingundo}
+      {#if onpendingdelete}
         <Button
           variant="ghost"
           size="icon-sm"
-          onclick={onpendingundo}
+          onclick={onpendingdelete}
           title={$t('app.common.discard')}
           aria-label={$t('app.common.discard')}
-          data-testid="dict-pending-undo"
+          data-testid="dict-pending-delete"
         >
-          <Undo2 class="size-4 text-warning" />
+          <Trash2 class="size-4 text-destructive" />
         </Button>
       {/if}
     {:else if deleted}

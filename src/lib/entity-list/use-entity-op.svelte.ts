@@ -30,7 +30,7 @@
  * Callers with no declared endpoint (e.g. dict `restore.bulk` = per-row
  * loop — the entity-router exposes no bulk restore) pass an explicit
  * `execute` executor; the gate still applies. Local-only drops
- * (`dict-pending-undo`) never call this — there is no request to guard.
+ * (`dict-pending-delete`) never call this — there is no request to guard.
  */
 import { get } from 'svelte/store';
 import { t } from '$lib/i18n';

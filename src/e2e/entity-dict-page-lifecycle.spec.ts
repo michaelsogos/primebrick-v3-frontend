@@ -93,7 +93,7 @@ test.describe.serial("dict lifecycle — UI-only on an ad-hoc row", () => {
     const pending = page.getByTestId("selectable-row-d1");
     await expect(pending).toBeVisible();
     await expect(pending).toHaveClass(/border-l-info/);
-    await expect(pending.getByTestId("dict-pending-undo")).toBeVisible();
+    await expect(pending.getByTestId("dict-pending-delete")).toBeVisible();
 
     const saveBtn = page.getByTestId("dict-bulk-save");
     await expect(saveBtn).toBeEnabled();

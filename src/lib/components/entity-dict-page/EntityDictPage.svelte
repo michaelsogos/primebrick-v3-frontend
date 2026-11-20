@@ -335,8 +335,8 @@
     drafts = drafts.filter((x) => x !== d);
   }
 
-  /** Pending undo-drop — "morte definitiva" (never persisted, zero
-   *  server): drop the row, its selection entry and queued translations. */
+  /** Pending drop — "morte definitiva" (never persisted, zero server):
+   *  drop the row, its selection entry and queued translations. */
   function handleDropPending(d: Draft) {
     dropQueuedTranslations(d.values);
     pendings = pendings.filter((x) => x !== d);
@@ -807,7 +807,7 @@
       p.values[key] = v;
     },
     ontoggle: (checked: boolean) => selection.toggleSelect(p.__draft, checked),
-    onpendingundo: () => handleDropPending(p),
+    onpendingdelete: () => handleDropPending(p),
     onmoveup: () => move(p.__draft, -1),
     onmovedown: () => move(p.__draft, 1),
   });

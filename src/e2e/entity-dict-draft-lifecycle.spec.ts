@@ -86,7 +86,7 @@ test.describe.serial("dict draft lifecycle — composer → pending", () => {
     await expect(pending).toBeVisible();
     // `border-l-info` without `/40` — the confirmed leg of the pipeline.
     await expect(pending).toHaveClass(/border-l-info(?!\/)/);
-    await expect(pending.getByTestId("dict-pending-undo")).toBeVisible();
+    await expect(pending.getByTestId("dict-pending-delete")).toBeVisible();
 
     // ── Save persists the pending row to the DB ──
     const saveBtn = page.getByTestId("dict-bulk-save");
@@ -136,7 +136,7 @@ test.describe.serial("dict draft lifecycle — composer → pending", () => {
     await draft2.getByTestId("dict-draft-confirm").click();
     const pending = page.locator('[data-testid="selectable-row-d2"]');
     await expect(pending).toBeVisible();
-    await pending.getByTestId("dict-pending-undo").click();
+    await pending.getByTestId("dict-pending-delete").click();
     await expect(pending).toHaveCount(0);
 
     // ── pending selection → bulk delete partitions: local drop only ──
