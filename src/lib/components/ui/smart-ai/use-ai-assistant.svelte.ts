@@ -425,7 +425,7 @@ export function useAiAssistant<TChoice = unknown>(
         break;
       }
       case 'stream_error': {
-        console.debug('[ai-err]', JSON.stringify(msg.error));
+        console.debug('[ai-err]', extJsonStringify(msg.error));
         const error = new Error(msg.error);
         _state.error = msg.error;
         if (active_generation) active_generation.error = error;
@@ -1017,7 +1017,7 @@ export function useAiAssistant<TChoice = unknown>(
       _state.is_streaming = true;
       _state.streaming_text = '';
       const responseText = await runGeneration(modelMessages);
-      console.debug('[ai-resp]', responseText.length, JSON.stringify(responseText.slice(-80)));
+      console.debug('[ai-resp]', responseText.length, extJsonStringify(responseText.slice(-80)));
 
       /**
        * regenerate(): sends another generation round with an appended repair

@@ -30,7 +30,7 @@
  * A change in the serialized signature refetches from page 1.
  */
 import { apiFetchWithTimeout, entityApiBase } from '$lib/api';
-import { extJsonParse } from '$lib/api-ext';
+import { extJsonParse, extJsonStringify } from '$lib/api-ext';
 import { fetchEntityMeta } from '$lib/entity-list/meta-cache';
 import { defaultSearchGate } from '$lib/entity-list/search-gate';
 import type {
@@ -194,7 +194,7 @@ export function useEntityRefOptions(
 	// current search still applied.
 	let lastFilterSig = '';
 	$effect(() => {
-		const sig = JSON.stringify(scopeFilters);
+		const sig = extJsonStringify(scopeFilters);
 		if (!meta || sig === lastFilterSig) {
 			lastFilterSig = sig;
 			return;

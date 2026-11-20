@@ -130,8 +130,9 @@ describe('tryParseJsonObject — JSON-object detection', () => {
   });
 
   it('parses JSON object strings', () => {
-    expect(tryParseJsonObject('{"x": 1}')).toEqual({ x: 1 });
-    expect(tryParseJsonObject('  {"x": 1}  ')).toEqual({ x: 1 });
+    // ext-json semantics: every wire int materializes as bigint.
+    expect(tryParseJsonObject('{"x": 1}')).toEqual({ x: 1n });
+    expect(tryParseJsonObject('  {"x": 1}  ')).toEqual({ x: 1n });
   });
 
   it.each([

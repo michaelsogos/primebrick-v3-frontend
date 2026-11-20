@@ -20,6 +20,7 @@
  */
 import type { ChatMessage } from './ai-assistant.types';
 
+import { extJsonStringify, extJsonParse } from '$lib/api-ext';
 /** A validated action returned by the classifier. `index` is 0-based. */
 export interface ChatAction {
   action: 'apply' | 'discard' | 'pick' | 'revise';
@@ -81,7 +82,7 @@ export function buildClassifierUser(
   );
   const langsSpec = specs.find((s) => s.id === 'apply' && s.langs?.length);
   const langsHint = langsSpec
-    ? `\nIf applying only some languages, output {"apply":true,"langs":[...]} with values from ${JSON.stringify(langsSpec.langs)}.`
+    ? `\nIf applying only some languages, output {"apply":true,"langs":[...]} with values from ${extJsonStringify(langsSpec.langs)}.`
     : '';
   const q = question?.trim().replace(/\s+/g, ' ').slice(0, 240);
   return [
@@ -148,7 +149,7 @@ export function parseClassification(
 
   let parsed: unknown;
   try {
-    parsed = JSON.parse(text);
+    parsed = extJsonParse<any>(text);
   } catch {
     return null;
   }

@@ -225,7 +225,7 @@
 							continue;
 						}
 						if (col?.format === 'json' || col?.pg_type === 'jsonb' || col?.pg_type === 'json') {
-							v = typeof v === 'string' ? JSON.parse(v) : v;
+							v = typeof v === 'string' ? extJsonParse<any>(v) : v;
 						}
 						entity[placement.key] = v;
 					}
@@ -349,7 +349,7 @@
 		const field = 'payload_map';
 		let current: PayloadMap = {};
 		try {
-			const parsed = JSON.parse((($form as Record<string, unknown>)[field] as string) || '{}');
+			const parsed = extJsonParse<any>((($form as Record<string, unknown>)[field] as string) || '{}');
 			if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) current = parsed as PayloadMap;
 		} catch {
 			// unparseable authored JSON — the seeds merge onto an empty base
@@ -360,8 +360,8 @@
 			sourceEmit?.entity,
 			current,
 		);
-		if (JSON.stringify(seeded) !== JSON.stringify(current)) {
-			($form as Record<string, unknown>)[field] = JSON.stringify(seeded, null, 2);
+		if (extJsonStringify(seeded) !== extJsonStringify(current)) {
+			($form as Record<string, unknown>)[field] = extJsonStringify(seeded, 2);
 			if ($tainted) ($tainted as Record<string, boolean>)[field] = false;
 		}
 	});
@@ -551,7 +551,7 @@
 				use:enhance
 				data-testid="entity-form-page"
 				data-has-changes={formGuard.hasChanges}
-				data-tainted={JSON.stringify($tainted ?? null)}
+				data-tainted={extJsonStringify($tainted ?? null)}
 			>
 				<div class="grid grid-cols-2 gap-6 p-4">
 					{#each formDecl!.fields as placement (placement.key)}

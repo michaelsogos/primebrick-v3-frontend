@@ -33,6 +33,7 @@
 	} from './rule-schema-completions';
 	import type { EditorState } from '@codemirror/state';
 
+import { extJsonStringify, extJsonParse } from '$lib/api-ext';
 	type RuleOp = 'eq' | 'neq' | 'exists' | 'contains' | 'gt' | 'lt';
 	type RuleFilterItem = { field: string; op?: RuleOp; value?: unknown };
 
@@ -109,7 +110,7 @@
 	// (the composer can't lie about a document it can't parse).
 	function parseFilters(raw: string): RuleFilterItem[] | null {
 		try {
-			const parsed = JSON.parse(raw);
+			const parsed = extJsonParse<any>(raw);
 			if (!Array.isArray(parsed)) return null;
 			if (parsed.some((f) => !f || typeof f !== 'object' || typeof f.field !== 'string')) return null;
 			return parsed as RuleFilterItem[];
@@ -122,14 +123,14 @@
 
 	function commit(next: RuleFilterItem[]) {
 		filters = next;
-		value = JSON.stringify(next);
+		value = extJsonStringify(next);
 	}
 
 	// External value edits (JSON mode round-trip, form reset, record load)
 	// re-sync the draft — the composer never owns the document itself.
 	$effect(() => {
 		const parsed = parseFilters(value);
-		if (parsed !== null && JSON.stringify(parsed) !== JSON.stringify(filters)) filters = parsed;
+		if (parsed !== null && extJsonStringify(parsed) !== extJsonStringify(filters)) filters = parsed;
 	});
 
 	// ── composer draft ─────────────────────────────────────────────────

@@ -13,6 +13,7 @@
   import { Copy } from '@primebrick/ui/vendor/lucide';
   import { Check } from '@primebrick/ui/vendor/lucide';
 
+import { extJsonParse } from '$lib/api-ext';
   type Props = WithElementRef<
     Omit<HTMLInputAttributes, "type" | "files"> & {
       /** type_config JSON string — parsed for country and allowed_countries. */
@@ -61,7 +62,7 @@
     if (!error.includes("|")) return $t(error);
     const [key, jsonParams] = error.split("|", 2);
     try {
-      const params = JSON.parse(jsonParams);
+      const params = extJsonParse<any>(jsonParams);
       return $t(key, params);
     } catch {
       return $t(key);

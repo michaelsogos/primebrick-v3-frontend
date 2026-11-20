@@ -24,6 +24,7 @@
   import type { ChatMessage } from '$lib/components/ui/smart-ai/ai-assistant.types';
   import { Bot } from '@primebrick/ui/vendor/lucide';
 
+import { extJsonStringify, extJsonParse } from '$lib/api-ext';
   let {
     schema,
     object_label = 'JSON',
@@ -57,7 +58,7 @@
     return [
       `You are a JSON editing assistant for a "${object_label}" document.`,
       'The JSON Schema below is the ONLY source of truth for valid output:',
-      JSON.stringify(resolvedSchema),
+      extJsonStringify(resolvedSchema),
       '',
       'Rules:',
       '- Answer questions about what the document can contain using only the schema.',
@@ -78,7 +79,7 @@
    *  feeds the validate-and-repair loop). */
   function validateCandidate(json: string) {
     try {
-      JSON.parse(json);
+      extJsonParse<any>(json);
       return { valid: true, errors: [] as string[] };
     } catch {
       return { valid: false, errors: ['Invalid JSON syntax'] };
@@ -151,7 +152,7 @@
 
     if (target.kind === 'value') {
       void ai.sendModelMessage(
-        `Set "${target.path}" to ${JSON.stringify(target.value)} and return the complete ${object_label} JSON.`,
+        `Set "${target.path}" to ${extJsonStringify(target.value)} and return the complete ${object_label} JSON.`,
       );
       return;
     }
@@ -164,7 +165,7 @@
         return;
       }
       try {
-        const compact = JSON.stringify(JSON.parse(target.json));
+        const compact = extJsonStringify(extJsonParse<any>(target.json));
         on_apply_json(compact);
         ai.resolveChoice(message.uuid, 'applied', {
           condensed_content: $t('app.smart.json.ai.applied_summary', { json: compact }),

@@ -336,7 +336,7 @@ export function useRowActions<TRow extends Record<string, unknown>>(
       typeof row.version === 'number' ? `?version=${row.version}` : '';
     const url = serviceApiPrefix(entityFn()) + fillActionPath(ep.path, row, uidFn()) + versionQs;
     const body = action.row_key
-      ? JSON.stringify({ [action.row_key]: row[action.row_key] })
+      ? extJsonStringify({ [action.row_key]: row[action.row_key] })
       : undefined;
     const request = (token: string | null) =>
       apiFetch(url, {

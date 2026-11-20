@@ -648,8 +648,8 @@
         disabled={!formGuard.canSave}
         data-can-save={formGuard.canSave}
         data-has-changes={formGuard.hasChanges}
-        data-tainted={JSON.stringify($tainted ?? null)}
-        data-errors={JSON.stringify($errors ?? null)}
+        data-tainted={extJsonStringify($tainted ?? null)}
+        data-errors={extJsonStringify($errors ?? null)}
       >
         {$t('app.common.save')}
       </Button>

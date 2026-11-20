@@ -27,6 +27,7 @@
   import { shellNav } from '$lib/shell/modules-shell.svelte';
   import { useCensusSubjectOptions } from '$lib/entity-form/use-census-subject-options.svelte';
 
+import { extJsonStringify } from '$lib/api-ext';
   let {
     value,
     row,
@@ -103,7 +104,7 @@
 
   /** Viewer prop contract is the raw JSON text (same bind the editor owns). */
   const mapText = $derived(
-    typeof value === 'string' ? value : JSON.stringify(value ?? {}, null, 2),
+    typeof value === 'string' ? value : extJsonStringify(value ?? {}, 2),
   );
 
   /** The target callable's owning service — the subject's first segment is

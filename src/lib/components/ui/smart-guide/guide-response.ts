@@ -1,5 +1,6 @@
 import type { AiAction } from '$lib/components/ui/smart-ai/ai-assistant.types';
 
+import { extJsonParse } from '$lib/api-ext';
 export interface GuideResponse {
   answer_markdown: string;
   actions: AiAction[];
@@ -60,7 +61,7 @@ export function parseGuideResponse(raw: string, grounding_context?: string): Gui
     .trim();
   let value: unknown;
   try {
-    value = JSON.parse(json);
+    value = extJsonParse<any>(json);
   } catch {
     // Salvage: the answer envelope can be truncated mid-string when the
     // generation hits max_tokens (invalid JSON, usable prose). Extract the

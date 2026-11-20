@@ -32,7 +32,7 @@
   import TypeConfigBuilder from '$lib/components/config-builder/TypeConfigBuilder.svelte';
   import { FormLabelWithPriorityHelp } from '@primebrick/ui';
   import { Badge } from '@primebrick/ui';
-  import { extJsonParse } from '$lib/api-ext';
+  import { extJsonParse, extJsonStringify } from '$lib/api-ext';
 
   const { notifyParentRefresh } = useSyncChannel('primebrick_config_sync', { mode: 'sender' });
 
@@ -343,7 +343,7 @@
 >
 
     <div class="flex-1 overflow-auto">
-      <form id="config-create-form" use:enhance data-has-changes={formGuard.hasChanges} data-tainted={JSON.stringify($tainted ?? null)}>
+      <form id="config-create-form" use:enhance data-has-changes={formGuard.hasChanges} data-tainted={extJsonStringify($tainted ?? null)}>
         <div class="grid grid-cols-2 gap-6 p-4">
           <!-- Column 1 -->
           <div class="space-y-4">

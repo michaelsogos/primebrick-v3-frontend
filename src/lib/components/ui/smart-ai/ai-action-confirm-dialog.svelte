@@ -25,6 +25,7 @@
   import { CircleCheck, CircleX, ExternalLink, Loader2 } from '@primebrick/ui/vendor/lucide';
   import type { AiAction } from './ai-assistant.types';
 
+import { extJsonStringify, extJsonParse } from '$lib/api-ext';
   const NS = 'app.smart.guide.ai.action';
   const READ_ONLY_TOOLS = new Set(['delete_entity', 'restore_entity', 'bulk_entity_action', 'manage_service']);
   const CREATE_UPDATE_TOOLS = new Set(['create_entity', 'update_entity']);
@@ -93,7 +94,7 @@
     if (!requiredFields.length) return [];
     let current: Record<string, unknown>;
     try {
-      current = JSON.parse(argsText);
+      current = extJsonParse<any>(argsText);
     } catch {
       return requiredFields; // unparseable → everything missing
     }
@@ -111,7 +112,7 @@
     searchText = '';
     candidates = [];
     resolvedEntity = null;
-    argsText = JSON.stringify(action?.args ?? {}, null, 2);
+    argsText = extJsonStringify(action?.args ?? {}, 2);
     requiredFields = [];
   }
 
@@ -162,11 +163,11 @@
         ? ((res.result as Record<string, unknown>)[entityName] as Record<string, unknown>)
         : (res.result as Record<string, unknown>);
       // Merge resolved identifiers into args (uuid + version for delete/restore)
-      const next = JSON.parse(argsText || '{}');
+      const next = extJsonParse<any>(argsText || '{}');
       next.uuid = uuid;
       const version = resolvedEntity.version;
       if (version !== undefined && next.version === undefined) next.version = Number(version);
-      argsText = JSON.stringify(next, null, 2);
+      argsText = extJsonStringify(next, 2);
       phase = 'confirm';
     } else {
       resolvedEntity = c;
@@ -181,7 +182,7 @@
     let args: Record<string, unknown> = action.args;
     if (isCreateUpdate || !isReadOnlyArgs) {
       try {
-        args = JSON.parse(argsText);
+        args = extJsonParse<any>(argsText);
       } catch {
         error = 'Invalid JSON';
         executing = false;

@@ -10,6 +10,7 @@
   import type { ConfigEntryType } from '$lib/api-types';
   import { typeConfigJsonSchema } from '$lib/config/type-config-schema';
 
+import { extJsonStringify, extJsonParse } from '$lib/api-ext';
   let {
     type,
     builder,
@@ -33,7 +34,7 @@
 
   function prettyJson(json: string): string {
     try {
-      return JSON.stringify(JSON.parse(json), null, 2);
+      return extJsonStringify(extJsonParse<any>(json), 2);
     } catch {
       return json;
     }
@@ -41,7 +42,7 @@
 
   function compactJson(json: string): string {
     try {
-      return JSON.stringify(JSON.parse(json));
+      return extJsonStringify(extJsonParse<any>(json));
     } catch {
       return json;
     }
@@ -74,7 +75,7 @@
   // Falls back to the raw string when the JSON can't be parsed.
   const previewJson = $derived.by(() => {
     try {
-      return JSON.parse(builder.json);
+      return extJsonParse<any>(builder.json);
     } catch {
       return builder.json;
     }

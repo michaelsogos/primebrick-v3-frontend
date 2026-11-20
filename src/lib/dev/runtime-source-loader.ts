@@ -19,6 +19,7 @@
 
 import { VENDOR_BLOCKED_PACKAGES, specifierTopPackage } from '@primebrick/ui';
 
+import { extJsonStringify } from '$lib/api-ext';
 export interface LoadResult {
 	url: string;
 	kind: 'component' | 'module' | 'proxy';
@@ -130,7 +131,7 @@ async function probeTsVariant(url: string): Promise<string | null> {
 }
 
 function proxyBlobUrl(moduleUrl: string): string {
-	const code = `import * as _ns from ${JSON.stringify(moduleUrl)};\nexport * from ${JSON.stringify(moduleUrl)};\nexport default _ns.default;\n`;
+	const code = `import * as _ns from ${extJsonStringify(moduleUrl)};\nexport * from ${extJsonStringify(moduleUrl)};\nexport default _ns.default;\n`;
 	return URL.createObjectURL(new Blob([code], { type: 'text/javascript' }));
 }
 

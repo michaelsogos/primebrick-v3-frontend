@@ -3,7 +3,7 @@ import { apiFetch } from '$lib/api';
 import { pushNotification } from '$lib/errors/app-errors';
 import type { EntityMeta } from '$lib/entity-list/types';
 import type { DeepReadonly } from '@primebrick/ui';
-import { extJsonParse } from '$lib/api-ext';
+import { extJsonParse, extJsonStringify } from '$lib/api-ext';
 
 /** @deprecated use `EntityMeta` from `$lib/entity-list/types` — kept as an
  *  alias during the canonical-schema migration. */
@@ -46,7 +46,7 @@ export function useEntityMetadata(options: UseEntityMetadataOptions) {
             impact: 'HIGH',
             message: 'Metadata parsing error: columns is null or empty',
             scope: `Endpoint: ${endpoint}, Entity: ${entityName}`,
-            detail: JSON.stringify(data, null, 2),
+            detail: extJsonStringify(data, 2),
             tags: [{ label: 'METADATA', tone: 'danger' }],
             toast: true
           });

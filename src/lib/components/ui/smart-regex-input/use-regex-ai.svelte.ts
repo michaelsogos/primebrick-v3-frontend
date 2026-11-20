@@ -23,6 +23,7 @@ import {
 import { get } from 'svelte/store';
 import { t } from '$lib/i18n';
 
+import { extJsonParse } from '$lib/api-ext';
 export type { ChatMessage };
 
 /** A regex option offered by the AI. */
@@ -180,7 +181,7 @@ export function useRegexAi(
     // Step 2: Try JSON.parse with backslash sanitization
     const sanitized = text.replace(/\\(?!["\\bfnrtu/])/g, '\\\\');
     try {
-      const parsed = JSON.parse(sanitized);
+      const parsed = extJsonParse<any>(sanitized);
       if (parsed && Array.isArray(parsed.patterns)) {
         return parsed.patterns
           .filter(
@@ -285,7 +286,7 @@ export function useRegexAi(
         `Generate up to 5 positive examples (values that MATCH) and up to 5 negative examples (values that do NOT match) for the regex pattern "${pattern}" with flags "${flags}". Respond as JSON: {"positive": ["..."], "negative": ["..."]}`,
         { temperature: 0.5 },
       );
-      const parsed = JSON.parse(responseText);
+      const parsed = extJsonParse<any>(responseText);
       return {
         positive: Array.isArray(parsed.positive) ? parsed.positive.slice(0, 5) : [],
         negative: Array.isArray(parsed.negative) ? parsed.negative.slice(0, 5) : [],

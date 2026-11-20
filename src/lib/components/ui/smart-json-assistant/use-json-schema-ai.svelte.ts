@@ -22,6 +22,7 @@ import {
 import type { ChatMessage } from '$lib/components/ui/smart-ai/ai-assistant.types';
 import type { JsonAssistantChoice } from './json-schema.types';
 
+import { extJsonStringify, extJsonParse } from '$lib/api-ext';
 export type { JsonAssistantChoice } from './json-schema.types';
 
 /** Max repair rounds before giving up on a model candidate. */
@@ -120,7 +121,7 @@ export function extractJsonCandidate(raw: string): string | null {
       if (depth === 0) {
         const candidate = text.slice(start, i + 1);
         try {
-          JSON.parse(candidate);
+          extJsonParse<any>(candidate);
           return candidate;
         } catch {
           // Unparseable slice (e.g. a prose bracket) — fall back to the
@@ -183,7 +184,7 @@ export function useJsonSchemaAi(model_id: string, opts: JsonSchemaAiOptions) {
     const result = opts.validate(json);
     let parsed: unknown;
     try {
-      parsed = JSON.parse(json);
+      parsed = extJsonParse<any>(json);
     } catch {
       return result;
     }
@@ -199,7 +200,7 @@ export function useJsonSchemaAi(model_id: string, opts: JsonSchemaAiOptions) {
     const { valid, errors } = validateStrict(json);
     let pretty = json;
     try {
-      pretty = JSON.stringify(JSON.parse(json), null, 2);
+      pretty = extJsonStringify(extJsonParse<any>(json), 2);
     } catch { /* keep raw */ }
     return { kind: 'config', json: pretty, valid, errors };
   };
@@ -225,7 +226,7 @@ export function useJsonSchemaAi(model_id: string, opts: JsonSchemaAiOptions) {
         specs.push({
           id: 'pick',
           index: i,
-          label: `set "${c.path}" to ${JSON.stringify(c.value)}`,
+          label: `set "${c.path}" to ${extJsonStringify(c.value)}`,
         });
       } else if (c.kind === 'config') {
         specs.push(
@@ -359,7 +360,7 @@ export function useJsonSchemaAi(model_id: string, opts: JsonSchemaAiOptions) {
         ).catch(() => '');
         const action = parseClassification(verdict, specs);
         // Dev-visible: what the classifier actually decided for this input.
-        console.debug('[chat-actions] verdict:', JSON.stringify(verdict), '→', action);
+        console.debug('[chat-actions] verdict:', extJsonStringify(verdict), '→', action);
         if (action?.action === 'revise') {
           // Second turn on the translations preview: the user corrected the
           // baseline message — resolve the stale preview and re-run the

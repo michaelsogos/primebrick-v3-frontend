@@ -245,7 +245,7 @@
     if (!error.includes('|')) return $t(error);
     const [key, jsonParams] = error.split('|', 2);
     try {
-      const params = JSON.parse(jsonParams);
+      const params = extJsonParse<any>(jsonParams);
       return $t(key, params);
     } catch {
       return $t(key);
