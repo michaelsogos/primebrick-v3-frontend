@@ -1227,15 +1227,23 @@
           <span class="text-xs text-primary">
             {$t('system.settings.configurations.changes_pending_fields')}
           </span>
-          {#each taintedRowTitles.slice(0, 5) as title (title)}
-            <Badge variant="outline" class="border-warning/40 bg-warning/10 text-xs font-mono text-muted-foreground">
-              {title}
-            </Badge>
-          {/each}
           {#if taintedRowTitles.length > 5}
-            <Badge variant="outline" class="border-warning/40 bg-warning/10 text-xs font-mono text-muted-foreground">
-              +{taintedRowTitles.length - 5}
+            <!-- UX guard: past the individual-badge threshold the taint
+                 list collapses into ONE aggregate badge — count + the
+                 affected-row titles on the tooltip. -->
+            <Badge
+              variant="outline"
+              class="border-warning/40 bg-warning/10 text-xs font-mono text-muted-foreground"
+              title={taintedRowTitles.join(', ')}
+            >
+              {taintedRowTitles.length} {$t('system.entities.dict.footer_edited')}
             </Badge>
+          {:else}
+            {#each taintedRowTitles as title (title)}
+              <Badge variant="outline" class="border-warning/40 bg-warning/10 text-xs font-mono text-muted-foreground">
+                {title}
+              </Badge>
+            {/each}
           {/if}
           {#if pendings.length > 0}
             <Badge variant="outline" class="border-primary/40 bg-primary/10 text-xs font-mono text-muted-foreground">
