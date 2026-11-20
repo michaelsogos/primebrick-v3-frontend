@@ -56,6 +56,12 @@ when the base moved while a work branch is open — that is proof of a
 violation (a direct base commit or an illicit close), not drift to
 tolerate. STOP and report; resync only by merging the base into the
 work branch once the violation is explained.
+
+The rule is enforced **physically**, not by doc-reading discipline: the
+shared governed `pre-commit` hook (`primebrick-v3-sdk/tools/githooks/`,
+wired via `core.hooksPath` by `gitflow install-hooks`) REJECTS commits
+on `main`/`develop` — a merge commit stays legal, so governed closes
+are unaffected. `audit` fails when the wiring is missing.
 ## Branch Creation Rules
 
 - **NEVER work directly on `develop` or `main`** - always create feature branches first
