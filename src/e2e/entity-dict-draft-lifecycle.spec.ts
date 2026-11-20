@@ -33,6 +33,9 @@ test.describe.serial("dict draft lifecycle — composer → pending", () => {
     await getPool().query(
       `DELETE FROM crm.customer_types WHERE code LIKE 'e2e_dl_%'`,
     );
+    await getPool().query(
+      `DELETE FROM crm.customer_link_types WHERE code LIKE 'e2e_dl_%'`,
+    );
   });
 
   test("composer gates, draft state, validation + probe, pending accent, save", async ({
@@ -298,6 +301,86 @@ test.describe.serial("dict draft lifecycle — composer → pending", () => {
     const reloadedOrder = await rowOrder(page);
     expect(reloadedOrder.indexOf(ourTestid!)).toBe(
       reloadedOrder.indexOf(prevTestid) - 1,
+    );
+  });
+
+  test("drag-drop climbs through a duplicate-sort tie block (link types)", async ({
+    page,
+  }) => {
+    // Regression: customer_link_types carries a real tie block (~40 rows
+    // sharing sort=990). Before the strict-rank fix, a pending dragged
+    // above a tied saved row was reassigned the same 990 and the seq
+    // tiebreak bounced it back below the whole block — the drag was
+    // capped at the saved/pending boundary.
+    test.setTimeout(90_000);
+    await loginAsTestAdmin(page);
+    await page.goto("/crm/settings/customer_link_types", {
+      waitUntil: "domcontentloaded",
+    });
+    await expect(page.getByTestId("entity-dict-page")).toBeVisible({ timeout: 30000 });
+    await expect(page.locator('[data-testid^="selectable-row-"]').first()).toBeVisible();
+
+    // ── Confirm a pending row — appended LAST (sort seed = max+10) ──
+    await page.getByTestId("dict-toolbar-add").click();
+    const draft = page.getByTestId("dict-draft-row");
+    const dragCode = `${CODE}_tie`;
+    await draft.locator('[data-dict-cell="code"] input').fill(dragCode);
+    await draft.locator('[data-dict-cell="label_key"]').click();
+    const keySearch = page.getByPlaceholder(/entities\.customer_link_type\.rows\./);
+    await keySearch.fill(`custom.entities.customer_link_type.rows.${dragCode}`);
+    await keySearch.press("Enter");
+    await draft.getByTestId("dict-draft-confirm").click();
+    const pending = page.getByTestId("selectable-row-d1");
+    await expect(pending).toBeVisible();
+    const beforeDrag = await rowOrder(page);
+    expect(beforeDrag.at(-1)).toBe("selectable-row-d1");
+
+    // ── Drag above the previous saved row — a row inside the 990 tie
+    //    block. The strict-rank pass must keep the pending ABOVE it
+    //    (previously it tied at 990 and bounced below the block). ──
+    await pending.scrollIntoViewIfNeeded();
+    const prevTestid = beforeDrag[beforeDrag.length - 2];
+    const prevRow = page.getByTestId(prevTestid);
+    await pending.getByTestId("dict-row-drag").dragTo(prevRow, {
+      targetPosition: { x: 8, y: 4 },
+    });
+    await expect
+      .poll(async () => {
+        const o = await rowOrder(page);
+        return o.indexOf("selectable-row-d1") === o.indexOf(prevTestid) - 1;
+      })
+      .toBe(true);
+
+    // ── Climb one more position — inside the tie block, not just over
+    //    its edge. ──
+    const mid = await rowOrder(page);
+    const aboveTestid = mid[mid.indexOf("selectable-row-d1") - 1];
+    await pending.getByTestId("dict-row-drag").dragTo(page.getByTestId(aboveTestid), {
+      targetPosition: { x: 8, y: 4 },
+    });
+    await expect
+      .poll(async () => {
+        const o = await rowOrder(page);
+        return o.indexOf("selectable-row-d1") === o.indexOf(aboveTestid) - 1;
+      })
+      .toBe(true);
+
+    // ── Save → reload → the dragged order persisted exactly. ──
+    await page.getByTestId("dict-bulk-save").click();
+    await expect(pending).toHaveCount(0, { timeout: 15_000 });
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await expect(page.getByTestId("entity-dict-page")).toBeVisible({ timeout: 30000 });
+    await expect(page.locator('[data-testid^="selectable-row-"]').first()).toBeVisible({
+      timeout: 30000,
+    });
+    const ourRow = page
+      .locator('[data-testid^="selectable-row-"]')
+      .filter({ has: page.locator(`[title="${dragCode}"]`) });
+    const ourTestid = await ourRow.getAttribute("data-testid");
+    expect(ourTestid).toBeTruthy();
+    const reloadedOrder = await rowOrder(page);
+    expect(reloadedOrder.indexOf(ourTestid!)).toBe(
+      reloadedOrder.indexOf(aboveTestid) - 1,
     );
   });
 

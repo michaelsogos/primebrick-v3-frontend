@@ -617,24 +617,36 @@
     const idx = renderChain.indexOf(id);
     const other = renderChain[idx + dir];
     if (idx < 0 || other === undefined) return;
-    const aSort = orderValueOf(id);
-    const bSort = orderValueOf(other);
-    setOrderValue(id, bSort);
-    setOrderValue(other, aSort);
+    // Swap positions, then let applyDragOrder assign the values — the
+    // strict-rank pass is what makes a chevron cross work inside a
+    // duplicate-sort tie block (a plain value-swap would keep the tie
+    // and the row would bounce back to its seq position).
+    const next = renderChain.map((c) => ({ id: c }));
+    const tmp = next[idx]!;
+    next[idx] = next[idx + dir]!;
+    next[idx + dir] = tmp;
+    applyDragOrder(next);
   }
 
-  /** Drag-drop reorder — the multiset of order values stays fixed: each
-   *  position keeps its rank value and only the occupying row changes, so
-   *  a drag writes taint solely on the rows whose value actually moves
-   *  (no bulk renumber of untouched rows). */
+  /** Reorder write — each position in `next` keeps its rank from the
+   *  current sort multiset where ranks are already strictly increasing;
+   *  on a tie the value bumps forward by +10 so the chain ends up
+   *  strictly ordered. Ties are the real data shape (seeded dicts share
+   *  one sort value), and a shared value has no defined order — without
+   *  the bump the occupant could never pass a tied neighbour (the seq
+   *  tiebreak would bounce it back), and "rendered order = post-save
+   *  order" would silently break. */
   function applyDragOrder(next: { id: string }[]) {
     if (!orderField) return;
     const ranks = renderChain
       .map((id) => Number(orderValueOf(id) ?? 0))
       .sort((a, b) => a - b);
+    let prev = -Infinity;
     next.forEach(({ id }, i) => {
-      const v = ranks[i];
-      if (v !== undefined && Number(orderValueOf(id) ?? 0) !== v)
+      let v = ranks[i] ?? prev + 10;
+      if (v <= prev) v = prev + 10;
+      prev = v;
+      if (Number.isFinite(v) && Number(orderValueOf(id) ?? 0) !== v)
         setOrderValue(id, v);
     });
   }
