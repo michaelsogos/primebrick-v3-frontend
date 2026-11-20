@@ -225,7 +225,7 @@
   warning={tainted}
   info={pending}
   on_toggle_select={(_id, checked) => ontoggle?.(checked)}
-  class="grid grid-cols-12 items-center gap-4"
+  class="grid grid-cols-12 items-start gap-4"
 >
   <!-- Left 6/12: drag grip | checkbox | 3-line identity -->
   <div class="col-span-6 flex items-start gap-3 min-w-0">
@@ -345,8 +345,10 @@
     {/if}
   </div>
 
-  <!-- Right 2/12: extras CTA → chevrons → taint-undo → single item CTA -->
-  <div class="col-span-2 flex items-center justify-end gap-1">
+  <!-- Right 2/12: extras CTA → chevrons → taint-undo → single item CTA.
+       `items-start` grid + `pt-7` keeps CTAs aligned with the input row
+       when a field error line grows a cell. -->
+  <div class="col-span-2 flex items-center justify-end gap-1 pt-7">
     {#if extras_columns.length > 0}
       <Button
         variant="ghost"

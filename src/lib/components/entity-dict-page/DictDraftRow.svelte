@@ -66,7 +66,7 @@
 </script>
 
 <div
-  class="grid grid-cols-12 items-center gap-4 rounded-lg border bg-background p-3 border-l-[5px] border-l-info/40"
+  class="grid grid-cols-12 items-start gap-4 rounded-lg border bg-background p-3 border-l-[5px] border-l-info/40"
   data-testid="dict-draft-row"
 >
   <!-- Left 6/12: code input in the tag zone. The `border-l-info/40`
@@ -147,8 +147,10 @@
 
   <!-- Right 2/12: composer CTAs — ✓ confirm (→pending) + ✕ discard.
        The ✓ rides the rule-filter-add precedent: ghost icon-sm, info
-       tone, gated on composer validity. -->
-  <div class="col-span-2 flex items-center justify-end gap-1">
+       tone, gated on composer validity. `items-start` grid + `pt-7`
+       aligns the CTAs with the input row, not the label row, so an
+       error line growing a cell never recenters them. -->
+  <div class="col-span-2 flex items-center justify-end gap-1 pt-7">
     <Button
       variant="ghost"
       size="icon-sm"
