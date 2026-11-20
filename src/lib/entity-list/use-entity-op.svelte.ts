@@ -35,7 +35,7 @@
 import { get } from 'svelte/store';
 import { t } from '$lib/i18n';
 import { apiFetch, entityApiBase, serviceApiPrefix } from '$lib/api';
-import { extJsonStringify } from '$lib/api-ext';
+import { extJsonParse, extJsonStringify } from '$lib/api-ext';
 import { useMfaStepUp } from '$lib/composables/useMfaStepUp.svelte';
 import { pushNotification } from '$lib/errors/app-errors';
 import { findActionEndpoint, fillActionPath } from './action-endpoints';
@@ -221,7 +221,9 @@ export async function runEntityOp(args: RunEntityOpArgs): Promise<boolean> {
       await args.onDone?.();
       return true;
     }
-    const body = await res.json().catch(() => null);
+    // extJsonParse (never res.json) — the RFC7807 body may carry bigint
+    // fields (version, id) in `extra`; native JSON would silently lose them.
+    const body = await res.text().then((txt) => (txt ? extJsonParse(txt) : null)).catch(() => null);
     pushNotification(
       body && typeof body === 'object' && 'type' in body
         ? (body as never)
@@ -247,15 +249,14 @@ function defaultRequest(
 ): ((token: string | null) => Promise<Response>) | null {
   const { op, entity, row, rows } = args;
   const base = entityApiBase(entity);
-  // `version` crosses the wire as ext-json — it arrives as number,
-  // string, or bigint depending on magnitude. Any integral form is a
-  // valid optimistic-concurrency token; absent/other types mean "no
-  // guard available" (the router 400s VERSION_REQUIRED either way).
+  // `version` is a native bigint on every ext-json row — the codec
+  // forces ALL integers to bigint (ext-json.ts). Presence is the only
+  // check needed: the template prints the integral token regardless of
+  // its numeric representation (bigint canonical; number/string can
+  // only come from client-built rows, never from the wire).
   const versionQs = (r?: Record<string, unknown>) => {
     const v = r?.version;
-    if (typeof v === 'number' || typeof v === 'bigint') return `?version=${v}`;
-    if (typeof v === 'string' && /^\d+$/.test(v)) return `?version=${v}`;
-    return '';
+    return v === undefined || v === null || v === '' ? '' : `?version=${v}`;
   };
   const auth = (token: string | null): Record<string, string> =>
     token ? { 'x-mfa-action-authorization': token } : {};
