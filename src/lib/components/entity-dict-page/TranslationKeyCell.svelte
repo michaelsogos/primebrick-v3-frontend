@@ -52,23 +52,33 @@
   const placeholderKey = $derived(`custom.${rowsPrefix}${keyLeaf}`);
   const defaultSearch = $derived(`${rowsPrefix}${keyLeaf}`);
 
+  /**
+   * The suggestion is the ASSIGNED value, not a placeholder — a real value
+   * activates the translate CTA and renders the ComboSelect created-value
+   * chip (multi-mode parity). The assignment tracks the code: a previous
+   * suggestion is replaced when the code changes; an explicit user choice
+   * or a manual clear is respected until the code moves.
+   */
+  let lastSuggested = '';
+  $effect(() => {
+    const s = suggestedKey;
+    const prev = lastSuggested;
+    lastSuggested = s;
+    if (!s || s === prev) return;
+    if (!value || value === prev) onchange(s);
+  });
+
   const options = $derived.by(() => {
     const list = new SvelteSet(
       Object.keys($dict as Record<string, string>).filter((k) => k.includes(rowsPrefix)),
     );
-    if (suggestedKey) list.add(suggestedKey);
-    if (value) list.add(value);
+    // The suggestion never enters the vocabulary list — it's the assigned
+    // value rendered as the created-value chip. Other explicit values
+    // (existing custom keys) stay selectable.
+    if (value && value !== suggestedKey) list.add(value);
     // Every item carries the i18n archetype icon — `languages` in the same
     // `sky-500` token as the trigger-page `send` icon (census callables).
-    const sorted = [...list].sort();
-    // The convention suggestion pins FIRST — it's the action the composer
-    // exists for; sorted keys would bury `custom.*` under `crm.*`/`system.*`.
-    if (suggestedKey) {
-      const i = sorted.indexOf(suggestedKey);
-      if (i >= 0) sorted.splice(i, 1);
-      sorted.unshift(suggestedKey);
-    }
-    return sorted.map((key) => ({ key, _icon: 'languages', _icon_color: 'sky-500' }));
+    return [...list].sort().map((key) => ({ key, _icon: 'languages', _icon_color: 'sky-500' }));
   });
 
   /**

@@ -459,33 +459,35 @@ test.describe.serial("dict draft lifecycle — composer → pending", () => {
 
     await page.getByTestId("dict-toolbar-add").click();
     const draft = page.getByTestId("dict-draft-row");
+    const labelKey = draft.getByTestId("dict-cell-label-key");
+    const languagesCta = draft.getByTestId("dict-cell-translations");
     const searchInput = page.getByPlaceholder(/custom\.entities\.customer_type\.rows\./);
-    const items = page.getByRole("option");
+
+    // The translate CTA is disabled while label_key has no real value.
+    await expect(languagesCta).toBeDisabled();
 
     // ── Config-create pattern, EMPTY code: placeholder/search show the
-    // sample convention key, defaultSearch seeds the code-scoped prefix
-    // and the Create row offers that same scoped path.
+    // sample convention key, defaultSearch seeds the code-scoped prefix.
     await draft.locator('[data-dict-cell="label_key"]').click();
     await expect(searchInput).toHaveValue("entities.customer_type.rows.my_custom_code");
     await page.keyboard.press("Escape");
 
-    // ── Code typed → defaultSearch = prefix INCLUDING the code segment.
+    // ── Code typed → the suggestion is ASSIGNED as the real value: the
+    // trigger renders the created-value chip ("New" marker) and the
+    // translate CTA activates on the computed custom.* key.
     const probeCode = `${CODE}_sg`;
     await draft.locator('[data-dict-cell="code"] input').fill(probeCode);
     const expectedKey = `custom.entities.customer_type.rows.${probeCode}`;
+    await expect(labelKey).toContainText(`rows.${probeCode}`);
 
-    // The suggestion is the trigger placeholder while the value is empty.
-    await expect(draft.getByTestId("dict-cell-label-key")).toContainText("rows.");
+    await expect(languagesCta).toBeEnabled();
+    await languagesCta.click();
+    const sheet = page.getByRole("dialog");
+    await expect(sheet.getByTestId("i18n-editor-key")).toBeVisible();
+    await expect(sheet.getByTestId("i18n-editor-key")).toContainText(expectedKey);
+    await page.keyboard.press("Escape");
 
-    await draft.locator('[data-dict-cell="label_key"]').click();
-    await expect(items.first()).toBeVisible();
-    await expect(searchInput).toHaveValue(`entities.customer_type.rows.${probeCode}`);
-    // The suggestion option matches the scoped filter and stays first.
-    await expect(items.first()).toContainText(`rows.${probeCode}`);
-
-    // Selecting the suggestion commits the full custom.* key.
-    await items.first().click();
-    await expect(draft.getByTestId("dict-cell-label-key")).toContainText("rows.");
+    // The assigned suggestion survives as the committed label_key.
     await draft.getByTestId("dict-draft-confirm").click();
     await expect(page.getByTestId("dict-draft-row")).toHaveCount(0);
     const row = page.locator(`[data-testid^="selectable-row-"]`, { hasText: probeCode }).first();

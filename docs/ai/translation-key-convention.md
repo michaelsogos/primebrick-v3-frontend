@@ -118,8 +118,12 @@ pattern (`create/+page.svelte`, `ValidationRulesSection`) exactly:
 - **`defaultSearch`** — the prefix INCLUDING the key segment:
   `entities.<tk>.rows.<code|sample>` — pre-filters to THIS code's keys and
   the Create row offers that same scoped path.
-- **First option** — the real suggestion (code-typed only) pins at index 0;
-  alphabetical sort would bury `custom.*` under `crm.*`/`system.*`.
+- **The suggestion is the ASSIGNED value, not a placeholder** — while the
+  composer has no explicit `label_key`, the computed key is committed via
+  `onchange` (tracking the code: a previous suggestion is replaced on
+  change, an explicit pick or manual clear is respected). The real value
+  renders the created-value chip with the `app.common.new` marker and
+  activates the translate CTA; the suggestion never enters `options`.
 - **`handleChange`** — namespaced `*.entities.*` keys pass verbatim; the
   namespace-less seed `entities.<tk>.rows.<leaf>` maps to `custom.` + the
   path; free text maps to `custom.entities.<tk>.rows.<slug>`.

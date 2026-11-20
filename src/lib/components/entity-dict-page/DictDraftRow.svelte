@@ -102,7 +102,7 @@
   </div>
 
   <!-- Center 4/12: the VALUE field — canonical combobox width -->
-  <div class="col-span-4 flex items-center justify-center" data-dict-cell={valueColumn?.key}>
+  <div class="col-span-4 min-w-0 flex items-center justify-center" data-dict-cell={valueColumn?.key}>
     {#if valueColumn}
       <div class="w-full min-w-0">
         <DictFieldCell
