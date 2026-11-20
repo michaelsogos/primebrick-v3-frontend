@@ -1,20 +1,10 @@
 import { apiFetch, entityApiBase, serviceApiPrefix } from '$lib/api';
 import { pushNotification } from '$lib/errors/app-errors';
 import type { RFC7807Error } from '$lib/errors/rfc7807';
-import type { MetaColumn, EntityAction, RowCustomAction } from '$lib/entity-list/types';
-import { findActionEndpoint, fillActionPath } from '$lib/entity-list';
+import type { MetaColumn, EntityAction, EntityMeta, RowCustomAction } from '$lib/entity-list/types';
+import { findActionEndpoint, fillActionPath, runEntityOp } from '$lib/entity-list';
 import type { DeepReadonly } from '@primebrick/ui';
 import { extJsonParse, extJsonStringify } from '$lib/api-ext';
-
-/** Step-up MFA driver shape (useMfaStepUp) — injected by the table so
- *  endpoint-dispatched custom actions transparently pass through the
- *  403 mfa_step_up_required → dialog → retry flow. */
-interface MfaStepUpDriver {
-  executeWithToken: (
-    requestFn: (token: string | null) => Promise<Response>,
-    context: { action: string; target_resource: string }
-  ) => Promise<Response>;
-}
 
 export interface RowActionsOptions<TRow extends Record<string, unknown>> {
   entity: () => string;
@@ -44,18 +34,10 @@ export interface RowActionsOptions<TRow extends Record<string, unknown>> {
   closeRowDropdown?: () => void;
   t?: (key: string, params?: Record<string, unknown>) => string;
   customActionHandlers?: () => (Record<string, (row: TRow) => void> | undefined);
-  /** Host step-up driver — wraps endpoint-dispatched custom actions. */
-  mfaStepUp?: () => MfaStepUpDriver | undefined;
   dialogs?: {
-    openDeleteDialog: () => void;
-    closeDeleteDialog: () => void;
-    openRestoreDialog: () => void;
-    closeRestoreDialog: () => void;
     openDuplicateDialog: () => void;
     closeDuplicateDialog: () => void;
     setDuplicateScope: (scope: 'selected' | 'single') => void;
-    setRowToDelete: (row: TRow | null) => void;
-    setRowToRestore: (row: TRow | null) => void;
     setSingleRowToDuplicate: (row: TRow | null) => void;
   };
 }
@@ -80,16 +62,11 @@ export function useRowActions<TRow extends Record<string, unknown>>(
     closeRowDropdown,
     dialogs,
     customActionHandlers: getCustomActionHandlers,
-    t: tFn = (key: string) => key, // Default fallback
-    mfaStepUp: getMfaStepUp
+    t: tFn = (key: string) => key // Default fallback
   } = options;
 
   const _state = $state({
-    isDeleting: false,
-    isRestoring: false,
     isDuplicating: false,
-    rowToDelete: null as TRow | null,
-    rowToRestore: null as TRow | null,
     singleRowToDuplicate: null as TRow | null,
     duplicateScope: 'selected' as 'selected' | 'single'
   });
@@ -104,15 +81,45 @@ export function useRowActions<TRow extends Record<string, unknown>>(
   }
 
 
+  /** Minimal meta the invoker needs — the table carries the fields as
+   *  separate getters, not a meta object. */
+  function metaForOp(): EntityMeta {
+    return { actions: getActions?.(), entities_ns: entitiesNsFn?.(), uid: uidFn() } as EntityMeta;
+  }
+
   function handleDeleteRow(row: TRow) {
-    dialogs?.setRowToDelete?.(row);
-    dialogs?.openDeleteDialog();
+    // Hard-delete-only entities (meta.actions: purge.single enabled,
+    // delete.single disabled) target `DELETE /:uuid/purge` automatically.
+    void runEntityOp({
+      op: usePurgeDelete?.() ? 'purge.single' : 'delete.single',
+      entity: entityFn(),
+      meta: metaForOp(),
+      row,
+      onDone: () => {
+        getOnRefresh?.()?.();
+        onRowActionComplete?.();
+      }
+    }).catch((error) => {
+      console.error('Delete failed:', error);
+      onRowActionError?.(error as Error);
+    });
     closeRowDropdown?.();
   }
 
   function handleRestoreRow(row: TRow) {
-    dialogs?.setRowToRestore?.(row);
-    dialogs?.openRestoreDialog();
+    void runEntityOp({
+      op: 'restore.single',
+      entity: entityFn(),
+      meta: metaForOp(),
+      row,
+      onDone: () => {
+        getOnRefresh?.()?.();
+        onRowActionComplete?.();
+      }
+    }).catch((error) => {
+      console.error('Restore failed:', error);
+      onRowActionError?.(error as Error);
+    });
     closeRowDropdown?.();
   }
 
@@ -135,95 +142,6 @@ export function useRowActions<TRow extends Record<string, unknown>>(
       return { url: fillActionPath(ep.path, row, uidFn()), method: ep.method };
     }
     return { url: `${entityApiBase(entityFn())}${fallbackSuffix}`, method: '' };
-  }
-
-  async function confirmDeleteRowImpl(row: TRow) {
-    const uid = uidFn();
-    if (!row) return;
-    try {
-      _state.isDeleting = true;
-      const uuidValue = row[uid] as string;
-      const purge = usePurgeDelete?.() ? '/purge' : '';
-      const { url, method } = resolveOpUrl(
-        usePurgeDelete?.() ? 'purge.single' : 'delete.single',
-        row,
-        `/${uuidValue}${purge}`
-      );
-      await apiFetch(`${url}?version=${(row as Record<string, unknown>).version}`, {
-        method: method || 'DELETE'
-      });
-      // Refresh the list after successful deletion
-      getOnRefresh?.()?.();
-      onRowActionComplete?.();
-    } catch (error) {
-      console.error('Delete failed:', error);
-      if (error && typeof error === 'object' && 'title' in error) {
-        const err = error as RFC7807Error;
-        const rfcError: RFC7807Error = {
-          type: err.type || 'about:blank',
-          title: err.title || 'Delete failed',
-          status: err.status || 500,
-          detail: err.detail || 'Unknown error',
-          internal_code: err.internal_code,
-          instance: err.instance,
-          severity: err.severity
-        };
-        pushNotification(rfcError);
-      } else {
-        pushNotification({
-          impact: 'MEDIUM',
-          messageKey: 'app.common.delete_failed',
-          scope: tFn('app.common.errors.scope.delete_api'),
-          detail: error instanceof Error ? error.message : String(error),
-          toast: true,
-        });
-      }
-      onRowActionError?.(error as Error);
-    } finally {
-      _state.isDeleting = false;
-    }
-  }
-
-  async function confirmRestoreRowImpl(row: TRow) {
-    const uid = uidFn();
-    if (!row) return;
-    try {
-      _state.isRestoring = true;
-      const uuidValue = row[uid] as string;
-      const { url, method } = resolveOpUrl('restore.single', row, `/${uuidValue}/restore`);
-      await apiFetch(`${url}?version=${(row as Record<string, unknown>).version}`, {
-        method: method || 'POST'
-      });
-      // Refresh the list after successful restore
-      getOnRefresh?.()?.();
-      onRowActionComplete?.();
-    } catch (error) {
-      console.error('Restore failed:', error);
-      if (error && typeof error === 'object' && 'title' in error) {
-        const err = error as RFC7807Error;
-        const rfcError: RFC7807Error = {
-          type: err.type || 'about:blank',
-          title: err.title || 'Restore failed',
-          status: err.status || 500,
-          detail: err.detail || 'Unknown error',
-          internal_code: err.internal_code,
-          instance: err.instance,
-          severity: err.severity
-        };
-        pushNotification(rfcError);
-      } else {
-        pushNotification({
-          impact: 'MEDIUM',
-          messageKey: 'app.common.restore_failed',
-          scope: tFn('app.common.errors.scope.restore_api'),
-          detail: error instanceof Error ? error.message : String(error),
-          toast: true,
-        });
-      }
-      onRowActionError?.(error as Error);
-    } finally {
-      _state.isRestoring = false;
-    }
   }
 
   async function confirmDuplicateRowImpl(row: TRow) {
@@ -274,21 +192,6 @@ export function useRowActions<TRow extends Record<string, unknown>>(
     }
   }
 
-  // Wrapper functions that manage dialog state
-  async function confirmDeleteRowWrapper() {
-    if (!_state.rowToDelete) return;
-    await confirmDeleteRowImpl(_state.rowToDelete);
-    dialogs?.closeDeleteDialog();
-    _state.rowToDelete = null;
-  }
-
-  async function confirmRestoreRowWrapper() {
-    if (!_state.rowToRestore) return;
-    await confirmRestoreRowImpl(_state.rowToRestore);
-    dialogs?.closeRestoreDialog();
-    _state.rowToRestore = null;
-  }
-
   async function confirmDuplicateWrapper() {
     if (_state.duplicateScope === 'single' && _state.singleRowToDuplicate) {
       await confirmDuplicateRowImpl(_state.singleRowToDuplicate);
@@ -332,37 +235,39 @@ export function useRowActions<TRow extends Record<string, unknown>>(
     // (suspend/reactivate/restore-style writes) get the caller-observed
     // version exactly like delete/restore do. Endpoints that ignore query
     // params are unaffected.
-    const versionQs =
-      typeof row.version === 'number' ? `?version=${row.version}` : '';
+    const versionQs = row.version !== undefined && row.version !== null ? `?version=${row.version}` : '';
     const url = serviceApiPrefix(entityFn()) + fillActionPath(ep.path, row, uidFn()) + versionQs;
     const body = action.row_key
       ? extJsonStringify({ [action.row_key]: row[action.row_key] })
       : undefined;
-    const request = (token: string | null) =>
-      apiFetch(url, {
-        method: ep.method || 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { 'X-MFA-Action-Authorization': token } : {})
-        },
-        body
-      });
-    const stepUp = getMfaStepUp?.();
-    const res = stepUp
-      ? await stepUp.executeWithToken(request, { action: action.action_name, target_resource: entityFn() })
-      : await request(null);
-    // RFC7807 failures are already surfaced by apiFetch — only refresh+toast
-    // on success.
-    if (!res.ok) return true;
-    getOnRefresh?.()?.();
-    onRowActionComplete?.();
-    pushNotification({
-      impact: 'LOW',
-      messageKey: 'app.common.done',
-      scope: tFn('app.common.errors.scope.custom_action_api'),
-      toast: true
+    // The governed invoker owns the gate (confirm_key / DELETE method ⇒
+    // mandatory anatomy dialog), the step-up wrap, and RFC7807 →
+    // notification mapping.
+    return runEntityOp({
+      op: action.action_name,
+      entity: entityFn(),
+      meta: metaForOp(),
+      row,
+      execute: (token) =>
+        apiFetch(url, {
+          method: ep.method || 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { 'x-mfa-action-authorization': token } : {})
+          },
+          body
+        }),
+      onDone: () => {
+        getOnRefresh?.()?.();
+        onRowActionComplete?.();
+        pushNotification({
+          impact: 'LOW',
+          messageKey: 'app.common.done',
+          scope: tFn('app.common.errors.scope.custom_action_api'),
+          toast: true
+        });
+      }
     });
-    return true;
   }
 
   async function handleCustomAction(action: RowCustomAction, row: TRow) {
@@ -395,15 +300,6 @@ export function useRowActions<TRow extends Record<string, unknown>>(
     closeRowDropdown?.();
   }
 
-  // Keep original function names for backward compatibility, but they now call the impl versions
-  async function confirmDeleteRow(row: DeepReadonly<TRow>) {
-    await confirmDeleteRowImpl(row as TRow);
-  }
-
-  async function confirmRestoreRow(row: DeepReadonly<TRow>) {
-    await confirmRestoreRowImpl(row as TRow);
-  }
-
   async function confirmDuplicateRow(row: DeepReadonly<TRow>) {
     await confirmDuplicateRowImpl(row as TRow);
   }
@@ -414,11 +310,7 @@ export function useRowActions<TRow extends Record<string, unknown>>(
     handleDeleteRow,
     handleRestoreRow,
     handleDuplicateRow,
-    confirmDeleteRow,
-    confirmRestoreRow,
     confirmDuplicateRow,
-    confirmDeleteRowWrapper,
-    confirmRestoreRowWrapper,
     confirmDuplicateWrapper,
     cancelDuplicate,
     loadVersionHistory,

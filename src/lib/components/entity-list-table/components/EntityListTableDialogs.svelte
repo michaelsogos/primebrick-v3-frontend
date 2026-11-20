@@ -1,6 +1,5 @@
 <script lang="ts" generics="TRow extends Record<string, unknown>">
-  import { DeleteDialog } from '@primebrick/ui';
-  import { RestoreDialog, BulkDeleteDialog, BulkRestoreDialog, ExportDialog, HtmlExportDialog, DuplicateDialog, ExportPreviewDialog } from '../dialogs';
+  import { ExportDialog, HtmlExportDialog, DuplicateDialog, ExportPreviewDialog } from '../dialogs';
   import type { useDialogs } from '../composables/useDialogs.svelte';
   import type { useRowActions } from '../composables/useRowActions.svelte';
   import type { useBulkActions } from '../composables/useBulkActions.svelte';
@@ -17,10 +16,6 @@
     entity,
     entities_ns,
     translationKey,
-    deleteChrome,
-    restoreChrome,
-    bulkDeleteChrome,
-    bulkRestoreChrome,
     duplicateChrome
   }: EntityListTableDialogsProps = $props();
 
@@ -38,44 +33,8 @@
     translationKey?: string;
     /** `meta.actions[op]` chrome — meta-driven dialog copy (title verb,
      *  confirm message, busy label, accent severity). */
-    deleteChrome?: ActionChrome;
-    restoreChrome?: ActionChrome;
-    bulkDeleteChrome?: ActionChrome;
-    bulkRestoreChrome?: ActionChrome;
     duplicateChrome?: ActionChrome;
   };
-
-  async function confirmDeleteRow() {
-    if (!dialogs.state.rowToDelete) return;
-    await rowActionsComposable.confirmDeleteRow(dialogs.state.rowToDelete);
-    dialogs.closeDeleteDialog();
-    dialogs.setRowToDelete(null);
-  }
-
-  async function confirmRestoreRow() {
-    if (!dialogs.state.rowToRestore) return;
-    await rowActionsComposable.confirmRestoreRow(dialogs.state.rowToRestore);
-    dialogs.closeRestoreDialog();
-    dialogs.setRowToRestore(null);
-  }
-
-  async function confirmBulkDelete() {
-    await bulkActions.confirmBulkDelete();
-    dialogs.closeBulkDeleteDialog();
-  }
-
-  function cancelBulkDelete() {
-    dialogs.closeBulkDeleteDialog();
-  }
-
-  async function confirmBulkRestore() {
-    await bulkActions.confirmBulkRestore();
-    dialogs.closeBulkRestoreDialog();
-  }
-
-  function cancelBulkRestore() {
-    dialogs.closeBulkRestoreDialog();
-  }
 
   async function confirmExportRow() {
     if (!exportComposable.state.fileType) return;
@@ -130,71 +89,7 @@
     await exportComposable.copyEmailHtmlToClipboard();
   }
 
-  // Best-effort record name for the delete/restore confirm question — picks
-  // the first non-empty of the common identifier fields.
-  function recordName(row: Record<string, unknown> | null): string | undefined {
-    if (!row) return undefined;
-    for (const key of ['name', 'username', 'email', 'code', 'key', 'model_id']) {
-      const v = row[key];
-      if (typeof v === 'string' && v.trim()) return v;
-    }
-    return undefined;
-  }
 </script>
-
-<DeleteDialog
-  entity={translationKey ?? entity}
-  entities_ns={entities_ns}
-  recordName={recordName(dialogs.state.rowToDelete)}
-  chrome={deleteChrome}
-  open={dialogs.state.deleteDialogOpen}
-  onOpenChange={(open) => { if (!open) dialogs.closeDeleteDialog(); }}
-  isDeleting={rowActionsComposable.state.isDeleting}
-  onConfirm={confirmDeleteRow}
-  onCancel={() => dialogs.closeDeleteDialog()}
-/>
-
-<RestoreDialog
-  entity={translationKey ?? entity}
-  entities_ns={entities_ns}
-  recordName={recordName(dialogs.state.rowToRestore)}
-  chrome={restoreChrome}
-  open={dialogs.state.restoreDialogOpen}
-  onOpenChange={(open) => { if (!open) dialogs.closeRestoreDialog(); }}
-  isRestoring={rowActionsComposable.state.isRestoring}
-  onConfirm={confirmRestoreRow}
-  onCancel={() => dialogs.closeRestoreDialog()}
-/>
-
-<BulkDeleteDialog
-  entity={translationKey ?? entity}
-  entities_ns={entities_ns}
-  chrome={bulkDeleteChrome}
-  open={dialogs.state.bulkDeleteDialogOpen}
-  onOpenChange={(open) => { if (!open) dialogs.closeBulkDeleteDialog(); }}
-  selectedCount={selectedKeys.length}
-  totalCount={total}
-  isDeleting={bulkActions.state.isDeleting}
-  deleteScope={bulkActions.state.deleteScope}
-  onDeleteScopeChange={(s) => bulkActions.setDeleteScope(s)}
-  onConfirm={confirmBulkDelete}
-  onCancel={cancelBulkDelete}
-/>
-
-<BulkRestoreDialog
-  entity={translationKey ?? entity}
-  entities_ns={entities_ns}
-  chrome={bulkRestoreChrome}
-  open={dialogs.state.bulkRestoreDialogOpen}
-  onOpenChange={(open) => { if (!open) dialogs.closeBulkRestoreDialog(); }}
-  selectedCount={selectedKeys.length}
-  totalCount={total}
-  isRestoring={bulkActions.state.isRestoring}
-  restoreScope={bulkActions.state.restoreScope}
-  onRestoreScopeChange={(s) => bulkActions.setRestoreScope(s)}
-  onConfirm={confirmBulkRestore}
-  onCancel={cancelBulkRestore}
-/>
 
 <ExportDialog
   open={exportComposable.state.exportOpen}

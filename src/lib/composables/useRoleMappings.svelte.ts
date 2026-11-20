@@ -11,7 +11,6 @@
  *   - get(uuid): fetch a single role by uuid (entity endpoint)
  *   - create(input): create a new role (entity endpoint)
  *   - update(uuid, input): update a role by uuid (entity endpoint)
- *   - remove(uuid): delete a role by uuid (entity endpoint)
  *
  * All field names are snake_case (matching the BE JSON shape).
  *
@@ -144,27 +143,6 @@ export function useRoleMappings() {
     }
   }
 
-  async function remove(uuid: string, version: number): Promise<boolean> {
-    try {
-      const res = await apiFetch(
-        `/api/v1/entities/role_mapping/${encodeURIComponent(uuid)}/purge?version=${version}`,
-        { method: "DELETE" },
-      );
-      if (res.ok) {
-        await list();
-        pushNotification({ impact: "NONE", message: "Role deleted", scope: "roles" });
-        return true;
-      }
-      const body = await res.text().then((t) => extJsonParse<any>(t)).catch(() => null);
-      pushNotification(body ?? { impact: "HIGH", message: `HTTP ${res.status}`, scope: "roles" });
-      return false;
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : "Failed to delete role";
-      pushNotification({ impact: "HIGH", message: msg, scope: "roles" });
-      return false;
-    }
-  }
-
   return {
     get state(): DeepReadonly<typeof _state> {
       return _state as DeepReadonly<typeof _state>;
@@ -173,6 +151,5 @@ export function useRoleMappings() {
     get,
     create,
     update,
-    remove,
   };
 }

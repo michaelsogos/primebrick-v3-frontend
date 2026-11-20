@@ -42,8 +42,7 @@
   import { loadModuleTranslations } from '$lib/i18n/use-module-translations.svelte';
   import { uiLang } from '$lib/i18n/store.svelte';
   import { get } from 'svelte/store';
-  import { useMfaStepUp } from '$lib/composables/useMfaStepUp.svelte';
-  import MfaStepUpDialog from '$lib/components/auth/MfaStepUpDialog.svelte';
+
   import { LoadingBar } from '$lib/components/ui/loading-bar';
 
   import type { EntityListTableProps, ActionChrome } from './types';
@@ -465,10 +464,6 @@
 
   const dialogs = useDialogs<TRow>();
 
-  /** Step-up MFA driver — endpoint-dispatched row/bulk custom actions ride
-   *  it; the dialog renders once at table level. */
-  const stepUp = useMfaStepUp();
-
   const bulkActions = useBulkActions({
     entity: () => entity,
     selectedKeys: () => selectedKeys,
@@ -479,8 +474,9 @@
     searchInKeys: () => searchInKeys,
     filterValues: () => filterValues,
     advancedFilters: () => advancedFilters,
+    entities_ns: () => entities_ns,
+    total: () => total,
     rowByKey: (key) => (rows as TRow[] | undefined)?.find((r) => rowKey(r) === key),
-    mfaStepUp: () => stepUp,
     onSelectionChange: (keys) => {
       selectedKeys = keys;
     },
@@ -490,10 +486,6 @@
     },
     t: $t,
     dialogs: {
-      openBulkDeleteDialog: dialogs.openBulkDeleteDialog,
-      closeBulkDeleteDialog: dialogs.closeBulkDeleteDialog,
-      openBulkRestoreDialog: dialogs.openBulkRestoreDialog,
-      closeBulkRestoreDialog: dialogs.closeBulkRestoreDialog,
       openDuplicateDialog: dialogs.openDuplicateDialog,
       closeDuplicateDialog: dialogs.closeDuplicateDialog
     },
@@ -610,17 +602,10 @@
     closeRowDropdown: closeRowDropdown,
     t: $t,
     customActionHandlers: () => customActionHandlers,
-    mfaStepUp: () => stepUp,
     dialogs: {
-      openDeleteDialog: dialogs.openDeleteDialog,
-      closeDeleteDialog: dialogs.closeDeleteDialog,
-      openRestoreDialog: dialogs.openRestoreDialog,
-      closeRestoreDialog: dialogs.closeRestoreDialog,
       openDuplicateDialog: dialogs.openDuplicateDialog,
       closeDuplicateDialog: dialogs.closeDuplicateDialog,
       setDuplicateScope: dialogs.setDuplicateScope,
-      setRowToDelete: dialogs.setRowToDelete,
-      setRowToRestore: dialogs.setRowToRestore,
       setSingleRowToDuplicate: dialogs.setSingleRowToDuplicate
     }
   });
@@ -920,19 +905,6 @@
     {entity}
     entities_ns={entities_ns}
     translationKey={effectiveTranslationKey}
-    deleteChrome={opChrome('delete.single')}
-    restoreChrome={opChrome('restore.single')}
-    {bulkDeleteChrome}
-    {bulkRestoreChrome}
     duplicateChrome={effectiveRowActions.duplicate_chrome}
-  />
-
-  <!-- Step-up MFA — row/bulk endpoint actions with a declared mfa spec on
-       the owning route land here on 403 mfa_step_up_required. -->
-  <MfaStepUpDialog
-    bind:open={stepUp.dialogOpen}
-    action={stepUp.pendingAction}
-    target_resource={stepUp.pendingTargetResource}
-    onauthorized={stepUp.handleAuthorized}
   />
 

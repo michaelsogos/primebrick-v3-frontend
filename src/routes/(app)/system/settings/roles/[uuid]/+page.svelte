@@ -8,7 +8,6 @@
   import { SvelteSet } from 'svelte/reactivity';
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
   import { Button } from '@primebrick/ui';
-  import { DeleteDialog } from '@primebrick/ui';
   import { TextInput } from '@primebrick/ui';
   import { Label } from '@primebrick/ui';
   import { FormLabelWithPriorityHelp } from '@primebrick/ui';
@@ -24,8 +23,6 @@
   import { useRoleMappings, type RoleMapping } from '$lib/composables/useRoleMappings.svelte';
 
   let saving = $state(false);
-  let deleting = $state(false);
-  let deleteOpen = $state(false);
   let role = $state<RoleMapping | null>(null);
   let loading = $state(true);
   let notFound = $state(false);
@@ -99,17 +96,6 @@
     });
     saving = false;
     if (ok) {
-      goto(resolve('/system/settings/roles'));
-    }
-  }
-
-  async function handleDelete() {
-    if (!role) return;
-    deleting = true;
-    const ok = await roleMappings.remove(role.uuid, role.version);
-    deleting = false;
-    if (ok) {
-      deleteOpen = false;
       goto(resolve('/system/settings/roles'));
     }
   }
@@ -273,13 +259,3 @@
     </div>
   {/if}
 </AppPageScaffold>
-
-<DeleteDialog
-  entity="role"
-  recordName={role?.idp_role}
-  bind:open={deleteOpen}
-  onOpenChange={(open) => { if (!open) deleteOpen = false; }}
-  isDeleting={deleting}
-  onConfirm={handleDelete}
-  onCancel={() => (deleteOpen = false)}
-/>

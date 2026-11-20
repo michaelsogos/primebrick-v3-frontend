@@ -4,6 +4,7 @@
   import { resolve } from '$app/paths';
   import { onMount, untrack, type Snippet } from 'svelte';
   import { entitiesNs } from '$lib/utils/entity-meta';
+  import { pushNotification } from '$lib/errors/app-errors';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
   import { isSnakeCaseSingular } from '$lib/entity-list';
   import { EntityListTable } from '$lib/components/entity-list-table';
@@ -183,7 +184,7 @@
     if (navStrategy === 'popup') {
       const w = window.open(effectiveCreatePath, '_blank');
       if (w) w.focus();
-      else alert('Popup bloccato dal browser! Controlla le impostazioni.');
+      else pushNotification({ impact: 'MEDIUM', messageKey: 'app.common.popup_blocked', toast: true });
     } else {
       void goto(resolve(effectiveCreatePath as '/'));
     }
@@ -195,7 +196,7 @@
     if (navStrategy === 'popup') {
       const w = window.open(url, '_blank');
       if (w) w.focus();
-      else alert('Popup bloccato dal browser! Controlla le impostazioni.');
+      else pushNotification({ impact: 'MEDIUM', messageKey: 'app.common.popup_blocked', toast: true });
     } else {
       void goto(resolve(url as '/'));
     }

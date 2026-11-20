@@ -65,6 +65,9 @@
       open={true}
       {onOpenChange}
       selectedCount={req.count ?? 0}
+      deleteScope={req.scopeChoice?.value}
+      onDeleteScopeChange={req.scopeChoice?.onChange}
+      totalCount={req.totalCount}
       isDeleting={entityOpState.busy}
       {onConfirm}
       {onCancel}
@@ -89,6 +92,9 @@
       open={true}
       {onOpenChange}
       selectedCount={req.count ?? 0}
+      restoreScope={req.scopeChoice?.value}
+      onRestoreScopeChange={req.scopeChoice?.onChange}
+      totalCount={req.totalCount}
       isRestoring={entityOpState.busy}
       {onConfirm}
       {onCancel}

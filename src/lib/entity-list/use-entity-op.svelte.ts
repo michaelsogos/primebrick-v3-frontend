@@ -56,6 +56,14 @@ export interface EntityOpConfirmRequest {
   recordName?: string;
   count?: number;
   chrome?: EntityOpChrome;
+  /** Bulk scope choicebox — when present the bulk dialogs render the
+   *  selected/all Choicebox bound to the caller's scope state. */
+  scopeChoice?: {
+    readonly value: 'selected' | 'all';
+    onChange: (v: 'selected' | 'all') => void;
+  };
+  /** Rows matching the current filters — the 'all' scope count. */
+  totalCount?: bigint;
   resolve: (confirmed: boolean) => void;
 }
 
@@ -110,6 +118,15 @@ export interface RunEntityOpArgs {
    *  names (`delete`, `bulk_delete`, `restore`, `bulk_restore`, `purge`)
    *  and the raw op name for custom ops (`action_name` convention). */
   mfaAction?: string;
+  /** Bulk scope choicebox — bound to the caller's scope state; the bulk
+   *  dialog's Choicebox reads `value` and writes through `onChange`. */
+  scopeChoice?: {
+    readonly value: 'selected' | 'all';
+    onChange: (v: 'selected' | 'all') => void;
+  };
+  /** Rows matching the current filters — the 'all' scope count shown by
+   *  the bulk dialogs' Choicebox. */
+  totalCount?: bigint;
 }
 
 const DELETE_FAMILY = /^(?:delete|purge)\./;
@@ -188,6 +205,8 @@ export async function runEntityOp(args: RunEntityOpArgs): Promise<boolean> {
       recordName: args.recordName ?? (args.row ? defaultRecordName(args.row, meta, uid) : undefined),
       count: args.rows?.length,
       chrome: chromeOf(action),
+      scopeChoice: args.scopeChoice,
+      totalCount: args.totalCount,
     });
     if (!confirmed) return false;
   }
