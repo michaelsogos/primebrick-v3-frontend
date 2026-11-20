@@ -47,6 +47,15 @@ Before starting or closing work — and at every session start — run:
   `gitflow finish` (merge to main, tag, back-merge to develop, delete
   local + remote).
 - Origin must carry only `main`, `develop` and the one open branch.
+
+**Bases are merge-only — nobody commits on `main` or `develop`,
+ever** (no fixes, no docs, no regen output, no exceptions). All work
+lands through a work branch. Consequently an open work branch MUST
+contain every commit of its base: `audit` fails with `STALE BASE`
+when the base moved while a work branch is open — that is proof of a
+violation (a direct base commit or an illicit close), not drift to
+tolerate. STOP and report; resync only by merging the base into the
+work branch once the violation is explained.
 ## Branch Creation Rules
 
 - **NEVER work directly on `develop` or `main`** - always create feature branches first
