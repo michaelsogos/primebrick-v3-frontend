@@ -7,10 +7,26 @@
 
 ## Golden Rules
 
+0. **Entity delete/restore ops MUST dispatch through `runEntityOp`**
+   (`$lib/entity-list/use-entity-op.svelte.ts`) — never call `apiFetch`
+   for `delete.*`/`purge.*`/`restore.*` or any `meta.actions[]` op whose
+   `endpoint.method === 'DELETE'` or whose `confirm_key` is set. The
+   invoker owns the confirm gate (mandatory for those ops), the standard
+   dialogs, endpoint resolution, MFA step-up, and RFC7807 → notification
+   mapping. Its confirm channel is module state rendered by ONE
+   `<EntityOpConfirmHost>` mounted in `(app)/+layout.svelte` — the
+   channel exists by construction; a page cannot "forget" the dialog
+   (the dict page's raw `apiFetch(DELETE)` is the incident this closes).
+   `runEntityOp` returns `Promise<boolean>` — `true` iff the request ran
+   and succeeded; cancel/fail/no-endpoint resolve `false` after their
+   notifications.
 1. **ALWAYS use the standard dialogs** from `$lib/components/entity-list-table/dialogs`:
    - `DeleteDialog` (severity `destructive`)
    - `RestoreDialog` (severity `warning`)
    - `BulkDeleteDialog` / `BulkRestoreDialog`
+   The invoker renders exactly these via the host — mounting them
+   per-page for entity ops is redundant (ELT's `EntityListTableDialogs`
+   converges on the invoker too).
 2. **NEVER pass a custom title or body** — these props do not exist. Title and
    body are derived by convention:
    - Title: `app.common.{delete,restore}EntityTitle` + `system.entities.{entity}.singular` (or `…EntitiesTitle` + `.plural` for bulk)
@@ -28,6 +44,14 @@
    not entity records.
 6. **Never use `DialogBordered` directly for entity delete/restore** — bypassing
    the standard dialogs loses the convention-driven copy.
+7. **Severity is meta-derived, never caller-chosen** — the invoker passes
+   `chrome?.color` from `meta.actions[op]`; delete/purge default
+   `destructive`, restore defaults `warning`. `confirm_key` from the op
+   metadata drives the body key when present.
+8. **Native `confirm()`/`alert()`/`prompt()` are banned** — lint rule
+   `no-native-dialog` (`check-standards`, `NO_EXEMPT_RULES`) fails the
+   build on any native dialog call. Notices use `pushNotification`;
+   entity confirms use `runEntityOp`.
 
 ## Reference
 - Docs: `docs/dev-guide/components/entity-confirm-dialogs.mdx`

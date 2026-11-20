@@ -129,3 +129,27 @@ restarts: start them detached via
 agent shell (a shell-owned server dies with the session). If a turn
 finds a service down, restart it detached. Full lifecycle rules:
 [`docs/ai/dev-server.md`](./dev-server.md).
+
+## Per-turn operating discipline — pinned, every turn
+
+These obligations apply to EVERY turn — analysis, plan, or code — not
+once per session. A turn that skips any of them is a protocol violation.
+
+- **Doc re-read + doc-gap evaluation** — re-read this file and the
+  governing docs of the touched domain each turn. When a doc-vs-code
+  divergence or a doc gap surfaces, evaluate closing it in the same
+  turn — a known gap carried silently is drift by construction.
+- **Definitive tests only** — every verification lands as a final,
+  persistent spec in its canonical location. E2E involving the FE
+  always runs against the real dev stack and is committed as the
+  regression spec — never a throwaway probe.
+- **Empirical or nothing** — zero assumptions. If a claim is checkable
+  (run it, query it, read it), it is checked before it is stated.
+  "Should be" is not evidence.
+- **No workarounds** — never ship a workaround for a governed
+  contract. If the governed path is blocked, surface the block; the
+  contingency is unblocking the block, never a parallel mechanism.
+- **Anomalies are a STOP** — any unexpected behavior, result, or
+  evidence contradicting the model halts the turn and is explained to
+  the user before continuing. An anomaly absorbed silently is a bug
+  shipped silently.

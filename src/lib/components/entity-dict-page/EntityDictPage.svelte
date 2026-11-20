@@ -50,8 +50,7 @@
   import { pushNotification } from '$lib/errors/app-errors';
   import { clearPendingTranslations } from '$lib/i18n/pending-translations.svelte';
   import { flushPendingTranslations } from '$lib/i18n/flush-pending-translations';
-  import { useMfaStepUp } from '$lib/composables/useMfaStepUp.svelte';
-  import MfaStepUpDialog from '$lib/components/auth/MfaStepUpDialog.svelte';
+  import { runEntityOp } from '$lib/entity-list/use-entity-op.svelte';
   import DictRow from './DictRow.svelte';
   import type { CensusRoute } from '$lib/api';
 
@@ -97,8 +96,6 @@
       // ignore quota / blocked storage
     }
   });
-
-  const stepUp = useMfaStepUp();
 
   // ─── Meta-derived contract ───────────────────────────────────────────
   const meta = $derived(list.meta as EntityMeta | null);
@@ -481,81 +478,60 @@
     }
   }
 
+  /** Delete/restore ride the governed invoker — `runEntityOp` owns the
+   *  mandatory confirm gate (the incident path), endpoint resolution,
+   *  MFA step-up and RFC7807 surfacing. The page only declares intent. */
   async function deleteRow(r: Record<string, unknown>) {
-    const id = String(r[uid]);
-    const res = await stepUp.executeWithToken(
-      (token) =>
-        apiFetch(`${basePath}/${encodeURIComponent(id)}?version=${r['version']}`, {
-          method: 'DELETE',
-          headers: token ? { 'x-mfa-action-authorization': token } : {},
-        }),
-      { action: 'delete', target_resource: entity },
-    );
-    if (res.ok) {
-      pushNotification({ impact: 'NONE', messageKey: 'app.common.delete_success' });
-      await list.refreshRows();
-    } else {
-      const body = await res.json().catch(() => null);
-      pushNotification(
-        body && typeof body === 'object' && 'type' in body
-          ? (body as never)
-          : { impact: 'HIGH', messageKey: 'app.common.delete_failed' },
-      );
-    }
-  }
-
-  async function restoreOne(r: Record<string, unknown>): Promise<boolean> {
-    const id = String(r[uid]);
-    const res = await apiFetch(`${basePath}/${encodeURIComponent(id)}/restore?version=${r['version']}`, {
-      method: 'POST',
+    await runEntityOp({
+      op: 'delete.single',
+      entity,
+      meta,
+      row: r,
+      onDone: () => list.refreshRows(),
     });
-    return res.ok;
   }
 
   async function restoreRow(r: Record<string, unknown>) {
-    if (await restoreOne(r)) await list.refreshRows();
+    await runEntityOp({
+      op: 'restore.single',
+      entity,
+      meta,
+      row: r,
+      onDone: () => list.refreshRows(),
+    });
   }
 
-  /** Bulk restore = the single-row restore envelope per selected deleted
-   *  row (the entity-router exposes no bulk restore), then one refresh —
-   *  same progressive-commit convention as `saveAll`. */
+  /** Bulk restore = the invoker's per-row `restore.single` envelope (the
+   *  entity-router exposes no bulk restore), confirmed once for the
+   *  selection — same progressive-commit convention as `saveAll`. */
   async function bulkRestore() {
-    for (const r of selectedRows.filter(
-      (r) => r['deleted_at'] !== null && r['deleted_at'] !== undefined,
-    )) {
-      await restoreOne(r);
-    }
-    selection.clearSelection();
-    await list.refreshRows();
+    const ok = await runEntityOp({
+      op: 'restore.bulk',
+      entity,
+      meta,
+      rows: selectedRows.filter(
+        (r) => r['deleted_at'] !== null && r['deleted_at'] !== undefined,
+      ),
+      onDone: () => {
+        selection.clearSelection();
+        void list.refreshRows();
+      },
+    });
+    void ok;
   }
 
   async function bulkDelete() {
-    const items = selectedRows.map((r) => ({ uuid: String(r[uid]), version: r['version'] }));
-    if (items.length === 0) return;
-    const res = await stepUp.executeWithToken(
-      (token) =>
-        apiFetch(`${basePath}/bulk-delete`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { 'x-mfa-action-authorization': token } : {}),
-          },
-          body: JSON.stringify({ items }),
-        }),
-      { action: 'bulk_delete', target_resource: entity },
-    );
-    if (res.ok) {
-      selection.clearSelection();
-      pushNotification({ impact: 'NONE', messageKey: 'app.common.delete_success' });
-      await list.refreshRows();
-    } else {
-      const body = await res.json().catch(() => null);
-      pushNotification(
-        body && typeof body === 'object' && 'type' in body
-          ? (body as never)
-          : { impact: 'HIGH', messageKey: 'app.common.delete_failed' },
-      );
-    }
+    if (selectedRows.length === 0) return;
+    await runEntityOp({
+      op: 'delete.bulk',
+      entity,
+      meta,
+      rows: selectedRows,
+      onDone: () => {
+        selection.clearSelection();
+        void list.refreshRows();
+      },
+    });
   }
 
   // ─── Pagination — bounded: meta.table.page_size_options ───────────────
@@ -820,11 +796,4 @@
     </div>
   </div>
 </div>
-
-<MfaStepUpDialog
-  bind:open={stepUp.dialogOpen}
-  action={stepUp.pendingAction}
-  target_resource={stepUp.pendingTargetResource}
-  onauthorized={stepUp.handleAuthorized}
-/>
 

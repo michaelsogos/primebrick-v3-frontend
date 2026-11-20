@@ -3,6 +3,7 @@
   import { onMount } from 'svelte';
   import AppShell from '$lib/components/AppShell.svelte';
   import AuthMethodsPromptDialog from '$lib/components/auth/AuthMethodsPromptDialog.svelte';
+  import EntityOpConfirmHost from '$lib/entity-list/EntityOpConfirmHost.svelte';
   import { apiFetch } from '$lib/api';
   import { userProfileStore } from '$lib/user-profile-store.svelte';
   import { authConfigState, loadAuthConfig } from '$lib/auth-config-store.svelte';
@@ -156,4 +157,5 @@
 </AppShell>
 
 <AuthMethodsPromptDialog />
+<EntityOpConfirmHost />
 
