@@ -1244,7 +1244,8 @@
           {:else}
             {#each taintedRowTitles as title (title)}
               <Badge variant="outline" class="border-warning/40 bg-warning/10 text-xs font-mono text-muted-foreground">
-                {$t('app.common.modified')} {title}
+                {title}
+                <span class="ml-1 font-sans text-[10px] opacity-60">{$t('app.common.modified')}</span>
               </Badge>
             {/each}
           {/if}
@@ -1259,7 +1260,8 @@
           {:else}
             {#each pendingTitles as title (title)}
               <Badge variant="outline" class="border-primary/40 bg-primary/10 text-xs font-mono text-muted-foreground">
-                {$t('app.common.new')} {title}
+                {title}
+                <span class="ml-1 font-sans text-[10px] opacity-60">{$t('app.common.new')}</span>
               </Badge>
             {/each}
           {/if}
