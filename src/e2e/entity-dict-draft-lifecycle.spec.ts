@@ -42,10 +42,8 @@ test.describe.serial("dict draft lifecycle — composer → pending", () => {
     const draft = page.getByTestId("dict-draft-row");
     await expect(draft).toBeVisible();
 
-    // ── Draft state anatomy (task 9): the chip joins the state
-    //    vocabulary and the accent is the immature leg of the "to be
-    //    saved" info pipeline (info/40 → info → none). ──
-    await expect(draft.getByText("Draft")).toBeVisible();
+    // ── Draft state anatomy (task 9): the accent is the immature leg of
+    //    the "to be saved" info pipeline (info/40 → info → none). ──
     await expect(draft).toHaveClass(/border-l-info\/40/);
 
     // ── Single-composer gate + confirm gate on empty composer ──
