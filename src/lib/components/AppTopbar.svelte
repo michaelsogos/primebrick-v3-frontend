@@ -4,7 +4,7 @@
   import { Button } from '@primebrick/ui';
   import CommandPalette from '$lib/components/CommandPalette.svelte';
   import * as Sidebar from '$lib/components/ui/sidebar';
-  import { Badge } from '@primebrick/ui';
+  import { Badge, Separator } from '@primebrick/ui';
   import LangSelect from '$lib/components/LangSelect.svelte';
   import ThemeToggle from '$lib/components/ThemeToggle.svelte';
   import { t } from '$lib/i18n';
@@ -72,25 +72,31 @@
 <header
   class="sticky top-0 z-30 min-w-0 w-full overflow-visible border-b border-border bg-background text-foreground dark:bg-muted/25 dark:backdrop-blur-xs"
 >
-  <!-- 1fr | auto | 1fr — same-width side tracks so the palette sits on the true horizontal center of the bar -->
-  <div class="grid h-14 min-w-0 grid-cols-[1fr_auto_1fr] items-center gap-3 px-3 sm:px-4">
+  <!-- auto | 1fr | auto — the middle track is the space REMAINING after
+       the side clusters; inside it a nested 1fr|auto|1fr centers the
+       palette exactly and lets the AI CTA sit at the spacer's left edge,
+       visually adjacent without shifting the center. -->
+  <div class="grid h-14 min-w-0 grid-cols-[auto_1fr_auto] items-center gap-3 px-3 sm:px-4">
     <div class="flex min-w-0 justify-start">
       <Sidebar.Trigger aria-label={$t('app.nav.open')} class="shrink-0" />
     </div>
 
-    <div class="flex min-w-0 items-center justify-center gap-2">
+    <div class="grid min-w-0 grid-cols-[1fr_auto_1fr] items-center">
+      <div></div>
       <CommandPalette />
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        class="relative shrink-0"
-        aria-label={$t('app.ai_chat.aria')}
-        title={$t('app.ai_chat.aria')}
-        onclick={() => openSheet('shell.aiChat', {})}
-      >
-        <AiIcon size={16} />
-      </Button>
+      <div class="flex justify-start pl-2">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          class="relative shrink-0"
+          aria-label={$t('app.ai_chat.aria')}
+          title={$t('app.ai_chat.aria')}
+          onclick={() => openSheet('shell.aiChat', {})}
+        >
+          <AiIcon size={16} />
+        </Button>
+      </div>
     </div>
 
     <div class="flex min-w-0 shrink-0 items-center justify-end gap-2">
@@ -106,6 +112,9 @@
       {/if}
       <LangSelect />
 
+      <!-- locale zone | action icons — vertical divider + tight gap-1 cluster -->
+      <Separator orientation="vertical" class="h-5 min-h-0" />
+      <div class="flex items-center gap-1">
       <Button
         type="button"
         variant="ghost"
@@ -166,6 +175,7 @@
       </Button>
 
       <ThemeToggle />
+      </div>
     </div>
   </div>
 </header>
