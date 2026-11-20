@@ -71,7 +71,7 @@
        (composer → pending → saved: info/40 → info → none). -->
   <div class="col-span-6 flex items-start gap-3 min-w-0">
     <div class="mt-1 size-4 shrink-0" aria-hidden="true"></div>
-    <div class="min-w-0">
+    <div class="min-w-0 flex-1">
       <div class="flex items-center gap-2">
         {#if codeColumn}
           <div class="flex-1 min-w-0" data-dict-cell="code">
