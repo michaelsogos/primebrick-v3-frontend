@@ -25,6 +25,8 @@ export const SHEET_PANEL_IDS = [
   'entity.mapperViewer',
   'entity.record',
   'entity.dictExtras',
+  'entity.bulkEditor',
+  'entity.bulkEditRows',
   'service.record',
   'config.currencySelect',
   'config.protocolSelect',
@@ -141,6 +143,33 @@ export type SheetPanelPropsMap = {
     pending_owner: string;
     title?: string;
     readonly?: boolean;
+  };
+  /**
+   * Bulk editor — the apply-to-all patch sheet for `update.bulk`.
+   * `rows` is a frozen SNAPSHOT taken at open time (the "source of
+   * truth" the distribution forecast reads — intentionally NOT synced:
+   * the editor shows what you selected, refresh lands via onApplied).
+   */
+  'entity.bulkEditor': {
+    entity: string;
+    /** Served meta — actions gate the submit, columns derive the
+     *  editable/immutable/audited partition. */
+    meta: import('$lib/entity-list/types').EntityMeta;
+    /** The selected rows with their full column projection + `version`. */
+    rows: Record<string, unknown>[];
+    onApplied?: () => void;
+  };
+  /**
+   * Bulk-editor drill-down — the stacked second pane listing the rows
+   * that share one field value (or the immutable/mixed field's rows).
+   */
+  'entity.bulkEditRows': {
+    entity: string;
+    uid?: string;
+    title: string;
+    rows: Record<string, unknown>[];
+    /** Display columns for the row summary line (a few, not all). */
+    columns: import('$lib/entity-list/types').MetaColumn[];
   };
   'service.record': {
     /** `service_registry` business key — the service code. */

@@ -13,6 +13,7 @@
   import { Funnel } from '@primebrick/ui/vendor/lucide'
   import { Download } from '@primebrick/ui/vendor/lucide'
   import { Copy } from '@primebrick/ui/vendor/lucide'
+  import { SquarePen } from '@primebrick/ui/vendor/lucide'
   import { Trash2 } from '@primebrick/ui/vendor/lucide'
 
   let {
@@ -33,6 +34,8 @@
     onBulkDuplicate,
     onBulkDelete,
     onBulkRestore,
+    onBulkEdit,
+    bulkEditChrome,
     bulkCapabilities = { export: true, htmlExport: true, duplicate: true, delete: true, restore: true },
     bulkCustomActions = [],
     onBulkCustomAction,
@@ -61,8 +64,11 @@
     onBulkDuplicate: () => void;
     onBulkDelete: () => void;
     onBulkRestore: () => void;
+    onBulkEdit?: () => void;
     /** Capability + permission gate per bulk CTA (from `meta.actions`). */
-    bulkCapabilities?: { export: boolean; htmlExport: boolean; duplicate: boolean; delete: boolean; restore: boolean };
+    bulkCapabilities?: { export: boolean; htmlExport: boolean; duplicate: boolean; delete: boolean; restore: boolean; edit?: boolean };
+    /** `meta.actions["update.bulk"]` chrome — primary edit affordance. */
+    bulkEditChrome?: ActionChrome;
     /** `meta.table.bulk_custom_actions` CTAs (permission-filtered upstream). */
     bulkCustomActions?: BulkCustomAction[];
     onBulkCustomAction?: (action: BulkCustomAction) => void;
@@ -112,6 +118,7 @@
       bulkCapabilities.duplicate ||
       bulkCapabilities.delete ||
       bulkCapabilities.restore ||
+      bulkCapabilities.edit ||
       bulkCustomActions.length > 0
   );
   const showBulkPanel = $derived(hasAnyBulkCapability && toolbarMode === 'bulk');
@@ -200,7 +207,7 @@
     <div in:fly={{ y: 20, duration: 200 }} class="flex flex-wrap items-center gap-2">
       {#if bulkCapabilities.export}
         <Button
-          variant="default"
+          variant="info"
           size="xs"
           onclick={onBulkExport}
         >
@@ -210,12 +217,28 @@
       {/if}
       {#if bulkCapabilities.htmlExport}
         <Button
-          variant="default"
+          variant="info"
           size="xs"
           onclick={onHtmlExport}
         >
           <Download class="size-3.5" />
           {$t('system.entities.list.bulk_actions.export_html')}
+        </Button>
+      {/if}
+      {#if bulkCapabilities.edit && onBulkEdit}
+        <Button
+          variant={bulkEditChrome?.color ? actionColorButtonVariant(bulkEditChrome.color) : 'default'}
+          size="xs"
+          onclick={onBulkEdit}
+          disabled={selectedKeys.length < 1 || selectedKeys.length > 100 || hasDeletedSelected}
+          data-testid="entity-bulk-edit"
+        >
+          {#if bulkEditChrome?.icon}
+            <DynamicIcon name={bulkEditChrome.icon} size={14} />
+          {:else}
+            <SquarePen class="size-3.5" />
+          {/if}
+          {$t(bulkEditChrome?.label_key ?? 'system.entities.list.bulk_actions.edit')}
         </Button>
       {/if}
       {#if bulkCapabilities.duplicate}

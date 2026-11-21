@@ -576,7 +576,8 @@
     htmlExport: opAllowed('export'),
     duplicate: opAllowed('duplicate.bulk'),
     delete: opAllowed('delete.bulk'),
-    restore: opAllowed('restore.bulk')
+    restore: opAllowed('restore.bulk'),
+    edit: opAllowed('update.bulk')
   });
 
   /** Bulk-CTA chrome overrides (`delete.bulk`/`restore.bulk`) — same
@@ -584,6 +585,7 @@
   const bulkDeleteChrome = $derived(opChrome('delete.bulk'));
   const bulkRestoreChrome = $derived(opChrome('restore.bulk'));
   const bulkDuplicateChrome = $derived(opChrome('duplicate.bulk'));
+  const bulkEditChrome = $derived(opChrome('update.bulk'));
 
   const rowActionsComposable = useRowActions<TRow>({
     entity: () => entity,
@@ -792,6 +794,8 @@
     onBulkDuplicate={() => bulkActions.handleBulkDuplicate()}
     onBulkDelete={() => bulkActions.handleBulkDelete()}
     onBulkRestore={() => bulkActions.handleBulkRestore()}
+    onBulkEdit={() => bulkActions.handleBulkEdit()}
+    bulkEditChrome={bulkEditChrome}
     bulkCapabilities={bulkCapabilities}
     bulkCustomActions={effectiveBulkCustomActions}
     onBulkCustomAction={(a) => bulkActions.handleBulkCustomAction(a)}

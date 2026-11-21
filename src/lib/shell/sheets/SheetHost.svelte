@@ -35,6 +35,8 @@
   import ServiceRecordPanel from '$lib/shell/sheets/panels/ServiceRecordPanel.svelte';
   import TranslationEditorPanel from '$lib/shell/sheets/panels/TranslationEditorPanel.svelte';
   import DictExtrasPanel from '$lib/components/entity-dict-page/DictExtrasPanel.svelte';
+  import BulkEditorPanel from '$lib/entity-list/sheets/panels/BulkEditorPanel.svelte';
+  import BulkEditRowsPanel from '$lib/entity-list/sheets/panels/BulkEditRowsPanel.svelte';
   /**
    * Heterogeneous panel registry — each panel declares its own props contract,
    * so a static `Component<Props>` union cannot type the dispatch. The
@@ -55,6 +57,8 @@
     'entity.mapperViewer': MapperViewerPanel,
     'entity.record': EntityRecordSheet,
     'entity.dictExtras': DictExtrasPanel,
+    'entity.bulkEditor': BulkEditorPanel,
+    'entity.bulkEditRows': BulkEditRowsPanel,
     'service.record': ServiceRecordPanel,
     'config.currencySelect': CurrencySelectPanel,
     'config.protocolSelect': ProtocolSelectPanel,

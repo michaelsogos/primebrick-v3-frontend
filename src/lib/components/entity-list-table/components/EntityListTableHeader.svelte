@@ -48,6 +48,8 @@
     onBulkDuplicate,
     onBulkDelete,
     onBulkRestore,
+    onBulkEdit,
+    bulkEditChrome,
     bulkCapabilities,
     bulkCustomActions = [],
     onBulkCustomAction,
@@ -105,7 +107,9 @@
     onBulkDuplicate: () => void;
     onBulkDelete: () => void;
     onBulkRestore: () => void;
-    bulkCapabilities?: { export: boolean; htmlExport: boolean; duplicate: boolean; delete: boolean; restore: boolean };
+    onBulkEdit?: () => void;
+    bulkEditChrome?: ActionChrome;
+    bulkCapabilities?: { export: boolean; htmlExport: boolean; duplicate: boolean; delete: boolean; restore: boolean; edit?: boolean };
     bulkCustomActions?: BulkCustomAction[];
     onBulkCustomAction?: (action: BulkCustomAction) => void;
     bulkDeleteChrome?: ActionChrome;
@@ -187,6 +191,8 @@
   onBulkDuplicate={onBulkDuplicate}
   onBulkDelete={onBulkDelete}
   onBulkRestore={onBulkRestore}
+  onBulkEdit={onBulkEdit}
+  bulkEditChrome={bulkEditChrome}
   bulkCapabilities={bulkCapabilities}
   bulkCustomActions={bulkCustomActions}
   onBulkCustomAction={onBulkCustomAction}

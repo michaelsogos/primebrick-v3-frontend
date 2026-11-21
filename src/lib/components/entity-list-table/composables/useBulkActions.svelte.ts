@@ -3,6 +3,7 @@ import { pushNotification } from '$lib/errors/app-errors';
 import type { RFC7807Error } from '$lib/errors/rfc7807';
 import type { EntityAction, BulkCustomAction, EntityMeta } from '$lib/entity-list/types';
 import { findActionEndpoint, runEntityOp } from '$lib/entity-list';
+import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
 import { appendListFilterParams } from '$lib/entity-list/list-filter-params';
 import type { MetaColumn } from '$lib/entity-list/types';
 import type { DeepReadonly } from '@primebrick/ui';
@@ -364,6 +365,34 @@ export function useBulkActions(options: BulkActionsOptions) {
     }
   }
 
+  /**
+   * `update.bulk` — the apply-to-all editor sheet. Guard: 1..100 selected
+   * rows (the route's own cap). The panel gets a FROZEN snapshot — the
+   * "source of truth" its distribution forecast reads — plus the served
+   * meta (actions + columns) for the editable partition and the governed
+   * submit. Selection-clear + refresh ride `onApplied` like every bulk.
+   */
+  function handleBulkEdit() {
+    const rows = selectedRows();
+    if (rows.length < 1 || rows.length > 100) return;
+    openSheet('entity.bulkEditor', {
+      entity: entityFn(),
+      meta: {
+        actions: getActions?.(),
+        entities_ns: entitiesNsFn?.(),
+        uid: uidFn?.(),
+        columns: columnsFn?.() ?? [],
+      } as EntityMeta,
+      rows,
+      onApplied: () => {
+        onSelectionChange?.([]);
+        onToolbarModeChange?.();
+        getOnRefresh?.()?.();
+        onBulkActionComplete?.();
+      },
+    });
+  }
+
   async function confirmBulkDuplicate() {
     await confirmBulkDuplicateImpl();
   }
@@ -381,6 +410,7 @@ export function useBulkActions(options: BulkActionsOptions) {
     confirmBulkDuplicate,
     cancelBulkDuplicate,
     confirmBulkDuplicateWrapper,
-    handleBulkCustomAction
+    handleBulkCustomAction,
+    handleBulkEdit
   };
 }
