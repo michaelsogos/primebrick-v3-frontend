@@ -44,7 +44,7 @@
   import { extJsonStringify } from '$lib/api-ext';
   import { findActionEndpoint } from '$lib/entity-list';
   import { runEntityOp } from '$lib/entity-list/use-entity-op.svelte';
-  import { SquarePen, Plus, Trash2, RotateCcw } from '@primebrick/ui/vendor/lucide';
+  import { Pencil, Plus, Trash2, RotateCcw } from '@primebrick/ui/vendor/lucide';
   import type { EntityMeta, MetaColumn } from '$lib/entity-list/types';
 
   let {
@@ -217,7 +217,7 @@
 
 <SheetPanelLayout contentClass="p-4" footer={applyFooter}>
   {#snippet icon()}
-    <SquarePen class="size-4" />
+    <Pencil class="size-4" />
   {/snippet}
   {#snippet title()}
     {$t('system.entities.bulk_editor.title')}

@@ -8,7 +8,7 @@
  * PRODUCT CONTRACT under test (not implementation intent):
  *   - bulk-capable entities declare `update.bulk` in `meta.actions`,
  *     `enabled` iff the route is mounted (route ⇄ meta one source of truth)
- *   - the ELT bulk toolbar renders the edit CTA (primary, square-pen)
+ *   - the ELT bulk toolbar renders the edit CTA (primary, pencil)
  *     only when the op is allowed and ≥1 non-deleted rows are selected
  *   - the sheet is a field→value BUILDER (not a form): the add-field combo
  *     lists only update-editable columns, the distribution strip shows the
@@ -109,7 +109,7 @@ test.describe("bulk editor — update.bulk end to end", () => {
       await row.getByRole("checkbox", { name: "select row" }).click();
     }
 
-    // ── CTA visible (primary, square-pen) → opens the sheet ────────
+    // ── CTA visible (primary, pencil) → opens the sheet ────────
     const editCta = page.getByTestId("entity-bulk-edit");
     await expect(editCta).toBeVisible({ timeout: 5000 });
     await expect(editCta).toBeEnabled();

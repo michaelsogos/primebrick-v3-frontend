@@ -13,7 +13,7 @@
   import { Funnel } from '@primebrick/ui/vendor/lucide'
   import { Download } from '@primebrick/ui/vendor/lucide'
   import { Copy } from '@primebrick/ui/vendor/lucide'
-  import { SquarePen } from '@primebrick/ui/vendor/lucide'
+  import { Pencil } from '@primebrick/ui/vendor/lucide'
   import { Trash2 } from '@primebrick/ui/vendor/lucide'
 
   let {
@@ -238,7 +238,7 @@
           {#if bulkEditChrome?.icon}
             <DynamicIcon name={bulkEditChrome.icon} size={14} />
           {:else}
-            <SquarePen class="size-3.5" />
+            <Pencil class="size-3.5" />
           {/if}
           {$t(bulkEditChrome?.label_key ?? 'system.entities.list.bulk_actions.edit')}
         </Button>
