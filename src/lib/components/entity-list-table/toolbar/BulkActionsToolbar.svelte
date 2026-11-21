@@ -207,7 +207,8 @@
     <div in:fly={{ y: 20, duration: 200 }} class="flex flex-wrap items-center gap-2">
       {#if bulkCapabilities.export}
         <Button
-          variant="info"
+          variant="soft"
+          tone="info"
           size="xs"
           onclick={onBulkExport}
         >
@@ -217,7 +218,8 @@
       {/if}
       {#if bulkCapabilities.htmlExport}
         <Button
-          variant="info"
+          variant="soft"
+          tone="info"
           size="xs"
           onclick={onHtmlExport}
         >
