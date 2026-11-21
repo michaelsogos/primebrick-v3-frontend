@@ -27,9 +27,8 @@
   import RemotePageMount from '$lib/components/remote-page/RemotePageMount.svelte';
   import EntityFormPage from '$lib/entity-form/EntityFormPage.svelte';
   import EntityDictPage from '$lib/components/entity-dict-page/EntityDictPage.svelte';
-  import EntityTablePage from '$lib/components/entity-table-page/EntityTablePage.svelte';
+  import BuiltinEntityListPage from '$lib/components/entity-table-page/BuiltinEntityListPage.svelte';
   import RemotePageErrorPanel from '$lib/components/remote-page/RemotePageErrorPanel.svelte';
-  import { entityApiBase } from '$lib/api';
   import { Button } from '@primebrick/ui';
   import { resolvePageForPath, type ResolvedPage } from '$lib/navigation/page-resolver';
   import { Skeleton } from '$lib/components/ui/skeleton';
@@ -110,19 +109,10 @@
     <EntityDictPage decl={resolved.decl} />
   {/key}
 {:else if resolved?.kind === 'archetype' && resolved.archetype === 'entity_list'}
-  {@const entity = resolved.decl.entity ?? ''}
-  {@const service = resolved.decl.module?.split('-')[0]}
-  <!-- Builtin entities mount on EVERY service — the module segment
-       carries the owning service (crm-settings → crm), same contract as
-       EntityDictPage. storageKeyPrefix is service-scoped: the same
-       builtin entity on two services must not share column config. -->
+  <!-- Builtin list surfaces own their parametric custom ops
+       (sequence_set collects `next` via an authored dialog). -->
   {#key appPage.url.pathname}
-    <EntityTablePage
-      basePath={entityApiBase(entity, service)}
-      storageKeyPrefix="pb:{service}-{entity}:list:"
-      errorScopeKey="app.common.errors.scope.entity_list"
-      errorScopeKeyInit="app.common.errors.scope.entity_page_init"
-    />
+    <BuiltinEntityListPage decl={resolved.decl} />
   {/key}
 {:else if resolved?.kind === 'archetype'}
   {#key appPage.url.pathname}

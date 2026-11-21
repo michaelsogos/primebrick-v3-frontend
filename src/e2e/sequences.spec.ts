@@ -233,14 +233,38 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     const row = page.locator("table tbody tr", { hasText: "customers.code" }).first();
     await expect(row).toBeVisible({ timeout: 15_000 });
     // The entity_op synthesis lands the `sequence_set` CTA on the row kebab —
-    // the governed set-counter surface exists by construction (params dialog
-    // for `next` is the separate open decision).
+    // the governed set-counter surface exists by construction.
     const kebab = row.locator("td").last().getByRole("button").first();
     await kebab.click();
     const menu = page.getByRole("menu");
     await expect(menu).toBeVisible();
-    await expect(menu.getByText("Set counter")).toBeVisible();
-    await page.keyboard.press("Escape");
+    const cta = menu.getByText("Set counter");
+    await expect(cta).toBeVisible();
+
+    // `sequence_set` is parametric — the authored dialog collects `next`,
+    // informed by `sequence-analyze` (the strip mounts live stats).
+    await cta.click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible({ timeout: 10000 });
+    const analysis = dialog.getByTestId("sequence-set-analysis");
+    await expect(analysis).toContainText("Values in use", { timeout: 15000 });
+    // `next` prefills from suggested_start — operator can override.
+    const nextInput = dialog.getByTestId("sequence-set-next");
+    await expect(nextInput).not.toHaveValue("", { timeout: 10000 });
+
+    // Submit rides the governed chain — the meta-served confirm gate opens
+    // (confirm_key → the generic gated-op DeleteDialog anatomy), cancelled
+    // here: the MFA step-up + counter write paths are covered by the
+    // dal/service suites.
+    await dialog.getByTestId("sequence-set-submit").click();
+    const confirmDialog = page.getByRole("dialog").last();
+    await expect(confirmDialog.getByRole("button", { name: "Cancel" })).toBeVisible({
+      timeout: 10000,
+    });
+    await confirmDialog.getByRole("button", { name: "Cancel" }).click();
+    // The input dialog survives a cancelled confirm — close it too.
+    await dialog.getByRole("button", { name: "Cancel" }).click();
+    await expect(page.getByRole("dialog")).toHaveCount(0, { timeout: 10000 });
     expect(apiFetches).toBe(0);
   });
 });
