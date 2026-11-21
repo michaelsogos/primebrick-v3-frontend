@@ -125,7 +125,7 @@ test.describe("bulk editor — update.bulk end to end", () => {
     await addField.click();
     const searchInput = page.locator("[data-slot='popover-content'] input").first();
     await expect(searchInput).toBeVisible({ timeout: 5000 });
-    // Type icons — `columnIcon` (declared icon → format → type fallback)
+    // Type icons — column wire shape through the shared `schemaTypeIcon` vocabulary
     // guarantees EVERY picker option carries a glyph.
     await expect
       .poll(

@@ -31,7 +31,8 @@
     PrimeField,
     Accordion,
     formatListCellValue,
-    columnIcon,
+    columnSchemaLeaf,
+    schemaTypeIcon,
   } from '@primebrick/ui';
   import { openSheet, closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import SheetHeaderAction from '$lib/shell/sheets/SheetHeaderAction.svelte';
@@ -324,7 +325,11 @@
     {#if availableColumns.length > 0}
       <ComboSelect
         mode="single"
-        options={availableColumns.map((c) => ({ value: c.key, label: $t(c.label_key), _icon: columnIcon(c) ?? '' }))}
+        options={availableColumns.map((c) => ({
+          value: c.key,
+          label: $t(c.label_key),
+          _icon: c.icon ?? schemaTypeIcon(columnSchemaLeaf(c))._icon,
+        }))}
         valueField="value"
         labelField="label"
         iconField="_icon"
