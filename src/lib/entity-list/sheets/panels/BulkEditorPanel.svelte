@@ -323,9 +323,10 @@
     {#if availableColumns.length > 0}
       <ComboSelect
         mode="single"
-        options={availableColumns.map((c) => ({ value: c.key, label: $t(c.label_key) }))}
+        options={availableColumns.map((c) => ({ value: c.key, label: $t(c.label_key), _icon: c.icon ?? '' }))}
         valueField="value"
         labelField="label"
+        iconField="_icon"
         bind:value={addFieldValue}
         onChange={addField}
         placeholder={$t('system.entities.bulk_editor.field_placeholder')}

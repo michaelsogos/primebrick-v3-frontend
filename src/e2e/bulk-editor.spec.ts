@@ -125,6 +125,15 @@ test.describe("bulk editor — update.bulk end to end", () => {
     await addField.click();
     const searchInput = page.locator("[data-slot='popover-content'] input").first();
     await expect(searchInput).toBeVisible({ timeout: 5000 });
+    // Column icons (`MetaColumn.icon`, iconField convention) — at least
+    // one option carries a glyph (job_trigger: zap/send subjects).
+    await expect
+      .poll(
+        () =>
+          page.locator("[data-slot='popover-content'] [role='option'] svg").count(),
+        { timeout: 5000 },
+      )
+      .toBeGreaterThan(0);
     await searchInput.fill("schedule_spec");
     const option = page.getByRole("option").first();
     await expect(option).toBeVisible({ timeout: 5000 });
