@@ -74,6 +74,10 @@ test.describe("bulk editor — update.bulk end to end", () => {
       const bulk = (actions ?? []).find((a: any) => a.op === "update.bulk");
       expect(bulk, `${entity}: meta.actions must declare update.bulk`).toBeTruthy();
       expect(bulk.enabled, `${entity}: update.bulk must be enabled`).toBe(true);
+      expect(
+        bulk.icon,
+        `${entity}: update.bulk chrome — the edit canon is pencil`,
+      ).toBe("pencil");
 
       // Route mounted? `endpoint` is legitimately absent on the US-served
       // meta path (consumers fall back to the `{base}/bulk-update`
