@@ -124,7 +124,9 @@
 
   const row_uid = $derived(String(row[uid] ?? ''));
 
-  /** The VALUE column — display_field when it is editable, else label_key. */
+  /** The VALUE column — display_field when it is editable, else the
+   *  canonical dict label column (`label_key`); `format:"i18n_key"`
+   *  then governs HOW it renders (TranslationKeyCell), not WHICH column. */
   const valueColumn = $derived(
     editable_columns.find((c) => c.key === display_field) ??
       editable_columns.find((c) => c.key === 'label_key'),
@@ -319,7 +321,7 @@
           required={valueColumn.nullable === false}
         >
           {#snippet control({ id })}
-            {#if valueColumn.key === 'label_key'}
+            {#if valueColumn.format === 'i18n_key'}
               <TranslationKeyCell
                 column={valueColumn}
                 value={String(values[valueColumn.key] ?? '')}

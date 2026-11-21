@@ -76,6 +76,13 @@ type EntityMeta = {
     `shellNav.modules` and renders the module's own icon (uncolored) +
     translated name, linking to `/system/settings/modules`; unresolved
     codes render the raw value.
+  - `i18n_key` → governed translation badge: `languages` icon +
+    `$t(value)` inside a `Badge`, the raw key in the tooltip, and the
+    raw key itself (mono) when no translation resolves — the same
+    source/destination anatomy `nats_subject` owns. Declared on columns
+    whose VALUES are translation keys (dict `label_key`/
+    `description_key`, sequence labels); the dict page's
+    `TranslationKeyCell` dispatch reads the same contract.
   - `json` → human-readable chips/prose where the shape is known
     (`job_trigger.filter` conditions), else safe stringified preview.
   - `identifier`/`display_name` → standard text affordances.

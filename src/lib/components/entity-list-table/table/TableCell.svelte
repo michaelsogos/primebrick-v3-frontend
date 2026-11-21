@@ -190,6 +190,15 @@
    *  planned capabilities/events page lands. */
   const MODULES_HREF = '/system/settings/modules';
 
+  /** `format:"i18n_key"` — the stored translation key resolves through the
+   *  layered dict; unresolved keys (missing in EVERY layer) come back as
+   *  the key itself — the badge renders mono-raw to flag the miss. */
+  const i18nLabel = $derived(
+    column.format === 'i18n_key' && typeof value === 'string' && value !== ''
+      ? $t(value)
+      : undefined,
+  );
+
   /** `format:"service_code"` — the code resolves against the module census
    *  to the owning service's entry (icon + translated name); unresolved
    *  (offline/unregistered service) renders the raw code. */
@@ -373,6 +382,26 @@
   {:else}
     <span class="font-mono text-[11px]">{toDisplayString(value)}</span>
   {/if}
+{:else if column.format === 'i18n_key' && value}
+  <!-- Stored i18n key → `languages` badge carrying the resolved
+       translation (the TranslationKeyCell icon convention); the raw key
+       always lives in the tooltip. Unresolved keys render mono-raw —
+       same governed-reference anatomy as nats_subject/service_code. -->
+  <Tooltip.Root>
+    <Tooltip.Trigger>
+      {#snippet child({ props })}
+        <span {...props} class="inline-flex max-w-full rounded-sm">
+          <Badge variant="secondary" class="gap-1 shadow-none">
+            <DynamicIcon name="languages" size={12} class="shrink-0" style="color: {colorCssFromToken('sky-500')}" />
+            <span class={['truncate text-xs', i18nLabel === toDisplayString(value) && 'font-mono text-[11px]']}>{i18nLabel ?? toDisplayString(value)}</span>
+          </Badge>
+        </span>
+      {/snippet}
+    </Tooltip.Trigger>
+    <Tooltip.Content>
+      <p class="font-mono text-xs">{toDisplayString(value)}</p>
+    </Tooltip.Content>
+  </Tooltip.Root>
 {:else if column.format === 'json' && value !== null && value !== undefined && value !== ''}
   {@const json = jsonCellContent(value)}
   {#if MAPPER_WIDGETS.has(column.widget ?? '')}

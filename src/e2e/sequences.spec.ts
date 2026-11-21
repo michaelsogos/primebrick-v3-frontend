@@ -38,6 +38,12 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     for (const k of ["code", "pattern", "step", "start", "tz", "label_key", "description_key"]) {
       expect(keys, `column ${k}`).toContain(k);
     }
+    // Translation-key columns declare `format:"i18n_key"` — the governed
+    // badge cell (languages icon + resolved label, raw-key fallback) is
+    // driven by the declaration everywhere the meta travels.
+    const byKey = new Map<string, any>((meta.columns ?? []).map((c: any) => [c.key, c]));
+    expect(byKey.get("label_key")?.format).toBe("i18n_key");
+    expect(byKey.get("description_key")?.format).toBe("i18n_key");
     // Counter projection — virtual machine-state columns attached
     // post-query (value/step/next + both rendered emissions + attribution).
     for (const k of ["value_next", "value_actual", "emitted_next", "emitted_actual", "last_alloc_at", "last_alloc_by"]) {
@@ -332,6 +338,85 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     await dialog.getByRole("button", { name: "Cancel" }).click();
     await expect(page.getByRole("dialog")).toHaveCount(0, { timeout: 10000 });
     expect(apiFetches).toBe(0);
+  });
+
+  /**
+   * `format:"i18n_key"` cells render the governed translation badge —
+   * the same source/destination anatomy `nats_subject` owns: languages
+   * icon + `$t(key)` label inside a Badge, raw key in the tooltip, and
+   * the raw key itself when no translation resolves.
+   */
+  test("i18n_key cells render the governed translation badge — translated + raw fallback", async ({
+    page,
+  }) => {
+    // Translated case — `label_key` points at a seeded key: the badge
+    // must show the RESOLVED translation, never the raw key.
+    const code = `e2e_i18n_${Date.now()}`;
+    const cr = await page.request.post(`${CRM_BASE}/sequence`, {
+      data: {
+        entity: {
+          code,
+          pattern: `I18N-{seq:3}`,
+          step: "1",
+          start: "1",
+          label_key: "crm.entities.sequence.fields.code", // seeded → "Code"
+        },
+      },
+    });
+    expect([200, 201], `create: ${await cr.text()}`).toContain(cr.status());
+    const uuid = extJsonParse<any>(await cr.text())?.entity?.uuid;
+    // Fallback case — an untranslated key resolves to itself: the badge
+    // renders the raw `label_key` (mono), never an invented label.
+    const fbCode = `e2e_i18n_fb_${Date.now()}`;
+    const fbKey = `crm.entities.sequence.rows.${fbCode}`;
+    const fb = await page.request.post(`${CRM_BASE}/sequence`, {
+      data: {
+        entity: {
+          code: fbCode,
+          pattern: `FB-{seq:3}`,
+          step: "1",
+          start: "1",
+          label_key: fbKey,
+        },
+      },
+    });
+    expect([200, 201], `fb create: ${await fb.text()}`).toContain(fb.status());
+    const fbUuid = extJsonParse<any>(await fb.text())?.entity?.uuid;
+    try {
+      const listReq = page.waitForResponse(
+        (r) => r.url().includes("/entities/sequence/list") && r.status() === 200,
+        { timeout: 15_000 },
+      );
+      await page.goto("/crm/settings/sequences");
+      await listReq;
+
+      // Translated badge — icon + resolved label, raw key on the tooltip.
+      await page.getByTestId("entity-search").locator("input").fill(code);
+      const row = page.locator("table tbody tr", { hasText: code }).first();
+      await expect(row).toBeVisible({ timeout: 15_000 });
+      const badge = row
+        .locator('td [data-slot="badge"]')
+        .filter({ has: page.locator("svg") });
+      await expect(badge).toContainText("Code");
+      await expect(badge).not.toContainText("crm.entities.sequence.fields.code");
+      await badge.hover();
+      await expect(page.locator("[data-tooltip-content]")).toContainText(
+        "crm.entities.sequence.fields.code",
+        { timeout: 5_000 },
+      );
+
+      // Raw fallback — the untranslated key renders itself, icon included.
+      await page.getByTestId("entity-search").locator("input").fill(fbCode);
+      const fbRow = page.locator("table tbody tr", { hasText: fbCode }).first();
+      await expect(fbRow).toBeVisible({ timeout: 15_000 });
+      const fbBadge = fbRow.locator('td [data-slot="badge"]').filter({ hasText: fbKey });
+      await expect(fbBadge).toBeVisible();
+      await expect(fbBadge.locator("svg")).toBeVisible();
+    } finally {
+      // `version` is required on the delete route — fresh creates are v1.
+      if (uuid) await page.request.delete(`${CRM_BASE}/sequence/${uuid}?version=1`);
+      if (fbUuid) await page.request.delete(`${CRM_BASE}/sequence/${fbUuid}?version=1`);
+    }
   });
 
   /**

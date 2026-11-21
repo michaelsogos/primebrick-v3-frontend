@@ -63,6 +63,8 @@
   } = $props();
 
   const codeColumn = $derived(editable_columns.find((c) => c.key === 'code'));
+  /** display_field first, else the canonical `label_key` column — the
+   *  format (`i18n_key`) governs the cell renderer, not column identity. */
   const valueColumn = $derived(
     editable_columns.find((c) => c.key === display_field) ??
       editable_columns.find((c) => c.key === 'label_key'),
@@ -116,7 +118,7 @@
           suggestion_optional={valueColumn.key === 'label_key'}
         >
           {#snippet control({ id })}
-            {#if valueColumn.key === 'label_key'}
+            {#if valueColumn.format === 'i18n_key'}
               <TranslationKeyCell
                 column={valueColumn}
                 value={String(values[valueColumn.key] ?? '')}
