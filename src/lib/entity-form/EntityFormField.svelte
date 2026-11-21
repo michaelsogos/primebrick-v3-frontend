@@ -51,6 +51,7 @@
 		targetCallable,
 		sourceEmit,
 		disabledBadgeValues,
+		service,
 	}: {
 		column: MetaColumn;
 		/** Declared `page_props.form` placement — readonly/placeholder_key.
@@ -85,6 +86,9 @@
 		targetCallable?: CallableDecl;
 		sourceEmit?: EmitDecl;
 		disabledBadgeValues?: string[];
+		/** Owning module code — seq-bound controls resolve the module-local
+		 *  builtin registry through it (see FormFieldDispatcher). */
+		service?: string;
 	} = $props();
 
 	// Construction guard — `column` is mount-stable (keyed per col.key in
@@ -195,6 +199,7 @@ const fieldReadonly = $derived(readonly || placement?.readonly === true);
 		disabled={fieldDisabled}
 		readonly={fieldReadonly}
 		{served_record}
+		{service}
 		bind:value
 		bind:record
 	/>

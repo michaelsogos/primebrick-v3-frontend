@@ -34,6 +34,7 @@
   import { SvelteMap, SvelteSet } from 'svelte/reactivity';
   import { t } from '$lib/i18n';
   import { apiFetch, entityApiBase } from '$lib/api';
+  import { useSyncChannel } from '$lib/composables/useSyncChannel.svelte';
   import { useEntityList } from '$lib/composables/useEntityList.svelte';
   import { useSelection, Button, Badge, Toolbar, RefreshButton, DynamicIcon } from '@primebrick/ui';
   import { SelectableFieldset, DeletionFilterToggle } from '@primebrick/ui';
@@ -67,10 +68,8 @@
   // Route context disambiguates multi-service entities (builtins mount on
   // every service): decl.module is the owning module id — sibling ids
   // strip to the parent service (`crm-settings` → `crm`).
-  const basePath = entityApiBase(
-    entity,
-    untrack(() => decl.module)?.split('-')[0],
-  );
+  const moduleCode = untrack(() => decl.module)?.split('-')[0];
+  const basePath = entityApiBase(entity, moduleCode);
   /** Translation writes resolve their module PER KEY (prefix == module
    *  code) — `custom.*` keys land in custom.translations. */
 
@@ -79,6 +78,12 @@
     storageKeyPrefix: `pb:dict:${entity}:`,
     errorScopeKey: 'app.common.errors.scope.dict_list',
     t: (k, p) => $t(k, p),
+  });
+
+  // Sender channel — the dict page IS the writer surface for registry
+  // entities (sequences); sibling consumers refresh on 'refresh'.
+  const { notifyParentRefresh } = useSyncChannel(`primebrick_${entity}_sync`, {
+    mode: 'sender',
   });
 
   const skSelectedKeys = `pb:dict:${entity}:selectedKeys`;
@@ -317,7 +322,10 @@
   function handleAddRow() {
     if (drafts.length > 0) return; // single-composer gate — one at a time
     const values: Record<string, unknown> = {};
-    for (const c of editableColumns) values[c.key] = c.nullable === true ? null : '';
+    // seq-bound draft slots start '' (directive slot, never null — a
+    // null literal would cross the POST as a rejected non-directive).
+    for (const c of editableColumns)
+      values[c.key] = c.format === 'sequence' ? '' : c.nullable === true ? null : '';
     if (orderField) {
       const maxSort = Math.max(
         0,
@@ -363,7 +371,11 @@
       const next: Record<string, Record<string, unknown>> = {};
       for (const r of list.rows) {
         const v: Record<string, unknown> = {};
-        for (const c of editableColumns) v[c.key] = r[c.key];
+        for (const c of editableColumns) {
+          // seq-bound columns hold the DIRECTIVE slot — '' seeds untouched
+          // (the widget displays the served literal via `existing`).
+          v[c.key] = c.format === 'sequence' ? '' : r[c.key];
+        }
         next[String(r[uid])] = v;
       }
       values = next;
@@ -897,7 +909,13 @@
         // (entity-metadata.mdx contract); the update schema .strict()-rejects
         // them server-side.
         const entityBody: Record<string, unknown> = { version: row['version'] };
-        for (const c of updateEditableColumns) entityBody[c.key] = values[id]?.[c.key];
+        for (const c of updateEditableColumns) {
+          // seq-bound untouched = directive slot empty — OMIT the column
+          // (the resolver rejects non-directive writes).
+          if (c.format === 'sequence' && (values[id]?.[c.key] === '' || values[id]?.[c.key] == null))
+            continue;
+          entityBody[c.key] = values[id]?.[c.key];
+        }
         const res = await apiFetch(`${basePath}/${encodeURIComponent(id)}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -913,10 +931,17 @@
           const suggested = suggestedKeyFor(translationKey, d.values['code']);
           if (suggested) d.values[displayField] = suggested;
         }
+        // seq-bound untouched = directive slot empty — the column is
+        // OMITTED (a `''`/null literal is a rejected non-directive).
+        const postBody = { ...d.values };
+        for (const c of editableColumns) {
+          if (c.format === 'sequence' && (postBody[c.key] === '' || postBody[c.key] == null))
+            delete postBody[c.key];
+        }
         const res = await apiFetch(basePath, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: extJsonStringify({ entity: d.values }),
+          body: extJsonStringify({ entity: postBody }),
         });
         if (!res.ok) throw await res.text().then((t) => extJsonParse<any>(t)).catch(() => new Error(`create failed (${res.status})`));
         pendings = pendings.filter((x) => x !== d);
@@ -941,6 +966,10 @@
         pushNotification({ impact: 'NONE', messageKey: 'app.common.save_success' });
       }
       await list.refreshRows();
+      // Seq-registry consumers (the `format:"sequence"` widget's select
+      // combobox) listen on `primebrick_<entity>_sync` — the same sender
+      // channel the form page posts on successful writes.
+      notifyParentRefresh();
     } catch (err) {
       if (err && typeof err === 'object' && 'status' in err && 'type' in err) {
         pushNotification(err as never);
@@ -1057,6 +1086,7 @@
     row: r,
     uid,
     entity,
+    service: moduleCode,
     title_text: rowTitle(r),
     translation_key: translationKey,
     entities_ns,
@@ -1098,6 +1128,7 @@
     row: { ...p.values, [uid]: p.__draft },
     uid,
     entity,
+    service: moduleCode,
     title_text: rowTitle({ ...p.values, [uid]: p.__draft }),
     translation_key: translationKey,
     entities_ns,
@@ -1265,6 +1296,7 @@
             columns_map={columnMap}
             translation_key={translationKey}
             pending_owner={basePath}
+            service={moduleCode}
             bind:values={d.values}
             errors={composerErrors(d)}
             readonly={!canCreate}

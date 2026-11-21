@@ -31,6 +31,7 @@
     translation_key,
     pending_owner,
     title,
+    service,
     readonly = false,
   }: {
     /** Live getter — re-reads the row's map after every commit (the page
@@ -49,6 +50,9 @@
     pending_owner: string;
     /** Row title — header context line under the translated panel title. */
     title?: string;
+    /** Owning module code — seq-bound controls resolve the module-local
+     *  builtin registry through it (see FormFieldDispatcher). */
+    service?: string;
     readonly?: boolean;
   } = $props();
 
@@ -97,6 +101,7 @@
           }
           record={values()}
           mode="update"
+          {service}
           {readonly}
           controlProps={{
             id: `${baseId}-${c.key}`,

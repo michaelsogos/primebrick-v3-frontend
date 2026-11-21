@@ -24,6 +24,7 @@
 		FormFieldPlacement,
 		MetaColumn,
 		PayloadOptionsSource,
+		SequenceDirective,
 	} from '@primebrick/ui';
 	import { flagCodeForBcp47, toDisplayString, numericKindOf, uomUnitSymbol, UNIT_CATEGORIES, type MetaColumnUomKind } from '@primebrick/ui';
 	import type { NumericUomSpec } from '@primebrick/ui';
@@ -35,6 +36,7 @@
 		JsonValueEditor,
 		PayloadMapEditor,
 		ScheduleSpecInput,
+		SequenceInput,
 		DateWheelPicker,
 		Button,
 		ButtonGroup,
@@ -141,6 +143,12 @@
 		 *  the edge is form-scope by contract and filter columns never
 		 *  declare it. */
 		columns?: ReadonlyMap<string, MetaColumn>;
+		/** The OWNING module code (`crm`) — the builtin `sequence` registry
+		 *  is module-local, so `format:"sequence"` widgets resolve their
+		 *  option vocabulary + forecast through `/svc/<code>` explicitly
+		 *  (the census map is ambiguous for builtin entities — same
+		 *  reason `entityApiBase` takes the explicit override). */
+		service?: string;
 	}
 
 	let {
@@ -162,6 +170,7 @@
 		record = $bindable(),
 		served_record,
 		columns,
+		service,
 	}: Props = $props();
 
 	const control = $derived(
@@ -218,6 +227,7 @@
 		'date',
 		'text',
 		'avatar',
+		'sequence',
 	]);
 
 	/** Filter-surface map — the DIFFERENCES from form (everything else is
@@ -290,7 +300,7 @@
 		// the preview renderer is a form/list surface, never a filter control.
 		if (column.type === 'avatar') return 'text';
 		const resolved = deriveControl();
-		if (resolved === 'subject_combo' || resolved === 'json' || resolved === 'rule_filter' || resolved === 'payload_map' || resolved === 'schedule_spec')
+		if (resolved === 'subject_combo' || resolved === 'json' || resolved === 'rule_filter' || resolved === 'payload_map' || resolved === 'schedule_spec' || resolved === 'sequence')
 			return 'text';
 		if (FILTER_CONTROLS.has(resolved)) return resolved;
 		throw new Error(
@@ -311,6 +321,7 @@
 		// column value, color from the `avatar.color_field` sibling).
 		if (column.type === 'avatar') return 'avatar';
 		if (format === 'schedule_spec') return 'schedule_spec';
+		if (format === 'sequence') return 'sequence';
 		// `rule_filter` wins over the jsonb fallback — a RuleFilter[]
 		// column renders the guided composer, never raw JSON first.
 		if (format === 'rule_filter') return 'rule_filter';
@@ -360,6 +371,17 @@
 			return typeof value === 'string' ? value : value == null ? '' : toDisplayString(value);
 		},
 		set value(v: string) {
+			value = v;
+		},
+	};
+	/** seq-bound slot — `unknown` (the form's wire value) narrowed to the
+	 *  directive union: '' / undefined pass through, objects are directive
+	 *  literals by construction (the widget is the only writer). */
+	const seqValue = {
+		get value(): SequenceDirective | '' | undefined {
+			return (value ?? '') as SequenceDirective | '' | undefined;
+		},
+		set value(v: SequenceDirective | '' | undefined) {
 			value = v;
 		},
 	};
@@ -698,6 +720,22 @@
 
 {#if control === 'schedule_spec'}
 	<ScheduleSpecInput bind:value={stringValue.value} readonly={effectiveReadonly} disabled={effectiveDisabled} {placeholder} {...controlProps} />
+{:else if control === 'sequence'}
+	<!-- `format:"sequence"` — the bound value is the wire slot: a
+	     SequenceDirective once the user applies one, '' while untouched
+	     (auto/default allocation on create, untouched on update). The
+	     stored literal renders through `existing` from the served row —
+	     never through `value` (the submit path must keep it omitted). -->
+	<SequenceInput
+		bind:value={seqValue.value}
+		existing={(served_record?.[column.key] ?? undefined) as string | undefined}
+		seq={column.seq}
+		{service}
+		readonly={effectiveReadonly}
+		disabled={effectiveDisabled}
+		{placeholder}
+		{...controlProps}
+	/>
 {:else if control === 'json'}
 	<JsonValueEditor
 		bind:value={stringValue.value}

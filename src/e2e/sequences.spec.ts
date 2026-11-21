@@ -95,6 +95,116 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     }
   });
 
+  test("seq-bound column: bulk editor mounts SequenceInput — select + generate write", async ({
+    page,
+  }) => {
+    test.setTimeout(60000);
+    /* `customers.code` is @SequenceField-bound: `format:"sequence"` must
+     * resolve the dedicated widget (readonly literal display + assist
+     * popover), and the value crossing the wire is a DIRECTIVE — never a
+     * literal. `update.bulk` rides the same governed confirm as every op.
+     * Residue-free: the two ad-hoc customers are soft-deleted in finally. */
+    const runId = `E2E SeqWidget ${Date.now()}`;
+    const mk = async (name: string) => {
+      const res = await page.request.post(`${CRM_BASE}/customer`, {
+        data: { entity: { display_name: name, status: "ACTIVE" } },
+      });
+      expect(res.status()).toBe(201);
+      const row = extJsonParse<any>(await res.text());
+      expect(String(row.code)).toMatch(/^CUST-\d{5}$/);
+      return row;
+    };
+    const a = await mk(`${runId} A`);
+    const b = await mk(`${runId} B`);
+    try {
+      await page.goto("/crm/customers", { waitUntil: "domcontentloaded" });
+      await expect(page.locator("table")).toBeVisible({ timeout: 15000 });
+      await page.getByTestId("bulk-actions-toggle").click();
+      for (const name of [`${runId} A`, `${runId} B`]) {
+        const row = page.locator("tr", { hasText: name });
+        await expect(row).toBeVisible({ timeout: 15000 });
+        await row.getByRole("checkbox", { name: "select row" }).click();
+      }
+      await page.getByTestId("entity-bulk-edit").click();
+      await expect(page.getByTestId("bulk-editor-summary")).toBeVisible();
+
+      await page.getByTestId("bulk-editor-add-field").click();
+      const searchInput = page.locator("[data-slot='popover-content'] input").first();
+      await searchInput.fill("code");
+      await page.getByRole("option", { name: /^code$/i }).first().click();
+      const field = page.getByTestId("bulk-editor-field-code");
+      const widget = field.getByTestId("sequence-input");
+      await expect(widget).toBeVisible({ timeout: 5000 });
+      // bulk on rows with different codes is a mixed surface — the served
+      // literals never leak into the directive slot: it stays empty.
+      await expect(field.locator("input").first()).toHaveValue("");
+
+      // ── select mode — combobox over the module-local registry ──
+      await field.getByTestId("sequence-input-assist").click();
+      await page.getByTestId("sequence-input-mode-select").click();
+      const combo = page.getByTestId("sequence-input-select");
+      await expect(combo).toBeVisible({ timeout: 5000 });
+      await combo.click();
+      const opt = page
+        .locator("[data-state='open'] [role='option']:visible")
+        .filter({ hasText: "customers.code" })
+        .first();
+      await expect(opt).toBeVisible({ timeout: 10000 });
+      await opt.click();
+      await page.getByTestId("sequence-input-apply").click();
+      await expect(field.locator("input").first()).toHaveValue("customers.code");
+      // forecast strip — read-only `next` rendered from the registry row
+      await expect(page.getByTestId("sequence-input-next")).toHaveText(/^CUST-\d{5}$/, {
+        timeout: 10000,
+      });
+
+      // ── generate mode — inline pattern directive ──
+      await field.getByTestId("sequence-input-assist").click();
+      await page.getByTestId("sequence-input-mode-generate").click();
+      await page.getByTestId("sequence-input-pattern").fill("E2E-{seq:4}");
+      await page.getByTestId("sequence-input-start").fill("9001");
+      await page.getByTestId("sequence-input-apply").click();
+      await expect(field.locator("input").first()).toHaveValue("E2E-9001");
+
+      await page.getByTestId("bulk-editor-apply").click();
+      const confirmBtn = page.getByTestId("entity-op-confirm");
+      await expect(confirmBtn).toBeVisible({ timeout: 5000 });
+      await confirmBtn.click();
+
+      // Server truth — both rows carry the SAME expr-sequence allocation:
+      // {pattern} directives materialize a shared expr registry row, so the
+      // two bulk claims are CONTIGUOUS on one counter. The counter persists
+      // across runs — assert the contract (shape + adjacency), not the seed.
+      let codes: string[] = [];
+      await expect
+        .poll(
+          async () => {
+            const ra = extJsonParse<any>(
+              await (await page.request.get(`${CRM_BASE}/customer/${a.uuid}`)).text(),
+            );
+            const rb = extJsonParse<any>(
+              await (await page.request.get(`${CRM_BASE}/customer/${b.uuid}`)).text(),
+            );
+            codes = [String(ra.code), String(rb.code)].sort();
+            return codes.every((c) => /^E2E-\d{4}$/.test(c) && parseInt(c.slice(4), 10) >= 9001);
+          },
+          { timeout: 15000 },
+        )
+        .toBe(true);
+      const nums = codes.map((c) => parseInt(c.slice(4), 10));
+      expect(nums[1]! - nums[0]!).toBe(1);
+    } finally {
+      for (const row of [a, b]) {
+        const fresh = extJsonParse<any>(
+          await (await page.request.get(`${CRM_BASE}/customer/${row.uuid}`)).text(),
+        );
+        await page.request.delete(
+          `${CRM_BASE}/customer/${row.uuid}?version=${fresh.version}`,
+        );
+      }
+    }
+  });
+
   test("settings dict page renders — label resolved, api dict never fetched", async ({ page }) => {
     // is_reserved platform rows (api gateway) own no dict — the shell/ELT
     // must never request one. Intercept and count: any fetch is a bug.

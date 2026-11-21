@@ -41,6 +41,7 @@
   import { shellNav } from '$lib/shell/modules-shell.svelte';
   import { orderedColumns } from '$lib/entity-list/types';
   import { apiFetch, entityApiBase, serviceApiPrefix } from '$lib/api';
+  import { serviceCodeOf } from '$lib/composables/use-service-availability.svelte';
   import { extJsonStringify } from '$lib/api-ext';
   import { findActionEndpoint } from '$lib/entity-list';
   import { runEntityOp } from '$lib/entity-list/use-entity-op.svelte';
@@ -97,7 +98,9 @@
     addFieldValue = ''; // the picker re-opens for the next field
     if (!k || activeKeys.includes(k)) return;
     activeKeys = [...activeKeys, k];
-    values[k] = null;
+    // seq-bound columns hold the DIRECTIVE slot — '' is the untouched
+    // seed (the widget displays `existing`, never a stored literal).
+    values[k] = columnsMap.get(k)?.format === 'sequence' ? '' : null;
   }
   function removeField(key: string) {
     activeKeys = activeKeys.filter((k) => k !== key);
@@ -185,7 +188,17 @@
     if (activeKeys.length === 0 || applying) return;
     applying = true;
     try {
-      const set = Object.fromEntries(activeKeys.map((k) => [k, values[k]]));
+      // An untouched seq-bound field carries no directive — it must be
+      // OMITTED from `set` (the resolver rejects non-directive writes).
+      const set = Object.fromEntries(
+        activeKeys
+          .filter(
+            (k) =>
+              columnsMap.get(k)?.format !== 'sequence' ||
+              (values[k] !== '' && values[k] != null),
+          )
+          .map((k) => [k, values[k]]),
+      );
       const items = rows.map((r) => ({ uuid: String(r[uid]), version: r.version as number }));
       const ep = findActionEndpoint(meta?.actions, 'update.bulk');
       const url = ep ? serviceApiPrefix(entity) + ep.path : `${entityApiBase(entity)}/bulk-update`;
@@ -277,6 +290,7 @@
                     callablesOptions={census.callablesOptions}
                     controlProps={{ id }}
                     record={values}
+                    service={serviceCodeOf(entityApiBase(entity)) ?? undefined}
                   />
                 {/snippet}
               </PrimeField>

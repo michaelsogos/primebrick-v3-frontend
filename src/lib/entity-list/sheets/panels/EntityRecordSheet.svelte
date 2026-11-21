@@ -25,6 +25,7 @@
   import { onMount, untrack } from 'svelte';
   import { t } from '$lib/i18n';
   import { apiFetch, entityApiBase, routesCensusFromModules, ApiUnreachableError } from '$lib/api';
+  import { serviceCodeOf } from '$lib/composables/use-service-availability.svelte';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
   import { fetchEntityMeta } from '$lib/entity-list';
   import { filteredEntityListHref } from '$lib/entity-list/entity-links';
@@ -232,6 +233,11 @@
     const fields: Record<string, unknown> = {};
     if (!record) return fields;
     for (const k of saveKeys) {
+      // seq-bound untouched = directive slot empty — the column is
+      // OMITTED (the resolver rejects non-directive writes; `''`≠literal
+      // would read as dirty but carries nothing writable).
+      if (columnsMap.get(k)?.format === 'sequence' && (draft[k] === '' || draft[k] == null))
+        continue;
       if (draft[k] !== record[k]) fields[k] = draft[k];
     }
     // Avatar-initials derivation: `type:"avatar"` columns are immutable
@@ -463,6 +469,7 @@
         {formPlacements}
         {formTwoCol}
         {editing}
+        service={serviceCodeOf(basePath) ?? undefined}
         bind:draft
       />
       {#if saveError}

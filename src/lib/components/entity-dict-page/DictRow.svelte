@@ -39,6 +39,7 @@
     row,
     uid,
     entity,
+    service,
     title_text,
     translation_key,
     entities_ns,
@@ -72,6 +73,9 @@
     row: Record<string, unknown>;
     uid: string;
     entity: string;
+    /** Owning module code — seq-bound controls resolve the module-local
+     *  builtin registry through it (see FormFieldDispatcher). */
+    service?: string;
     title_text: string;
     /** meta.translation_key — the label cell's rows vocabulary scope. */
     translation_key: string;
@@ -214,6 +218,7 @@
       translation_key,
       pending_owner,
       title: title_text,
+      service,
       readonly: !can_update || deleted,
     });
   }
@@ -330,7 +335,9 @@
                 column={valueColumn}
                 bind:value={() => values[valueColumn.key], (v) => onchange(valueColumn.key, v)}
                 record={values}
+                served_record={row}
                 columns={columns_map}
+                {service}
                 readonly={!can_update || deleted}
                 controlProps={{
                   id,

@@ -5,8 +5,10 @@
  * ephemeral E2E admin actor minted by global.setup.ts. All writes target
  * ad-hoc resources created inside the test — never pre-existing rows:
  *
- *   - customer `E2E-{ts}` is created, read, updated, stale-version-rejected,
- *     soft-deleted, restored, and soft-deleted again (the leftover row is
+ *   - a customer with `display_name` `E2E Lifecycle` is created (code
+ *     auto-allocated — `customers.code` is sequence-bound, literals are
+ *     rejected), read, updated, stale-version-rejected, soft-deleted,
+ *     restored, and soft-deleted again (the leftover row is a
  *     flagged-deleted — a soft-delete entity can only be removed softly).
  *   - role_mapping purge contract is verified WITHOUT creating a row: the
  *     soft DELETE route 404s for any uuid, the purge route is gated by an
@@ -32,7 +34,6 @@ const CRM_BASE = "/svc/crm/api/v1/entities";
 // /svc/<service> gateway prefix, not the BE-owned /api/v1/entities root.
 const AI_BASE = "/svc/ai/api/v1/entities";
 const TS = Date.now();
-const CUSTOMER_CODE = `E2E-${TS}`;
 const E2E_MODEL_ID = `e2e/lifecycle-${TS}`;
 const E2E_ASSISTANT_KEY = `e2e_${TS}`;
 
@@ -46,11 +47,12 @@ test.describe("entity CRUD over the wire", () => {
     await loginAsTestAdmin(page);
     const api = page.request;
 
-    // ── hygiene: soft-delete any leftover E2E-* customers from previous
-    // runs (e.g. a run that crashed mid-lifecycle). Only rows whose code
-    // matches the E2E- prefix — never real data. ──────────────────────────
+    // ── hygiene: soft-delete any leftover E2E customers from previous
+    // runs (e.g. a run that crashed mid-lifecycle). `code` is seq-bound —
+    // allocated CUST-* values can't carry the marker, so leftovers are
+    // identified on `display_name`. Never real data. ────────────────────
     const leftoversRes = await api.get(
-      `${CRM_BASE}/customer/list?filters[0][field]=code&filters[0][op]=startsWith&filters[0][value]=E2E-`,
+      `${CRM_BASE}/customer/list?filters[0][field]=display_name&filters[0][op]=startsWith&filters[0][value]=E2E`,
     );
     if (leftoversRes.ok()) {
       const leftovers = ((await leftoversRes.text().then((t) => extJsonParse<any>(t))).rows ?? []) as Array<{ uuid: string; version: number }>;
@@ -60,16 +62,19 @@ test.describe("entity CRUD over the wire", () => {
     }
 
     // ── create → 201 + entity (version present) ──────────────────────────
+    // `code` is seq-bound: OMITTED → the bound default allocates inside
+    // the write transaction. A literal would be strict-rejected.
     const createRes = await api.post(`${CRM_BASE}/customer`, {
-      data: { entity: { code: CUSTOMER_CODE, display_name: "E2E Lifecycle", status: "ACTIVE" } },
+      data: { entity: { display_name: "E2E Lifecycle", status: "ACTIVE" } },
     });
     expect(createRes.status()).toBe(201);
     const created = await createRes.text().then((t) => extJsonParse<any>(t));
     expect(created.uuid).toBeTruthy();
-    expect(created.code).toBe(CUSTOMER_CODE);
+    expect(created.code).toMatch(/^CUST-\d{5}$/);
     expect(created.success).toBeUndefined(); // entity, not wrapper
     uuid = created.uuid;
     version = created.version;
+    const customerCode = String(created.code);
 
     // ── get → 200 entity ─────────────────────────────────────────────────
     const getRes = await api.get(`${CRM_BASE}/customer/${uuid}`);
@@ -77,7 +82,7 @@ test.describe("entity CRUD over the wire", () => {
 
     // ── list with canonical QS bracket filters finds the row ────────────
     const listRes = await api.get(
-      `${CRM_BASE}/customer/list?filters[0][field]=code&filters[0][op]==&filters[0][value]=${CUSTOMER_CODE}`,
+      `${CRM_BASE}/customer/list?filters[0][field]=code&filters[0][op]==&filters[0][value]=${customerCode}`,
     );
     expect(listRes.status()).toBe(200);
     const listBody = await listRes.text().then((t) => extJsonParse<any>(t));
@@ -92,7 +97,9 @@ test.describe("entity CRUD over the wire", () => {
 
     // ── update → 200 entity, version bumped ──────────────────────────────
     const putRes = await api.put(`${CRM_BASE}/customer/${uuid}`, {
-      data: { entity: { display_name: "E2E Lifecycle Updated", version } },
+      // ext-json decodes version as bigint — the lock counter is small,
+      // Number() is the honest wire conversion for a JSON `data:` payload.
+      data: { entity: { display_name: "E2E Lifecycle Updated", version: Number(version) } },
     });
     expect(putRes.status()).toBe(200);
     const updated = await putRes.text().then((t) => extJsonParse<any>(t));
@@ -246,12 +253,12 @@ test.describe("entity CRUD over the wire", () => {
     expect(res.status()).toBe(200);
     const body = await res.text().then((t) => extJsonParse<any>(t));
     expect(Array.isArray(body.rows)).toBe(true);
-    expect(typeof body.page).toBe("number");
-    expect(typeof body.total === "number" || typeof body.total === "string").toBe(true);
+    expect(typeof body.page).toBe("bigint"); // ext-json: every int revives as bigint
+    expect(typeof body.total === "bigint" || typeof body.total === "string").toBe(true);
     for (const row of body.rows) {
       expect(row).toHaveProperty("uuid");
       expect(row).toHaveProperty("idp_code");
-      expect(typeof row.user_count).toBe("number");
+      expect(typeof row.user_count).toBe("bigint"); // int column → bigint on the wire
       expect(row.user_count).toBeGreaterThanOrEqual(0);
     }
   });
@@ -287,7 +294,7 @@ test.describe("entity CRUD over the wire", () => {
 
     // ── ai_model update → version bump ──────────────────────────────────
     const modelPut = await api.put(`${AI_BASE}/ai_model/${model.uuid}`, {
-      data: { entity: { name: `E2E Model ${TS} v2`, version: modelVersion } },
+      data: { entity: { name: `E2E Model ${TS} v2`, version: Number(modelVersion) } },
     });
     expect(modelPut.status()).toBe(200);
     modelVersion = (await modelPut.text().then((t) => extJsonParse<any>(t))).version;

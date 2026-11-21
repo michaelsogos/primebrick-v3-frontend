@@ -185,6 +185,10 @@
 				// JSON controls bind a STRING — serialize record objects;
 				// null → '' (schema treats '' as absent on submit).
 				if (isJson) initial[placement.key] = v == null ? '' : extJsonStringify(v);
+				// seq-bound columns hold the DIRECTIVE slot, never the
+				// stored literal — '' keeps the column omitted (untouched);
+				// the widget displays the literal via `existing`.
+				else if (col?.format === 'sequence') initial[placement.key] = '';
 				else if (col?.type === 'boolean') initial[placement.key] = v ?? false;
 				else initial[placement.key] = v ?? '';
 			} else if (placement.default_value !== undefined) {
@@ -221,7 +225,10 @@
 						if (isDetail && col?.immutable === true) continue;
 						let v = (updateForm.data as Record<string, unknown>)[placement.key];
 						if (v === '' || v === undefined) {
-							if (col?.nullable) entity[placement.key] = null;
+							// seq-bound empty = untouched: the column is OMITTED —
+							// never null-written (the resolver would reject a
+							// non-directive write attempt).
+							if (col?.format !== 'sequence' && col?.nullable) entity[placement.key] = null;
 							continue;
 						}
 						if (col?.format === 'json' || col?.pg_type === 'jsonb' || col?.pg_type === 'json') {
@@ -592,6 +599,7 @@
 												readonly={collab.isConflicted(placement.key)}
 											mode={isDetail ? 'update' : 'create'}
 												served_record={record ?? undefined}
+												service={svcCode ?? decl.module}
 												bind:value={$form[placement.key]}
 												bind:record={$form}
 											/>

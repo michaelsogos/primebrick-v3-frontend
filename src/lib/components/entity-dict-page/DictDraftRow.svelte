@@ -26,6 +26,7 @@
     pending_owner,
     values = $bindable(),
     errors = {},
+    service,
     readonly = false,
     sortable = false,
     confirm_disabled = true,
@@ -44,6 +45,9 @@
     /** Required-empty (and future rule) errors keyed by column — the
      *  save gate surfaces here, never silently. */
     errors?: Record<string, string[]>;
+    /** Owning module code — seq-bound controls resolve the module-local
+     *  builtin registry through it (see FormFieldDispatcher). */
+    service?: string;
     readonly?: boolean;
     /** Rows render a leading drag grip when sortable — the composer keeps
      *  a same-size invisible spacer so its code input stays column-aligned. */
@@ -88,6 +92,7 @@
               bind:value={() => values['code'], (v) => { values['code'] = v; }}
               record={values}
               columns={columns_map}
+              {service}
               {readonly}
               controlProps={{
                 id,
@@ -128,6 +133,7 @@
                 bind:value={() => values[valueColumn.key], (v) => { values[valueColumn.key] = v; }}
                 record={values}
                 columns={columns_map}
+                {service}
                 {readonly}
                 controlProps={{
                   id,

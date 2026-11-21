@@ -48,6 +48,7 @@
     formTwoCol,
     editing = false,
     draft = $bindable({}),
+    service,
   }: {
     meta: EntityMeta;
     record: Record<string, unknown>;
@@ -61,6 +62,9 @@
     /** Writable mirror of `record` — bound back to the panel, which owns
      *  the save dispatch. */
     draft?: Record<string, unknown>;
+    /** Owning module code — seq-bound controls resolve the module-local
+     *  builtin registry through it (see FormFieldDispatcher). */
+    service?: string;
   } = $props();
 
   const uidKey = $derived(meta?.uid ?? 'uuid');
@@ -116,11 +120,17 @@
   });
 
   /** Draft mirrors `record` — re-baselined when the record reloads AND
-   *  on every edit-toggle exit (cancel/save discards pending writes). */
+   *  on every edit-toggle exit (cancel/save discards pending writes).
+   *  seq-bound columns seed `''` — the draft slot carries the DIRECTIVE,
+   *  never the stored literal (the widget displays it via `existing`;
+   *  the dirty-diff in the panel treats seq-empty as untouched). */
   $effect(() => {
     record;
     editing;
     draft = { ...record };
+    for (const col of allColumns) {
+      if (col.format === 'sequence') draft[col.key] = '';
+    }
   });
 
   /** Avatar columns with `avatar.initials_field` DERIVE their draft value
@@ -160,6 +170,8 @@
       disabled={!editing}
       bind:value={draft[col.key]}
       record={draft}
+      served_record={record}
+      {service}
     />
   </div>
 {/snippet}
