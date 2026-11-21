@@ -38,9 +38,28 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     for (const k of ["code", "pattern", "step", "start", "tz", "label_key", "description_key"]) {
       expect(keys, `column ${k}`).toContain(k);
     }
+    // Counter projection — virtual machine-state columns attached
+    // post-query (value/step/next + both rendered emissions + attribution).
+    for (const k of ["value_next", "value_actual", "emitted_next", "emitted_actual", "last_alloc_at", "last_alloc_by"]) {
+      expect(keys, `virtual column ${k}`).toContain(k);
+    }
+    // Soft-delete reads as Disable/Enable on sequences (actions_overrides).
+    for (const op of ["delete.single", "delete.bulk", "restore.single", "restore.bulk"]) {
+      const a = (meta.actions ?? []).find((x: any) => x.op === op);
+      expect(a?.label_key, `action ${op}`).toContain(".actions.");
+    }
 
     const lr = await page.request.get(`${CRM_BASE}/sequence/list`);
     expect(lr.status()).toBe(200);
+    const list = extJsonParse<any>(await lr.text());
+    const rows: any[] = list?.rows ?? list?.items ?? [];
+    expect(rows.length).toBeGreaterThan(0);
+    // The projection is attached per served row — never-claimed sequences
+    // show value_next = start and value_actual/emitted_actual = null.
+    const r0 = rows[0];
+    expect(r0).toHaveProperty("value_next");
+    expect(r0).toHaveProperty("value_actual");
+    expect(r0).toHaveProperty("emitted_next");
   });
 
   test("counters are machine state — no routed surface", async ({ page }) => {
@@ -421,12 +440,14 @@ test.describe("builtin sequence registry — mounted by construction", () => {
         r.status() === 200,
       { timeout: 20_000 },
     );
-    await page.getByRole("menu").getByText(/elimina|delete|cancella/i).first().click();
+    // Soft-delete presents as "Disable" on sequences (actions_overrides —
+    // same semantics as job_trigger: exec-stop + destructive).
+    await page.getByRole("menu").getByText(/disabilita|disable|elimina|delete/i).first().click();
     const confirm = page.getByRole("dialog").last();
     await expect(confirm).toBeVisible({ timeout: 10_000 });
     // Confirm the destructive op — the dialog must CLEAR (no perpetual
     // busy: the request resolves on the owning schema).
-    const confirmBtn = confirm.getByRole("button", { name: /elimina|delete|conferma|confirm/i }).last();
+    const confirmBtn = confirm.getByRole("button", { name: /disabilita|disable|elimina|delete|conferma|confirm/i }).last();
     await confirmBtn.click();
     await delReq;
     await expect(confirm).toBeHidden({ timeout: 10_000 });
@@ -447,7 +468,7 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     await bulkCta.click();
     const bulkConfirm = page.getByRole("dialog").last();
     await expect(bulkConfirm).toBeVisible({ timeout: 10_000 });
-    await bulkConfirm.getByRole("button", { name: /elimina|delete|conferma|confirm/i }).last().click();
+    await bulkConfirm.getByRole("button", { name: /disabilita|disable|elimina|delete|conferma|confirm/i }).last().click();
     await bulkReq;
 
     // The residual check — no entity call may have left the owning svc.

@@ -45,6 +45,12 @@ export function useMfaStepUp() {
   });
 
   let pendingRetryWithToken: ((token: string) => void) | null = null;
+  /** The cancel twin of `pendingRetryWithToken` — when the user dismisses
+   *  the step-up dialog WITHOUT authorizing (Escape/X/outside click),
+   *  the waiting request must still settle: an unresolved promise leaks
+   *  `entityOpState.busy` forever and the confirm dialog spins eternally
+   *  on an op that never ran. */
+  let pendingCancel: (() => void) | null = null;
 
   /**
    * Execute an API call with step-up MFA support.
@@ -73,11 +79,20 @@ export function useMfaStepUp() {
           state.pendingTargetResource = context.target_resource;
 
           pendingRetryWithToken = (token: string) => {
+            pendingCancel = null;
             requestFn(token).then(resolve).catch((err) => {
               console.error('[MfaStepUp] Retry failed:', err);
               // Resolve with a synthetic error response so the caller can handle it
               resolve(new Response(extJsonStringify({ type: '/errors/internal-error', title: 'Internal server error', status: 500, detail: 'Retry failed' }), { status: 500, headers: { 'Content-Type': 'application/json' } }));
             });
+          };
+          // Dialog dismissed without authorization → settle as cancelled
+          // (RFC7807, status 0 semantics: the op never ran — callers treat
+          // it as a quiet abort, NOT a failure notification).
+          pendingCancel = () => {
+            pendingRetryWithToken = null;
+            pendingCancel = null;
+            resolve(new Response(extJsonStringify({ type: '/errors/mfa-step-up-cancelled', title: 'Verification cancelled', status: 499, internal_code: 'MFA_STEP_UP_CANCELLED' }), { status: 499, headers: { 'Content-Type': 'application/json' } }));
           };
         });
       }
@@ -91,6 +106,7 @@ export function useMfaStepUp() {
    * Retries the original request with the action authorization token.
    */
   function handleAuthorized(token: string) {
+    pendingCancel = null;
     if (pendingRetryWithToken) {
       pendingRetryWithToken(token);
       pendingRetryWithToken = null;
@@ -100,7 +116,13 @@ export function useMfaStepUp() {
 
   return {
     get dialogOpen() { return state.dialogOpen; },
-    set dialogOpen(v: boolean) { state.dialogOpen = v; },
+    set dialogOpen(v: boolean) {
+      // User dismissed the dialog while a retry pends — the cancel twin
+      // settles the waiting request as aborted (else the caller's promise
+      // never resolves: busy/confirm state leaks, dialog spins forever).
+      if (v === false && state.dialogOpen === true) pendingCancel?.();
+      state.dialogOpen = v;
+    },
     get pendingAction() { return state.pendingAction; },
     get pendingTargetResource() { return state.pendingTargetResource; },
     executeWithToken,

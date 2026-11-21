@@ -42,6 +42,11 @@ const ENTITY_API_PATH = '/api/v1/entities';
  * pre-map semantics unchanged.
  */
 let _entityService = new Map<string, string>();
+/** Entities the census registers under MORE THAN ONE service — builtin
+ *  entities mount on every module by construction, so the flat
+ *  entity→service map is last-wins ambiguous for them and must NEVER be
+ *  consulted as the owner authority. */
+let _multiService = new Set<string>();
 
 /**
  * The census feeds the map — called once per `loadShellNav` resolution.
@@ -49,7 +54,17 @@ let _entityService = new Map<string, string>();
  * mounted page never observes a half-empty map mid-refetch.
  */
 export function registerEntityServices(entries: Iterable<readonly [string, string]>): void {
-  _entityService = new Map(entries);
+  const map = new Map<string, string>();
+  const seen = new Map<string, string>();
+  const multi = new Set<string>();
+  for (const [entity, svc] of entries) {
+    map.set(entity, svc);
+    const prev = seen.get(entity);
+    if (prev !== undefined && prev !== svc) multi.add(entity);
+    else seen.set(entity, svc);
+  }
+  _entityService = map;
+  _multiService = multi;
 }
 
 /**
@@ -62,11 +77,27 @@ function proxyService(entity: string): string | undefined {
   return service === 'api' ? undefined : service;
 }
 
+/**
+ * Construction-time ownership guard — a multi-service entity queried
+ * WITHOUT an explicit `service` argument would silently resolve to
+ * whichever service registered last (the "emailsender" bug class:
+ * CRM sequence deletes/audits landing on a foreign schema). Route
+ * context MUST carry the owner — `decl.module`, sibling id strip —
+ * so a missing argument here is a programming error, not a data
+ * condition: throw loudly instead of returning a wrong-schema guess.
+ */
+function requireUnambiguous(entity: string, service?: string): void {
+  if (service === undefined && _multiService.has(entity)) {
+    throw new Error(
+      `entityApiBase/serviceApiPrefix("${entity}") called without an explicit service — ` +
+      `the entity mounts on multiple services and the census map is last-wins ambiguous. ` +
+      `Thread the owning service from route context (decl.module).`,
+    );
+  }
+}
+
 export function entityApiBase(entity: string, service?: string): string {
-  // Builtin entities mount on EVERY service — the census map is ambiguous
-  // for them (last registration wins); route context MUST carry the
-  // owning service explicitly (`decl.module`, sibling ids strip to the
-  // parent code — `crm-settings` → `crm`).
+  requireUnambiguous(entity, service);
   const svc = service ?? proxyService(entity);
   return svc ? `/svc/${svc}/api/v1/entities/${entity}` : `${ENTITY_API_PATH}/${entity}`;
 }
@@ -78,8 +109,7 @@ export function entityApiBase(entity: string, service?: string): string {
  * proxy prefix. Single source: the `/api/v1/modules` census.
  */
 export function serviceApiPrefix(entity: string, service?: string): string {
-  // Explicit route context wins — builtin entities mount on EVERY service
-  // and the census map is last-wins ambiguous (see entityApiBase).
+  requireUnambiguous(entity, service);
   const svc = service ?? proxyService(entity);
   return svc ? `/svc/${svc}` : '';
 }
