@@ -77,9 +77,11 @@ export function entityApiBase(entity: string, service?: string): string {
  * `/api/v1/actions/<op>`) are service-local — they must ride the same
  * proxy prefix. Single source: the `/api/v1/modules` census.
  */
-export function serviceApiPrefix(entity: string): string {
-  const service = proxyService(entity);
-  return service ? `/svc/${service}` : '';
+export function serviceApiPrefix(entity: string, service?: string): string {
+  // Explicit route context wins — builtin entities mount on EVERY service
+  // and the census map is last-wins ambiguous (see entityApiBase).
+  const svc = service ?? proxyService(entity);
+  return svc ? `/svc/${svc}` : '';
 }
 
 // hasLocalSession / isTokenExpired / refreshAccessToken / triggerRefresh

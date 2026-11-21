@@ -127,6 +127,11 @@ export interface RunEntityOpArgs {
   /** Rows matching the current filters — the 'all' scope count shown by
    *  the bulk dialogs' Choicebox. */
   totalCount?: bigint;
+  /** Owning service for builtin entities — they mount on EVERY service
+   *  and the census map is last-wins ambiguous, so surfaces carrying
+   *  route context (`decl.module`) must pass it through or the write
+   *  lands on the wrong schema. Absent → census resolution. */
+  service?: string;
 }
 
 const DELETE_FAMILY = /^(?:delete|purge)\./;
@@ -267,7 +272,7 @@ function defaultRequest(
   uid: string,
 ): ((token: string | null) => Promise<Response>) | null {
   const { op, entity, row, rows } = args;
-  const base = entityApiBase(entity);
+  const base = entityApiBase(entity, args.service);
   // `version` is a native bigint on every ext-json row — the codec
   // forces ALL integers to bigint (ext-json.ts). Presence is the only
   // check needed: the template prints the integral token regardless of
@@ -285,7 +290,7 @@ function defaultRequest(
     case 'purge.single': {
       if (!row) return null;
       const url = ep
-        ? serviceApiPrefix(entity) + fillActionPath(ep.path, row, uid)
+        ? serviceApiPrefix(entity, args.service) + fillActionPath(ep.path, row, uid)
         : `${base}/${encodeURIComponent(String(row[uid]))}${op === 'purge.single' ? '/purge' : ''}`;
       return (token) =>
         apiFetch(`${url}${versionQs(row)}`, {
@@ -296,7 +301,7 @@ function defaultRequest(
     case 'restore.single': {
       if (!row) return null;
       const url = ep
-        ? serviceApiPrefix(entity) + fillActionPath(ep.path, row, uid)
+        ? serviceApiPrefix(entity, args.service) + fillActionPath(ep.path, row, uid)
         : `${base}/${encodeURIComponent(String(row[uid]))}/restore`;
       return (token) =>
         apiFetch(`${url}${versionQs(row)}`, {
@@ -307,7 +312,7 @@ function defaultRequest(
     case 'delete.bulk': {
       const items = (rows ?? []).map((r) => ({ uuid: String(r[uid]), version: r.version }));
       if (items.length === 0) return null;
-      const url = ep ? serviceApiPrefix(entity) + ep.path : `${base}/bulk-delete`;
+      const url = ep ? serviceApiPrefix(entity, args.service) + ep.path : `${base}/bulk-delete`;
       return (token) =>
         apiFetch(url, {
           method: ep?.method || 'POST',

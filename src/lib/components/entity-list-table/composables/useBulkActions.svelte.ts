@@ -11,6 +11,10 @@ import { extJsonParse, extJsonStringify } from '$lib/api-ext';
 
 export interface BulkActionsOptions {
   entity: () => string;
+  /** Owning service for builtin entities — census map is last-wins
+   *  ambiguous for them; route context (`decl.module`) threads through
+   *  or bulk ops land on the wrong schema. */
+  service?: () => string | undefined;
   selectedKeys: () => string[];
   /** `meta.actions` — bulk ops dispatch to their declared `endpoint` when
    *  present instead of the `/api/v1/entities/{entity}` convention. */
@@ -49,6 +53,7 @@ export interface BulkActionsOptions {
 export function useBulkActions(options: BulkActionsOptions) {
   const {
     entity: entityFn,
+    service: serviceFn,
     selectedKeys: selectedKeysFn,
     actions: getActions,
     rowByKey,
@@ -107,7 +112,7 @@ export function useBulkActions(options: BulkActionsOptions) {
         advancedFilters: advancedFiltersFn?.(),
       });
       params.set('deleted_records', deletedRecords);
-      const res = await apiFetch(`${entityApiBase(entityFn())}/list?${params.toString()}`);
+      const res = await apiFetch(`${entityApiBase(entityFn(), serviceFn?.())}/list?${params.toString()}`);
       if (!res.ok) {
         const data = (await res.text().then((t) => extJsonParse<any>(t)).catch(() => null)) as RFC7807Error | null;
         throw { ...(data ?? {}), title: data?.title || 'Bulk scope enumeration failed', status: data?.status || res.status };
@@ -123,8 +128,9 @@ export function useBulkActions(options: BulkActionsOptions) {
   /** Declared endpoint for `op` — falls back to the entity convention. */
   function resolveOpUrl(op: string, fallbackSuffix: string): { url: string; method: string } {
     const ep = findActionEndpoint(getActions?.(), op);
-    if (ep) return { url: ep.path, method: ep.method };
-    return { url: `${entityApiBase(entityFn())}${fallbackSuffix}`, method: '' };
+    // Declared paths are service-local — `/svc/<svc>` prefix required.
+    if (ep) return { url: serviceApiPrefix(entityFn(), serviceFn?.()) + ep.path, method: ep.method };
+    return { url: `${entityApiBase(entityFn(), serviceFn?.())}${fallbackSuffix}`, method: '' };
   }
 
   /** Minimal meta the invoker needs — the table carries the fields as
@@ -152,6 +158,7 @@ export function useBulkActions(options: BulkActionsOptions) {
       entity: entityFn(),
       meta: metaForOp(),
       rows: selectedRows(),
+      service: serviceFn?.(),
       scopeChoice: {
         get value() {
           return _state.deleteScope;
@@ -199,6 +206,7 @@ export function useBulkActions(options: BulkActionsOptions) {
       entity: entityFn(),
       meta: metaForOp(),
       rows: selectedRows(),
+      service: serviceFn?.(),
       scopeChoice: {
         get value() {
           return _state.restoreScope;
@@ -331,13 +339,14 @@ export function useBulkActions(options: BulkActionsOptions) {
     }
     if (action.requires_selection !== false && selectedKeysFn().length === 0) return;
     try {
-      const url = serviceApiPrefix(entityFn()) + ep.path;
+      const url = serviceApiPrefix(entityFn(), serviceFn?.()) + ep.path;
       const selection = action.requires_selection !== false ? selectedKeysFn() : [];
       await runEntityOp({
         op: action.action_name,
         entity: entityFn(),
         meta: metaForOp(),
         rows: selectedRows(),
+        service: serviceFn?.(),
         execute: (token) => {
           onBulkActionStart?.();
           return apiFetch(url, {
@@ -377,6 +386,7 @@ export function useBulkActions(options: BulkActionsOptions) {
     if (rows.length < 1 || rows.length > 100) return;
     openSheet('entity.bulkEditor', {
       entity: entityFn(),
+      service: serviceFn?.(),
       meta: {
         actions: getActions?.(),
         entities_ns: entitiesNsFn?.(),

@@ -50,11 +50,16 @@
 
   let {
     entity,
+    service,
     meta,
     rows,
     onApplied,
   }: {
     entity: string;
+    /** Owning service — required for builtin entities (census map is
+     *  last-wins ambiguous; route context threads through or the patch
+     *  lands on the wrong schema). */
+    service?: string;
     meta: EntityMeta;
     rows: Record<string, unknown>[];
     onApplied?: () => void;
@@ -201,12 +206,13 @@
       );
       const items = rows.map((r) => ({ uuid: String(r[uid]), version: r.version as number }));
       const ep = findActionEndpoint(meta?.actions, 'update.bulk');
-      const url = ep ? serviceApiPrefix(entity) + ep.path : `${entityApiBase(entity)}/bulk-update`;
+      const url = ep ? serviceApiPrefix(entity, service) + ep.path : `${entityApiBase(entity, service)}/bulk-update`;
       const ok = await runEntityOp({
         op: 'update.bulk',
         entity,
         meta,
         rows,
+        service,
         execute: (token) =>
           apiFetch(url, {
             method: ep?.method || 'POST',

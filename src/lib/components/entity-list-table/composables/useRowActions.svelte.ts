@@ -11,6 +11,11 @@ export interface RowActionsOptions<TRow extends Record<string, unknown>> {
   translationKey?: () => string;
   /** Entity-label i18n namespace (`meta.entities_ns`) — forwarded to the version-history sheet. */
   entities_ns?: () => string | undefined;
+  /** Owning service for builtin entities — they mount on EVERY service
+   *  and the census map is last-wins ambiguous; surfaces with route
+   *  context (`decl.module`) MUST thread it or row ops land on the
+   *  wrong schema (delete → 500 on a foreign service's table). */
+  service?: () => string | undefined;
   uid: () => string;
   columns: () => MetaColumn[];
   /** `meta.actions` — when present, write ops dispatch to their declared
@@ -61,6 +66,7 @@ export function useRowActions<TRow extends Record<string, unknown>>(
     rowKey,
     closeRowDropdown,
     dialogs,
+    service: serviceFn,
     customActionHandlers: getCustomActionHandlers,
     t: tFn = (key: string) => key // Default fallback
   } = options;
@@ -95,6 +101,7 @@ export function useRowActions<TRow extends Record<string, unknown>>(
       entity: entityFn(),
       meta: metaForOp(),
       row,
+      service: serviceFn?.(),
       onDone: () => {
         getOnRefresh?.()?.();
         onRowActionComplete?.();
@@ -112,6 +119,7 @@ export function useRowActions<TRow extends Record<string, unknown>>(
       entity: entityFn(),
       meta: metaForOp(),
       row,
+      service: serviceFn?.(),
       onDone: () => {
         getOnRefresh?.()?.();
         onRowActionComplete?.();
@@ -139,9 +147,11 @@ export function useRowActions<TRow extends Record<string, unknown>>(
   function resolveOpUrl(op: string, row: TRow, fallbackSuffix: string): { url: string; method: string } {
     const ep = findActionEndpoint(getActions?.(), op);
     if (ep) {
-      return { url: fillActionPath(ep.path, row, uidFn()), method: ep.method };
+      // Declared paths are service-local — they ride the same `/svc/<svc>`
+      // prefix as the entity base (see runEndpointAction).
+      return { url: serviceApiPrefix(entityFn(), serviceFn?.()) + fillActionPath(ep.path, row, uidFn()), method: ep.method };
     }
-    return { url: `${entityApiBase(entityFn())}${fallbackSuffix}`, method: '' };
+    return { url: `${entityApiBase(entityFn(), serviceFn?.())}${fallbackSuffix}`, method: '' };
   }
 
   async function confirmDuplicateRowImpl(row: TRow) {
@@ -217,7 +227,8 @@ export function useRowActions<TRow extends Record<string, unknown>>(
       translationKey,
       entities_ns: entitiesNsFn?.(),
       rowUuid,
-      columns
+      columns,
+      service: serviceFn?.()
     });
   }
 
@@ -236,7 +247,7 @@ export function useRowActions<TRow extends Record<string, unknown>>(
     // version exactly like delete/restore do. Endpoints that ignore query
     // params are unaffected.
     const versionQs = row.version !== undefined && row.version !== null ? `?version=${row.version}` : '';
-    const url = serviceApiPrefix(entityFn()) + fillActionPath(ep.path, row, uidFn()) + versionQs;
+    const url = serviceApiPrefix(entityFn(), serviceFn?.()) + fillActionPath(ep.path, row, uidFn()) + versionQs;
     const body = action.row_key
       ? extJsonStringify({ [action.row_key]: row[action.row_key] })
       : undefined;
@@ -248,6 +259,7 @@ export function useRowActions<TRow extends Record<string, unknown>>(
       entity: entityFn(),
       meta: metaForOp(),
       row,
+      service: serviceFn?.(),
       execute: (token) =>
         apiFetch(url, {
           method: ep.method || 'POST',

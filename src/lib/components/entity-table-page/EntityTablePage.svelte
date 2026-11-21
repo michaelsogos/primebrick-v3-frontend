@@ -20,6 +20,11 @@
   interface EntityTablePageProps {
     /** Full entity API base (`/api/v1/entities/<entity>` or `/svc/<svc>/api/v1/entities/<entity>`). */
     basePath: string;
+    /** Owning service — REQUIRED for builtin entities (they mount on
+     *  every service, so the entity→service census is last-wins
+     *  ambiguous). Side paths (row ops, audit, sheets, export, record
+     *  sheet) thread it through instead of re-deriving from `entity`. */
+    service?: string;
     /** Page storage namespace — `pb:<page>:list:`. */
     storageKeyPrefix: string;
     /** Legacy family BroadcastChannel (receiver mode — child form pages notify). */
@@ -75,6 +80,7 @@
 
   let {
     basePath,
+    service,
     storageKeyPrefix,
     syncChannel,
     errorScopeKey,
@@ -202,8 +208,22 @@
     }
   }
 
+  /** Record-sheet fallback — entities without a `kind:"detail"` route
+   *  (builtin registry lists publish `kind:"list"` only) still get a
+   *  governed edit surface: `entity.record` opens in edit mode, gated
+   *  on `update.single` by the sheet itself. Without it the Modifica
+   *  CTA rendered but dispatched to a `undefined` handler — a silent
+   *  no-op. */
+  function openEditSheet(row: TRow) {
+    void import('$lib/shell/sheets/sheet-manager.svelte').then(({ openSheet }) =>
+      openSheet('entity.record', { entity, value: row[uid], service, edit: true }),
+    );
+  }
+
   const effectiveOnCreateAction = $derived(onCreateAction ?? (effectiveCreatePath ? openCreate : undefined));
-  const effectiveOnEditAction = $derived(onEditAction ?? (effectiveEditPath ? openEdit : undefined));
+  const effectiveOnEditAction = $derived(
+    onEditAction ?? (effectiveEditPath ? openEdit : openEditSheet)
+  );
   const effectiveSelectionLabelKey = $derived(
     selectionLabelKey ?? (entity ? `${entitiesNs(meta)}.entities.${entity}.plural` : undefined)
   );
@@ -214,6 +234,7 @@
 
 <EntityListTable
     {entity}
+    {service}
     {translationKey}
     entities_ns={entitiesNs(meta)}
     bind:datetimeIanaModeByKey

@@ -44,6 +44,7 @@
 
 <EntityTablePage
   basePath={entityApiBase(entity, service)}
+  {service}
   storageKeyPrefix={`pb:${service}-${entity}:list:`}
   syncChannel={`primebrick_${entity}_sync`}
   errorScopeKey="app.common.errors.scope.entity_list"

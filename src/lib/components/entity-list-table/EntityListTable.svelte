@@ -50,6 +50,7 @@
   let {
     uid,
     entity = 'customer',
+    service,
     translationKey,
     entities_ns,
     columns,
@@ -456,6 +457,7 @@
 
   const exportComposable = useExport({
     entity: () => entity,
+    service: () => service,
     selectedKeys: () => selectedKeys,
     uid: () => uid,
     actions: () => entityActions,
@@ -473,6 +475,7 @@
 
   const bulkActions = useBulkActions({
     entity: () => entity,
+    service: () => service,
     selectedKeys: () => selectedKeys,
     actions: () => entityActions,
     uid: () => uid,
@@ -596,6 +599,7 @@
 
   const rowActionsComposable = useRowActions<TRow>({
     entity: () => entity,
+    service: () => service,
     translationKey: () => effectiveTranslationKey,
     entities_ns: () => entities_ns,
     uid: () => uid,

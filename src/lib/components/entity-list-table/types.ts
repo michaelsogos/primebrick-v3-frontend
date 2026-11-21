@@ -63,6 +63,11 @@ export type EntityListTableProps<TRow extends Record<string, unknown>> = {
   uid: string;
   /** Entity type for API calls (e.g., 'customer', 'product') */
   entity?: string;
+  /** Owning service for builtin entities — they mount on EVERY service,
+   *  so the entity→service census map is last-wins ambiguous. The route
+   *  context (`decl.module`) threads it through or side paths (row ops,
+   *  audit, sheets, export) land on the wrong schema. */
+  service?: string;
   /**
    * Snake_case singular translation key prefix for dynamic i18n keys.
    * Used by dialogs and version history to build keys like

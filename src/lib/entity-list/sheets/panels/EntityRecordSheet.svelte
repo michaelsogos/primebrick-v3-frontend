@@ -24,7 +24,7 @@
    */
   import { onMount, untrack } from 'svelte';
   import { t } from '$lib/i18n';
-  import { apiFetch, entityApiBase, routesCensusFromModules, ApiUnreachableError } from '$lib/api';
+  import { apiFetch, entityApiBase, serviceApiPrefix, routesCensusFromModules, ApiUnreachableError } from '$lib/api';
   import { serviceCodeOf } from '$lib/composables/use-service-availability.svelte';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
   import { fetchEntityMeta } from '$lib/entity-list';
@@ -46,6 +46,8 @@
     entity,
     value,
     ref,
+    service,
+    edit,
   }: {
     /** Target entity API name (from `column.ref.entity`). */
     entity: string;
@@ -53,11 +55,18 @@
     value: unknown;
     /** The column's ref contract — drives business-key resolution. */
     ref?: MetaColumn['ref'];
+    /** Owning service — required for builtin entities (census map is
+     *  last-wins ambiguous; route context threads through or the sheet
+     *  fetches the wrong schema). */
+    service?: string;
+    /** Open straight into edit mode — ELT Modifica fallback for
+     *  entities without a `kind:"detail"` route. */
+    edit?: boolean;
   } = $props();
 
   // Props are stable within a sheet mount — the host remounts the panel
   // per open; untrack marks the intentional one-time read.
-  const basePath = untrack(() => entityApiBase(entity));
+  const basePath = untrack(() => entityApiBase(entity, service));
   const routeCensus = $derived(routesCensusFromModules(shellNav.modules));
 
   /** The entity's declared form layout — first form-bearing route in the
@@ -93,7 +102,9 @@
   /** Edit mode — gated on `meta.actions`: the pencil renders iff the
    *  `update.single` op is enabled AND the user satisfies its declared
    *  permissions (same `isEntityOpAllowed` gate as row CTAs — fail-closed). */
-  let editing = $state(false);
+  // `edit` prop seeds the initial mode (ELT Modifica fallback — the
+  // pencil gate still applies: `canUpdate` false → edit renders off).
+  let editing = $state(untrack(() => edit === true));
   let saving = $state(false);
   let saveError = $state<string | null>(null);
   /** Field surface draft — bound up from the body; readonly mode keeps it
@@ -259,7 +270,7 @@
       const uid = meta.uid ?? 'uuid';
       const endpoint = findActionEndpoint(meta.actions, 'update.single');
       const url = endpoint
-        ? fillActionPath(endpoint.path, record, uid)
+        ? serviceApiPrefix(entity, service) + fillActionPath(endpoint.path, record, uid)
         : `${basePath}/${encodeURIComponent(rowUuid)}`;
       const fields = dirtyFields();
       fields.version = record.version;
@@ -300,6 +311,7 @@
         entities_ns: meta.entities_ns,
         rowUuid,
         columns: meta.columns ?? [],
+        service,
       },
       { stack: true },
     );

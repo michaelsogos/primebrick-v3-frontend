@@ -106,6 +106,10 @@ export type SheetPanelPropsMap = {
     entities_ns?: string;
     rowUuid: string;
     columns?: MetaColumn[];
+    /** Owning service — required for builtin entities (census map is
+     *  last-wins ambiguous; route context threads through or audit
+     *  reads the wrong schema). */
+    service?: string;
   };
   'entity.jsonViewer': {
     /** The cell's parsed JSON value (null-prototype safe — read-only). */
@@ -126,6 +130,14 @@ export type SheetPanelPropsMap = {
     value: unknown;
     /** The column's ref contract — drives business-key resolution. */
     ref?: import('$lib/entity-list/types').MetaColumn['ref'];
+    /** Owning service — required for builtin entities (census map is
+     *  last-wins ambiguous; route context threads through or the sheet
+     *  fetches the wrong schema). */
+    service?: string;
+    /** Open straight into edit mode (skips the view→pencil step) — the
+     *  ELT Modifica fallback for entities without a `kind:"detail"`
+     *  route. Gated on `update.single` by the sheet itself. */
+    edit?: boolean;
   };
   /**
    * Dict-row extras — the update-editable columns beyond the inline
@@ -152,6 +164,10 @@ export type SheetPanelPropsMap = {
    */
   'entity.bulkEditor': {
     entity: string;
+    /** Owning service — required for builtin entities (census map is
+     *  last-wins ambiguous; route context threads through or the patch
+     *  lands on the wrong schema). */
+    service?: string;
     /** Served meta — actions gate the submit, columns derive the
      *  editable/immutable/audited partition. */
     meta: import('$lib/entity-list/types').EntityMeta;

@@ -314,4 +314,151 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     await expect(page.getByRole("dialog")).toHaveCount(0, { timeout: 10000 });
     expect(apiFetches).toBe(0);
   });
+
+  /**
+   * TIC review — the builtin list's side paths must route to the OWNING
+   * service (`/svc/crm`), never the last service the flat census map
+   * happens to expose for `sequence` (they mount on EVERY service —
+   * last-wins picked `emailsender` and every side path 500'd):
+   *   - row delete → confirm → DELETE /svc/crm → 200 → row gone
+   *   - version history → GET /svc/crm/:uuid/audit → 200 → timeline
+   *   - Modifica → entity.record sheet in edit mode → PUT /svc/crm → 200
+   *   - bulk delete CTA exists (`delete.bulk` permission declared) and
+   *     dispatches POST /svc/crm/bulk-delete → 200
+   */
+  test("side paths route to the owning service — delete, audit, sheet edit, bulk", async ({
+    page,
+  }) => {
+    const mkSeq = async (suffix: string) => {
+      const r = await page.request.post(`${CRM_BASE}/sequence`, {
+        data: {
+          entity: {
+            code: `e2e_side_${suffix}_${Date.now()}`,
+            pattern: `E2ES-${suffix}-{seq:4}`,
+            step: "1",
+            start: "1",
+          },
+        },
+      });
+      expect(r.status()).toBe(201);
+      return (await r.text().then((t) => extJsonParse<any>(t))) as Record<string, unknown>;
+    };
+    const seqEdit = await mkSeq("e");
+    const seqDel = await mkSeq("d");
+    const seqBulk = await mkSeq("b");
+
+    /** Track every entity-API request — nothing may leave `/svc/crm`. */
+    const apiUrls: string[] = [];
+    page.on("request", (r) => {
+      const u = r.url();
+      if (u.includes("/entities/sequence")) apiUrls.push(u);
+    });
+
+    await page.goto("/crm/settings/sequences");
+    await expect(page.locator("table")).toBeVisible({ timeout: 30_000 });
+    const byCode = (code: string) =>
+      page.locator("table tbody tr", { hasText: code }).first();
+    /** Registry rows accumulate across runs — server-side `search`
+     *  narrows to the fixture row instead of relying on page-1 sort. */
+    const searchFor = async (code: string) => {
+      const listReq = page.waitForResponse(
+        (r) => r.url().includes("/entities/sequence/list") && r.status() === 200,
+        { timeout: 15_000 },
+      );
+      await page.getByTestId("entity-search").locator("input").fill(code);
+      await listReq;
+    };
+
+    // ── Modifica → entity.record sheet in edit mode → save ────────────
+    await searchFor(String(seqEdit.code));
+    const editRow = byCode(String(seqEdit.code));
+    await expect(editRow).toBeVisible({ timeout: 15_000 });
+    await editRow.locator("td").last().getByRole("button").first().click();
+    const menu = page.getByRole("menu");
+    await expect(menu).toBeVisible();
+    const putReq = page.waitForResponse(
+      (r) =>
+        r.url().includes("/svc/crm/api/v1/entities/sequence/") &&
+        r.request().method() === "PUT" &&
+        r.status() === 200,
+      { timeout: 20_000 },
+    );
+    await menu.getByText(/modifica|edit/i).first().click();
+    // The record sheet opens straight into edit mode — step is editable.
+    const sheet = page.getByTestId("entity-record-sheet");
+    await expect(sheet).toBeVisible({ timeout: 10_000 });
+    const stepInput = sheet.locator("#record-sheet-field-step");
+    await expect(stepInput).toBeEnabled({ timeout: 10_000 });
+    await stepInput.fill("2");
+    // Save — the governed update path, on the owning service.
+    await page.getByTestId("entity-record-sheet-save").click();
+    await putReq;
+
+    // ── Version history → audit on the owning service ────────────────
+    await page.keyboard.press("Escape");
+    await searchFor(String(seqEdit.code));
+    const auditRow = byCode(String(seqEdit.code));
+    await auditRow.locator("td").last().getByRole("button").first().click();
+    const auditReq = page.waitForResponse(
+      (r) =>
+        r.url().includes("/svc/crm/api/v1/entities/sequence/") &&
+        r.url().includes("/audit") &&
+        r.status() === 200,
+      { timeout: 20_000 },
+    );
+    await page.getByRole("menu").getByText(/edit log|version history/i).first().click();
+    await auditReq;
+    await page.keyboard.press("Escape");
+
+    // ── Row delete → confirm → DELETE on the owning service ──────────
+    await searchFor(String(seqDel.code));
+    const delRow = byCode(String(seqDel.code));
+    await delRow.locator("td").last().getByRole("button").first().click();
+    const delReq = page.waitForResponse(
+      (r) =>
+        r.url().includes("/svc/crm/api/v1/entities/sequence/") &&
+        r.request().method() === "DELETE" &&
+        r.status() === 200,
+      { timeout: 20_000 },
+    );
+    await page.getByRole("menu").getByText(/elimina|delete|cancella/i).first().click();
+    const confirm = page.getByRole("dialog").last();
+    await expect(confirm).toBeVisible({ timeout: 10_000 });
+    // Confirm the destructive op — the dialog must CLEAR (no perpetual
+    // busy: the request resolves on the owning schema).
+    const confirmBtn = confirm.getByRole("button", { name: /elimina|delete|conferma|confirm/i }).last();
+    await confirmBtn.click();
+    await delReq;
+    await expect(confirm).toBeHidden({ timeout: 10_000 });
+    await expect(delRow).toBeHidden({ timeout: 10_000 });
+
+    // ── Bulk delete CTA present + governed dispatch ──────────────────
+    await searchFor(String(seqBulk.code));
+    const bulkRow = byCode(String(seqBulk.code));
+    await bulkRow.getByRole("checkbox", { name: "select row" }).click();
+    const bulkReq = page.waitForResponse(
+      (r) =>
+        r.url().includes("/svc/crm/api/v1/entities/sequence/bulk-delete") &&
+        r.status() === 200,
+      { timeout: 20_000 },
+    );
+    const bulkCta = page.getByTestId("entity-bulk-delete");
+    await expect(bulkCta).toBeVisible({ timeout: 10_000 });
+    await bulkCta.click();
+    const bulkConfirm = page.getByRole("dialog").last();
+    await expect(bulkConfirm).toBeVisible({ timeout: 10_000 });
+    await bulkConfirm.getByRole("button", { name: /elimina|delete|conferma|confirm/i }).last().click();
+    await bulkReq;
+
+    // The residual check — no entity call may have left the owning svc.
+    for (const u of apiUrls) expect(u).toContain("/svc/crm/");
+
+    // Cleanup — the edit/restored fixtures (soft-deleted ones too).
+    for (const s of [seqEdit, seqDel, seqBulk]) {
+      const g = await page.request.get(`${CRM_BASE}/sequence/${s.uuid}`);
+      if (!g.ok()) continue;
+      const row = extJsonParse<any>(await g.text());
+      await page.request.delete(`${CRM_BASE}/sequence/${s.uuid}?version=${row.version}`);
+    }
+  });
 });

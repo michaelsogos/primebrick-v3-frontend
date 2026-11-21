@@ -37,6 +37,10 @@
     entities_ns?: string;
     rowUuid: string;
     columns?: MetaColumn[];
+    /** Owning service — required for builtin entities (census map is
+     *  last-wins ambiguous; route context threads through or audit
+     *  reads the wrong schema). */
+    service?: string;
   }
 
   /** One field's old/new pair inside an audit `delta` object. */
@@ -65,6 +69,7 @@
     entities_ns = 'system',
     rowUuid,
     columns = [],
+    service,
   }: Props = $props();
 
   // translationKey is snake_case singular (e.g. "user_profile") for i18n keys.
@@ -129,7 +134,7 @@
     versionHistoryData = [];
 
     try {
-      const res = await apiFetch(`${entityApiBase(entity)}/${rowUuid}/audit?page=${versionHistoryPage}&limit=${versionHistoryLimit}`);
+      const res = await apiFetch(`${entityApiBase(entity, service)}/${rowUuid}/audit?page=${versionHistoryPage}&limit=${versionHistoryLimit}`);
 
       if (!res.ok) {
         throw new Error('Failed to load version history');
@@ -156,7 +161,7 @@
     versionHistoryPage += 1;
 
     try {
-      const res = await apiFetch(`${entityApiBase(entity)}/${rowUuid}/audit?page=${versionHistoryPage}&limit=${versionHistoryLimit}`);
+      const res = await apiFetch(`${entityApiBase(entity, service)}/${rowUuid}/audit?page=${versionHistoryPage}&limit=${versionHistoryLimit}`);
 
       if (!res.ok) {
         throw new Error('Failed to load version history');
@@ -481,7 +486,7 @@
   // falls through to `loadVersionHistory()` so the real error watermark
   // (unreachable-service path included) still surfaces.
   $effect(() => {
-    fetchEntityMeta(entityApiBase(entity))
+    fetchEntityMeta(entityApiBase(entity, service))
       .then((meta) => {
         auditEnabled = isEntityOpEnabled(meta.actions, 'read.audit');
         if (auditEnabled) void loadVersionHistory();
