@@ -269,6 +269,48 @@ describe('resolvePageForPath — dict archetype', () => {
 	});
 });
 
+describe('resolvePageForPath — list archetype', () => {
+	it('kind:"list" + entity resolves to the entity_list archetype', () => {
+		const withSequences: ModuleInfo = {
+			...crmSettingsModule,
+			routes: [
+				...(crmSettingsModule.routes ?? []),
+				{
+					route: '/crm/settings/sequences',
+					kind: 'list',
+					entity: 'sequence',
+					label_key: 'crm.settings.nav.sequences',
+				},
+			] as ModuleInfo['routes'],
+		};
+		const r = resolvePageForPath('/crm/settings/sequences', [
+			...MODULES.filter((m) => m.id !== 'crm-settings'),
+			withSequences,
+		]);
+		expect(r.kind).toBe('archetype');
+		if (r.kind === 'archetype') {
+			expect(r.archetype).toBe('entity_list');
+			expect(r.decl.route).toBe('/crm/settings/sequences');
+			expect(r.decl.entity).toBe('sequence');
+		}
+	});
+
+	it('list route without entity falls to the contract error', () => {
+		const broken: ModuleInfo = {
+			...crmSettingsModule,
+			routes: [
+				{ route: '/crm/settings/sequences', kind: 'list' },
+			] as ModuleInfo['routes'],
+		};
+		const r = resolvePageForPath('/crm/settings/sequences', [
+			...MODULES.filter((m) => m.id !== 'crm-settings'),
+			broken,
+		]);
+		expect(r.kind).toBe('error');
+		if (r.kind === 'error') expect(r.error_kind).toBe('contract');
+	});
+});
+
 describe('resolvePageForPath — contract drift + unknown', () => {
 	it('declared route without component_url surfaces a contract error', () => {
 		const r = resolvePageForPath('/system/settings/users', MODULES);

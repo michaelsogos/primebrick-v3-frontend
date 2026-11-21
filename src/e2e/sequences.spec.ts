@@ -205,7 +205,9 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     }
   });
 
-  test("settings dict page renders — label resolved, api dict never fetched", async ({ page }) => {
+  test("settings list page renders — EntityTablePage archetype, sequence_set CTA wired", async ({
+    page,
+  }) => {
     // is_reserved platform rows (api gateway) own no dict — the shell/ELT
     // must never request one. Intercept and count: any fetch is a bug.
     let apiFetches = 0;
@@ -213,7 +215,7 @@ test.describe("builtin sequence registry — mounted by construction", () => {
       apiFetches++;
       return r.continue();
     });
-    // Dict table surface comes up — the builtin list endpoint answers.
+    // The list surface comes up — the builtin list endpoint answers.
     // Attach the waiter BEFORE navigating: goto fires the fetch.
     const listReq = page.waitForResponse(
       (r) => r.url().includes("/entities/sequence/list") && r.status() === 200,
@@ -225,6 +227,20 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     await expect(page.locator("body")).not.toContainText("crm.settings.nav.sequences", {
       timeout: 15_000,
     });
+    // kind:"list" → the EntityTablePage archetype: a real table with the
+    // PoC registry row, not the settings-dictionary anatomy.
+    await expect(page.locator("table")).toBeVisible({ timeout: 30_000 });
+    const row = page.locator("table tbody tr", { hasText: "customers.code" }).first();
+    await expect(row).toBeVisible({ timeout: 15_000 });
+    // The entity_op synthesis lands the `sequence_set` CTA on the row kebab —
+    // the governed set-counter surface exists by construction (params dialog
+    // for `next` is the separate open decision).
+    const kebab = row.locator("td").last().getByRole("button").first();
+    await kebab.click();
+    const menu = page.getByRole("menu");
+    await expect(menu).toBeVisible();
+    await expect(menu.getByText("Set counter")).toBeVisible();
+    await page.keyboard.press("Escape");
     expect(apiFetches).toBe(0);
   });
 });
