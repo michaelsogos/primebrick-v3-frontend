@@ -91,7 +91,54 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     } finally {
       const row = extJsonParse<any>(await (await page.request.get(`${CRM_BASE}/sequence/${uuid}`)).text());
       const version = String(row.entity?.version ?? row.version);
-      await page.request.delete(`${CRM_BASE}/sequence/${uuid}`, { data: { version } });
+      // `version` rides the QUERY string on governed writes — a body field
+      // is ignored (`VERSION_REQUIRED`); an unasserted cleanup call here
+      // is how e2e_seq_* residue accumulated.
+      await page.request.delete(`${CRM_BASE}/sequence/${uuid}?version=${version}`);
+    }
+  });
+
+  test("soft-delete cascade — deleted seq fails allocation (deleted excluded wired)", async ({
+    page,
+  }) => {
+    const code = `e2e_seq_del_${Date.now()}`;
+    const cr = await page.request.post(`${CRM_BASE}/sequence`, {
+      data: { entity: { code, pattern: "DEL-{seq:4}", step: "1", start: "1" } },
+    });
+    expect([200, 201], `create: ${await cr.text()}`).toContain(cr.status());
+    const created = extJsonParse<any>(await cr.text());
+    const uuid = created?.entity?.uuid ?? created?.uuid;
+    expect(uuid).toBeTruthy();
+
+    const row = extJsonParse<any>(await (await page.request.get(`${CRM_BASE}/sequence/${uuid}`)).text());
+    const del = await page.request.delete(
+      `${CRM_BASE}/sequence/${uuid}?version=${row.entity?.version ?? row.version}`,
+    );
+    expect(del.status()).toBe(200);
+
+    try {
+      // A write carrying `{seq:{code}}` MUST fail — the registry lookup
+      // filters `deleted_at IS NULL` → SequenceNotFoundError, no silent
+      // fallback: a stale directive erroring loudly IS the contract.
+      const w = await page.request.post(`${CRM_BASE}/customer`, {
+        data: {
+          entity: { code: { seq: { code } }, display_name: "E2E SeqDel Probe", status: "ACTIVE" },
+        },
+      });
+      const body = await w.text();
+      expect(w.status()).toBeGreaterThanOrEqual(400);
+      expect(body).toMatch(/SequenceNotFound|SEQUENCE_NOT_FOUND/);
+    } finally {
+      // Restore resurrects the row AND the persisted counter state —
+      // counters are never deleted with the definition.
+      const rr = await page.request.post(`${CRM_BASE}/sequence/${uuid}/restore?version=2`);
+      expect(rr.status()).toBe(200);
+      const row2 = extJsonParse<any>(
+        await (await page.request.get(`${CRM_BASE}/sequence/${uuid}`)).text(),
+      );
+      await page.request.delete(
+        `${CRM_BASE}/sequence/${uuid}?version=${row2.entity?.version ?? row2.version}`,
+      );
     }
   });
 
