@@ -209,7 +209,14 @@
   const censusModuleIds = $derived(
     new Set(
       shellNav.modules
-        .filter((m) => (m.callables?.callables?.length ?? 0) > 0 || (m.events?.emits?.length ?? 0) > 0)
+        // is_reserved platform rows (api gateway) carry callables/emits for
+        // vocabulary census but own no dict — their label_keys are app.*/system.*
+        // core keys already served by the core packs.
+        .filter(
+          (m) =>
+            !m.is_reserved &&
+            ((m.callables?.callables?.length ?? 0) > 0 || (m.events?.emits?.length ?? 0) > 0),
+        )
         .map((m) => m.id),
     ),
   );

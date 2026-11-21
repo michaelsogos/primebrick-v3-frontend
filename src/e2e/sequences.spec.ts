@@ -94,4 +94,27 @@ test.describe("builtin sequence registry — mounted by construction", () => {
       await page.request.delete(`${CRM_BASE}/sequence/${uuid}`, { data: { version } });
     }
   });
+
+  test("settings dict page renders — label resolved, api dict never fetched", async ({ page }) => {
+    // is_reserved platform rows (api gateway) own no dict — the shell/ELT
+    // must never request one. Intercept and count: any fetch is a bug.
+    let apiFetches = 0;
+    await page.route("**/system/translations/api/*", (r) => {
+      apiFetches++;
+      return r.continue();
+    });
+    // Dict table surface comes up — the builtin list endpoint answers.
+    // Attach the waiter BEFORE navigating: goto fires the fetch.
+    const listReq = page.waitForResponse(
+      (r) => r.url().includes("/entities/sequence/list") && r.status() === 200,
+      { timeout: 15_000 },
+    );
+    await page.goto("/crm/settings/sequences");
+    await listReq;
+    // The leaf label must resolve via the parent crm dict — never the raw key
+    await expect(page.locator("body")).not.toContainText("crm.settings.nav.sequences", {
+      timeout: 15_000,
+    });
+    expect(apiFetches).toBe(0);
+  });
 });

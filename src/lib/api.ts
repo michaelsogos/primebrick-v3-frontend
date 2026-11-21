@@ -62,9 +62,13 @@ function proxyService(entity: string): string | undefined {
   return service === 'api' ? undefined : service;
 }
 
-export function entityApiBase(entity: string): string {
-  const service = proxyService(entity);
-  return service ? `/svc/${service}/api/v1/entities/${entity}` : `${ENTITY_API_PATH}/${entity}`;
+export function entityApiBase(entity: string, service?: string): string {
+  // Builtin entities mount on EVERY service — the census map is ambiguous
+  // for them (last registration wins); route context MUST carry the
+  // owning service explicitly (`decl.module`, sibling ids strip to the
+  // parent code — `crm-settings` → `crm`).
+  const svc = service ?? proxyService(entity);
+  return svc ? `/svc/${svc}/api/v1/entities/${entity}` : `${ENTITY_API_PATH}/${entity}`;
 }
 
 /**

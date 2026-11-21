@@ -64,7 +64,13 @@
   // decl is stable within a mount — the caller {#key pathname} remounts
   // the page per route change; untrack marks the intentional one-time read.
   const entity = untrack(() => decl.entity ?? '');
-  const basePath = entityApiBase(entity);
+  // Route context disambiguates multi-service entities (builtins mount on
+  // every service): decl.module is the owning module id — sibling ids
+  // strip to the parent service (`crm-settings` → `crm`).
+  const basePath = entityApiBase(
+    entity,
+    untrack(() => decl.module)?.split('-')[0],
+  );
   /** Translation writes resolve their module PER KEY (prefix == module
    *  code) — `custom.*` keys land in custom.translations. */
 
