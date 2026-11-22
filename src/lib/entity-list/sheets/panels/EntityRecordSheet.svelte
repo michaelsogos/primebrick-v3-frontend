@@ -40,7 +40,7 @@
   import { useAuditBox } from '$lib/composables/useAuditBox';
   import type { AuditData } from '$lib/utils/audit-data';
   import { extJsonParse } from '$lib/api-ext';
-  import { ExternalLink, Pencil, X } from '@primebrick/ui/vendor/lucide';
+  import { ExternalLink, Pencil, PencilOff } from '@primebrick/ui/vendor/lucide';
   import { LoadingBar } from '$lib/components/ui/loading-bar';
   import type { MetaColumn, EntityMeta } from '$lib/entity-list/types';
   import type { FormFieldPlacement } from '@primebrick/ui';
@@ -394,7 +394,7 @@
         onclick={toggleEdit}
         data-testid="entity-record-sheet-edit-toggle"
       >
-        {#if editing}<X class="size-4" />{:else}<Pencil class="size-4" />{/if}
+        {#if editing}<PencilOff class="size-4" />{:else}<Pencil class="size-4" />{/if}
       </Button>
     {/if}
     {#if listHref}
