@@ -19,25 +19,25 @@ test.describe("identity column contract — job_schedule", () => {
   test("display_field pinned first, uuid sticky-toggleable, subject chrome", async ({ page }) => {
     await loginAsTestAdmin(page);
     await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
-    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 30000 });
+    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 5_000 });
 
     // The pinned identity column is the FIRST header cell after the
     // selection column — sticky semantics = rendered before every
     // normal column, and its value is the owning trigger's name.
     const firstHeader = page.locator("table thead th").nth(1);
-    await expect(firstHeader).toContainText("Trigger", { timeout: 10000 });
+    await expect(firstHeader).toContainText("Trigger", { timeout: 5_000 });
     const firstCell = page.locator("table tbody tr").first().locator("td").nth(1);
     await expect(firstCell).not.toBeEmpty();
 
     // schedule_subject renders the NATS-subject badge — zap icon +
     // translated census label inside a badge, not bare text.
     const subjectCells = page.locator("table tbody td", { has: page.locator("svg.lucide-zap") });
-    await expect(subjectCells.first()).toBeVisible({ timeout: 10000 });
+    await expect(subjectCells.first()).toBeVisible({ timeout: 5_000 });
 
     // Picker: the pin is checked AND disabled — never toggleable.
     await page.getByRole("button", { name: "Columns" }).first().click();
     const pinToggle = page.getByTestId("columns-toggle-trigger");
-    await expect(pinToggle).toBeVisible({ timeout: 15000 });
+    await expect(pinToggle).toBeVisible({ timeout: 5_000 });
     await expect(pinToggle).toBeDisabled();
     // The checkbox is aria-hidden (visual-only) — assert its bits-ui
     // data-state instead of the a11y role.
@@ -70,12 +70,12 @@ test.describe("identity column contract — job_schedule", () => {
   test("sparkline renders a fixed 10-slot frame, current bucket last", async ({ page }) => {
     await loginAsTestAdmin(page);
     await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
-    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 30000 });
+    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 5_000 });
 
     const svg = page.locator("table tbody svg[aria-label='sparkline']").first();
-    await expect(svg).toBeVisible({ timeout: 15000 });
+    await expect(svg).toBeVisible({ timeout: 5_000 });
     // ≥10 rects: every one of the 10 slots draws ≥1 rect (colored or tick).
-    await expect.poll(async () => svg.locator("rect").count(), { timeout: 15000 }).toBeGreaterThanOrEqual(10);
+    await expect.poll(async () => svg.locator("rect").count(), { timeout: 5_000 }).toBeGreaterThanOrEqual(10);
   });
 
   /* Slot tooltips are the canonical bits-ui channel: a transparent
@@ -87,7 +87,7 @@ test.describe("identity column contract — job_schedule", () => {
   test("sparkline slot hover opens the standard tooltip with bucket data", async ({ page }) => {
     await loginAsTestAdmin(page);
     await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
-    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 30000 });
+    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 5_000 });
 
     // The overlay triggers are per-slot buttons siblings of each row's
     // sparkline svg; the aria-label lists every series quantified — zeros

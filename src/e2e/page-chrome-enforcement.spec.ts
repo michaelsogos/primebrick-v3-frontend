@@ -48,7 +48,7 @@ test.describe("page chrome enforcement (mandatory header)", () => {
     test(`${surface.name}: exactly one PageHeader + one h1 + presence slot`, async ({ page }) => {
       await page.goto(surface.route, { waitUntil: "domcontentloaded" });
 
-      await expect(page.locator(HEADER)).toHaveCount(1, { timeout: 30000 });
+      await expect(page.locator(HEADER)).toHaveCount(1, { timeout: 5_000 });
       await expect(page.locator("h1")).toHaveCount(1);
       await expect(page.locator(PRESENCE)).toHaveCount(1);
     });
@@ -76,7 +76,7 @@ test.describe("page chrome enforcement (mandatory header)", () => {
 
     for (const route of remoteChromeRoutes.slice(0, 3)) {
       await page.goto(route, { waitUntil: "domcontentloaded" });
-      await expect(page.locator(HEADER)).toHaveCount(0, { timeout: 30000 });
+      await expect(page.locator(HEADER)).toHaveCount(0, { timeout: 5_000 });
     }
   });
 });

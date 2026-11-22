@@ -46,7 +46,7 @@ let jsm: JetStreamManager | null = null;
 export async function getNats(): Promise<NatsConnection> {
   if (nc) return nc;
   const url = process.env.E2E_NATS_URL ?? "nats://127.0.0.1:4222";
-  nc = await connect({ servers: url, timeout: 10_000 });
+  nc = await connect({ servers: url, timeout: 5_000 });
   js = jetstream(nc);
   jsm = await jetstreamManager(nc);
   return nc;

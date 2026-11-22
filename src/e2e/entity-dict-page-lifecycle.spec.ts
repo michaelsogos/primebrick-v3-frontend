@@ -60,7 +60,7 @@ test.describe.serial("dict lifecycle — UI-only on an ad-hoc row", () => {
     test.setTimeout(120_000);
     await loginAsTestAdmin(page);
     await page.goto(DICT_URL, { waitUntil: "domcontentloaded" });
-    await expect(page.getByTestId("entity-dict-page")).toBeVisible({ timeout: 30000 });
+    await expect(page.getByTestId("entity-dict-page")).toBeVisible({ timeout: 5_000 });
     await expect(page.locator('[data-testid^="selectable-row-"]').first()).toBeVisible();
 
     // ── 1. CREATE via the composer→pending lifecycle ─────────────────
@@ -163,10 +163,10 @@ test.describe.serial("dict lifecycle — UI-only on an ad-hoc row", () => {
     await expect(row.getByTestId("dict-row-revert")).toHaveCount(0);
 
     await page.reload({ waitUntil: "domcontentloaded" });
-    await expect(page.getByTestId("entity-dict-page")).toBeVisible({ timeout: 30000 });
+    await expect(page.getByTestId("entity-dict-page")).toBeVisible({ timeout: 5_000 });
     // After a reload the page shell mounts before the row list — waiting on
     // the page alone lets rowOrder read an empty DOM under load.
-    await expect(page.locator('[data-testid^="selectable-row-"]').first()).toBeVisible({ timeout: 30000 });
+    await expect(page.locator('[data-testid^="selectable-row-"]').first()).toBeVisible({ timeout: 5_000 });
     const orderAfterReload = await rowOrder(page);
     expect(orderAfterReload.indexOf(ourTestid)).toBeLessThan(
       orderAfterReload.indexOf(neighbourTestid),
@@ -208,7 +208,7 @@ test.describe.serial("dict lifecycle — UI-only on an ad-hoc row", () => {
     test.setTimeout(90_000);
     await loginAsTestAdmin(page);
     await page.goto(LINK_DICT_URL, { waitUntil: "domcontentloaded" });
-    await expect(page.getByTestId("entity-dict-page")).toBeVisible({ timeout: 30000 });
+    await expect(page.getByTestId("entity-dict-page")).toBeVisible({ timeout: 5_000 });
     await expect(page.locator('[data-testid^="selectable-row-"]').first()).toBeVisible();
 
     const sheet = page.getByTestId("sheet-primary-pane");
@@ -235,7 +235,7 @@ test.describe.serial("dict lifecycle — UI-only on an ad-hoc row", () => {
     await page.keyboard.press("Escape"); // close the sheet — state persists
 
     await page.getByTestId("dict-bulk-save").click();
-    await expect(pending).toHaveCount(0, { timeout: 15_000 });
+    await expect(pending).toHaveCount(0, { timeout: 5_000 });
     let { rows } = await getPool().query(
       `SELECT inverse_label_key FROM crm.customer_link_types WHERE code = $1`,
       [exCode],
@@ -258,7 +258,7 @@ test.describe.serial("dict lifecycle — UI-only on an ad-hoc row", () => {
 
     await expect(saved.getByTestId("dict-row-revert")).toBeVisible(); // taint marker
     await page.getByTestId("dict-bulk-save").click();
-    await expect(saved.getByTestId("dict-row-revert")).toHaveCount(0, { timeout: 15_000 });
+    await expect(saved.getByTestId("dict-row-revert")).toHaveCount(0, { timeout: 5_000 });
     ({ rows } = await getPool().query(
       `SELECT inverse_label_key FROM crm.customer_link_types WHERE code = $1`,
       [exCode],

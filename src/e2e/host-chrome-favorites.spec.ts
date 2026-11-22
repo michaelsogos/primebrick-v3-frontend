@@ -53,7 +53,7 @@ test.describe("host chrome (PageHeader)", () => {
     await expect(page.locator(HEADER)).toHaveCount(1);
     // The title needs the route census (module fetch) — allow the same
     // budget the other decl-driven assertions get under parallel load.
-    await expect(page.locator(TITLE)).toBeVisible({ timeout: 15000 });
+    await expect(page.locator(TITLE)).toBeVisible({ timeout: 5_000 });
     await expect(page.locator(STAR)).toBeVisible();
     // Breadcrumb lives inside the header, above the title.
     await expect(page.locator(`${HEADER} nav`).first()).toBeVisible();
@@ -118,7 +118,7 @@ test.describe("favorites (user_preferences)", () => {
 
     // Activate the favorite → navigates to the favorited route.
     await favList.getByRole("option").first().click();
-    await page.waitForURL((url) => url.pathname === FAV_ROUTE, { timeout: 10000 });
+    await page.waitForURL((url) => url.pathname === FAV_ROUTE, { timeout: 5_000 });
     await expect(page.locator(TITLE)).toBeVisible();
 
     // ── Star OFF — DELETE fires, launcher surface empties. ───────────────

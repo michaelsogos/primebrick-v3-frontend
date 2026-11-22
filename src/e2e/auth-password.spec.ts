@@ -138,7 +138,7 @@ test.describe.serial("Suite A — User creation + password login", () => {
     // Assert: redirect to the new user's detail page (URL contains a UUID).
     await adminPage.waitForURL(
       (url) => url.pathname.includes("/system/settings/users/") && /\/[0-9a-f-]{36}$/.test(url.pathname),
-      { timeout: 15000 },
+      { timeout: 5_000 },
     );
   });
 
@@ -164,7 +164,7 @@ test.describe.serial("Suite A — User creation + password login", () => {
 
     // The welcome page auto-verifies the token on mount, then auto-sends OTP.
     // Wait for the OTP-sent step to appear.
-    await onboardPage.getByTestId("welcome-step-otp-sent").waitFor({ state: "visible", timeout: 15000 });
+    await onboardPage.getByTestId("welcome-step-otp-sent").waitFor({ state: "visible", timeout: 5_000 });
 
     // The OTP email is a microservice concern — inject a known OTP by
     // rewriting the invitation's otp_hash after the auto-send step.
@@ -176,7 +176,7 @@ test.describe.serial("Suite A — User creation + password login", () => {
     await onboardPage.getByTestId("welcome-otp-input").pressSequentially(otp);
 
     // Wait for the password-set step.
-    await onboardPage.getByTestId("welcome-step-otp-verified").waitFor({ state: "visible", timeout: 15000 });
+    await onboardPage.getByTestId("welcome-step-otp-verified").waitFor({ state: "visible", timeout: 5_000 });
 
     // Set the new password.
     await onboardPage.getByTestId("welcome-password-input").fill(testUser.password);
@@ -184,7 +184,7 @@ test.describe.serial("Suite A — User creation + password login", () => {
     await onboardPage.getByTestId("welcome-complete-button").click();
 
     // Wait for the complete step.
-    await onboardPage.getByTestId("welcome-step-complete").waitFor({ state: "visible", timeout: 15000 });
+    await onboardPage.getByTestId("welcome-step-complete").waitFor({ state: "visible", timeout: 5_000 });
 
     await onboardContext.close();
   });
@@ -197,14 +197,14 @@ test.describe.serial("Suite A — User creation + password login", () => {
     await loginPage.goto("/login", { waitUntil: "domcontentloaded" });
 
     // Wait for the LoginForm to hydrate.
-    await loginPage.getByTestId("login-username-input").waitFor({ state: "visible", timeout: 10000 });
+    await loginPage.getByTestId("login-username-input").waitFor({ state: "visible", timeout: 5_000 });
 
     await loginPage.getByTestId("login-username-input").fill(testUser.username);
     await loginPage.getByTestId("login-password-input").fill(testUser.password);
     await loginPage.getByTestId("login-submit-button").click();
 
     // Assert: redirect away from /login (success → / or app home).
-    await loginPage.waitForURL((url) => !url.pathname.startsWith("/login"), { timeout: 15000 });
+    await loginPage.waitForURL((url) => !url.pathname.startsWith("/login"), { timeout: 5_000 });
 
     // Assert: /api/v1/auth/me returns the user (session is established).
     const meResponse = await loginPage.request.get("/api/v1/auth/me");

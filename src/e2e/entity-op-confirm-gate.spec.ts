@@ -107,7 +107,7 @@ function tempRow(page: Page, code: string) {
 
 async function gotoDict(page: Page) {
   await page.goto(DICT_URL, { waitUntil: "domcontentloaded" });
-  await expect(page.getByTestId("entity-dict-page")).toBeVisible({ timeout: 30000 });
+  await expect(page.getByTestId("entity-dict-page")).toBeVisible({ timeout: 5_000 });
 }
 
 test.describe("entity-op confirm gate — dict surfaces", () => {
@@ -138,7 +138,7 @@ test.describe("entity-op confirm gate — dict surfaces", () => {
     await target.getByTestId("dict-row-delete").click();
     await expect(dialog).toBeVisible();
     await dialog.getByRole("button", { name: /delete|elimin/i }).last().click();
-    await expect(dialog).not.toBeVisible({ timeout: 10000 });
+    await expect(dialog).not.toBeVisible({ timeout: 5_000 });
     expect(counts.del).toBe(1);
     await expect(tempRow(page, code)).not.toBeVisible();
 
@@ -173,7 +173,7 @@ test.describe("entity-op confirm gate — dict surfaces", () => {
     await bulkDeleteCta.click();
     await expect(dialog).toBeVisible();
     await dialog.getByRole("button", { name: /delete|elimin/i }).last().click();
-    await expect(dialog).not.toBeVisible({ timeout: 10000 });
+    await expect(dialog).not.toBeVisible({ timeout: 5_000 });
     expect(counts.bulkDelete).toBe(1);
     await expect(tempRow(page, code)).not.toBeVisible();
 
@@ -208,7 +208,7 @@ test.describe("entity-op confirm gate — dict surfaces", () => {
     await target.getByTestId("dict-row-restore").click();
     await expect(dialog).toBeVisible();
     await dialog.getByRole("button", { name: /restore|ripristin/i }).last().click();
-    await expect(dialog).not.toBeVisible({ timeout: 10000 });
+    await expect(dialog).not.toBeVisible({ timeout: 5_000 });
     expect(counts.restore).toBe(1);
 
     // Back in the live view the row is alive again — real restore landed.
@@ -249,7 +249,7 @@ test.describe("entity-op confirm gate — dict surfaces", () => {
     await bulkRestoreCta.click();
     await expect(dialog).toBeVisible();
     await dialog.getByRole("button", { name: /restore|ripristin/i }).last().click();
-    await expect(dialog).not.toBeVisible({ timeout: 10000 });
+    await expect(dialog).not.toBeVisible({ timeout: 5_000 });
     expect(counts.restore).toBe(1);
 
     await cleanupTempRow(page, code);
@@ -339,12 +339,12 @@ function rowMenuTrigger(row: ReturnType<typeof tplRow>) {
 
 async function gotoTemplates(page: Page) {
   await page.goto(TPL_URL, { waitUntil: "domcontentloaded" });
-  await expect(page.getByTestId("entity-search")).toBeVisible({ timeout: 30000 });
+  await expect(page.getByTestId("entity-search")).toBeVisible({ timeout: 5_000 });
 }
 
 async function searchTpl(page: Page, code: string) {
   await page.getByTestId("entity-search").locator("input").fill(code);
-  await expect(tplRow(page, code)).toBeVisible({ timeout: 15000 });
+  await expect(tplRow(page, code)).toBeVisible({ timeout: 5_000 });
 }
 
 // ---- job_trigger fixture — the only service entity exposing the full
@@ -435,12 +435,12 @@ async function cleanupTempTrigger(page: Page, name: string): Promise<void> {
 
 async function gotoTriggers(page: Page) {
   await page.goto(TRIGGERS_URL, { waitUntil: "domcontentloaded" });
-  await expect(page.getByTestId("entity-search")).toBeVisible({ timeout: 30000 });
+  await expect(page.getByTestId("entity-search")).toBeVisible({ timeout: 5_000 });
 }
 
 async function searchTrigger(page: Page, name: string) {
   await page.getByTestId("entity-search").locator("input").fill(name);
-  await expect(page.locator("tr").filter({ hasText: name })).toBeVisible({ timeout: 15000 });
+  await expect(page.locator("tr").filter({ hasText: name })).toBeVisible({ timeout: 5_000 });
 }
 
 test.describe("entity-op confirm gate — ELT surfaces", () => {
@@ -469,7 +469,7 @@ test.describe("entity-op confirm gate — ELT surfaces", () => {
     await page.getByRole("menuitem", { name: /delete|elimin/i }).last().click();
     await expect(dialog).toBeVisible();
     await dialog.getByRole("button", { name: /delete|elimin/i }).last().click();
-    await expect(dialog).not.toBeVisible({ timeout: 10000 });
+    await expect(dialog).not.toBeVisible({ timeout: 5_000 });
     expect(counts.del).toBe(1);
     await expect(tplRow(page, code)).not.toBeVisible();
 
@@ -502,7 +502,7 @@ test.describe("entity-op confirm gate — ELT surfaces", () => {
     await bulkDeleteCta.click();
     await expect(dialog).toBeVisible();
     await dialog.getByRole("button", { name: /disable|delete|disabilit|elimin/i }).last().click();
-    await expect(dialog).not.toBeVisible({ timeout: 10000 });
+    await expect(dialog).not.toBeVisible({ timeout: 5_000 });
     expect(counts.bulkDelete).toBe(1);
     await expect(page.locator("tr").filter({ hasText: name })).not.toBeVisible();
 
@@ -537,7 +537,7 @@ test.describe("entity-op confirm gate — ELT surfaces", () => {
     await page.getByRole("menuitem", { name: /enable|restore|riattiv|ripristin/i }).last().click();
     await expect(dialog).toBeVisible();
     await dialog.getByRole("button", { name: /enable|restore|riattiv|ripristin/i }).last().click();
-    await expect(dialog).not.toBeVisible({ timeout: 10000 });
+    await expect(dialog).not.toBeVisible({ timeout: 5_000 });
     expect(counts.restore).toBe(1);
 
     await page.getByTestId("entity-deletion-filter-non_deleted").click();
@@ -591,10 +591,10 @@ test.describe("entity-op confirm gate — custom op confirm_key", () => {
     });
 
     await page.goto(USERS_URL, { waitUntil: "domcontentloaded" });
-    await expect(page.getByTestId("entity-search")).toBeVisible({ timeout: 30000 });
+    await expect(page.getByTestId("entity-search")).toBeVisible({ timeout: 5_000 });
     await page.getByTestId("entity-search").locator("input").fill(username);
     const row = page.locator("tr").filter({ hasText: username });
-    await expect(row).toBeVisible({ timeout: 15000 });
+    await expect(row).toBeVisible({ timeout: 5_000 });
 
     // ---- SUSPEND — cancel path: zero requests. ----
     await rowMenuTrigger(row).click();
@@ -610,7 +610,7 @@ test.describe("entity-op confirm gate — custom op confirm_key", () => {
     await page.getByRole("menuitem", { name: /suspend|sospendi/i }).last().click();
     await expect(dialog).toBeVisible();
     await dialog.getByRole("button", { name: /suspend|sospendi/i }).last().click();
-    await expect(dialog).not.toBeVisible({ timeout: 10000 });
+    await expect(dialog).not.toBeVisible({ timeout: 5_000 });
     expect(counts.suspend).toBe(1);
 
     // ---- REACTIVATE — confirm path: exactly one POST /reactivate. ----
@@ -618,7 +618,7 @@ test.describe("entity-op confirm gate — custom op confirm_key", () => {
     await page.getByRole("menuitem", { name: /reactivate|riattiv/i }).last().click();
     await expect(dialog).toBeVisible();
     await dialog.getByRole("button", { name: /reactivate|riattiv/i }).last().click();
-    await expect(dialog).not.toBeVisible({ timeout: 10000 });
+    await expect(dialog).not.toBeVisible({ timeout: 5_000 });
     expect(counts.reactivate).toBe(1);
   });
 });

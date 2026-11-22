@@ -18,7 +18,7 @@
  */
 import { test, expect } from "@playwright/test";
 import { loginAsTestAdmin } from "./helpers/admin-login";
-import { extJsonParse } from "@primebrick/core/ext-json";
+import { extJsonParse, extJsonStringify } from "@primebrick/core/ext-json";
 
 const CRM_BASE = "/svc/crm/api/v1/entities";
 const NAME = `e2e_seq_${Date.now()}`;
@@ -249,11 +249,11 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     const b = await mk(`${runId} B`);
     try {
       await page.goto("/crm/customers", { waitUntil: "domcontentloaded" });
-      await expect(page.locator("table")).toBeVisible({ timeout: 15000 });
+      await expect(page.locator("table")).toBeVisible({ timeout: 5_000 });
       await page.getByTestId("bulk-actions-toggle").click();
       for (const name of [`${runId} A`, `${runId} B`]) {
         const row = page.locator("tr", { hasText: name });
-        await expect(row).toBeVisible({ timeout: 15000 });
+        await expect(row).toBeVisible({ timeout: 5_000 });
         await row.getByRole("checkbox", { name: "select row" }).click();
       }
       await page.getByTestId("entity-bulk-edit").click();
@@ -283,13 +283,13 @@ test.describe("builtin sequence registry — mounted by construction", () => {
         .locator("[data-state='open'] [role='option']:visible")
         .filter({ hasText: "customers.code" })
         .first();
-      await expect(opt).toBeVisible({ timeout: 10000 });
+      await expect(opt).toBeVisible({ timeout: 5_000 });
       await opt.click();
       await page.getByTestId("sequence-input-apply").click();
       await expect(field.locator("input").first()).toHaveValue("customers.code");
       // forecast strip — read-only `next` rendered from the registry row
       await expect(page.getByTestId("sequence-input-next")).toHaveText(/^CUST-\d{5}$/, {
-        timeout: 10000,
+        timeout: 5_000,
       });
 
       // ── generate mode — inline pattern directive ──
@@ -322,7 +322,7 @@ test.describe("builtin sequence registry — mounted by construction", () => {
             codes = [String(ra.code), String(rb.code)].sort();
             return codes.every((c) => /^E2E-\d{4}$/.test(c) && parseInt(c.slice(4), 10) >= 9001);
           },
-          { timeout: 15000 },
+          { timeout: 5_000 },
         )
         .toBe(true);
       const nums = codes.map((c) => parseInt(c.slice(4), 10));
@@ -353,17 +353,17 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     // Attach the waiter BEFORE navigating: goto fires the fetch.
     const listReq = page.waitForResponse(
       (r) => r.url().includes("/entities/sequence/list") && r.status() === 200,
-      { timeout: 15_000 },
+      { timeout: 5_000 },
     );
     await page.goto("/crm/settings/sequences");
     await listReq;
     // The leaf label must resolve via the parent crm dict — never the raw key
     await expect(page.locator("body")).not.toContainText("crm.settings.nav.sequences", {
-      timeout: 15_000,
+      timeout: 5_000,
     });
     // kind:"list" → the EntityTablePage archetype: a real table with the
     // PoC registry row, not the settings-dictionary anatomy.
-    await expect(page.locator("table")).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator("table")).toBeVisible({ timeout: 5_000 });
     // The rendered columns ARE the governed surface — order and labels
     // asserted exactly as authored on the decl (audit band last;
     // description_key is default_visible:false → never in the head).
@@ -389,7 +389,7 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     expect(headTexts).not.toContain("Last allocated by");
     await page.getByTestId("elt-column-selector").click();
     const allocToggle = page.getByTestId("columns-toggle-last_alloc_at");
-    await expect(allocToggle).toBeVisible({ timeout: 10_000 });
+    await expect(allocToggle).toBeVisible({ timeout: 5_000 });
     await allocToggle.click();
     await page.keyboard.press("Escape");
     const headAfter = (await page.locator("table thead th").allTextContents())
@@ -404,7 +404,7 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     await page.getByTestId("columns-toggle-last_alloc_at").click();
     await page.keyboard.press("Escape");
     const row = page.locator("table tbody tr", { hasText: "customers.code" }).first();
-    await expect(row).toBeVisible({ timeout: 15_000 });
+    await expect(row).toBeVisible({ timeout: 5_000 });
     // The entity_op synthesis lands the `sequence_set` CTA on the row kebab —
     // the governed set-counter surface exists by construction.
     const kebab = row.locator("td").last().getByRole("button").first();
@@ -418,12 +418,12 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     // informed by `sequence-analyze` (the strip mounts live stats).
     await cta.click();
     const dialog = page.getByRole("dialog");
-    await expect(dialog).toBeVisible({ timeout: 10000 });
+    await expect(dialog).toBeVisible({ timeout: 5_000 });
     const analysis = dialog.getByTestId("sequence-set-analysis");
-    await expect(analysis).toContainText("Values in use", { timeout: 15000 });
+    await expect(analysis).toContainText("Values in use", { timeout: 5_000 });
     // `next` prefills from suggested_start — operator can override.
     const nextInput = dialog.getByTestId("sequence-set-next");
-    await expect(nextInput).not.toHaveValue("", { timeout: 10000 });
+    await expect(nextInput).not.toHaveValue("", { timeout: 5_000 });
 
     // Submit rides the governed chain — the meta-served confirm gate opens
     // (confirm_key → the generic gated-op DeleteDialog anatomy), cancelled
@@ -432,12 +432,12 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     await dialog.getByTestId("sequence-set-submit").click();
     const confirmDialog = page.getByRole("dialog").last();
     await expect(confirmDialog.getByRole("button", { name: "Cancel" })).toBeVisible({
-      timeout: 10000,
+      timeout: 5_000,
     });
     await confirmDialog.getByRole("button", { name: "Cancel" }).click();
     // The input dialog survives a cancelled confirm — close it too.
     await dialog.getByRole("button", { name: "Cancel" }).click();
-    await expect(page.getByRole("dialog")).toHaveCount(0, { timeout: 10000 });
+    await expect(page.getByRole("dialog")).toHaveCount(0, { timeout: 5_000 });
     expect(apiFetches).toBe(0);
   });
 
@@ -486,7 +486,7 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     try {
       const listReq = page.waitForResponse(
         (r) => r.url().includes("/entities/sequence/list") && r.status() === 200,
-        { timeout: 15_000 },
+        { timeout: 5_000 },
       );
       await page.goto("/crm/settings/sequences");
       await listReq;
@@ -495,14 +495,14 @@ test.describe("builtin sequence registry — mounted by construction", () => {
       // column picker must surface it and the badge cell renders once on.
       await page.getByTestId("elt-column-selector").click();
       const descToggle = page.getByTestId("columns-toggle-description_key");
-      await expect(descToggle).toBeVisible({ timeout: 10_000 });
+      await expect(descToggle).toBeVisible({ timeout: 5_000 });
       await descToggle.click();
       await page.keyboard.press("Escape");
 
       // Translated badge — icon + resolved label, raw key on the tooltip.
       await page.getByTestId("entity-search").locator("input").fill(name);
       const row = page.locator("table tbody tr", { hasText: name }).first();
-      await expect(row).toBeVisible({ timeout: 15_000 });
+      await expect(row).toBeVisible({ timeout: 5_000 });
       const badge = row
         .locator('td [data-slot="badge"]')
         .filter({ has: page.locator("svg") });
@@ -517,7 +517,7 @@ test.describe("builtin sequence registry — mounted by construction", () => {
       // Raw fallback — the untranslated key renders itself, icon included.
       await page.getByTestId("entity-search").locator("input").fill(fbName);
       const fbRow = page.locator("table tbody tr", { hasText: fbName }).first();
-      await expect(fbRow).toBeVisible({ timeout: 15_000 });
+      await expect(fbRow).toBeVisible({ timeout: 5_000 });
       const fbBadge = fbRow.locator('td [data-slot="badge"]').filter({ hasText: fbKey });
       await expect(fbBadge).toBeVisible();
       await expect(fbBadge.locator("svg")).toBeVisible();
@@ -554,14 +554,12 @@ test.describe("builtin sequence registry — mounted by construction", () => {
       if (r.url().includes("/entities/sequence/list")) listCalls.push(r.status());
     });
     // Pre-rename profile: the persisted sort still references `code`.
-    await page.addInitScript(() =>
-      sessionStorage.setItem(
-        "pb:crm-sequence:list:sort",
-        JSON.stringify({ key: "code", dir: "asc" }),
-      ),
+    await page.addInitScript(
+      ([key, value]) => sessionStorage.setItem(key, value),
+      ["pb:crm-sequence:list:sort", extJsonStringify({ key: "code", dir: "asc" })],
     );
     await page.goto("/crm/settings/sequences", { waitUntil: "domcontentloaded" });
-    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 20_000 });
+    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 5_000 });
     // No 400 ever shipped — the stale key was dropped pre-fetch and the
     // healed default sort persisted over the poisoned slot.
     expect(listCalls.filter((s) => s >= 400)).toEqual([]);
@@ -591,7 +589,7 @@ test.describe("builtin sequence registry — mounted by construction", () => {
       return route.fulfill({
         status: 400,
         contentType: "application/problem+json",
-        body: JSON.stringify({
+        body: extJsonStringify({
           type: "/errors/validation-error",
           title: "Validation error",
           status: 400,
@@ -606,11 +604,11 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     // status assertions race the CDP delivery of `page.on("response")`.
     const healedList = page.waitForResponse(
       (r) => r.url().includes("/entities/sequence/list") && r.status() === 200,
-      { timeout: 20_000 },
+      { timeout: 5_000 },
     );
     await page.goto("/crm/settings/sequences", { waitUntil: "domcontentloaded" });
     await healedList;
-    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 20_000 });
+    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 5_000 });
     expect(listStatuses.filter((s) => s === 400)).toHaveLength(1);
     expect(metaFetches).toBeGreaterThanOrEqual(2);
   });
@@ -632,7 +630,7 @@ test.describe("builtin sequence registry — mounted by construction", () => {
       route.fulfill({
         status: 400,
         contentType: "application/problem+json",
-        body: JSON.stringify({
+        body: extJsonStringify({
           type: "/errors/validation-error",
           title: "Validation error",
           status: 400,
@@ -644,7 +642,7 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     );
     const firstList = page.waitForResponse(
       (r) => r.url().includes("/entities/sequence/list"),
-      { timeout: 20_000 },
+      { timeout: 5_000 },
     );
     await page.goto("/crm/settings/sequences", { waitUntil: "domcontentloaded" });
     await firstList;
@@ -687,7 +685,7 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     });
 
     await page.goto("/crm/settings/sequences");
-    await expect(page.locator("table")).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator("table")).toBeVisible({ timeout: 5_000 });
     const byName = (name: string) =>
       page.locator("table tbody tr", { hasText: name }).first();
     /** Registry rows accumulate across runs — server-side `search`
@@ -695,7 +693,7 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     const searchFor = async (name: string) => {
       const listReq = page.waitForResponse(
         (r) => r.url().includes("/entities/sequence/list") && r.status() === 200,
-        { timeout: 15_000 },
+        { timeout: 5_000 },
       );
       await page.getByTestId("entity-search").locator("input").fill(name);
       await listReq;
@@ -704,7 +702,7 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     // ── Modifica → entity.record sheet in edit mode → save ────────────
     await searchFor(String(seqEdit.name));
     const editRow = byName(String(seqEdit.name));
-    await expect(editRow).toBeVisible({ timeout: 15_000 });
+    await expect(editRow).toBeVisible({ timeout: 5_000 });
     await editRow.locator("td").last().getByRole("button").first().click();
     const menu = page.getByRole("menu");
     await expect(menu).toBeVisible();
@@ -713,14 +711,14 @@ test.describe("builtin sequence registry — mounted by construction", () => {
         r.url().includes("/svc/crm/api/v1/entities/sequence/") &&
         r.request().method() === "PUT" &&
         r.status() === 200,
-      { timeout: 20_000 },
+      { timeout: 5_000 },
     );
     await menu.getByText(/modifica|edit/i).first().click();
     // The record sheet opens straight into edit mode — step is editable.
     const sheet = page.getByTestId("entity-record-sheet");
-    await expect(sheet).toBeVisible({ timeout: 10_000 });
+    await expect(sheet).toBeVisible({ timeout: 5_000 });
     const stepInput = sheet.locator("[data-testid=entity-form-field-step] input");
-    await expect(stepInput).toBeEnabled({ timeout: 10_000 });
+    await expect(stepInput).toBeEnabled({ timeout: 5_000 });
     await stepInput.fill("2");
     // NumericInput commits the canonical value on blur — blur before the
     // submit click so the zod schema sees the real value.
@@ -731,7 +729,7 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     // Post-save settle: editing flips off (submit CTA unmounts) AFTER the
     // response lands — Escape before that would trip the dirty-close
     // guard (native confirm → auto-dismissed by Playwright = decline).
-    await expect(page.getByTestId("entity-form-submit")).toBeHidden({ timeout: 10_000 });
+    await expect(page.getByTestId("entity-form-submit")).toBeHidden({ timeout: 5_000 });
 
     // ── Version history → audit on the owning service ────────────────
     await page.keyboard.press("Escape");
@@ -743,7 +741,7 @@ test.describe("builtin sequence registry — mounted by construction", () => {
         r.url().includes("/svc/crm/api/v1/entities/sequence/") &&
         r.url().includes("/audit") &&
         r.status() === 200,
-      { timeout: 20_000 },
+      { timeout: 5_000 },
     );
     await page.getByRole("menu").getByText(/edit log|version history/i).first().click();
     await auditReq;
@@ -758,20 +756,20 @@ test.describe("builtin sequence registry — mounted by construction", () => {
         r.url().includes("/svc/crm/api/v1/entities/sequence/") &&
         r.request().method() === "DELETE" &&
         r.status() === 200,
-      { timeout: 20_000 },
+      { timeout: 5_000 },
     );
     // Soft-delete presents as "Disable" on sequences (actions_overrides —
     // same semantics as job_trigger: exec-stop + destructive).
     await page.getByRole("menu").getByText(/disabilita|disable|elimina|delete/i).first().click();
     const confirm = page.getByRole("dialog").last();
-    await expect(confirm).toBeVisible({ timeout: 10_000 });
+    await expect(confirm).toBeVisible({ timeout: 5_000 });
     // Confirm the destructive op — the dialog must CLEAR (no perpetual
     // busy: the request resolves on the owning schema).
     const confirmBtn = confirm.getByRole("button", { name: /disabilita|disable|elimina|delete|conferma|confirm/i }).last();
     await confirmBtn.click();
     await delReq;
-    await expect(confirm).toBeHidden({ timeout: 10_000 });
-    await expect(delRow).toBeHidden({ timeout: 10_000 });
+    await expect(confirm).toBeHidden({ timeout: 5_000 });
+    await expect(delRow).toBeHidden({ timeout: 5_000 });
 
     // ── Bulk delete CTA present + governed dispatch ──────────────────
     await searchFor(String(seqBulk.name));
@@ -781,13 +779,13 @@ test.describe("builtin sequence registry — mounted by construction", () => {
       (r) =>
         r.url().includes("/svc/crm/api/v1/entities/sequence/bulk-delete") &&
         r.status() === 200,
-      { timeout: 20_000 },
+      { timeout: 5_000 },
     );
     const bulkCta = page.getByTestId("entity-bulk-delete");
-    await expect(bulkCta).toBeVisible({ timeout: 10_000 });
+    await expect(bulkCta).toBeVisible({ timeout: 5_000 });
     await bulkCta.click();
     const bulkConfirm = page.getByRole("dialog").last();
-    await expect(bulkConfirm).toBeVisible({ timeout: 10_000 });
+    await expect(bulkConfirm).toBeVisible({ timeout: 5_000 });
     await bulkConfirm.getByRole("button", { name: /disabilita|disable|elimina|delete|conferma|confirm/i }).last().click();
     await bulkReq;
 
@@ -814,14 +812,14 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     page,
   }) => {
     await page.goto("/crm/settings/sequences");
-    await expect(page.locator("table")).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator("table")).toBeVisible({ timeout: 5_000 });
 
     // ── CTA auto-wired from meta (no authored onCreateAction) ─────────
     const cta = page.getByTestId("entity-create-cta");
-    await expect(cta).toBeVisible({ timeout: 15_000 });
+    await expect(cta).toBeVisible({ timeout: 5_000 });
     await cta.click();
     const sheet = page.getByTestId("entity-record-sheet");
-    await expect(sheet).toBeVisible({ timeout: 15_000 });
+    await expect(sheet).toBeVisible({ timeout: 5_000 });
 
     // Create anatomy — record-only sections absent by construction:
     // no pencil toggle (born editable), no version badge, no audit
@@ -830,7 +828,7 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     await expect(page.getByTestId("entity-record-sheet-version-badge")).toHaveCount(0);
     await expect(sheet.getByTestId("entity-record-sheet-audit-section")).toHaveCount(0);
     const nameInput = sheet.locator("[data-testid=entity-form-field-name] input");
-    await expect(nameInput).toBeEnabled({ timeout: 10_000 });
+    await expect(nameInput).toBeEnabled({ timeout: 5_000 });
 
     // Validation gate — pristine → submit disabled; one required field
     // filled → the OTHERS still error → still disabled (canSave =
@@ -866,7 +864,7 @@ test.describe("builtin sequence registry — mounted by construction", () => {
         r.url().includes("/svc/crm/api/v1/entities/sequence") &&
         r.request().method() === "POST" &&
         r.status() === 201,
-      { timeout: 20_000 },
+      { timeout: 5_000 },
     );
     await page.getByTestId("entity-form-submit").click();
     const postRes = await postReq;
@@ -876,7 +874,7 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     // Morph → update: version badge + pencil toggle + audit section
     // return, uid block renders.
     await expect(page.getByTestId("entity-record-sheet-version-badge")).toBeVisible({
-      timeout: 15_000,
+      timeout: 5_000,
     });
     await expect(page.getByTestId("entity-record-sheet-edit-toggle")).toBeVisible();
 
@@ -884,21 +882,21 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     // display-name is mutable any number of times) → PUT persists ────
     await page.getByTestId("entity-record-sheet-edit-toggle").click();
     const renamed = `${unique}_r`;
-    await expect(nameInput).toBeEnabled({ timeout: 10_000 });
+    await expect(nameInput).toBeEnabled({ timeout: 5_000 });
     await nameInput.fill(renamed);
     const putReq = page.waitForResponse(
       (r) =>
         r.url().includes("/svc/crm/api/v1/entities/sequence/") &&
         r.request().method() === "PUT" &&
         r.status() === 200,
-      { timeout: 20_000 },
+      { timeout: 5_000 },
     );
     await page.getByTestId("entity-form-submit").click();
     await putReq;
     // kind-projections are never in the PUT payload — the POST/PUT body
     // carries only authored columns (verified implicitly: a polluted
     // payload 400s the strict schema).
-    await expect(nameInput).toHaveValue(renamed, { timeout: 10_000 });
+    await expect(nameInput).toHaveValue(renamed, { timeout: 5_000 });
 
     // Cleanup fixture.
     const g = await page.request.get(`${CRM_BASE}/sequence/${createdRow.uuid}`);
@@ -940,19 +938,19 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     });
 
     await page.goto("/crm/settings/sequences");
-    await expect(page.locator("table")).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator("table")).toBeVisible({ timeout: 5_000 });
     const listReq = page.waitForResponse(
       (r) => r.url().includes("/entities/sequence/list") && r.status() === 200,
-      { timeout: 15_000 },
+      { timeout: 5_000 },
     );
     await page.getByTestId("entity-search").locator("input").fill(String(seq.name));
     await listReq;
     const row = page.locator("table tbody tr", { hasText: String(seq.name) }).first();
-    await expect(row).toBeVisible({ timeout: 15_000 });
+    await expect(row).toBeVisible({ timeout: 5_000 });
     await row.locator("td").last().getByRole("button").first().click();
     await page.getByRole("menu").getByText(/modifica|edit/i).first().click();
     const sheet = page.getByTestId("entity-record-sheet");
-    await expect(sheet).toBeVisible({ timeout: 15_000 });
+    await expect(sheet).toBeVisible({ timeout: 5_000 });
 
     // Update anatomy — uid pill first element, kind projections absent.
     await expect(sheet.getByTestId("entity-record-sheet-uid-badge")).toBeVisible();
@@ -968,18 +966,18 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     await stepInput.blur();
     await expect(resetBtn).toBeEnabled({ timeout: 5_000 });
     await resetBtn.click();
-    await expect(stepInput).toHaveValue("1", { timeout: 10_000 });
+    await expect(stepInput).toHaveValue("1", { timeout: 5_000 });
     await expect(resetBtn).toBeDisabled({ timeout: 5_000 });
 
     // ── Pencil-off = SILENT reset — no dialog, field re-baselines ────
     await stepInput.fill("7");
     await stepInput.blur();
     await page.getByTestId("entity-record-sheet-edit-toggle").click();
-    await expect(submit).toBeHidden({ timeout: 10_000 });
+    await expect(submit).toBeHidden({ timeout: 5_000 });
     expect(dialogs).toHaveLength(0); // pencil-off never asks — it IS the intent
     // Re-enter edit → the discarded value is gone (baseline, not stale).
     await page.getByTestId("entity-record-sheet-edit-toggle").click();
-    await expect(stepInput).toHaveValue("1", { timeout: 10_000 });
+    await expect(stepInput).toHaveValue("1", { timeout: 5_000 });
 
     // ── Dirty-close DECLINE → sheet stays open ───────────────────────
     await stepInput.fill("3");
@@ -992,17 +990,17 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     // ── Dirty-close ACCEPT → draft.clear + close ─────────────────────
     confirmAnswer = true;
     await page.keyboard.press("Escape");
-    await expect(sheet).toBeHidden({ timeout: 10_000 });
+    await expect(sheet).toBeHidden({ timeout: 5_000 });
     expect(dialogs).toHaveLength(2);
 
     // Draft cleared on confirmed discard — reopen → baseline, no stale.
     const row2 = page.locator("table tbody tr", { hasText: String(seq.name) }).first();
     await row2.locator("td").last().getByRole("button").first().click();
     await page.getByRole("menu").getByText(/modifica|edit/i).first().click();
-    await expect(sheet).toBeVisible({ timeout: 15_000 });
-    await expect(stepInput).toHaveValue("1", { timeout: 10_000 });
+    await expect(sheet).toBeVisible({ timeout: 5_000 });
+    await expect(stepInput).toHaveValue("1", { timeout: 5_000 });
     await page.keyboard.press("Escape");
-    await expect(sheet).toBeHidden({ timeout: 10_000 });
+    await expect(sheet).toBeHidden({ timeout: 5_000 });
     expect(dialogs).toHaveLength(2); // pristine close → no third confirm
 
     // Cleanup.

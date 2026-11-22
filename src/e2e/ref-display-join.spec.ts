@@ -29,15 +29,15 @@ test.describe("ref display join — job_schedule.trigger_uuid", () => {
 
     // The cell shows the display name (ref-cell-*-text testid contract).
     await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
-    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 30000 });
+    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 5_000 });
     await page.getByRole("button", { name: "Columns" }).first().click();
     const toggle = page.getByTestId("columns-toggle-trigger_uuid");
-    await expect(toggle).toBeVisible({ timeout: 15000 });
+    await expect(toggle).toBeVisible({ timeout: 5_000 });
     await toggle.click();
     await page.keyboard.press("Escape");
 
     const cell = page.getByTestId("ref-cell-trigger_uuid-text").first();
-    await expect(cell).toBeVisible({ timeout: 15000 });
+    await expect(cell).toBeVisible({ timeout: 5_000 });
     const text = (await cell.textContent())?.trim() ?? "";
     expect(text.length).toBeGreaterThan(0);
     expect(text).not.toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);

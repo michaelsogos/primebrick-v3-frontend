@@ -76,7 +76,7 @@ test("detail: stale-base draft becomes a conflict; reset refetches the live row"
 
   try {
     await page.goto(`/system/job/triggers/${uuid}`, { waitUntil: "domcontentloaded" });
-    await expect(page.getByTestId("entity-form-page")).toBeVisible({ timeout: 30000 });
+    await expect(page.getByTestId("entity-form-page")).toBeVisible({ timeout: 5_000 });
     const nameField = page.getByTestId("entity-form-field-name");
     const nameInput = nameField.locator("input");
     await expect(nameInput).toHaveValue(name);
@@ -85,7 +85,7 @@ test("detail: stale-base draft becomes a conflict; reset refetches the live row"
     const edited = `${name}-v2`;
     await nameInput.fill(edited);
     await expect
-      .poll(async () => (await draftKeys(page)).length, { timeout: 15000 })
+      .poll(async () => (await draftKeys(page)).length, { timeout: 5_000 })
       .toBeGreaterThan(0);
 
     // Foreign write via the API: `schedule_spec` changes, `version`

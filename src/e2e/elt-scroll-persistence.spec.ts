@@ -27,7 +27,7 @@ test.describe("elt scroll persistence", () => {
     await page.setViewportSize({ width: 760, height: 800 });
     await page.goto(USERS, { waitUntil: "domcontentloaded" });
     const host = page.locator(SCROLL_HOST).first();
-    await expect(page.locator("table tbody tr[data-row-index]").first()).toBeVisible({ timeout: 30000 });
+    await expect(page.locator("table tbody tr[data-row-index]").first()).toBeVisible({ timeout: 5_000 });
 
     // The persistence writer stays suppressed through the post-mount restore
     // window — scroll only after the settled gate lifts.
@@ -55,12 +55,12 @@ test.describe("elt scroll persistence", () => {
     expect(target).toBeGreaterThan(0);
 
     await page.reload({ waitUntil: "domcontentloaded" });
-    await expect(page.locator("table tbody tr[data-row-index]").first()).toBeVisible({ timeout: 30000 });
+    await expect(page.locator("table tbody tr[data-row-index]").first()).toBeVisible({ timeout: 5_000 });
 
     // The restore re-applies the stored FRACTION as content width grows —
     // px drift is expected, a restored offset near the target is the contract.
     await expect
-      .poll(() => host.evaluate((el) => el.scrollLeft), { timeout: 10000 })
+      .poll(() => host.evaluate((el) => el.scrollLeft), { timeout: 5_000 })
       .toBeGreaterThan(target * 0.5);
   });
 });

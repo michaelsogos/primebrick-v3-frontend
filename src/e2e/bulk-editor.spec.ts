@@ -104,7 +104,7 @@ test.describe("bulk editor — update.bulk end to end", () => {
 
     // ── ELT → bulk mode → select the two seeded rows ───────────────
     await page.goto("/system/job/triggers", { waitUntil: "domcontentloaded" });
-    await expect(page.locator("table")).toBeVisible({ timeout: 10000 });
+    await expect(page.locator("table")).toBeVisible({ timeout: 5_000 });
     await page.getByTestId("bulk-actions-toggle").click();
 
     for (const name of [NAME_A, NAME_B]) {
@@ -183,7 +183,7 @@ test.describe("bulk editor — update.bulk end to end", () => {
           );
           return rows[0]?.n;
         },
-        { timeout: 10000, intervals: [500, 1000, 2000] },
+        { timeout: 5_000, intervals: [500, 1000, 2000] },
       )
       .toBe(2);
   });

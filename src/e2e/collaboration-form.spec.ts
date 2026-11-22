@@ -120,7 +120,7 @@ test.describe("collaborative update surface (job_trigger detail)", () => {
       // --- A opens the record, B opens the same record -------------------
       await loginAsTestAdmin(pageA);
       await pageA.goto(DETAIL_PATH(ruleUuid), { waitUntil: "domcontentloaded" });
-      await expect(pageA.getByTestId("entity-form-page")).toBeVisible({ timeout: 30000 });
+      await expect(pageA.getByTestId("entity-form-page")).toBeVisible({ timeout: 5_000 });
       const presenceZone = pageA.getByTestId("page-header-presence");
       // Design: "0 others → no avatars" — the stack renders nothing while
       // A is alone on the record (no self chip — the viewer's own
@@ -129,7 +129,7 @@ test.describe("collaborative update surface (job_trigger detail)", () => {
 
       await loginAsCollabAdmin(pageB);
       await pageB.goto(DETAIL_PATH(ruleUuid), { waitUntil: "domcontentloaded" });
-      await expect(pageB.getByTestId("entity-form-page")).toBeVisible({ timeout: 30000 });
+      await expect(pageB.getByTestId("entity-form-page")).toBeVisible({ timeout: 5_000 });
 
       // B's READING signal lands on A's snapshot → stack appears: one
       // other-avatar (B). No self chip exists anymore.
@@ -210,7 +210,7 @@ test.describe("collaborative update surface (job_trigger detail)", () => {
     try {
       await loginAsTestAdmin(pageA);
       await pageA.goto(DETAIL_PATH(uuid2), { waitUntil: "domcontentloaded" });
-      await expect(pageA.getByTestId("entity-form-page")).toBeVisible({ timeout: 30000 });
+      await expect(pageA.getByTestId("entity-form-page")).toBeVisible({ timeout: 5_000 });
       const presenceZone = pageA.getByTestId("page-header-presence");
       // Fresh record — A is alone, the stack stays empty.
       await expect(presenceZone.getByTestId("presence-avatar")).toHaveCount(0);
@@ -218,7 +218,7 @@ test.describe("collaborative update surface (job_trigger detail)", () => {
       // Same user, second context → A must SEE the duplicate session.
       await loginAsTestAdmin(pageB);
       await pageB.goto(DETAIL_PATH(uuid2), { waitUntil: "domcontentloaded" });
-      await expect(pageB.getByTestId("entity-form-page")).toBeVisible({ timeout: 30000 });
+      await expect(pageB.getByTestId("entity-form-page")).toBeVisible({ timeout: 5_000 });
 
       const otherTabAvatar = presenceZone.getByTestId("presence-avatar");
       await expect(otherTabAvatar).toHaveCount(1, { timeout: 5000 });

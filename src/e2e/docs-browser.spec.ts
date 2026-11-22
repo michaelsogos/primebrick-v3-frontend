@@ -45,7 +45,7 @@ async function openDocsPanel(page: Page): Promise<void> {
     if (r.url().includes("/svc/ai/") && r.status() >= 400) console.log("[net:ai]", r.status(), r.url());
   });
   const cta = page.getByTestId("app-topbar-docs-cta");
-  await expect(cta).toBeVisible({ timeout: 10000 });
+  await expect(cta).toBeVisible({ timeout: 5_000 });
   // Hydration gate: poll-click until the sheet mounts — an early click can
   // hit a not-yet-hydrated handler on a reused SSR dom.
   const panelMarker = page.getByTestId("docs-panel-search");
@@ -72,17 +72,17 @@ test.describe("docs browser", () => {
     // Context resolution: the org list claims entity=organization → the panel
     // opens the matching index entry ("Organizations List", backend repo).
     const content = page.getByTestId("docs-content");
-    await expect(content).toBeVisible({ timeout: 15000 });
+    await expect(content).toBeVisible({ timeout: 5_000 });
     const article = content.locator("xpath=..");
-    await expect(article.locator("h1")).toContainText("Organizations", { timeout: 10000 });
+    await expect(article.locator("h1")).toContainText("Organizations", { timeout: 5_000 });
 
     // TOC present on a real doc (h2/h3 headings exist in organizations.mdx).
-    await expect(page.getByTestId("docs-toc")).toBeVisible({ timeout: 10000 });
+    await expect(page.getByTestId("docs-toc")).toBeVisible({ timeout: 5_000 });
 
     // See-also links rendered from metadata.links — labels are page TITLES,
     // not file paths (P2).
     const seeAlso = page.getByTestId("docs-see-also");
-    await expect(seeAlso).toBeVisible({ timeout: 10000 });
+    await expect(seeAlso).toBeVisible({ timeout: 5_000 });
     const linkText = (await seeAlso.locator("button").first().innerText()).trim();
     expect(linkText).not.toContain("/");
     expect(linkText).not.toMatch(/\.mdx?$/);
@@ -93,12 +93,12 @@ test.describe("docs browser", () => {
     await page.goto("/system/settings/organizations");
     await waitForShell(page);
     await openDocsPanel(page);
-    await expect(page.getByTestId("docs-content")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByTestId("docs-content")).toBeVisible({ timeout: 5_000 });
     const firstTitle = await page.getByTestId("docs-content").locator("xpath=../h1").innerText();
 
     // Follow the first see-also link — stays inside the sheet.
     const seeAlso = page.getByTestId("docs-see-also").locator("button").first();
-    await expect(seeAlso).toBeVisible({ timeout: 10000 });
+    await expect(seeAlso).toBeVisible({ timeout: 5_000 });
 
     // P3: scroll to the bottom of the doc BEFORE navigating away — back must
     // restore this position, not land at the top.
@@ -109,12 +109,12 @@ test.describe("docs browser", () => {
 
     await seeAlso.click();
     const content = page.getByTestId("docs-content");
-    await expect(content.locator("xpath=../h1")).not.toHaveText(firstTitle, { timeout: 15000 });
+    await expect(content.locator("xpath=../h1")).not.toHaveText(firstTitle, { timeout: 5_000 });
     await expect(page.getByTestId("docs-panel-back")).toBeVisible();
 
     // Back returns to the context doc AND restores the saved scroll offset.
     await page.getByTestId("docs-panel-back").click();
-    await expect(content.locator("xpath=../h1")).toHaveText(firstTitle, { timeout: 15000 });
+    await expect(content.locator("xpath=../h1")).toHaveText(firstTitle, { timeout: 5_000 });
     await expect
       .poll(async () => scroller.evaluate((el) => el.scrollTop), { timeout: 5000 })
       .toBeGreaterThan(savedScroll * 0.5);
@@ -129,7 +129,7 @@ test.describe("docs browser", () => {
     const input = page.getByTestId("docs-panel-search");
     await input.fill("roles permissions");
     const results = page.getByTestId("docs-search-results");
-    await expect(results).toBeVisible({ timeout: 20000 });
+    await expect(results).toBeVisible({ timeout: 5_000 });
     await expect(results.locator("button").first()).toBeVisible();
     const hitCount = await results.locator("button").count();
     expect(hitCount).toBeGreaterThan(0);
@@ -139,13 +139,13 @@ test.describe("docs browser", () => {
     const hitLabel = await results.locator("button").first().locator(".text-sm").first().innerText();
     await results.locator("button").first().click();
     const content = page.getByTestId("docs-content");
-    await expect(content).toBeVisible({ timeout: 15000 });
-    await expect(content.locator("xpath=../h1")).toHaveText(hitLabel.trim(), { timeout: 15000 });
+    await expect(content).toBeVisible({ timeout: 5_000 });
+    await expect(content.locator("xpath=../h1")).toHaveText(hitLabel.trim(), { timeout: 5_000 });
 
     const nav = page.getByTestId("docs-match-nav");
-    await expect(nav).toBeVisible({ timeout: 10000 });
+    await expect(nav).toBeVisible({ timeout: 5_000 });
     const counter = page.getByTestId("docs-match-counter");
-    await expect(counter).toHaveText(/^[1-9]\d*\/[1-9]\d*$/, { timeout: 10000 });
+    await expect(counter).toHaveText(/^[1-9]\d*\/[1-9]\d*$/, { timeout: 5_000 });
     const markCount = await content.locator("mark.docs-search-hit").count();
     expect(markCount).toBeGreaterThan(0);
     // Next/prev walk the matches — counter tracks the active one.
@@ -164,13 +164,13 @@ test.describe("docs browser", () => {
     await page.goto("/system/settings/organizations");
     await waitForShell(page);
     await openDocsPanel(page);
-    await expect(page.getByTestId("docs-content")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByTestId("docs-content")).toBeVisible({ timeout: 5_000 });
 
     // "All documentation" → index view with repo accordions (all expanded
     // by default — `type="multiple" value={all repos}`).
     await page.getByTestId("docs-all-docs").click();
     const backend = page.getByTestId("docs-repo-backend");
-    await expect(backend).toBeVisible({ timeout: 10000 });
+    await expect(backend).toBeVisible({ timeout: 5_000 });
 
     // Expand → central sheet (wider surface), then collapse back.
     await page.getByTestId("docs-panel-expand").click();
@@ -178,10 +178,10 @@ test.describe("docs browser", () => {
 
     // Re-open a doc from the index — entries are rendered already expanded.
     const entry = backend.locator("button").filter({ hasText: "Working Together" }).first();
-    await expect(entry).toBeVisible({ timeout: 10000 });
+    await expect(entry).toBeVisible({ timeout: 5_000 });
     await entry.click();
     await expect(page.getByTestId("docs-content").locator("xpath=../h1")).toContainText("Working Together", {
-      timeout: 15000,
+      timeout: 5_000,
     });
   });
 
@@ -190,7 +190,7 @@ test.describe("docs browser", () => {
     await page.goto("/system/settings/organizations");
     await waitForShell(page);
     await openDocsPanel(page);
-    await expect(page.getByTestId("docs-content")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByTestId("docs-content")).toBeVisible({ timeout: 5_000 });
 
     const link = page.getByTestId("docs-view-full");
     const href = await link.getAttribute("href");
@@ -199,8 +199,8 @@ test.describe("docs browser", () => {
 
     const [popup] = await Promise.all([context.waitForEvent("page"), link.click()]);
     await popup.waitForLoadState("domcontentloaded");
-    await expect(popup.getByTestId("docs-tree")).toBeVisible({ timeout: 15000 });
-    await expect(popup.locator(".docs-page > h1")).toBeVisible({ timeout: 15000 });
+    await expect(popup.getByTestId("docs-tree")).toBeVisible({ timeout: 5_000 });
+    await expect(popup.locator(".docs-page > h1")).toBeVisible({ timeout: 5_000 });
     await expect(popup).toHaveURL(new RegExp(href!.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
     // The sheet stays open on the source page — no navigation happened there.
     await expect(page.getByTestId("docs-panel-search")).toBeVisible();
@@ -210,9 +210,9 @@ test.describe("docs browser", () => {
   test("direct route load: /docs/backend/rbac renders the doc", async ({ page }) => {
     await loginAsTestAdmin(page);
     await page.goto("/docs/backend/rbac");
-    await expect(page.getByTestId("docs-tree")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByTestId("docs-tree")).toBeVisible({ timeout: 5_000 });
     const content = page.locator(".docs-page");
-    await expect(content.locator("> h1")).toContainText("Roles", { timeout: 15000 });
+    await expect(content.locator("> h1")).toContainText("Roles", { timeout: 5_000 });
 
     // P1 render fidelity on the heaviest doc (2 Mermaid JSX + tables + code):
     // the raw MDX comes from the doc_source row — table separators must end

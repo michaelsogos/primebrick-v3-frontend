@@ -53,7 +53,7 @@ test.describe("rfc error extras (entity list)", () => {
     // wait for the reactive "1" badge first (proves the error landed AND
     // the topbar is hydrated enough to handle the open click).
     const errorsToggle = page.getByRole("button", { name: "Errors", exact: true });
-    await expect(errorsToggle).toContainText("1", { timeout: 15000 });
+    await expect(errorsToggle).toContainText("1", { timeout: 5_000 });
     await errorsToggle.click();
     const card = page.locator("text=VALIDATION_ERROR").first();
     await expect(card).toBeVisible({ timeout: 5000 });

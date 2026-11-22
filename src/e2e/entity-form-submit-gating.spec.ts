@@ -32,13 +32,13 @@ test.describe("entity-form submit gating", () => {
     test.setTimeout(120_000);
     await loginAsTestAdmin(page);
     await page.goto("/system/job/triggers", { waitUntil: "domcontentloaded" });
-    await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
+    await expect(page.locator("table")).toBeVisible({ timeout: 5_000 });
     const [popup] = await Promise.all([
-      context.waitForEvent("page", { timeout: 15000 }),
+      context.waitForEvent("page", { timeout: 5_000 }),
       page.getByTestId("entity-create-cta").click(),
     ]);
     await popup.waitForLoadState("domcontentloaded");
-    await expect(popup.getByTestId("entity-form-page")).toBeVisible({ timeout: 30000 });
+    await expect(popup.getByTestId("entity-form-page")).toBeVisible({ timeout: 5_000 });
     const submit = popup.getByTestId("entity-form-submit");
 
     // 1. Untouched → disabled (no taint yet, regardless of validity).
@@ -97,7 +97,7 @@ test.describe("entity-form submit gating", () => {
 
     const postCapture = popup.waitForResponse(
       (r) => r.url().includes("/entities/job_trigger") && r.request().method() === "POST",
-      { timeout: 15000 },
+      { timeout: 5_000 },
     );
     await submit.click();
     const postRes = await postCapture;
@@ -106,7 +106,7 @@ test.describe("entity-form submit gating", () => {
       console.log("POST RES:", (await postRes.text()).slice(0, 2000));
     }
     expect(postRes.status()).toBe(201);
-    await popup.waitForEvent("close", { timeout: 15000 });
+    await popup.waitForEvent("close", { timeout: 5_000 });
     expect(popup.isClosed()).toBeTruthy();
 
     const api = page.request;

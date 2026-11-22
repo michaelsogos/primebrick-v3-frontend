@@ -57,7 +57,7 @@ test("uiLang switch mid-census aborts the stale request and refetches for the ne
   // fires within the same task, ahead of any later listener.
   const itCensus = page.waitForRequest(
     (req) => req.url().includes("/api/v1/modules") && req.url().includes("lang=it-IT"),
-    { timeout: 15000 },
+    { timeout: 5_000 },
   );
 
   // Switch the UI language mid-flight through the real i18n store
@@ -76,7 +76,7 @@ test("uiLang switch mid-census aborts the stale request and refetches for the ne
   // Release the held R1 — its continue must fail: the client aborted it.
   releaseFirst();
   await expect
-    .poll(() => firstAborted, { timeout: 15000 })
+    .poll(() => firstAborted, { timeout: 5_000 })
     .toBe(true);
 
   await login;

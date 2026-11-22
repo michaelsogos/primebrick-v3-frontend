@@ -124,7 +124,7 @@ function flattenHrefs(links: NavLink[]): string[] {
 
 async function openLauncher(page: Page) {
   await page.locator(LAUNCHER_TRIGGER).first().click();
-  await page.locator(LAUNCHER_APPS).first().waitFor({ state: "visible", timeout: 10000 });
+  await page.locator(LAUNCHER_APPS).first().waitFor({ state: "visible", timeout: 5_000 });
 }
 
 /** Select an app column item (row click descends — the CTA navigates). */
@@ -250,7 +250,7 @@ test.describe("module ownership — observable contract", () => {
             return prefixes.some((x: string) => p === x || p.startsWith(x + "/"));
           },
           rootPrefixes,
-          { timeout: 15000 }
+          { timeout: 5_000 }
         );
 
         // Contract 1: the landed route must resolve to the module that was
@@ -266,7 +266,7 @@ test.describe("module ownership — observable contract", () => {
         // — never the raw registry name and never a foreign module's.
         const trigger = page.locator(LAUNCHER_TRIGGER).first();
         await expect(trigger).toContainText(await expectedModuleLabel(page, m), {
-          timeout: 10000
+          timeout: 5_000
         });
 
         // Contract 3: the sidebar must render exactly the module's nav
@@ -351,7 +351,7 @@ test.describe("module ownership — observable contract", () => {
     await expect(
       page.locator(LAUNCHER_TRIGGER).first(),
       "app launcher must be visible in the sidebar"
-    ).toBeVisible({ timeout: 10000 });
+    ).toBeVisible({ timeout: 5_000 });
     const roots = new Set(modules.flatMap((m) => moduleRoots(m)));
     await openLauncher(page);
     for (const root of roots) {
@@ -412,7 +412,7 @@ test.describe("module ownership — observable contract", () => {
     const systemRootModules = modules.filter((m) => moduleRoots(m).includes("system"));
     await openLauncher(page);
     await launcherSelectApp(page, "system");
-    await page.locator(`${LAUNCHER_MODULES} ${LAUNCHER_OPTION}`).first().waitFor({ state: "visible", timeout: 10000 });
+    await page.locator(`${LAUNCHER_MODULES} ${LAUNCHER_OPTION}`).first().waitFor({ state: "visible", timeout: 5_000 });
     const markers = await page
       .locator(`${LAUNCHER_MODULES} [aria-label^='Icon not found']`)
       .count();
@@ -421,7 +421,7 @@ test.describe("module ownership — observable contract", () => {
     // is taken only after the async components actually render.
     await expect
       .poll(async () => page.locator(`${LAUNCHER_MODULES} ${LAUNCHER_OPTION} svg`).count(), {
-        timeout: 10000,
+        timeout: 5_000,
       })
       .toBeGreaterThanOrEqual(systemRootModules.length);
     await page.keyboard.press("Escape");
@@ -468,7 +468,7 @@ test.describe("module ownership — observable contract", () => {
           return prefixes.some((x: string) => p === x || p.startsWith(x + "/"));
         },
         rootPrefixes,
-        { timeout: 15000 }
+        { timeout: 5_000 }
       );
       const owner = expectedOwner(modules, pathOf(page));
       expect(
@@ -506,7 +506,7 @@ test.describe("module ownership — observable contract", () => {
         await page.goto(first.href, { waitUntil: "domcontentloaded" });
         const bc = page.locator('nav[aria-label="breadcrumb"]');
         await expect(bc, `breadcrumb must render on ${first.href}`).toBeVisible({
-          timeout: 15000,
+          timeout: 5_000,
         });
 
         // The module/page segments render once the module's nav meta
@@ -517,7 +517,7 @@ test.describe("module ownership — observable contract", () => {
         await expect(
           items,
           `on ${first.href} breadcrumb must render all 3 segments`,
-        ).toHaveCount(3, { timeout: 15000 });
+        ).toHaveCount(3, { timeout: 5_000 });
 
         // Ordered labels — exactly {app} / {module} / {page}.
         const texts = await bc.locator("li").allTextContents();
@@ -608,7 +608,7 @@ test.describe("module ownership — observable contract", () => {
             return prefixes.some((x: string) => p === x || p.startsWith(x + "/"));
           },
           rootPrefixes,
-          { timeout: 15000 }
+          { timeout: 5_000 }
         );
         // Sidebar nav under this root = the root-scoped nav slice.
         // moduleNav loads async after selectModule — poll until the

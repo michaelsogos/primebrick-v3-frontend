@@ -7,9 +7,9 @@ const TRIGGERS = "/system/job/triggers";
 test("probe — panel zones: toolbar border + footer anatomy", async ({ page }) => {
   await loginAsTestAdmin(page);
   await page.goto(TRIGGERS, { waitUntil: "domcontentloaded" });
-  await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 5_000 });
   await page.getByRole("button", { name: "Filters", exact: true }).first().click();
-  await expect(page.getByTestId("filters-apply")).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByTestId("filters-apply")).toBeVisible({ timeout: 5_000 });
 
   const zones = await page.evaluate(() => {
     const panel = document.querySelector('[data-testid="filters-apply"]')?.closest(".flex.h-full.flex-col");

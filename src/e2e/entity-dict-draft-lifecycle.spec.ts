@@ -44,7 +44,7 @@ test.describe.serial("dict draft lifecycle — composer → pending", () => {
     test.setTimeout(90_000);
     await loginAsTestAdmin(page);
     await page.goto(DICT_URL, { waitUntil: "domcontentloaded" });
-    await expect(page.getByTestId("entity-dict-page")).toBeVisible({ timeout: 30000 });
+    await expect(page.getByTestId("entity-dict-page")).toBeVisible({ timeout: 5_000 });
     await expect(page.locator('[data-testid^="selectable-row-"]').first()).toBeVisible();
 
     const addBtn = page.getByTestId("dict-toolbar-add");
@@ -74,13 +74,13 @@ test.describe.serial("dict draft lifecycle — composer → pending", () => {
       .getAttribute("title");
     expect(existingCode).toBeTruthy();
     await codeInput.fill(existingCode!);
-    await expect(draft.getByTestId("dict-cell-error")).toBeVisible({ timeout: 10_000 });
+    await expect(draft.getByTestId("dict-cell-error")).toBeVisible({ timeout: 5_000 });
     await expect(confirmBtn).toBeDisabled();
 
     // ── Valid unique code → errors retire, ✓ arms ──
     const okCode = `${CODE}_ok`;
     await codeInput.fill(okCode);
-    await expect(draft.getByTestId("dict-cell-error")).toHaveCount(0, { timeout: 10_000 });
+    await expect(draft.getByTestId("dict-cell-error")).toHaveCount(0, { timeout: 5_000 });
     // label_key left EMPTY on purpose — the suggestion commits at save
     // (covered by its own test); required fields are code-only-gated
     // where label_key is suggestion-optional.
@@ -100,7 +100,7 @@ test.describe.serial("dict draft lifecycle — composer → pending", () => {
     const saveBtn = page.getByTestId("dict-bulk-save");
     await expect(saveBtn).toBeEnabled();
     await saveBtn.click();
-    await expect(pending).toHaveCount(0, { timeout: 15_000 });
+    await expect(pending).toHaveCount(0, { timeout: 5_000 });
     const { rows } = await getPool().query(
       `SELECT code FROM crm.customer_types WHERE code = $1`,
       [okCode],
@@ -112,7 +112,7 @@ test.describe.serial("dict draft lifecycle — composer → pending", () => {
     test.setTimeout(60_000);
     await loginAsTestAdmin(page);
     await page.goto(DICT_URL, { waitUntil: "domcontentloaded" });
-    await expect(page.getByTestId("entity-dict-page")).toBeVisible({ timeout: 30000 });
+    await expect(page.getByTestId("entity-dict-page")).toBeVisible({ timeout: 5_000 });
     await expect(page.locator('[data-testid^="selectable-row-"]').first()).toBeVisible();
 
     // Zero-server proof: discard, undo and pending bulk-drop are pure
@@ -175,7 +175,7 @@ test.describe.serial("dict draft lifecycle — composer → pending", () => {
     test.setTimeout(90_000);
     await loginAsTestAdmin(page);
     await page.goto(DICT_URL, { waitUntil: "domcontentloaded" });
-    await expect(page.getByTestId("entity-dict-page")).toBeVisible({ timeout: 30000 });
+    await expect(page.getByTestId("entity-dict-page")).toBeVisible({ timeout: 5_000 });
     await expect(page.locator('[data-testid^="selectable-row-"]').first()).toBeVisible();
 
     // ── Taint a saved row (label_key edit → taint marker) ──
@@ -210,9 +210,9 @@ test.describe.serial("dict draft lifecycle — composer → pending", () => {
     // ── RELOAD → both legs restore: the pending row (same d1 id) and
     //    the tainted row (revert marker back). ──
     await page.reload({ waitUntil: "domcontentloaded" });
-    await expect(page.getByTestId("entity-dict-page")).toBeVisible({ timeout: 30000 });
+    await expect(page.getByTestId("entity-dict-page")).toBeVisible({ timeout: 5_000 });
     await expect(page.locator('[data-testid^="selectable-row-"]').first()).toBeVisible({
-      timeout: 30000,
+      timeout: 5_000,
     });
     const restoredPending = page.getByTestId("selectable-row-d1");
     await expect(restoredPending).toBeVisible();
@@ -248,7 +248,7 @@ test.describe.serial("dict draft lifecycle — composer → pending", () => {
     test.setTimeout(90_000);
     await loginAsTestAdmin(page);
     await page.goto(DICT_URL, { waitUntil: "domcontentloaded" });
-    await expect(page.getByTestId("entity-dict-page")).toBeVisible({ timeout: 30000 });
+    await expect(page.getByTestId("entity-dict-page")).toBeVisible({ timeout: 5_000 });
     await expect(page.locator('[data-testid^="selectable-row-"]').first()).toBeVisible();
 
     // ── Confirm a pending row — appended LAST (sort seed = max+10) ──
@@ -287,11 +287,11 @@ test.describe.serial("dict draft lifecycle — composer → pending", () => {
     // ── Save → reload → the dragged order persisted: our row still sits
     //    immediately before that same neighbour. ──
     await page.getByTestId("dict-bulk-save").click();
-    await expect(pending).toHaveCount(0, { timeout: 15_000 });
+    await expect(pending).toHaveCount(0, { timeout: 5_000 });
     await page.reload({ waitUntil: "domcontentloaded" });
-    await expect(page.getByTestId("entity-dict-page")).toBeVisible({ timeout: 30000 });
+    await expect(page.getByTestId("entity-dict-page")).toBeVisible({ timeout: 5_000 });
     await expect(page.locator('[data-testid^="selectable-row-"]').first()).toBeVisible({
-      timeout: 30000,
+      timeout: 5_000,
     });
     const ourRow = page
       .locator('[data-testid^="selectable-row-"]')
@@ -317,7 +317,7 @@ test.describe.serial("dict draft lifecycle — composer → pending", () => {
     await page.goto("/crm/settings/customer_link_types", {
       waitUntil: "domcontentloaded",
     });
-    await expect(page.getByTestId("entity-dict-page")).toBeVisible({ timeout: 30000 });
+    await expect(page.getByTestId("entity-dict-page")).toBeVisible({ timeout: 5_000 });
     await expect(page.locator('[data-testid^="selectable-row-"]').first()).toBeVisible();
 
     // ── Confirm a pending row — appended LAST (sort seed = max+10) ──
@@ -367,11 +367,11 @@ test.describe.serial("dict draft lifecycle — composer → pending", () => {
 
     // ── Save → reload → the dragged order persisted exactly. ──
     await page.getByTestId("dict-bulk-save").click();
-    await expect(pending).toHaveCount(0, { timeout: 15_000 });
+    await expect(pending).toHaveCount(0, { timeout: 5_000 });
     await page.reload({ waitUntil: "domcontentloaded" });
-    await expect(page.getByTestId("entity-dict-page")).toBeVisible({ timeout: 30000 });
+    await expect(page.getByTestId("entity-dict-page")).toBeVisible({ timeout: 5_000 });
     await expect(page.locator('[data-testid^="selectable-row-"]').first()).toBeVisible({
-      timeout: 30000,
+      timeout: 5_000,
     });
     const ourRow = page
       .locator('[data-testid^="selectable-row-"]')
@@ -390,7 +390,7 @@ test.describe.serial("dict draft lifecycle — composer → pending", () => {
     test.setTimeout(90_000);
     await loginAsTestAdmin(page);
     await page.goto(DICT_URL, { waitUntil: "domcontentloaded" });
-    await expect(page.getByTestId("entity-dict-page")).toBeVisible({ timeout: 30000 });
+    await expect(page.getByTestId("entity-dict-page")).toBeVisible({ timeout: 5_000 });
     await expect(page.locator('[data-testid^="selectable-row-"]').first()).toBeVisible();
     const allRows = await page.locator('[data-testid^="selectable-row-"]').count();
     expect(allRows).toBeGreaterThan(2);
@@ -454,7 +454,7 @@ test.describe.serial("dict draft lifecycle — composer → pending", () => {
     test.setTimeout(60_000);
     await loginAsTestAdmin(page);
     await page.goto(DICT_URL, { waitUntil: "domcontentloaded" });
-    await expect(page.getByTestId("entity-dict-page")).toBeVisible({ timeout: 30000 });
+    await expect(page.getByTestId("entity-dict-page")).toBeVisible({ timeout: 5_000 });
     await expect(page.locator('[data-testid^="selectable-row-"]').first()).toBeVisible();
 
     await page.getByTestId("dict-toolbar-add").click();
@@ -498,7 +498,7 @@ test.describe.serial("dict draft lifecycle — composer → pending", () => {
     test.setTimeout(60_000);
     await loginAsTestAdmin(page);
     await page.goto(DICT_URL, { waitUntil: "domcontentloaded" });
-    await expect(page.getByTestId("entity-dict-page")).toBeVisible({ timeout: 30000 });
+    await expect(page.getByTestId("entity-dict-page")).toBeVisible({ timeout: 5_000 });
     await expect(page.locator('[data-testid^="selectable-row-"]').first()).toBeVisible();
 
     await page.getByTestId("dict-toolbar-add").click();
@@ -506,14 +506,14 @@ test.describe.serial("dict draft lifecycle — composer → pending", () => {
     const sugCode = `${CODE}_sug`;
     await draft.locator('[data-dict-cell="code"] input').fill(sugCode);
     // Unique code, label_key EMPTY → probe clears, ✓ arms.
-    await expect(draft.getByTestId("dict-cell-error")).toHaveCount(0, { timeout: 10_000 });
+    await expect(draft.getByTestId("dict-cell-error")).toHaveCount(0, { timeout: 5_000 });
     await expect(draft.getByTestId("dict-draft-confirm")).toBeEnabled();
     await draft.getByTestId("dict-draft-confirm").click();
 
     const pending = page.locator('[data-testid="selectable-row-d1"]');
     await expect(pending).toBeVisible();
     await page.getByTestId("dict-bulk-save").click();
-    await expect(pending).toHaveCount(0, { timeout: 15_000 });
+    await expect(pending).toHaveCount(0, { timeout: 5_000 });
 
     // The persisted label_key is the convention suggestion, not an echo.
     const { rows } = await getPool().query(

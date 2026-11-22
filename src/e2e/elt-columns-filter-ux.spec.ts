@@ -23,11 +23,11 @@ test.describe("ELT columns/filter UX — job_schedule", () => {
   test("columns panel select-all → all rendered; deselect → declared defaults", async ({ page }) => {
     await loginAsTestAdmin(page);
     await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
-    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 30000 });
+    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 5_000 });
 
     await page.getByRole("button", { name: "Columns" }).first().click();
     const selectAll = page.getByTestId("columns-select-all");
-    await expect(selectAll).toBeVisible({ timeout: 15000 });
+    await expect(selectAll).toBeVisible({ timeout: 5_000 });
 
     const count = page.getByTestId("columns-visible-count");
     const initial = (await count.textContent())!.trim().split("/");
@@ -60,7 +60,7 @@ test.describe("ELT columns/filter UX — job_schedule", () => {
       await route.continue();
     });
     await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
-    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 30000 });
+    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 5_000 });
 
     const strip = page.getByTestId("elt-reload-strip");
     await expect(strip).toBeVisible(); // height retained even when idle
@@ -77,7 +77,7 @@ test.describe("ELT columns/filter UX — job_schedule", () => {
     // NO route delay — localhost responses finish well under one paint.
     // Without the min-duration hold the strip never becomes visible.
     await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
-    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 30000 });
+    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 5_000 });
 
     const bar = page.getByTestId("elt-reload-strip").locator('[data-slot="loading-bar"]');
     await page.getByRole("button", { name: /refresh/i }).click();
@@ -118,13 +118,13 @@ test.describe("ELT columns/filter UX — job_schedule", () => {
     });
 
     await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
-    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 30000 });
+    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 5_000 });
 
     // search_in only reaches the wire when a search is typed — without
     // this, the stale-scope assertions would be vacuous (empty set).
     await page.getByTestId("entity-search").locator("input").fill("e2e");
     await expect
-      .poll(async () => listSearchIn.length, { timeout: 15000 })
+      .poll(async () => listSearchIn.length, { timeout: 5_000 })
       .toBeGreaterThan(0);
 
     expect(listFields).not.toContain("bogus_field");
@@ -155,14 +155,14 @@ test.describe("ELT columns/filter UX — job_schedule", () => {
     await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
     // Wait for a REAL data row — the loading/empty state is a single
     // colspan row; data rows carry a 2nd+ cell. Counting too early gives 1.
-    await expect(page.locator("table tbody tr").first().locator("td").nth(1)).toBeVisible({ timeout: 30000 });
+    await expect(page.locator("table tbody tr").first().locator("td").nth(1)).toBeVisible({ timeout: 5_000 });
     const allRows = await page.locator("table tbody tr").count();
     expect(allRows).toBeGreaterThan(1);
 
     // Type a real search — "e2e" matches a known subset (e2e-gate-* rows).
     await page.getByTestId("entity-search").locator("input").fill("e2e");
     await expect
-      .poll(async () => searchCalls.length, { timeout: 15000 })
+      .poll(async () => searchCalls.length, { timeout: 5_000 })
       .toBeGreaterThan(0);
 
     // The wire carried the multi-key comma-joined scope AND the server
@@ -174,18 +174,18 @@ test.describe("ELT columns/filter UX — job_schedule", () => {
     expect(call.total).toBeGreaterThan(0);
     expect(call.total).toBeLessThan(allRows);
     // …and the UI actually re-rendered the filtered set.
-    await expect(page.locator("table tbody tr")).toHaveCount(call.total, { timeout: 10000 });
+    await expect(page.locator("table tbody tr")).toHaveCount(call.total, { timeout: 5_000 });
     await expect(page.getByText("Caricamento fallito")).toHaveCount(0);
   });
 
   test("filters panel excludes the preset-owned schedule_type field", async ({ page }) => {
     await loginAsTestAdmin(page);
     await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
-    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 30000 });
+    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 5_000 });
 
     await page.getByRole("button", { name: /filters/i }).first().click();
     const sheet = page.locator("[data-slot='sheet-content'], [role='dialog']").last();
-    await expect(sheet.getByTestId("filters-apply")).toBeVisible({ timeout: 15000 });
+    await expect(sheet.getByTestId("filters-apply")).toBeVisible({ timeout: 5_000 });
     // `schedule_type` ("Type") is governed by the toolbar schedule_kind
     // preset — never offered as a free filter field.
     await expect(sheet.getByText("Type", { exact: true })).toHaveCount(0);

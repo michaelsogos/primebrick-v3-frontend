@@ -36,7 +36,7 @@ test.describe("job_schedule lifecycle CTAs — :filled icons", () => {
     await page.goto("/system/job/job-schedules", {
       waitUntil: "domcontentloaded",
     });
-    await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
+    await expect(page.locator("table")).toBeVisible({ timeout: 5_000 });
 
     // Wire contract — synthesized row/bulk custom actions in served meta.
     const meta = await page.evaluate(async () => {
@@ -94,7 +94,7 @@ test.describe("job_schedule lifecycle CTAs — :filled icons", () => {
     await page.goto("/system/job/job-schedules", {
       waitUntil: "domcontentloaded",
     });
-    await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
+    await expect(page.locator("table")).toBeVisible({ timeout: 5_000 });
 
     // Row kebab — the actions cell is the row's last cell; state decides
     // which lifecycle ops are visible_on-gated in (stop/pause on armed,

@@ -73,19 +73,19 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
 
     await loginAsTestAdmin(page);
     await page.goto(CUSTOMERS, { waitUntil: "domcontentloaded" });
-    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 30000 });
-    await expect.poll(() => listRows.length, { timeout: 15000 }).toBeGreaterThan(0);
+    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 5_000 });
+    await expect.poll(() => listRows.length, { timeout: 5_000 }).toBeGreaterThan(0);
 
     // Enable all three audit actor columns via the column picker.
     await page.getByRole("button", { name: "Columns" }).first().click();
     for (const key of ["created_by", "updated_by", "deleted_by"]) {
       const toggle = page.getByTestId(`columns-toggle-${key}`);
-      await expect(toggle).toBeVisible({ timeout: 15000 });
+      await expect(toggle).toBeVisible({ timeout: 5_000 });
       await toggle.click();
     }
     await page.keyboard.press("Escape");
     await expect(page.getByTestId("ref-cell-created_by-text").first()).toBeVisible({
-      timeout: 15000,
+      timeout: 5_000,
     });
   });
 
@@ -145,16 +145,16 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
     // construction (unresolved rows render plain text), and its text IS
     // the join-resolved display name — no listRows/DOM index alignment.
     const cell = page.getByTestId("ref-cell-created_by-text").first();
-    await expect(cell).toBeVisible({ timeout: 15000 });
+    await expect(cell).toBeVisible({ timeout: 5_000 });
     const name = (await cell.textContent())!.trim();
     await cell.click();
 
     const sheet = page.getByTestId("entity-record-sheet");
-    await expect(sheet).toBeVisible({ timeout: 15000 });
+    await expect(sheet).toBeVisible({ timeout: 5_000 });
     // display_name renders as a readonly input — its value lives on the
     // `value` attribute, never in innerText.
     await expect(sheet.locator("input#record-sheet-field-display_name")).toHaveValue(name, {
-      timeout: 15000,
+      timeout: 5_000,
     });
     await expect(sheet.getByTestId("entity-record-sheet-missing-hero")).toHaveCount(0);
     // FORM-READONLY contract: the record renders as the entity's form
@@ -175,8 +175,8 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
     await page.locator("table tbody tr").nth(i).getByTestId("ref-cell-created_by-text").click();
 
     const sheet = page.getByTestId("entity-record-sheet");
-    await expect(sheet).toBeVisible({ timeout: 15000 });
-    await expect(sheet).not.toContainText("Record not found", { timeout: 15000 });
+    await expect(sheet).toBeVisible({ timeout: 5_000 });
+    await expect(sheet).not.toContainText("Record not found", { timeout: 5_000 });
 
     // uid → badge at the very top of the record surface (mono text, the
     // uuid itself), never a form field. Anatomy: secondary pill +
@@ -220,8 +220,8 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
     await page.locator("table tbody tr").nth(i).getByTestId("ref-cell-created_by-text").click();
 
     const sheet = page.getByTestId("entity-record-sheet");
-    await expect(sheet).toBeVisible({ timeout: 15000 });
-    await expect(sheet).not.toContainText("Record not found", { timeout: 15000 });
+    await expect(sheet).toBeVisible({ timeout: 5_000 });
+    await expect(sheet).not.toContainText("Record not found", { timeout: 5_000 });
 
     const badge = page.getByTestId("entity-record-sheet-version-badge");
     await expect(badge).toBeVisible();
@@ -231,7 +231,7 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
     // right slot.
     const secondary = page.getByTestId("sheet-secondary-pane");
     const primary = page.getByTestId("sheet-primary-pane");
-    await expect(secondary).toBeVisible({ timeout: 15000 });
+    await expect(secondary).toBeVisible({ timeout: 5_000 });
     await expect(primary).toBeVisible();
     await expect(secondary.getByTestId("entity-record-sheet")).toBeVisible();
     await expect(primary.getByTestId("entity-record-sheet")).toHaveCount(0);
@@ -240,7 +240,7 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
     // the stack pops, nothing is lost. Escape is the canonical close path
     // (Sheet.Close → dialog onOpenChange(false) → pop).
     await page.keyboard.press("Escape");
-    await expect(secondary).toHaveCount(0, { timeout: 15000 });
+    await expect(secondary).toHaveCount(0, { timeout: 5_000 });
     await expect(page.getByTestId("entity-record-sheet")).toBeVisible();
   });
 
@@ -273,13 +273,13 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
 
     await page.locator("table tbody tr").nth(i).getByTestId("ref-cell-created_by-text").click();
     const sheet = page.getByTestId("entity-record-sheet");
-    await expect(sheet).toBeVisible({ timeout: 15000 });
+    await expect(sheet).toBeVisible({ timeout: 5_000 });
     await page.getByTestId("entity-record-sheet-version-badge").click();
 
     const primary = page.getByTestId("sheet-primary-pane");
     const firstTitle = primary.locator("h3").first();
-    await expect(firstTitle).toBeVisible({ timeout: 15000 });
-    await expect.poll(() => auditRows.length, { timeout: 15000 }).toBeGreaterThan(0);
+    await expect(firstTitle).toBeVisible({ timeout: 5_000 });
+    await expect.poll(() => auditRows.length, { timeout: 5_000 }).toBeGreaterThan(0);
 
     // The title is prose "{action} by {actor}" — EVERY timeline title
     // must match the translated-participle shape; a raw enum action
@@ -307,7 +307,7 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
     // Stack contract: the original record stays pinned on the left pane;
     // the actor's record sheet takes the right slot.
     const recordSheet = primary.getByTestId("entity-record-sheet");
-    await expect(recordSheet).toBeVisible({ timeout: 15000 });
+    await expect(recordSheet).toBeVisible({ timeout: 5_000 });
     await expect(recordSheet.getByTestId("entity-record-sheet-uid-badge")).toHaveAttribute(
       "title",
       uuidRow!.changed_by!,
@@ -322,15 +322,15 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
     await page.locator("table tbody tr").nth(i).getByTestId("ref-cell-created_by-text").click();
 
     const sheet = page.getByTestId("entity-record-sheet");
-    await expect(sheet).toBeVisible({ timeout: 15000 });
-    await expect(sheet).not.toContainText("Record not found", { timeout: 15000 });
+    await expect(sheet).toBeVisible({ timeout: 5_000 });
+    await expect(sheet).not.toContainText("Record not found", { timeout: 5_000 });
 
     // user_profile.avatar_color is type:"color" — the canonical widget
     // is ColorSelector (popover trigger with a color swatch), and the
     // field id comes from our controlProps wiring. A plain text input
     // here would mean the sheet fell back to generic rendering.
     const trigger = sheet.locator("button#record-sheet-field-avatar_color");
-    await expect(trigger).toBeVisible({ timeout: 15000 });
+    await expect(trigger).toBeVisible({ timeout: 5_000 });
     await expect(trigger).toBeDisabled();
     await expect(trigger.locator("div.rounded-full")).toBeVisible();
     // The trigger's swatch paints the record's hex (or the fallback) —
@@ -383,7 +383,7 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
     test.skip(i < 0, "no row with a resolved actor on this page");
     await page.locator("table tbody tr").nth(i).getByTestId("ref-cell-created_by-text").click();
     const sheet = page.getByTestId("entity-record-sheet");
-    await expect(sheet).toBeVisible({ timeout: 15000 });
+    await expect(sheet).toBeVisible({ timeout: 5_000 });
     const cta = page.getByTestId("entity-record-sheet-list-cta");
     await expect(cta).toBeVisible();
 
@@ -401,8 +401,8 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
     await page.locator("table tbody tr").nth(i).getByTestId("ref-cell-created_by-text").click();
 
     const sheet = page.getByTestId("entity-record-sheet");
-    await expect(sheet).toBeVisible({ timeout: 15000 });
-    await expect(sheet).not.toContainText("Record not found", { timeout: 15000 });
+    await expect(sheet).toBeVisible({ timeout: 5_000 });
+    await expect(sheet).not.toContainText("Record not found", { timeout: 5_000 });
 
     // The pencil exists iff meta.actions allows update.single — the e2e
     // admin holds all permissions, so it MUST be here.
@@ -441,8 +441,8 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
     await page.locator("table tbody tr").nth(i).getByTestId("ref-cell-created_by-text").click();
 
     const sheet = page.getByTestId("entity-record-sheet");
-    await expect(sheet).toBeVisible({ timeout: 15000 });
-    await expect(sheet).not.toContainText("Record not found", { timeout: 15000 });
+    await expect(sheet).toBeVisible({ timeout: 5_000 });
+    await expect(sheet).not.toContainText("Record not found", { timeout: 5_000 });
 
     const putBodies: { url: string; body: { entity?: Record<string, unknown> } }[] = [];
     const putStatuses: number[] = [];
@@ -475,7 +475,7 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
 
       // Canonical write contract: PUT to the update.single endpoint carrying
       // { entity: { ...surface fields, version } } — uid/audit never cross.
-      await expect.poll(() => putBodies.length, { timeout: 15000 }).toBe(1);
+      await expect.poll(() => putBodies.length, { timeout: 5_000 }).toBe(1);
       const sent = putBodies[0];
       expect(sent.url).toContain("/api/v1/");
       expect(sent.body.entity).toBeTruthy();
@@ -485,7 +485,7 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
       expect(sent.body.entity!.created_by).toBeUndefined();
 
       // After save the sheet re-GETs and returns to readonly.
-      await expect(field).not.toBeEditable({ timeout: 15000 });
+      await expect(field).not.toBeEditable({ timeout: 5_000 });
       await expect(page.getByTestId("entity-record-sheet-save")).toHaveCount(0);
     } finally {
       // Restore the original value — leave dev data as found. Only when
@@ -498,10 +498,10 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
           await field.fill(original).catch(() => {});
           await page.getByTestId("entity-record-sheet-save").click().catch(() => {});
           await expect
-            .poll(() => putBodies.length, { timeout: 15000 })
+            .poll(() => putBodies.length, { timeout: 5_000 })
             .toBe(2)
             .catch(() => {});
-          await expect(field).not.toBeEditable({ timeout: 15000 }).catch(() => {});
+          await expect(field).not.toBeEditable({ timeout: 5_000 }).catch(() => {});
         }
       }
     }
@@ -515,8 +515,8 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
     await page.locator("table tbody tr").nth(i).getByTestId("ref-cell-created_by-text").click();
 
     const sheet = page.getByTestId("entity-record-sheet");
-    await expect(sheet).toBeVisible({ timeout: 15000 });
-    await expect(sheet).not.toContainText("Record not found", { timeout: 15000 });
+    await expect(sheet).toBeVisible({ timeout: 5_000 });
+    await expect(sheet).not.toContainText("Record not found", { timeout: 5_000 });
 
     // user_profile's list route leaf declares icon "users" — the record
     // sheet shows ONE row, so the canonical singular variant "user" must
@@ -540,7 +540,7 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
     // Cards mirror row order — pick the resolved row's card so the
     // ref-cell testid exists (unresolved actors render plain text).
     const card = page.locator(".group.rounded-md.border").nth(i);
-    await expect(card).toBeVisible({ timeout: 15000 });
+    await expect(card).toBeVisible({ timeout: 5_000 });
     const cell = card.getByTestId("ref-cell-created_by-text").first();
     await expect(cell).toBeVisible();
     await expect(cell).toHaveClass(/font-medium/);
@@ -608,11 +608,11 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
       // the marker row's ref opens the record sheet carrying the badge.
       await page.getByTestId("entity-search").locator("input").fill(marker);
       await expect
-        .poll(() => listRows.some((r) => r.display_name === marker), { timeout: 15000 })
+        .poll(() => listRows.some((r) => r.display_name === marker), { timeout: 5_000 })
         .toBe(true);
       await page.getByTestId("ref-cell-created_by-text").first().click();
       const badge = page.getByTestId("entity-record-sheet-status-badge");
-      await expect(badge).toBeVisible({ timeout: 15000 });
+      await expect(badge).toBeVisible({ timeout: 5_000 });
       await expect(badge).toContainText(/suspend/i);
     } finally {
       // Cleanup: reactivate the actor and soft-delete the marker customer.

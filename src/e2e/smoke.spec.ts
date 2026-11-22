@@ -10,11 +10,11 @@ test("login page loads and renders content", async ({ page }) => {
   // Wait for SvelteKit hydration — the body should have meaningful content
   await expect(page.locator("body")).not.toBeEmpty();
   // Wait for at least one heading or input to appear (post-hydration)
-  await expect(page.locator("h1, h2, input, button").first()).toBeVisible({ timeout: 10000 });
+  await expect(page.locator("h1, h2, input, button").first()).toBeVisible({ timeout: 5_000 });
 });
 
 test("welcome page loads and renders content", async ({ page }) => {
   await page.goto("/welcome", { waitUntil: "domcontentloaded" });
   await expect(page.locator("body")).not.toBeEmpty();
-  await expect(page.locator("h1, h2, input, button").first()).toBeVisible({ timeout: 10000 });
+  await expect(page.locator("h1, h2, input, button").first()).toBeVisible({ timeout: 5_000 });
 });
