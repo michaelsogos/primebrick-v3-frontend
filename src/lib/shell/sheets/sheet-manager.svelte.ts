@@ -309,6 +309,12 @@ type SheetState = {
   keepMountedState: boolean;
   modal: boolean;
   expanded: boolean;
+  /** Remount nonce — bumped on EVERY `openSheet`/`replaceSheet` call so
+   *  `SheetHost`'s `{#key}` remounts the panel even when a second open
+   *  targets the SAME panelId (props swap on the live component would
+   *  otherwise leave mount-captured state — record, editing, heroes —
+   *  stale: the panel's "remount per open" invariant). */
+  mountNonce: number;
 };
 
 export const sheetState = $state<SheetState>({
@@ -320,7 +326,8 @@ export const sheetState = $state<SheetState>({
   contentClass: 'p-0',
   keepMountedState: false,
   modal: true,
-  expanded: false
+  expanded: false,
+  mountNonce: 0
 });
 
 /**
@@ -388,6 +395,7 @@ export function openSheet(
   sheetState.keepMountedState = Boolean(options?.keepMountedState);
   sheetState.modal = options?.modal ?? defaults?.modal ?? true;
   sheetState.expanded = false;
+  sheetState.mountNonce++;
   suppressDialogCloseFromHost = true;
   sheetState.open = true;
   requestAnimationFrame(() => {

@@ -196,7 +196,7 @@
         </div>
       {/if}
       <div class={cn("relative h-full", sheetState.secondary && !sheetState.expanded ? "w-96 shrink-0" : "min-w-0 flex-1")} data-testid="sheet-primary-pane">
-        {#key sheetState.panelId}
+        {#key `${sheetState.panelId}:${sheetState.mountNonce}`}
           <div class="h-full">
             {#if Panel}
               <Panel {...panelProps} modal={sheetState.modal} />

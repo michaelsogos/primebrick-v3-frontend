@@ -224,6 +224,12 @@
 		if (!p || formObj) return;
 		const initial = buildInitial();
 		formObj = superForm(defaults(initial, zod4(p.schema)), {
+			// `id` MUST be explicit: without it the form inherits the zod4
+			// adapter's schema-hash id — every same-entity surface then shares
+			// one id and superforms' per-page registry warns "duplicate"
+			// (it never prunes on unmount). The mount-unique formId keeps each
+			// surface's data channel its own — stacked/remounted sheets safe.
+			id: formId,
 			SPA: true,
 			validators: zod4(p.schema),
 			validationMethod: 'oninput',
