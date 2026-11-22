@@ -1,8 +1,8 @@
 <script lang="ts">
 	/**
 	 * EntityFormField — the ONE per-field anatomy shared by every form
-	 * surface: `EntityFormPage` (inside FormField/FormControl, edit mode)
-	 * and `EntityRecordSheetBody` (standalone, readonly). The widget
+	 * surface: `EntityFormPage` and `EntityRecordSheet` both mount it
+	 * through `EntityFormSurface`. The widget
 	 * resolution itself lives in `FormFieldDispatcher`; this component
 	 * owns the surrounding anatomy — icon + translated label + priority
 	 * tooltip + optional editing badge, the boolean→SwitchField split,
@@ -54,8 +54,9 @@
 		service,
 	}: {
 		column: MetaColumn;
-		/** Declared `page_props.form` placement — readonly/placeholder_key.
-		 *  Fallback surfaces (no form declaration) pass undefined. */
+		/** Declared `page_props.form` placement — placeholder_key /
+		 *  grid hints. Fallback surfaces (no form declaration) pass
+		 *  undefined. */
 		placement?: FormFieldPlacement;
 		columns: ReadonlyMap<string, MetaColumn>;
 		value?: unknown;
@@ -113,9 +114,10 @@ const fieldDisabled = $derived(
 		column.kind !== undefined ||
 		(column.immutable === true && mode !== 'create'),
 );
-/** Readonly state — placement-readonly: a value-locked field inside an
- *  editable form. Renders the readonly chrome (grey border + white bg). */
-const fieldReadonly = $derived(readonly || placement?.readonly === true);
+/** Readonly state — collaboration conflict lock: a value-locked field
+ *  inside an editable form. Renders the readonly chrome (grey border +
+ *  white bg). */
+const fieldReadonly = $derived(readonly);
 
 	/** SwitchField binds a strict `boolean`; the field value is the
 	 *  record's `unknown` (undefined on columns the row never populated).

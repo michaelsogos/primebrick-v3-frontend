@@ -549,8 +549,8 @@
 	 *  `disabled_when` — fail-closed while a prop comparison can't
 	 *  evaluate yet. */
 	const depOff = $derived(dep ? depDisabled(dep, depRecord, pivotRow.state.row) : false);
-	/** Two distinct states, two distinct chromes: `readonly` (placement
-	 *  policy — grey border + white bg) vs `disabled` (surface /
+	/** Two distinct states, two distinct chromes: `readonly` (collab
+	 *  conflict lock — grey border + white bg) vs `disabled` (surface /
 	 *  dependency gating — grey border + muted bg). `effectiveLocked`
 	 *  feeds controls that expose no readonly prop — a locked combo
 	 *  renders the disabled chrome by contract. */
