@@ -35,6 +35,7 @@
   import DocsPanel from '$lib/shell/sheets/panels/DocsPanel.svelte';
   import ServiceRecordPanel from '$lib/shell/sheets/panels/ServiceRecordPanel.svelte';
   import TranslationEditorPanel from '$lib/shell/sheets/panels/TranslationEditorPanel.svelte';
+  import SequencePatternPanel from '$lib/shell/sheets/panels/SequencePatternPanel.svelte';
   import DictExtrasPanel from '$lib/components/entity-dict-page/DictExtrasPanel.svelte';
   import BulkEditorPanel from '$lib/entity-list/sheets/panels/BulkEditorPanel.svelte';
   import BulkEditRowsPanel from '$lib/entity-list/sheets/panels/BulkEditRowsPanel.svelte';
@@ -71,7 +72,8 @@
     'shell.aiGuide': GuideAiChatPanel,
     'config.badgeValueEdit': BadgeValuePanel,
     'shell.docs': DocsPanel,
-    'i18n.translationEditor': TranslationEditorPanel
+    'i18n.translationEditor': TranslationEditorPanel,
+    'entity.sequencePattern': SequencePatternPanel
   };
 
   const panelId = $derived(sheetState.panelId);

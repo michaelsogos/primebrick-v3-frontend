@@ -25,6 +25,7 @@ export const SHEET_PANEL_IDS = [
   'entity.mapperViewer',
   'entity.record',
   'entity.dictExtras',
+  'entity.sequencePattern',
   'entity.bulkEditor',
   'entity.bulkEditRows',
   'service.record',
@@ -201,6 +202,19 @@ export type SheetPanelPropsMap = {
      * `schedule_spec`, `run_as`) when present.
      */
     context_row?: Record<string, unknown>;
+  };
+  'entity.sequencePattern': {
+    /** Pattern snapshot — the panel's initial mirror value. */
+    get_value: () => string;
+    /**
+     * Live value feed — subscribes a callback to the input's real `input`
+     * events (survives sheet-stack remounts). Returns the unsubscribe.
+     */
+    on_change?: (cb: (value: string) => void) => () => void;
+    /** Splice `insert` at the input's saved caret/selection. */
+    insert: (token: string) => void;
+    /** Form record — `step`/`start`/`tz` example context when carried. */
+    context?: Record<string, unknown>;
   };
   'config.currencySelect': {
     currentCurrency: string;

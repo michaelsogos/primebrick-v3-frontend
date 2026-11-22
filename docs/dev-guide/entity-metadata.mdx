@@ -215,6 +215,7 @@ a compile error. Absent → falls back to `type`.
 | `rule_filter` | Rule-filter builder. |
 | `lang` | Language picker. |
 | `sequence` | Sequence widget — `modes`/`default_mode`/`allow_create` from `seq`. |
+| `sequence_pattern` | Pattern-builder input (`SequencePatternInput`): free literal typing, in-input `{}` CTA opens the `entity.sequencePattern` token sheet (catalog from `sequenceTokenCatalog`, used-slot gating, insert-at-caret, live `renderSequenceValue` preview); validated by `parseSequencePattern` via `checkFieldValue` — same verdict as the wire. |
 | `i18n_key` | Translation-key badge — `languages` icon + resolved `$t`, raw key tooltip. |
 
 ## `table` — `EntityListTable` options

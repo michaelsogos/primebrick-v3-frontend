@@ -37,6 +37,7 @@
 		PayloadMapEditor,
 		ScheduleSpecInput,
 		SequenceInput,
+		SequencePatternInput,
 		DateWheelPicker,
 		Button,
 		ButtonGroup,
@@ -228,6 +229,7 @@
 		'text',
 		'avatar',
 		'sequence',
+		'sequence_pattern',
 	]);
 
 	/** Filter-surface map — the DIFFERENCES from form (everything else is
@@ -300,7 +302,7 @@
 		// the preview renderer is a form/list surface, never a filter control.
 		if (column.type === 'avatar') return 'text';
 		const resolved = deriveControl();
-		if (resolved === 'subject_combo' || resolved === 'json' || resolved === 'rule_filter' || resolved === 'payload_map' || resolved === 'schedule_spec' || resolved === 'sequence')
+		if (resolved === 'subject_combo' || resolved === 'json' || resolved === 'rule_filter' || resolved === 'payload_map' || resolved === 'schedule_spec' || resolved === 'sequence' || resolved === 'sequence_pattern')
 			return 'text';
 		if (FILTER_CONTROLS.has(resolved)) return resolved;
 		throw new Error(
@@ -322,6 +324,7 @@
 		if (column.type === 'avatar') return 'avatar';
 		if (format === 'schedule_spec') return 'schedule_spec';
 		if (format === 'sequence') return 'sequence';
+		if (format === 'sequence_pattern') return 'sequence_pattern';
 		// `rule_filter` wins over the jsonb fallback — a RuleFilter[]
 		// column renders the guided composer, never raw JSON first.
 		if (format === 'rule_filter') return 'rule_filter';
@@ -733,6 +736,93 @@
 		{service}
 		readonly={effectiveReadonly}
 		disabled={effectiveDisabled}
+		{placeholder}
+		{...controlProps}
+	/>
+{:else if control === 'sequence_pattern'}
+	<!-- `format:"sequence_pattern"` — the bound value is the AUTHORED
+	     pattern string (persisted verbatim, gated by parseSequencePattern
+	     in checkFieldValue). The {} CTA opens the token sheet — helpers
+	     (live getter + caret splice) come from the widget, the sheet id
+	     is the host wiring (uom.on_pick contract). `record` feeds the
+	     preview's example context (step/start/tz when authored). -->
+	<SequencePatternInput
+		bind:value={stringValue.value}
+		context={record ?? undefined}
+		readonly={effectiveReadonly}
+		disabled={effectiveDisabled}
+		on_pick={(pick) =>
+			openSheet(
+				'entity.sequencePattern',
+				{
+					// The live input IS the value channel: sheet stacking
+					// remounts the record pane (a fresh $form rehydrated from
+					// the draft slot), so component-level bindings captured
+					// in the pick orphan instantly. Writing el.value +
+					// dispatching `input` rides the real bind chain — widget →
+					// dispatcher → $form → draft — exactly like keystrokes.
+					get_value: () =>
+						document.querySelector<HTMLInputElement>(
+							`[data-testid=entity-form-field-${column.key}] input`,
+						)?.value ?? '',
+					on_change: (cb: (v: string) => void) => {
+						// The record pane remounts async (meta fetch), so the input
+						// may not exist at subscribe time — attach lazily via an
+						// observer, re-attach on any future remount, and push the
+						// current snapshot each time the element lands.
+						const sel = `[data-testid=entity-form-field-${column.key}] input`;
+						let el: HTMLInputElement | null = null;
+						let detach: (() => void) | null = null;
+						const attach = () => {
+							const cur = document.querySelector<HTMLInputElement>(sel);
+							if (cur === el) return;
+							detach?.();
+							el = cur;
+							detach = null;
+							if (el) {
+								const handler = () => cb(el!.value);
+								el.addEventListener('input', handler);
+								detach = () => el!.removeEventListener('input', handler);
+								cb(el.value);
+							}
+						};
+						attach();
+						const mo = new MutationObserver(attach);
+						mo.observe(document.body, { childList: true, subtree: true });
+						return () => {
+							mo.disconnect();
+							detach?.();
+						};
+					},
+					context: record ?? undefined,
+					insert: (tok: string) => {
+						const el = document.querySelector<HTMLInputElement>(
+							`[data-testid=entity-form-field-${column.key}] input`,
+						);
+						if (!el) return;
+						const v = el.value;
+						// The LIVE DOM selection is authoritative — it mirrors the
+						// tracked caret, post-open caret moves, and our own
+						// setSelectionRange. A cleared `{0,0}` (blur on some
+						// engines) falls back to the open-time snapshot; `null`
+						// snapshot = untouched field → append.
+						let s = el.selectionStart ?? v.length;
+						let e = el.selectionEnd ?? v.length;
+						if (s === 0 && e === 0) {
+							s = pick.caret?.start ?? v.length;
+							e = pick.caret?.end ?? v.length;
+						}
+						s = Math.max(0, Math.min(s, v.length));
+						e = Math.max(0, Math.min(e, v.length));
+						el.value = v.slice(0, s) + tok + v.slice(e);
+						const pos = s + tok.length;
+						el.setSelectionRange(pos, pos);
+						pick.caret = { start: pos, end: pos };
+						el.dispatchEvent(new InputEvent('input', { bubbles: true }));
+					},
+				},
+				{ stack: true },
+			)}
 		{placeholder}
 		{...controlProps}
 	/>

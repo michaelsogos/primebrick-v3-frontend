@@ -922,6 +922,87 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     }
   });
 
+  /**
+   * `format:"sequence_pattern"` — the pattern-builder widget on the
+   * `sequence.pattern` column: free literal typing, token-catalog sheet
+   * via the in-input {} CTA, insert-at-caret, used-token gating, live
+   * interpolated preview (same renderSequenceValue engine as the BE).
+   */
+  test("sequence_pattern widget — token sheet, caret insert, used gating, live preview", async ({
+    page,
+  }) => {
+    test.setTimeout(60000);
+    // Wire spy — an invalid pattern must never reach the wire.
+    let posts = 0;
+    page.on("request", (r) => {
+      if (r.url().includes("/svc/crm/api/v1/entities/sequence") && r.method() === "POST") posts++;
+    });
+
+    await page.goto("/crm/settings/sequences");
+    await expect(page.locator("table")).toBeVisible({ timeout: 5_000 });
+    await page.getByTestId("entity-create-cta").click();
+    const sheet = page.getByTestId("entity-record-sheet");
+    await expect(sheet).toBeVisible({ timeout: 5_000 });
+    await sheet.locator("[data-testid=entity-form-field-name] input").fill("e2e_pattern_widget");
+
+    const patternInput = sheet.locator("[data-testid=entity-form-field-pattern] input");
+    await expect(patternInput).toBeEnabled({ timeout: 5_000 });
+
+    // Free literal typing — arbitrary text is accepted verbatim.
+    await patternInput.fill("INV-");
+    // Untouched-caret insert appends at end; an invalid-incomplete
+    // pattern (missing {seq}) must show the parser error in the sheet.
+    const tokensCta = sheet.locator("[data-testid$=-tokens-cta]");
+    await expect(tokensCta).toBeVisible();
+    await tokensCta.click();
+    await expect(page.getByTestId("sequence-pattern-token-seq")).toBeVisible({ timeout: 5_000 });
+    // Token rows render the catalog examples — the example counter rides
+    // the form's `start` sibling (served default 1 on create).
+    await expect(page.getByTestId("sequence-pattern-token-seq-example")).toHaveText("1");
+    await expect(page.getByTestId("sequence-pattern-token-seq_width-example")).toHaveText("00001");
+    // Incomplete pattern → preview shows the parser error, not a guess.
+    await expect(page.getByTestId("sequence-pattern-preview-error")).toBeVisible();
+
+    // Inject {seq} — lands where the caret was (end of "INV-").
+    await page.getByTestId("sequence-pattern-token-seq-insert").click();
+    await expect(patternInput).toHaveValue("INV-{seq}");
+    // Live preview interpolates through the shared renderer.
+    await expect(page.getByTestId("sequence-pattern-preview")).toHaveText("INV-1");
+    // Grammar arity — the used counter slot is gated (badge + no CTA);
+    // date/literal tokens stay insertable.
+    await expect(page.getByTestId("sequence-pattern-token-seq-used")).toBeVisible();
+    await expect(page.getByTestId("sequence-pattern-token-seq_width-used")).toBeVisible();
+    await expect(page.getByTestId("sequence-pattern-token-yyyy-insert")).toBeVisible();
+
+    // Mid-string insertion — caret placed between INV- and {seq}.
+    await patternInput.click();
+    await patternInput.evaluate((el: HTMLInputElement) => el.setSelectionRange(4, 4));
+    await page.getByTestId("sequence-pattern-token-yyyy-insert").click();
+    await expect(patternInput).toHaveValue("INV-{yyyy}{seq}");
+    await expect(page.getByTestId("sequence-pattern-preview")).toHaveText(/INV-\d{4}1/);
+
+    // Selection replace — select "{seq}" text, insert a date token over it.
+    await patternInput.evaluate((el: HTMLInputElement) => {
+      const i = el.value.indexOf("{seq}");
+      el.setSelectionRange(i, i + 5);
+    });
+    await page.getByTestId("sequence-pattern-token-MM-insert").click();
+    await expect(patternInput).toHaveValue("INV-{yyyy}{MM}");
+
+    // Close the token sheet — invalid pattern (no counter) blocks submit,
+    // zero POST on the wire.
+    await page.keyboard.press("Escape");
+    const submit = page.getByTestId("entity-form-submit");
+    await expect(submit).toBeDisabled({ timeout: 5_000 });
+    expect(posts).toBe(0);
+
+    // Eraser — the standard clear CTA empties the field.
+    await sheet
+      .locator("[data-testid=entity-form-field-pattern] [data-testid$=-clear]")
+      .click();
+    await expect(patternInput).toHaveValue("");
+  });
+
   test("entity.record update — uid pill, kind-off, reset, pencil-off silent reset, dirty-close native guard", async ({
     page,
   }) => {
