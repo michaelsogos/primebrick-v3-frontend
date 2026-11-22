@@ -3,7 +3,7 @@
   import { t } from '$lib/i18n';
   import { SheetPanelLayout } from '@primebrick/ui';
   import SheetSectionTitle from '$lib/shell/sheets/SheetSectionTitle.svelte';
-  import { Braces, Check, Plus, Tag } from '@primebrick/ui/vendor/lucide';
+  import { Braces, Plus, Tags } from '@primebrick/ui/vendor/lucide';
   import {
     sequenceTokenCatalog,
     usedSequenceTokens,
@@ -118,7 +118,6 @@
     data-testid={`sequence-pattern-token-${spec.id}`}
     data-used={isUsed}
   >
-    <Tag class="size-4 shrink-0 text-muted-foreground" />
     <span class="min-w-0 flex-1">
       <span class="block font-mono font-medium">{spec.insert}</span>
       <span class="block truncate text-xs text-muted-foreground">
@@ -136,7 +135,7 @@
         title={$t('app.widgets.sequence_pattern.used')}
         data-testid={`sequence-pattern-token-${spec.id}-used`}
       >
-        <Check class="size-3.5" />
+        <Tags class="size-4" />
       </span>
     {:else}
       <button
