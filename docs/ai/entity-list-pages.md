@@ -81,6 +81,12 @@ in the body (gated per the CTA contract below).
    explicitly selected.
 5. Do NOT create custom `Table`/`Skeleton`/delete-dialog markup or
    hand-rolled fetch/persistence — `EntityTablePage` provides all of it.
+6. Row **dblclick** is wired at `EntityTablePage`, never authored per
+   entity: a `kind:"detail"` census route opens in a new browser tab
+   (`window.open`, focused); absent → the entity's record surface IS
+   `entity.record` (builtin lists publish `kind:"list"` only) and opens
+   as an update sheet (view→pencil). `onRowDblClick` is the escape-hatch
+   override — same layer as `onEditAction`/`onCreateAction`.
 
 ## CTA gating contract (meta.actions — MANDATORY)
 
