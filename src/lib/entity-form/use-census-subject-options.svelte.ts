@@ -99,11 +99,14 @@ export function useCensusSubjectOptions(modules: () => ModuleInfo[]): CensusSubj
 			.sort(byLabel),
 	);
 
+	// Dict fetches resolve through the same rule as the route loader —
+	// `translations_module ?? id`. Virtual/delegating modules (api →
+	// system) own no translations schema; fetching their raw id 404s.
 	const censusContributors = $derived(
 		new Set(
 			modules()
 				.filter((m) => (m.callables?.callables?.length ?? 0) > 0 || (m.events?.emits?.length ?? 0) > 0)
-				.map((m) => m.id),
+				.map((m) => m.translations_module ?? m.id),
 		),
 	);
 	$effect(() => {
