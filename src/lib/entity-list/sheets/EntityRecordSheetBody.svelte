@@ -49,6 +49,7 @@
     editing = false,
     draft = $bindable({}),
     service,
+    mode = 'update',
   }: {
     meta: EntityMeta;
     record: Record<string, unknown>;
@@ -65,6 +66,10 @@
     /** Owning module code — seq-bound controls resolve the module-local
      *  builtin registry through it (see FormFieldDispatcher). */
     service?: string;
+    /** Panel lifecycle — forwarded to `EntityFormField` so `immutable`
+     *  columns are editable in create; the audit accordion is a
+     *  record-only section (absent in create). */
+    mode?: 'create' | 'update';
   } = $props();
 
   const uidKey = $derived(meta?.uid ?? 'uuid');
@@ -82,11 +87,13 @@
   const auditColumns = $derived(
     allColumns.filter((c) => c.audited === true && c.key !== 'version'),
   );
-  /** Form surface — everything else except uid (top badge) and version
-   *  (footer badge). */
+  /** Form surface — everything else except uid (top badge), version
+   *  (footer badge) and `kind`-ed columns (`calculated`/`virtual` are
+   *  read-only projections: core contract "never belongs in
+   *  `page_props.form`" — never widgets, never writable). */
   const formColumns = $derived(
     allColumns.filter(
-      (c) => c.audited !== true && c.key !== uidKey && c.key !== 'version',
+      (c) => c.audited !== true && !c.kind && c.key !== uidKey && c.key !== 'version',
     ),
   );
   const uidValue = $derived(record[uidKey]);
@@ -168,6 +175,7 @@
       emitsOptions={census.emitsOptions}
       callablesOptions={census.callablesOptions}
       disabled={!editing}
+      {mode}
       bind:value={draft[col.key]}
       record={draft}
       served_record={record}
@@ -202,7 +210,7 @@
     </div>
   {/if}
 
-  {#if auditColumns.length}
+  {#if auditColumns.length && mode !== 'create'}
     <!-- Audit fields live behind a collapsed accordion — the separator-line
          affordance is the canonical Accordion trigger. -->
     <Accordion.Root type="single" class="w-full">

@@ -22,6 +22,13 @@ type EntityMeta = {
   display_name: string;           // response-required — "${field}" template,
                                   // BE materializes default "${display_field}"
   actions_overrides?: Record<string, { enabled?: boolean }>;
+  create?: { surface?: "form" | "sheet" };
+                                // "form" (default/absent) → census kind:"create"
+                                //   route + page_props.form → EntityFormPage
+                                // "sheet" → list CTA opens entity.record in
+                                //   mode:"create" (no route — a sheet is
+                                //   never a nav leaf). Declared on the meta,
+                                //   never via component props.
   columns: MetaColumn[];          // ROOT-level field dictionary (all page types)
   table?: TableMeta;              // OPTIONAL — absent on form-only metas
   actions?: EntityAction[];       // derived capability contract

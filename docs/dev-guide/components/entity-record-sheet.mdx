@@ -94,6 +94,24 @@ widgets return to readonly. `immutable` columns stay disabled even in
 edit mode; `avatar` columns with `avatar.initials_field` derive their
 draft from the sibling field live while editing.
 
+## Create mode — `mode:"create"`
+
+The SAME panel is the meta-driven create surface: an entity declaring
+`meta.create.surface === "sheet"` wires the list create CTA to
+`openSheet('entity.record', { entity, service, mode: 'create' })` — no
+census `kind:"create"` route is required (a sheet is never a nav leaf).
+
+Create anatomy differs by construction, not by branches:
+
+- no record fetch — only `/meta` loads; the draft is empty (no `value`)
+- no pencil toggle (born editable), no uid/version badges, no lifecycle
+  chip, no audit accordion — record-only sections are absent
+- `immutable` columns ARE editable (set-once semantics live on create)
+- commit POSTs `create.single` (no `version`), then the panel morphs
+  into update mode on the created row — canonical re-GET, pencil +
+  version badge + audit return
+- Cancel closes the sheet (there is no readonly state to return to)
+
 ## Meta-driven behavior
 
 Every section is vocabulary-driven — no sheet-specific branching:
@@ -101,9 +119,9 @@ Every section is vocabulary-driven — no sheet-specific branching:
 | Column flag | Effect on the sheet |
 |-------------|---------------------|
 | `hidden:true` | Dropped from served meta — never rendered (e.g. `auth_method_enforcer_dismissed`) |
-| `immutable:true` | Disabled in edit mode, excluded from PUT payload |
-| `audited:true` | Audit accordion only — never a widget |
-| `kind:"calculated"` | Readonly always (e.g. `suspended`) |
+| `immutable:true` | Disabled in edit mode, excluded from PUT payload (editable in create) |
+| `audited:true` | Audit accordion only — never a widget (accordion absent in create) |
+| `kind:"calculated"`/`kind:"virtual"` | NEVER a form widget on any surface — read-only projections (core contract: "never belongs in `page_props.form`"); excluded from the field grid and from PUT/POST payloads |
 | `type:"avatar"` + `avatar.color_field` | MetaAvatar hex, initials derived live in edit |
 | `options_source:"system.roles"` | Role badges; in list cells each badge drills into `entity.record` for `role_mapping` |
 

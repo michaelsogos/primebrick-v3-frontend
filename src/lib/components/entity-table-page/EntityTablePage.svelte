@@ -220,7 +220,21 @@
     );
   }
 
-  const effectiveOnCreateAction = $derived(onCreateAction ?? (effectiveCreatePath ? openCreate : undefined));
+  /** Meta-driven create surface — `meta.create.surface === "sheet"`
+   *  opens the SAME `entity.record` panel in create mode (no census
+   *  `kind:"create"` route required: a sheet is never a nav leaf).
+   *  The `form` default keeps resolving through the census route. */
+  const createSurface = $derived(meta?.create?.surface);
+  function openCreateSheet() {
+    void import('$lib/shell/sheets/sheet-manager.svelte').then(({ openSheet }) =>
+      openSheet('entity.record', { entity, service, mode: 'create' }),
+    );
+  }
+
+  const effectiveOnCreateAction = $derived(
+    onCreateAction ??
+      (createSurface === 'sheet' ? openCreateSheet : effectiveCreatePath ? openCreate : undefined),
+  );
   const effectiveOnEditAction = $derived(
     onEditAction ?? (effectiveEditPath ? openEdit : openEditSheet)
   );

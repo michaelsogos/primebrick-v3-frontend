@@ -791,4 +791,99 @@ test.describe("builtin sequence registry — mounted by construction", () => {
       await page.request.delete(`${CRM_BASE}/sequence/${s.uuid}?version=${row.version}`);
     }
   });
+
+  /**
+   * Meta-driven create surface — `meta.create.surface === "sheet"` wires
+   * the list CTA to `entity.record` in `mode:"create"` (ONE panel, no
+   * census create route). Also pins the `kind` contract: `calculated`/
+   * `virtual` projections are NEVER form widgets on any surface, and
+   * `name` — dropped `immutable` — stays mutable on update.
+   */
+  test("create.surface sheet — CTA → entity.record create mode → POST → morph; kind never widget", async ({
+    page,
+  }) => {
+    await page.goto("/crm/settings/sequences");
+    await expect(page.locator("table")).toBeVisible({ timeout: 30_000 });
+
+    // ── CTA auto-wired from meta (no authored onCreateAction) ─────────
+    const cta = page.getByTestId("entity-create-cta");
+    await expect(cta).toBeVisible({ timeout: 15_000 });
+    await cta.click();
+    const sheet = page.getByTestId("entity-record-sheet");
+    await expect(sheet).toBeVisible({ timeout: 15_000 });
+
+    // Create anatomy — record-only sections absent by construction:
+    // no pencil toggle (born editable), no version badge, no audit
+    // accordion, no uid. Fields editable from mount.
+    await expect(page.getByTestId("entity-record-sheet-edit-toggle")).toHaveCount(0);
+    await expect(page.getByTestId("entity-record-sheet-version-badge")).toHaveCount(0);
+    await expect(sheet.getByTestId("entity-record-sheet-audit-section")).toHaveCount(0);
+    const nameInput = sheet.locator("#record-sheet-field-name");
+    await expect(nameInput).toBeEnabled({ timeout: 10_000 });
+    // `kind:"virtual"`/audited projections never reach the widget grid —
+    // on ANY form surface (create AND update).
+    for (const k of [
+      "value_actual",
+      "value_next",
+      "emitted_actual",
+      "emitted_next",
+      "last_alloc_at",
+      "last_alloc_by",
+    ])
+      await expect(sheet.locator(`#record-sheet-field-${k}`)).toHaveCount(0);
+
+    // POST → the panel morphs into update on the created row.
+    const unique = `e2e_sheet_${Date.now()}`;
+    await nameInput.fill(unique);
+    await sheet.locator("#record-sheet-field-pattern").fill("E2ES-C-{seq:4}");
+    await sheet.locator("#record-sheet-field-step").fill("1");
+    await sheet.locator("#record-sheet-field-start").fill("1");
+    const postReq = page.waitForResponse(
+      (r) =>
+        r.url().includes("/svc/crm/api/v1/entities/sequence") &&
+        r.request().method() === "POST" &&
+        r.status() === 201,
+      { timeout: 20_000 },
+    );
+    await page.getByTestId("entity-record-sheet-save").click();
+    const postRes = await postReq;
+    const created = extJsonParse<any>(await postRes.text());
+    const createdRow = (created.entity ?? created) as Record<string, unknown>;
+
+    // Morph → update: version badge + pencil toggle + audit section
+    // return, uid block renders.
+    await expect(page.getByTestId("entity-record-sheet-version-badge")).toBeVisible({
+      timeout: 15_000,
+    });
+    await expect(page.getByTestId("entity-record-sheet-edit-toggle")).toBeVisible();
+
+    // ── Update: pencil → `name` stays editable (immutable dropped —
+    // display-name is mutable any number of times) → PUT persists ────
+    await page.getByTestId("entity-record-sheet-edit-toggle").click();
+    const renamed = `${unique}_r`;
+    await expect(nameInput).toBeEnabled({ timeout: 10_000 });
+    await nameInput.fill(renamed);
+    const putReq = page.waitForResponse(
+      (r) =>
+        r.url().includes("/svc/crm/api/v1/entities/sequence/") &&
+        r.request().method() === "PUT" &&
+        r.status() === 200,
+      { timeout: 20_000 },
+    );
+    await page.getByTestId("entity-record-sheet-save").click();
+    await putReq;
+    // kind-projections are never in the PUT payload — the POST/PUT body
+    // carries only authored columns (verified implicitly: a polluted
+    // payload 400s the strict schema).
+    await expect(nameInput).toHaveValue(renamed, { timeout: 10_000 });
+
+    // Cleanup fixture.
+    const g = await page.request.get(`${CRM_BASE}/sequence/${createdRow.uuid}`);
+    if (g.ok()) {
+      const row = extJsonParse<any>(await g.text());
+      await page.request.delete(
+        `${CRM_BASE}/sequence/${createdRow.uuid}?version=${row.version}`,
+      );
+    }
+  });
 });

@@ -126,8 +126,9 @@ export type SheetPanelPropsMap = {
   'entity.record': {
     /** Target entity API name (from `column.ref.entity`). */
     entity: string;
-    /** The cell's raw value — the target uid for uuid refs. */
-    value: unknown;
+    /** The cell's raw value — the target uid for uuid refs. Absent in
+     *  `mode:"create"`. */
+    value?: unknown;
     /** The column's ref contract — drives business-key resolution. */
     ref?: import('$lib/entity-list/types').MetaColumn['ref'];
     /** Owning service — required for builtin entities (census map is
@@ -138,6 +139,10 @@ export type SheetPanelPropsMap = {
      *  ELT Modifica fallback for entities without a `kind:"detail"`
      *  route. Gated on `update.single` by the sheet itself. */
     edit?: boolean;
+    /** `create` → the meta-driven sheet surface (`meta.create.surface ===
+     *  "sheet"`): no record fetch, empty draft, POST commit, then morphs
+     *  into update. Default `update`. */
+    mode?: 'create' | 'update';
   };
   /**
    * Dict-row extras — the update-editable columns beyond the inline

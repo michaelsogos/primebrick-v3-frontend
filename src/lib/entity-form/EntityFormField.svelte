@@ -105,12 +105,12 @@
 	const labelFor = $derived(controlProps?.id as string | undefined);
 
 /** Disabled state — surface-level non-editability (sheet without the
- *  pencil), `kind:"calculated"` server projections (never writable by
- *  construction), or the `immutable` lifecycle frozen after creation.
- *  Renders the disabled chrome (grey border + muted bg). */
+ *  pencil), `kind`-ed server projections (`calculated`/`virtual` — never
+ *  writable by construction), or the `immutable` lifecycle frozen after
+ *  creation. Renders the disabled chrome (grey border + muted bg). */
 const fieldDisabled = $derived(
 	disabled ||
-		column.kind === 'calculated' ||
+		column.kind !== undefined ||
 		(column.immutable === true && mode !== 'create'),
 );
 /** Readonly state — placement-readonly: a value-locked field inside an

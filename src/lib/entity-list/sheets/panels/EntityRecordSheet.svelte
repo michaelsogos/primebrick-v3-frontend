@@ -32,7 +32,7 @@
   import { Badge, Button, DynamicIcon, SheetPanelFooter, SheetPanelLayout, toDisplayString } from '@primebrick/ui';
   import EntityRecordSheetBody from '../EntityRecordSheetBody.svelte';
   import EntityRecordUid from '../EntityRecordUid.svelte';
-  import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
+  import { openSheet, closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import { isEntityOpAllowed } from '$lib/permissions.svelte';
   import { findActionEndpoint, fillActionPath } from '$lib/entity-list/action-endpoints';
   import { extJsonParse, extJsonStringify } from '$lib/api-ext';
@@ -48,11 +48,13 @@
     ref,
     service,
     edit,
+    mode: modeProp,
   }: {
     /** Target entity API name (from `column.ref.entity`). */
     entity: string;
-    /** The cell's raw value — the target uid for uuid refs. */
-    value: unknown;
+    /** The cell's raw value — the target uid for uuid refs. Absent in
+     *  `mode:"create"` (no record exists yet). */
+    value?: unknown;
     /** The column's ref contract — drives business-key resolution. */
     ref?: MetaColumn['ref'];
     /** Owning service — required for builtin entities (census map is
@@ -62,7 +64,20 @@
     /** Open straight into edit mode — ELT Modifica fallback for
      *  entities without a `kind:"detail"` route. */
     edit?: boolean;
+    /** `create` → SAME panel, no record fetch: meta only, empty draft,
+     *  widgets editable from mount, commit POSTs `create.single` then
+     *  the panel morphs into update on the created row. `update`
+     *  (default) → the ref-resolution + GET contract above. */
+    mode?: 'create' | 'update';
   } = $props();
+
+  /** Panel mode — `let` because a successful create morphs the sheet
+   *  into update on the created row (props are mount-stable). */
+  let mode = $state<'create' | 'update'>(untrack(() => modeProp ?? 'update'));
+  const isCreate = $derived(mode === 'create');
+  /** The ref value load() resolves — in create mode nothing exists until
+   *  the POST lands, then it carries the created uid. */
+  let resolvedValue = $state<unknown>(untrack(() => value));
 
   // Props are stable within a sheet mount — the host remounts the panel
   // per open; untrack marks the intentional one-time read.
@@ -104,7 +119,7 @@
    *  permissions (same `isEntityOpAllowed` gate as row CTAs — fail-closed). */
   // `edit` prop seeds the initial mode (ELT Modifica fallback — the
   // pencil gate still applies: `canUpdate` false → edit renders off).
-  let editing = $state(untrack(() => edit === true));
+  let editing = $state(untrack(() => edit === true || modeProp === 'create'));
   let saving = $state(false);
   let saveError = $state<string | null>(null);
   /** Field surface draft — bound up from the body; readonly mode keeps it
@@ -190,6 +205,7 @@
   });
   const titleText = $derived.by(() => {
     if (!meta) return entity;
+    if (isCreate) return entitySingular;
     const disp = meta.display_field ? record?.[meta.display_field] : undefined;
     return disp !== undefined && disp !== null && disp !== ''
       ? toDisplayString(disp)
@@ -218,18 +234,22 @@
 
   /** Keys the PUT is allowed to carry — the SAME partition the body
    *  renders: declared placements when present, else served non-audit,
-   *  non-uid, non-version, non-hidden columns. uid/version/audit never
-   *  cross the write boundary. */
+   *  non-uid, non-version, non-hidden, non-`kind` columns.
+   *  uid/version/audit/`kind`-ed projections never cross the write
+   *  boundary. */
   const saveKeys = $derived.by<string[]>(() => {
     if (formPlacements.length)
-      return formPlacements.filter(({ col }) => col.immutable !== true).map(({ col }) => col.key);
+      return formPlacements
+        .filter(({ col }) => (isCreate || col.immutable !== true) && !col.kind)
+        .map(({ col }) => col.key);
     const uid = meta?.uid ?? 'uuid';
     return (meta?.columns ?? [])
       .filter(
         (c) =>
           !c.hidden &&
           c.audited !== true &&
-          c.immutable !== true &&
+          (isCreate || c.immutable !== true) &&
+          !c.kind &&
           c.key !== uid &&
           c.key !== 'version',
       )
@@ -263,11 +283,44 @@
   }
 
   async function save(): Promise<void> {
-    if (!meta || !record || rowUuid === null) return;
+    if (!meta || !record || (!isCreate && rowUuid === null)) return;
     saving = true;
     saveError = null;
     try {
       const uid = meta.uid ?? 'uuid';
+      if (isCreate) {
+        const endpoint = findActionEndpoint(meta.actions, 'create.single');
+        const url = endpoint
+          ? serviceApiPrefix(entity, service) + endpoint.path
+          : basePath;
+        const fields: Record<string, unknown> = {};
+        for (const k of saveKeys) {
+          // seq-bound untouched = empty directive slot — omit, same rule
+          // as the update dirty-diff.
+          if (columnsMap.get(k)?.format === 'sequence' && (draft[k] === '' || draft[k] == null))
+            continue;
+          if (draft[k] !== undefined) fields[k] = draft[k];
+        }
+        const res = await apiFetch(url, {
+          method: endpoint?.method ?? 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: extJsonStringify({ entity: fields }),
+        });
+        if (!res.ok) {
+          saveError = `HTTP ${res.status}`;
+          return;
+        }
+        const body = (await res.text().then((t) => extJsonParse<any>(t))) as Record<string, unknown>;
+        const created = (body?.entity ?? body) as Record<string, unknown>;
+        // Morph into update on the created row — the served record is the
+        // source of truth, never the echoed payload: re-GET canonically.
+        resolvedValue = created?.[uid];
+        heroUid = resolvedValue;
+        mode = 'update';
+        editing = false;
+        await load();
+        return;
+      }
       const endpoint = findActionEndpoint(meta.actions, 'update.single');
       const url = endpoint
         ? serviceApiPrefix(entity, service) + fillActionPath(endpoint.path, record, uid)
@@ -324,8 +377,14 @@
     unreachable = false;
     try {
       meta = await fetchEntityMeta(basePath);
+      // Create mode — no record exists yet: meta drives the empty form,
+      // `record={}` keeps uid/audit/version/lifecycle sections absent.
+      if (mode === 'create') {
+        record = {};
+        return;
+      }
       const uid = meta.uid ?? 'uuid';
-      let uuid = String(value);
+      let uuid = String(resolvedValue);
       const ff = ref?.filter_field;
       // uid-keyed refs resolve `value` straight to `GET /record/<uuid>` — a
       // non-uuid target is a pseudo-actor ref (`system`, seed aliases):
@@ -396,7 +455,7 @@
     <span class={isDeleted ? 'text-destructive' : undefined}>{titleText}</span>
   {/snippet}
   {#snippet actions()}
-    {#if canUpdate}
+    {#if canUpdate && !isCreate}
       <Button
         variant="ghost"
         size="icon"
@@ -481,6 +540,7 @@
         {formPlacements}
         {formTwoCol}
         {editing}
+        {mode}
         service={serviceCodeOf(basePath) ?? undefined}
         bind:draft
       />
@@ -536,7 +596,7 @@
             variant="outline"
             size="sm"
             disabled={saving}
-            onclick={toggleEdit}
+            onclick={isCreate ? closeSheet : toggleEdit}
             data-testid="entity-record-sheet-cancel"
           >
             {$t('app.common.cancel')}
@@ -548,7 +608,7 @@
             data-testid="entity-record-sheet-save"
           >
             <Check class="mr-1 size-4" />
-            {$t('app.common.save')}
+            {$t(isCreate ? 'app.common.create' : 'app.common.save')}
           </Button>
         {/if}
       </SheetPanelFooter>
