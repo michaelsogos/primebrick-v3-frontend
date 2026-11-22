@@ -23,6 +23,11 @@ import { extJsonParse } from "@primebrick/core/ext-json";
 const CRM_BASE = "/svc/crm/api/v1/entities";
 const NAME = `e2e_seq_${Date.now()}`;
 
+// Serial — the suite mutates shared DB state (bound rows, live counters)
+// and intercepts routes; parallel workers race the same rows and starve
+// the single dev stack (same convention as the other DB-coupled specs).
+test.describe.configure({ mode: "serial" });
+
 test.describe("builtin sequence registry — mounted by construction", () => {
   test.beforeEach(async ({ page }) => {
     await loginAsTestAdmin(page);
@@ -517,6 +522,121 @@ test.describe("builtin sequence registry — mounted by construction", () => {
    *   - bulk delete CTA exists (`delete.bulk` permission declared) and
    *     dispatches POST /svc/crm/bulk-delete → 200
    */
+  /**
+   * Stale persisted state must SELF-HEAL — a renamed column (`code`→`name`)
+   * leaves `pb:*:list:sort` pointing at a key the wire now rejects closed.
+   * Two layers: bootstrap sanitize drops it before the first call; a
+   * mid-session rename (stale cached meta) heals via meta re-fetch +
+   * re-sanitize + exactly one retry.
+   */
+  test("stale persisted sort_key self-heals at bootstrap — page stays usable", async ({
+    page,
+  }) => {
+    const listCalls: number[] = [];
+    page.on("response", (r) => {
+      if (r.url().includes("/entities/sequence/list")) listCalls.push(r.status());
+    });
+    // Pre-rename profile: the persisted sort still references `code`.
+    await page.addInitScript(() =>
+      sessionStorage.setItem(
+        "pb:crm-sequence:list:sort",
+        JSON.stringify({ key: "code", dir: "asc" }),
+      ),
+    );
+    await page.goto("/crm/settings/sequences", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 20_000 });
+    // No 400 ever shipped — the stale key was dropped pre-fetch and the
+    // healed default sort persisted over the poisoned slot.
+    expect(listCalls.filter((s) => s >= 400)).toEqual([]);
+    const healed = await page.evaluate(() =>
+      sessionStorage.getItem("pb:crm-sequence:list:sort"),
+    );
+    expect(healed).not.toContain('"code"');
+  });
+
+  test("mid-session meta staleness heals — VALIDATION 400 → meta re-fetch → one retry", async ({
+    page,
+  }) => {
+    let metaFetches = 0;
+    const listStatuses: number[] = [];
+    page.on("response", (r) => {
+      if (r.url().includes("/entities/sequence/meta")) metaFetches++;
+      if (r.url().includes("/entities/sequence/list")) listStatuses.push(r.status());
+    });
+    // First list call answers the fail-closed field-key rejection — the
+    // exact wire shape the DAL emits for a stale `sort_key` (`internal_code`
+    // carries the DAL code, `detail` the message). The page must
+    // re-download meta, re-sanitize, retry once, and render — never loop.
+    let poisoned = true;
+    await page.route("**/entities/sequence/list**", (route) => {
+      if (!poisoned) return route.continue();
+      poisoned = false;
+      return route.fulfill({
+        status: 400,
+        contentType: "application/problem+json",
+        body: JSON.stringify({
+          type: "/errors/validation-error",
+          title: "Validation error",
+          status: 400,
+          detail: 'Invalid sort_key "code" for SequenceEntity — must be one of: created_at, name',
+          internal_code: "VALIDATION",
+          severity: "MEDIUM",
+        }),
+      });
+    });
+    // Attach the 200 waiter BEFORE goto — the retried response must be
+    // observed through the same event waitForResponse listens to, or the
+    // status assertions race the CDP delivery of `page.on("response")`.
+    const healedList = page.waitForResponse(
+      (r) => r.url().includes("/entities/sequence/list") && r.status() === 200,
+      { timeout: 20_000 },
+    );
+    await page.goto("/crm/settings/sequences", { waitUntil: "domcontentloaded" });
+    await healedList;
+    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 20_000 });
+    expect(listStatuses.filter((s) => s === 400)).toHaveLength(1);
+    expect(metaFetches).toBeGreaterThanOrEqual(2);
+  });
+
+  test("non-field VALIDATION 400 never heals — no retry, no meta refetch", async ({
+    page,
+  }) => {
+    let metaFetches = 0;
+    const listStatuses: number[] = [];
+    page.on("response", (r) => {
+      if (r.url().includes("/entities/sequence/meta")) metaFetches++;
+      if (r.url().includes("/entities/sequence/list")) listStatuses.push(r.status());
+    });
+    // An envelope-param rejection (`page_size` ceiling) is NOT a
+    // stale-meta signal — healing cannot fix it, so the page must surface
+    // the error without a meta refetch or a retry (the loop the guard
+    // exists to prevent).
+    await page.route("**/entities/sequence/list**", (route) =>
+      route.fulfill({
+        status: 400,
+        contentType: "application/problem+json",
+        body: JSON.stringify({
+          type: "/errors/validation-error",
+          title: "Validation error",
+          status: 400,
+          detail: 'Invalid page_size "999" — maximum is 250',
+          internal_code: "VALIDATION",
+          severity: "MEDIUM",
+        }),
+      }),
+    );
+    const firstList = page.waitForResponse(
+      (r) => r.url().includes("/entities/sequence/list"),
+      { timeout: 20_000 },
+    );
+    await page.goto("/crm/settings/sequences", { waitUntil: "domcontentloaded" });
+    await firstList;
+    // Give any erroneous heal a moment to fire before asserting silence.
+    await page.waitForTimeout(3_000);
+    expect(listStatuses).toEqual([400]);
+    expect(metaFetches).toBe(1);
+  });
+
   test("side paths route to the owning service — delete, audit, sheet edit, bulk", async ({
     page,
   }) => {

@@ -48,8 +48,10 @@ import {
   sanitizeVisibleKeys,
   searchableTextColumns,
   fetchEntityMeta,
+  invalidateEntityMeta,
   ApiListError,
   readApiErrorDetails,
+  isStaleFieldRejection,
   asApiListError,
   isAbortError,
   isBackendGatewayUnreachable,
@@ -398,6 +400,20 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
 
   let searchTimer: ReturnType<typeof setTimeout> | null = null;
   let activeListController: AbortController | null = null;
+  /** Recursion guard for the stale-meta heal — one meta re-download per
+   *  failure chain, never a retry loop. */
+  let healing = false;
+
+  /** The META we validated persisted state against is itself stale when
+   *  a list call 400s on field keys — drop the cache entry, re-fetch,
+   *  and re-sanitize every persisted criterion (sort/filters/search_in/
+   *  visible keys) against the fresh meta. The healed state persists
+   *  through the metaLoaded-gated persist effect. */
+  async function healStaleMeta() {
+    invalidateEntityMeta(opts.basePath);
+    await loadMeta(true);
+    sanitizeListState(columns, _state);
+  }
 
   function ensureVisibleKeys() {
     if (!columns.length) return;
@@ -425,8 +441,8 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
     ensureVisibleKeys();
   }
 
-  async function loadMeta() {
-    if (_state.meta) return;
+  async function loadMeta(force = false) {
+    if (_state.meta && !force) return;
     _state.meta = await fetchEntityMeta(opts.basePath);
     applyMetaDefaults();
     // Sanitize persisted selections against the served meta: unknown preset
@@ -513,6 +529,23 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
     const res = await apiFetchWithTimeout(`${opts.basePath}/list?${qs.toString()}`, { signal: controller.signal }, 30_000);
     if (!res.ok) {
       const apiDetails = await readApiErrorDetails(res);
+      // Stale-meta self-heal — the wire fails closed on unresolvable
+      // field keys (VALIDATION / UNKNOWN_COLUMN 400). That signature
+      // means the meta this query was built from is stale: invalidate
+      // the meta cache, re-download, re-sanitize persisted state, and
+      // retry ONCE (`healing` guards recursion — a second failure
+      // surfaces normally). Any other error never heals — unrelated
+      // VALIDATION 400s (page/page_size/deleted_records/value rejects)
+      // fall straight to the error path, or the retry would loop.
+      if (!healing && res.status === 400 && isStaleFieldRejection(apiDetails)) {
+        healing = true;
+        try {
+          await healStaleMeta();
+          return await loadRows();
+        } finally {
+          healing = false;
+        }
+      }
       throw new ApiListError(apiDetails.code ?? 'LIST_FAILED', res.status, apiDetails);
     }
     const data = extJsonParse<ListResponse<TRow>>(await res.text());
@@ -672,11 +705,11 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
       {
         const dropped = sanitizeListState(columns, _state);
         if (import.meta.env.DEV) {
-          const { droppedFilterFields, droppedAdvancedIds, droppedSearchInKeys } = dropped;
-          if (droppedFilterFields.length || droppedAdvancedIds.length || droppedSearchInKeys.length) {
+          const { droppedFilterFields, droppedAdvancedIds, droppedSearchInKeys, droppedSortKey } = dropped;
+          if (droppedFilterFields.length || droppedAdvancedIds.length || droppedSearchInKeys.length || droppedSortKey !== null) {
             console.warn(
               `[useEntityList] dropped stale persisted list criteria for "${opts.basePath}": ` +
-              `filters=[${droppedFilterFields.join(',')}] advanced=[${droppedAdvancedIds.join(',')}] search_in=[${droppedSearchInKeys.join(',')}]`
+              `filters=[${droppedFilterFields.join(',')}] advanced=[${droppedAdvancedIds.join(',')}] search_in=[${droppedSearchInKeys.join(',')}] sort=[${droppedSortKey ?? ''}]`
             );
           }
         }

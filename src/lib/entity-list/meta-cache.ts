@@ -64,3 +64,18 @@ export function fetchEntityMeta(basePath: string): Promise<EntityMeta> {
 export function clearEntityMetaCache(): void {
   store().clear();
 }
+
+/**
+ * Drop one cached meta — a list call that fails closed on stale field
+ * keys means the META we sanitized against is itself stale: the next
+ * `fetchEntityMeta` re-downloads before the list retries (self-healing
+ * when a deploy renames columns mid-session).
+ */
+export function invalidateEntityMeta(basePath: string): void {
+  const entry = store().get(basePath);
+  if (!entry) return;
+  // An in-flight fetch may carry the same stale meta — drop it too so the
+  // healer's re-fetch never dedupes onto the very response that poisoned us.
+  entry.data = undefined;
+  entry.inFlight = undefined;
+}
