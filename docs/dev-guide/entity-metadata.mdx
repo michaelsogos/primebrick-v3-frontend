@@ -1,15 +1,23 @@
 ---
 title: Entity metadata
-description: The canonical EntityMeta schema served by GET /api/v1/entities/{entity}/meta — anatomy, column dictionary, table options, actions contract, and search behavior.
+description: The canonical EntityMeta schema served by GET /api/v1/entities/{entity}/meta — complete anatomy of every option and what it enables on the frontend.
 ---
 
 # Entity metadata
 
 Every entity exposes `GET /api/v1/entities/{entity}/meta` — a typed JSON
 document that describes how the entity is displayed and what operations it
-supports. The backend owns the canonical type (`EntityMeta` in
-`src/http/entity-meta.types.ts`); the frontend mirrors the response shape
-in `src/lib/entity-list/types.ts`. All fields are snake_case end to end.
+supports. The canonical type is `EntityMeta`/`MetaColumn` in
+`@primebrick/core` (`src/entity-meta.ts`), mirrored verbatim by every
+consumer (BE `src/http/entity-meta.types.ts`, FE `src/lib/entity-list/
+types.ts`). All fields are snake_case end to end.
+
+**Two layers, one shape.** The `*.meta.ts` file authors the static meta;
+`assembleMeta` serves it enriched with runtime-derived members
+(`display_name`, `actions`, `collaboration`, `dict`, `relation`) and with
+physical facts `withColumnConstraints` derives from the entity class
+(`nullable`, `pg_type`, `managed`, `seq.uuid`, …). An author never
+restates a derived fact — the binder throws.
 
 For a worked example that exercises nearly every feature of this schema, see
 the [ELT case study: job_schedule](./elt-case-study-job-schedules).
@@ -20,13 +28,14 @@ the [ELT case study: job_schedule](./elt-case-study-job-schedules).
 {
   "entity": "user_profile",
   "translation_key": "user_profile",
-  "title_key": "system.entities.user_profile.title",
+  "entities_ns": "system",
   "uid": "uuid",
   "display_field": "display_name",
   "display_name": "${display_name}",
   "actions_overrides": {
     "duplicate.bulk": { "enabled": false }
   },
+  "create": { "surface": "sheet" },
   "columns": [
     {
       "key": "display_name",
@@ -38,22 +47,17 @@ the [ELT case study: job_schedule](./elt-case-study-job-schedules).
       "default_visible": true,
       "sortable": true,
       "searchable": true,
-      "filterable": true
+      "filterable": true,
+      "nullable": false,
+      "pg_type": "varchar",
+      "max_length": 100
     }
   ],
   "table": {
     "default_view": "table",
     "default_sort": { "key": "created_at", "dir": "desc" },
     "default_page_size": 25,
-    "page_size_options": [10, 25, 50, 100],
-    "row_custom_actions": [
-      {
-        "action_name": "change_password",
-        "translation_key": "system.settings.users.change_password",
-        "icon": "key-round",
-        "required_permission": "AUTHENTICATED_ADMIN"
-      }
-    ]
+    "page_size_options": [10, 25, 50, 100]
   },
   "actions": [
     { "op": "list", "enabled": true, "permissions": ["user_profile.read.all"] },
@@ -66,124 +70,207 @@ the [ELT case study: job_schedule](./elt-case-study-job-schedules).
 
 ## Root properties
 
-| Field | Required | Purpose |
-|-------|----------|---------|
-| `entity` | yes | Entity key, snake_case singular — matches the route segment |
-| `translation_key` | yes | snake_case singular i18n prefix for all entity keys |
-| `title_key` | yes | i18n key for the entity title |
-| `uid` | yes | Column key used as unique row identity. The record sheet renders it as the top identity badge: `secondary` pill at **input anatomy** (h-9, w-full, px-3, mono value) + `file-key` icon (amber accent, same token family as the payload-map `path` source) + inner copy CTA — label row above like every form field, all glyphs at the canonical 16px CTA size |
-| `display_field` | yes | Key of the primary display column — drives the first/sticky column |
-| `display_name` | response | Display expression template (`${field}` syntax). Optional in the static meta — `assembleMeta` materializes it as `"${display_field}"` when omitted |
-| `actions_overrides` | no | Per-op `enabled` escape hatch — may only toggle existing ops, never invents them |
-| `columns` | yes | Root-level field dictionary shared by **all** page types (table, form, preview) |
-| `table` | no | `EntityListTable` options — absent on form-only metas (e.g. `GET /api/v1/auth/me/meta`) |
-| `actions` | response | Derived capability contract — injected at runtime |
-| `collaboration` | response | Realtime collaboration flags — injected at runtime |
+| Field | Required | What it does → enables on FE |
+|-------|----------|------------------------------|
+| `entity` | yes | Entity key, snake_case singular — matches the route segment, the wire entity param, and the `meta.columns` owner. |
+| `translation_key` | yes | snake_case singular i18n prefix — composed into `{ns}.entities.<translation_key>.{singular\|plural\|fields.*}` keys. |
+| `entities_ns` | no | Namespace **owning** the entity's label keys (default `system`). Module entities point at their own ns (`job` → `job.entities.*`). FE resolves every entity key under it — a wrong ns renders raw keys. |
+| `title_key` | no | Bespoke page-title override — **custom pages only**. Absent → FE builds titles from `system.entities.page_title.{list\|create\|edit}` + the entity plural/singular. CRUD metas MUST NOT declare it. |
+| `uid` | yes | Column key of the row identity (usually `uuid`). Drives: row keys, `:param` substitution on endpoints, the record-sheet **uid pill** (mono value + copy CTA), ref cells, dirty-close tracking. |
+| `display_field` | yes¹ | The primary display column key — sticky identity column, combobox labels, default `display_name` source. Forbidden on `relation` facets. |
+| `display_name` | response | `${field}` display template (dot-paths allowed) — titles, chips, ref labels, related-object labels. `assembleMeta` materializes `"${display_field}"` when unauthored. |
+| `actions_overrides` | no | Per-op overrides — `enabled` toggles route-backed ops; `label_key`/`icon`/`color`/`confirm_key`/`busy_key` restyle the standard CTA chrome. Never invents ops. |
+| `create` | no | Create surface: `"form"` (default) → census `kind:"create"` route → `EntityFormPage`; `"sheet"` → no route needed, the list CTA opens `entity.record` in `mode:"create"` (empty draft, POST on commit). |
+| `columns` | yes | Root-level field dictionary shared by **every** surface (table, forms, filters, pickers, dict pages). See below. |
+| `table` | no | `EntityListTable` options — absent on form-only metas (`auth/me`). |
+| `actions` | response | Derived capability contract — see below. |
+| `collaboration` | response | `{ enabled, expose_editing_value }` — presence SSE + live value sharing on update surfaces. |
+| `dict` | response | `@Dict` facet — drives `kind:"dict"` inline-editable pages: `group_field` (fieldset grouping), `order_field` (reorder CTAs), `directional{forward_label_field,inverse_label_field}` (link vocabularies for `@Relation` edges). |
+| `relation` | response | `@Relation` facet — directed parent→child edge entity: `parent_field`, `child_field`, `type_field?`, `hierarchical?`. No `display_field`; arc endpoints are immutable after create. |
 
-`display_name` is the generic "how the entity is displayed" representation —
-edit pages consume it automatically for their title, and the same expression
-is reusable for comboboxes, related-object labels, and other display contexts.
+¹ `display_field` is optional on the wire type but `withColumnConstraints`
+**requires** it on every main-entity meta; `relation` metas must not declare it.
 
 ## `columns` — the field dictionary
 
-`MetaColumn` describes one entity field. `key`, `label_key`, `type`, and
-`order` are required on authored entries; every other prop is an optional
-flag. **Physical columns are auto-derived from the entity class** by
-`withColumnConstraints` (dal-pg) — every `@Column` absent from `columns`
-is appended automatically with `default_visible: false` (system columns
-like `uuid`, `version`, `created_by`, `deleted_at` are never authored by
-hand). Authored entries are presentation overrides on top of the class.
+`MetaColumn` describes one entity field. `key`, `label_key`, `type`,
+`order` are required on authored entries. **Physical columns are
+auto-derived** by `withColumnConstraints` — every `@Column` absent from
+`columns` is appended with `default_visible:false` (system columns are
+never authored by hand). Authored entries are presentation overrides.
 
-| Prop | Purpose |
-|------|---------|
-| `order` | Required explicit position — array position in `columns` does **not** matter. Rendering groups derive from flags: `sticky` first, normal next, `audited` last — each sorted by `order`. Convention: `uuid` is `order: -1` (first sticky, hidden but selectable), `display_field` is `order: 0` |
-| `sticky` | Pinned left — `uuid` and the `display_field` column are the standard sticky pair |
-| `audited` | System audit column (`created_at`, `updated_by`, ...) — rendered last. Set automatically on derived audit/deletable columns |
-| `default_visible` | `false` = present in the column selector but hidden by default. Auto-derived columns default to `false` — an authored entry is required to make a system column visible by default |
-| `hidden` | `true` = **the only way to suppress a physical column** — the column is dropped from the served meta entirely (no cell, picker entry, filter, or form field). Everything not explicitly hidden is served |
-| `hideable` | `false` = cannot be hidden |
-| `sortable` / `searchable` / `filterable` | Capability flags — default `true`, set `false` explicitly to disable |
-| `icon` | Field icon name (lucide or authored `CUSTOM_ICONS` glyph, e.g. `trash-arrow-up`) — consumed by form labels, column headers, and cell badges. Optional: absent icon renders nothing and reserves no space |
-| `badge` | `{ values: Record<string, { label_key?, label_text?, color? }> }` |
-| `datetime_iana_toggle` | `{ record_iana_field }` — browser-local vs record-timezone header toggle |
-| `sparkline` | `type:"sparkline"` virtual column — `{ endpoint, request_field, row_key, response_field?, series }`; the list engine batch-POSTs row keys after every load (no per-page wiring) and `TableCell` renders `SparklineBars` in every view mode (`table`, `cards_list`, `cards`) |
-| `format` | Semantic renderer discriminator — `TableCell` switches on it **before** `type`: `schedule_spec` → badge + localized prose (`@primebrick/ui` schedule-spec i18n), `nats_subject` → badge + link to the owning module page (census-resolved), `i18n_key` → governed translation badge (`languages` icon + `$t(value)`, raw key in tooltip, raw-key fallback — dict `label_key`/`description_key` columns), `json` → mapper widgets get `MapperCellViewer`, `[{field,op,value}]` condition arrays get prose chips, everything else gets the `JsonCellViewer` "View" link → `entity.jsonViewer` sheet, `identifier`/`display_name` → text affordances. Closed additive union in `MetaColumnFormat` |
-| `uom` | `type:"number"` unit-of-measure semantics — `MetaColumnUom` union: `{kind:'percent'}` (canonical fraction → `style:"percent"`), `{kind:'currency', field}` (sibling ISO code → `style:"currency"`), `{kind:'<category>', unit}` (FIXED Intl-sanctioned identifier — the `UNIT_CATEGORIES` census in core: `time`, `length`, `mass`, `volume`, `area`, `temperature`, `digital`, `angle` — `style:"unit"` e.g. `"24 ms"`), `{kind:'<category>', field}` (per-row code on a sibling, category = picker vocabulary), `{kind:'custom', field, source}` (per-row code from a custom vocabulary), `{kind:'custom', symbol}` (FIXED arbitrary suffix Intl does not sanction). XORs enforced by `withColumnConstraints` at meta bind. Absent → plain `style:"decimal"` |
-| `virtual` | `true` = no physical column backing — value arrives via service-side decoration (e.g. trigger `last_run`/`next_run`) or batch endpoints (`sparkline`). `type:"sparkline"`/`"ref_count"` imply it |
-| `immutable` | `true` = set once at creation OR derived by a process — editable on `kind:"create"` forms, rendered disabled on update/detail surfaces, excluded from update payloads. Distinct from `managed` (DB-filled key — derived by `withColumnConstraints`, never authored) and `audited` (lifecycle facts) |
-| `ref` | `type:"ref"` — `{ entity, entity_field?, key_field?, route?, filter_field?, value_field?, presentation? }`. `presentation:"link"` (DEFAULT) renders the two-affordance anatomy: text click opens the target record in the stacked `entity.record` sheet; the trailing ExternalLink opens the target `/list` filtered to this row in a new tab. `"badge"` is the legacy single-link pill — explicit opt-in only. Routes resolve through the module census (no hardcoded paths); a target with `route:"none"` degrades to a plain label. **Lazy ref**: `entity_field` (XOR with `entity`) names a row column carrying the target entity per row — one column, 2+ drill targets (e.g. `job_schedule.armed_by` → `job_trigger` \| `service_registry`); `key_field` names the row column holding the drill key (default: the cell value). The cell value is the display label — no `_name` join can decorate N entities — and the sheet is picked by the resolved entity (`entity.record` for entity-served targets, the panel map for registered non-entity targets like `service_registry` → `service.record`) |
-| `reverse_ref` | `type:"ref_count"` — `{ entity, filter_field, value_template }`; badge count + link to the children list filtered via `filters[0][field|op|value]` URL params. `filter_field` must be in the target service's `filterableKeys` or the link renders plain |
-| `tooltip`, `tooltip_priority`, `tooltip_title` | Tooltip content, severity, title keys |
-| `show_form_tooltip`, `show_list_tooltip` | Tooltip visibility per context |
+### Identity & layout
 
-Cell rendering follows fixed standards no page may bypass — the full
-anatomy contract lives in
-[`entity-list-table → Cell anatomy`](./components/entity-list-table#cell-anatomy)
-("Cell anatomy"): `boolean` columns render `CircleCheck`/`CircleX` icons
-**centered** in the cell; `type:"number"` cells are right-aligned,
-tabular-digit, locale-formatted via `formatListCellValue` (headers stay
-left-aligned); every sheet-opening cell shares the `CellAffordance`
-two-affordance anatomy; arbitrary wire values convert via
-`toDisplayString` (`@primebrick/ui`), never `String()` — wire JSON parses
-to null-prototype objects and implicit coercion throws
-(`@typescript-eslint/no-base-to-string` enforces this).
+| Prop | What it does → enables on FE |
+|------|------------------------------|
+| `key` | Entity property name — resolves against served columns; unknown keys fail loudly (stale-key metadata invalidation). |
+| `label_key` | i18n key of the column label — table headers, form labels, filter names, picker entries. |
+| `type` | Cell-renderer discriminator — `text`/`badge`/`boolean`/`color`/`date`/`datetime`/`number`/`sparkline`/`ref`/`ref_count`/`avatar` (open for consumer-registered custom cells). Drives cell anatomy, default searchability, filter operators. |
+| `order` | Explicit display position — array position MUST NOT matter. Groups render sticky → normal → audited, each sorted by `order`. Convention: `uuid` = `-1`, `display_field` = `0`. |
+| `sticky` | Pinned left in table view — the `uuid` + `display_field` pair by convention. |
+| `icon` | Lucide name rendered before the label in **form** field labels — identifies the field's semantic. Absent renders nothing. |
+| `color` | Semantic color **token** (`"amber"`, `"amber-500"`) for icon/badge accents — resolved to inline styles. NEVER a `text-*`/`bg-*` class: served meta is invisible to the FE safelist scan — class strings dead-render. |
 
-## `table` — EntityListTable options
+### Table flags
 
-Present only on entities rendered by `EntityListTable`:
+| Prop | What it does → enables on FE |
+|------|------------------------------|
+| `sortable` | `false` → ORDER BY disabled, header loses sort affordance. Default `true`. |
+| `filterable` | `false` → excluded from the filters sheet. |
+| `searchable` | `false` → excluded from the "search in" scope + BE default search. Set false on non-text or sensitive columns. Default `true`. |
+| `default_visible` | `false` → hidden initially, still in the column picker. Auto-derived columns default `false` — author the column to show a system column. |
+| `hideable` | `false` → the picker can't hide it. |
+| `hidden` | **The only total suppression** — drops the column from served meta entirely (no cell, picker, filter, or form). Blocks auto-derivation of the class column too. |
+| `audited` | System audit column (`created_at`, `updated_by`, …) — rendered last in every group. Derived from audit/deletable/sync decorators. |
+| `kind` | Materialization: absent = physical. `"calculated"` — SQL projection (`@Calculated`), sortable/filterable stay on. `"virtual"` — post-query decoration, sortable/filterable/searchable FORCED OFF. Both are read-only — never in `page_props.form`. |
+| `null_label` | `{ label_key, when?{field,equals\|not} }` — replaces `"-"` on null cells **as a red-italic alarm**. Ungated use = false alarms on every empty cell; gate it on a sibling or leave it unset. |
 
-| Prop | Purpose |
-|------|---------|
-| `default_view` | Initial view mode: `table`, `cards`, or `cards_list` |
-| `default_sort` | `{ key, dir }` applied when no user sort is stored |
-| `default_page_size` | Initial rows per page |
-| `page_size_options` | Page-size dropdown values |
-| `row_custom_actions` | Table-specific custom row CTAs (non-standard ops) |
-| `filter_presets` | Mutually-exclusive preset scope filters rendered as toolbar controls. `display:"button_group"` renders **icon-only** segmented buttons — `icon` required per option, meaning carried by `title` tooltip + `aria-pressed` (the label is never shown); `"combobox"` for long lists. Exactly one option is always active, `where:[]` is the "all" escape, conditions AND into every `/list` request |
+### Derived physical constraints (class facts — authoring throws)
 
-`row_custom_actions`/`bulk_custom_actions` entries are **synthesized by
-`makeServiceRoutes` from `RpcRoute.entity_op`** — the route is the source
-of truth: placement (`*_all` → bulk, else row), `row_key` (`meta.uid`),
-`translation_key` (`<entities_ns>.actions.<op>`), `required_permission`
-(route permissions, sentinels → `AUTHENTICATED_ADMIN`/`AUTHENTICATED_USER`),
-`require_step_up` (route `mfa`). `entity_op.cta` on the route overrides
-the non-default chrome (`icon`, `color`, `visible_on`, `row_key`,
-`translation_key`, `confirm_key`, `placement`). Authored `meta.table`
-entries survive only as explicit per-`action_name` overrides — a CTA
-without a backing `entity_op` route fails at boot, and vice-versa every
-`entity_op` produces a CTA without any meta.table declaration.
+| Prop | What it does → enables on FE |
+|------|------------------------------|
+| `nullable` | `false` → required in zod + form chrome; `true` → optional. Drives the zod schema `buildEntityFormSchema` builds. |
+| `max_length` | From `@Column({length})` → `maxlength` attribute + `z.string().max()`. |
+| `pg_type` | Physical PG type (`varchar`, `int8`, `timestamptz`, `jsonb`, …) — informs control pick when `format` is absent; `numericKindOf` maps it to `bigint`/`number`/`decimal` for every numeric surface. |
+| `managed` | DB fills the value (`@Key` identity generation). Never client-supplied, never required — excluded from form widgets and write payloads. |
+
+### Lifecycle
+
+| Prop | What it does → enables on FE |
+|------|------------------------------|
+| `immutable` | Set-once OR process-derived: **editable on create**, disabled on update, excluded from PUT payloads. Covers authored-once (`idp_username`) and derived (`avatar_initials`) cases. Distinct from `managed`/`audited`. |
+
+### Form semantics (authored input contract)
+
+| Prop | What it does → enables on FE |
+|------|------------------------------|
+| `format` | **The semantic input discriminator** — picks the control archetype + validation chain before `type` does. See the format vocabulary below. |
+| `pattern` | Extra regex on text-ish fields → `z.string().regex()` in the schema. |
+| `min_length` | Semantic minimum length (physical `max_length` is derived). |
+| `min` / `max` | Numeric bounds for `number`/`money` formats → zod `.min()/.max()` + control clamp. |
+| `unsigned` | Rejects `-` in the control AND negative values in wire/form validators. PG has no unsigned — authored only. |
+| `uom` | Unit-of-measure semantics on numeric columns — `MetaColumnUom` union: `{kind:'percent'}` (canonical fraction, ×100 display), `{kind:'currency', field}` (per-row ISO code on sibling), `{kind:'<category>', unit}` (fixed Intl unit — `time`/`length`/`mass`/`volume`/`area`/`temperature`/`digital`/`angle`), `{kind:'<category>', field}` (per-row unit, category = picker vocab), `{kind:'custom', field, source}` (custom vocab), `{kind:'custom', symbol}` (fixed suffix). XORs enforced at bind. Absent → plain decimal. |
+| `avatar` | `{ color_field, initials_field? }` on `type:"avatar"` — sibling column persists the per-row color; `initials_field` recomputes initials live on edit surfaces. Sibling existence is bind-checked. |
+| `json_schema` | `format:"json"` — JSON Schema driving the editor's lint/completion AND structural validation in `buildEntityFormSchema`. |
+| `seq` | `format:"sequence"` — sequence-bound column (`@SequenceField`). DERIVED half: `uuid`/`name` (the deterministic bound-row identity `<table>.<field>` — authoring throws). AUTHORED half: `modes` (`"generate"`/`"select"` — which widgets the control offers), `default_mode` (initial mode, default `"generate"`), `allow_create` (new-sequence CTA, default `true`). Wire contract: never a literal — only a `{seq:{…}}` directive resolved in the write transaction. |
+| `widget` | Explicit control override — host registry key, bypasses `format`→control derivation on EVERY surface (forms AND filters). |
+| `options_source` | Dynamic option vocabulary for combos — closed union: `"census.emits"` (union of modules' `events.emits`), `"census.callables"` (LISTEN subjects), `"audit.actors"` (the table's own audit actors — auto-injected on `*_by` columns), `"system.roles"`. |
+| `allow_create` | ComboSelect free-entry flag. `options_source:"census.*"` + `allow_create:true` is a construction error — census sources are closed vocabularies. |
+
+### Dependencies — `depends_on`
+
+ONE declared edge to a sibling column (the pivot) drives this column —
+declared once, shared by forms. `withColumnConstraints` enforces legality
+(`prop`/`control_prop` need a `type:"ref"` pivot).
+
+| Sub-prop | What it does → enables on FE |
+|----------|------------------------------|
+| `field` | Sibling column key — the pivot. |
+| `filter_field` | `type:"ref"` only: the TARGET column the options `/list` filters on, fed by the pivot's stored value (`country → legal_form` scoped options). Control disabled until the pivot has a value. |
+| `disabled_when` | `{equals\|not\|values\|set}` condition — disables the whole control while it matches (`company_dimension` off when `customer_type.code = private`). `set` reads a NON-form sibling via the served row. |
+| `control_prop` | Pivot ROW prop resolving this column's `format` at render time (`contact.value` → `email`/`phone`/`text` from `contact_type.value_kind`). |
+
+`filter_field`/`control_prop` both reset the value on pivot change — a
+stale dependent value is a silent integrity leak.
+
+### Tooltips
+
+| Prop | What it does → enables on FE |
+|------|------------------------------|
+| `tooltip` | i18n key of the hint body. |
+| `tooltip_title` | i18n key of the tooltip title. |
+| `tooltip_priority` | `INFORMATION`/`WARNING`/`ERROR`/`QUESTION`/`HINT`/`SUCCESS` — icon + title color. |
+| `show_form_tooltip` | Show on form surfaces. |
+| `show_list_tooltip` | Show on list/table surfaces. |
+
+### Type payloads
+
+| Prop | What it does → enables on FE |
+|------|------------------------------|
+| `ref` | `type:"ref"` — the cell value identifies a row on another entity: `{entity}` static target, `{entity_field}` **lazy ref** (row column carries the target entity per row — one column, N drill targets), `key_field` (drill-key column, default the cell value), `route` (`"detail"`/`"list"`/`"none"` — link target, default detail), `filter_field` (route:"list" filter column), `value_field` (stored value source — `"id"` for true-FK pickers), `presentation` (`"link"` two-affordance anatomy [default] vs `"badge"` legacy pill). Routes resolve through the census — never hardcoded URLs. |
+| `reverse_ref` | `type:"ref_count"` — `{entity, filter_field, value_template}`: 1:N badge count linking to the children's filtered list. `filter_field` must be filterable on the target service or the link degrades to plain text. |
+| `badge` | `type:"badge"` — `{values: Record<v,{label_key,label_text?,color}>}` per-value label/color mapping. |
+| `datetime_iana_toggle` | `type:"datetime"` — `{record_iana_field}`: browser-local vs record-timezone header toggle (IANA id comes from the row). |
+| `sparkline` | `type:"sparkline"` virtual column — `{endpoint, request_field, row_key, response_field?, bucket_field?, bucket_unit_field?, series[]}`: the list engine batch-POSTs row keys once per load and renders stacked mini-histograms in every view mode — zero per-page wiring. |
+
+## `format` — the semantic input vocabulary
+
+Closed union (`MetaColumnFormat`) — an unknown format in a `*.meta.ts` is
+a compile error. Absent → falls back to `type`.
+
+| Format | Control + validation enabled on FE |
+|--------|------------------------------------|
+| `text` / `textarea` | Plain / multiline text input. |
+| `email` / `url` / `phone` | Format-validated single-line inputs. |
+| `secret` | Masked input. |
+| `nats_subject` / `service_code` | Governed-reference badge/input — census-resolved module link. |
+| `schedule_spec` | Schedule builder + localized prose. |
+| `json` | JSON editor — lint/completion from `json_schema`. |
+| `display_name` / `idp_name` / `identifier` | Identity-styled text affordances. |
+| `color_hex` | Color picker. |
+| `number` / `money` | Numeric input (+ `min`/`max`/`unsigned`/`uom`). |
+| `date` / `datetime` / `time` | Temporal pickers — `datetime` honors `datetime_iana_toggle`. |
+| `snake_key` / `dotted_key` / `dotted_glob` / `slug` / `no_space` | Key-shaped text inputs with grammar validation. |
+| `rule_filter` | Rule-filter builder. |
+| `lang` | Language picker. |
+| `sequence` | Sequence widget — `modes`/`default_mode`/`allow_create` from `seq`. |
+| `i18n_key` | Translation-key badge — `languages` icon + resolved `$t`, raw key tooltip. |
+
+## `table` — `EntityListTable` options
+
+| Prop | What it does → enables on FE |
+|------|------------------------------|
+| `default_view` | Initial view: `table`/`cards`/`cards_list`. |
+| `default_sort` | `{key, dir}` when no user sort is stored. |
+| `default_page_size` / `page_size_options` | Initial page size + dropdown values. |
+| `row_custom_actions` | Non-standard row CTAs — synthesized from `RpcRoute.entity_op`; authored entries are per-`action_name` overrides only (`icon`, `color`, `visible_on`, `row_key`, `translation_key`, `confirm_key`, `disabled_when_deleted`, `required_permission`). |
+| `bulk_custom_actions` | Selection-toolbar CTAs — same `entity_op` synthesis; `requires_selection`, `require_step_up`, `confirm_key`. |
+| `filter_presets` | Mutually-exclusive WHERE presets — toolbar `button_group` (icon-only, `icon` required per option) or `combobox`. Exactly one option active, `where:[]` is the "all" escape, `default_option` required; conditions AND into every `/list` request. |
 
 ## `actions` — the capability contract
 
-The backend derives `actions` from the registered route table
-(`deriveEntityActions`). The array **always** contains the full standard
-vocabulary — a missing route produces an explicit `{ enabled: false }`
-entry rather than an absent op:
+Derived from the registered route table (`deriveEntityActions`). The
+array **always** contains the full standard vocabulary — a missing route
+produces `{ enabled: false }`, never an absent op:
 
-`list`, `meta`, `get`, `create.single`, `update.single`, `delete.single`,
-`restore.single`, `read.audit`, `export`, `delete.bulk`, `restore.bulk`,
-`duplicate.single`, `duplicate.bulk`
+`list`, `meta`, `get`, `create.single`, `update.single`, `update.bulk`,
+`delete.single`, `purge.single`, `restore.single`, `read.audit`, `export`,
+`delete.bulk`, `restore.bulk`, `duplicate.bulk`
 
-- `enabled: false` → the operation is unavailable for everyone — the UI
-  never renders its CTA, on every page type.
-- `enabled: true` → rendered subject to per-user `permissions`/`sentinel`.
-- `actions_overrides[op].enabled = false` suppresses an existing op at
-  product level (e.g. hiding a route that exists but should not be exposed).
-- Non-standard routes (`change-password`, `check-availability`) surface as
-  additional bare ops.
+Each entry carries:
 
-Every enabled op also carries `endpoint` — `{ method, path }` resolved from
-the real registered route (path params use the `:param` convention, filled
-from the row's `uid` field). The frontend dispatches write ops to the
-declared endpoint, not to a guessed `/entities/{entity}/{uuid}` convention —
-this is how `user_profile` keeps read-only entity routes while its writes
-live under `/api/v1/auth/users/*`. Ops without a declared endpoint fall back
-to the entity convention base (`entityApiBase` — entity→service resolved
-from `module.entities` in the `/api/v1/modules` census; unmapped entities
-use the direct `/api/v1/entities/<e>` path).
+| Field | What it does → enables on FE |
+|-------|------------------------------|
+| `op` | Canonical op name (or the last path segment for non-standard routes). |
+| `permissions` | Declared non-sentinel permissions (OR) — filtered client-side against the session. |
+| `sentinel` | `_public`/`_authenticated_user`/`_authenticated_admin` gate. |
+| `enabled` | `false` hides the CTA **everywhere** — the single capability mechanism, no parallel flags. |
+| `endpoint` | `{method, path}` of the backing route — writes dispatch here, not to a guessed convention (`:param` filled from row fields). Absent → entity convention base. |
+| `label_key`/`icon`/`color` | CTA chrome override — `color` is the `ActionColor` closed enum (drives icon AND label together); semantic icons (`exec-start`/`exec-stop`) bind their color by contract. |
+| `confirm_key`/`busy_key` | Confirm-dialog message / in-flight label overrides (soft-delete-as-disable copy). |
 
-This is the single capability/visibility mechanism — there are no parallel
-row-action boolean flags in the schema.
+## Form placements — `page_props.form`
+
+`kind:"create"|"detail"` entity forms declare `fields` — the ORDERED
+placement list (only declared keys render). A placement positions a field
+the entity owns; it never redefines type/validation (those come from
+`meta.columns`).
+
+| Prop | What it does → enables on FE |
+|------|------------------------------|
+| `key` | Column key — must exist in `meta.columns` (drift fails loudly). |
+| `col` / `span` | `grid-column` start / span — `span:2` = full-width row. |
+| `row` / `row_span` | `grid-row` start / span — full-height column slots (e.g. a builder beside static fields). |
+| `section` | Section id grouping fields under a shared i18n header. |
+| `default_value` | Create-surface **initial value prefill** — page-domain UX, applied only on create (update surfaces read the record). |
+| `placeholder_key` | i18n key of the control placeholder. |
+| `required` | May only **loosen** the class-derived `nullable` to optional — never tighten past the physical contract. |
+
+Placement keys are a **closed set** — `widget`/`options_source`/
+`allow_create` are column semantics (rejected as "moved"), `kind`/
+`managed`/`audited`/`uid`/`hidden` are served facts (rejected as
+"served"). `validators` names closed-vocab cross-field rules the host
+implements.
 
 ## Search behavior
 
@@ -192,38 +279,31 @@ text-physical** columns:
 
 - A hidden-by-default column (`uuid`) is **not** searched until the user
   makes it visible.
-- The scope selector lists **all** searchable columns, including hidden
-  ones — an explicit selection always wins (a selected hidden column is
-  searched).
-- Non-text columns (`jsonb`, dates, numbers) are `searchable: false` and
-  never enter an `ILIKE` scope.
+- The scope selector lists **all** searchable columns — an explicit
+  selection always wins.
+- Non-text columns never enter an `ILIKE` scope.
 
 ## Writing a new meta
 
-On the backend, annotate the static object with `EntityMeta` — the closed
-type rejects unknown properties and missing `display_field` at compile
-time:
+Annotate the static object with `EntityMeta` — the closed type rejects
+unknown properties and missing `display_field` at compile time:
 
 ```ts
-import type { EntityMeta } from "../../http/entity-meta.types.js";
+import type { EntityMeta } from "@primebrick/core";
 
 export const ticketMeta: EntityMeta = {
   entity: "ticket",
   translation_key: "ticket",
-  title_key: "system.entities.ticket.title",
   uid: "uuid",
   display_field: "title",
   // display_name omitted — materialized as "${title}" by assembleMeta
   // uuid/created_at/updated_*/version/deleted_* are NOT declared — they are
-  // auto-derived from TicketEntity's @Column decorators (hidden-but-selectable).
+  // auto-derived (hidden-but-selectable). Author them only to change
+  // visibility/order.
   columns: [
-    { key: "title", label_key: "system.entities.ticket.fields.title", type: "text", order: 0, sticky: true, hideable: false, sortable: true, searchable: true },
-    // To make an auto-derived system column visible by default, author it:
-    // { key: "created_at", label_key: "...created_at", type: "datetime", order: 90, default_visible: true, searchable: false },
-    // To suppress a physical column entirely: { key: "version", hidden: true, ... }
+    { key: "title", label_key: "acme.entities.ticket.fields.title", type: "text", order: 0, sticky: true, hideable: false },
   ],
   table: {
-    default_view: "table",
     default_sort: { key: "created_at", dir: "desc" },
     default_page_size: 25,
     page_size_options: [10, 25, 50, 100],
@@ -231,11 +311,8 @@ export const ticketMeta: EntityMeta = {
 };
 ```
 
-`ConfigEntryMeta extends EntityMeta` exists for metas carrying extra
-required fields (`type_capabilities`).
-
 ## Next steps
 
-- [Entity list table](/docs/dev-guide/components/entity-list-table) — the table component driven by `columns` + `table` + `actions` (routes normally wrap it via `EntityTablePage` — see [entity list pages](/docs/dev-guide/components/entity-list-table#route-level-usage-entitytablepage))
-- [Form page layout](/docs/dev-guide/components/form-page-layout) — form pages consuming `columns` tooltips and `display_name`
+- [Entity list table](/docs/dev-guide/components/entity-list-table) — driven by `columns` + `table` + `actions`
+- [Entity record sheet](/docs/dev-guide/components/entity-record-sheet) — the shared record surface
 - [API reference](/docs/dev-guide/api-reference) — full prop tables
