@@ -21,7 +21,7 @@ import { loginAsTestAdmin } from "./helpers/admin-login";
 import { extJsonParse } from "@primebrick/core/ext-json";
 
 const CRM_BASE = "/svc/crm/api/v1/entities";
-const CODE = `e2e_seq_${Date.now()}`;
+const NAME = `e2e_seq_${Date.now()}`;
 
 test.describe("builtin sequence registry — mounted by construction", () => {
   test.beforeEach(async ({ page }) => {
@@ -35,15 +35,24 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     expect(meta.entity).toBe("sequence");
     expect(meta.entities_ns).toBe("crm"); // derived — never authored
     const keys = (meta.columns ?? []).map((c: any) => c.key);
-    for (const k of ["code", "pattern", "step", "start", "tz", "label_key", "description_key"]) {
+    for (const k of ["name", "pattern", "step", "start", "tz", "description_key"]) {
       expect(keys, `column ${k}`).toContain(k);
     }
-    // Translation-key columns declare `format:"i18n_key"` — the governed
-    // badge cell (languages icon + resolved label, raw-key fallback) is
-    // driven by the declaration everywhere the meta travels.
+    expect(keys).not.toContain("code");
+    expect(keys).not.toContain("label_key");
+    // `description_key` declares `format:"i18n_key"` — the governed badge
+    // cell (languages icon + resolved label, raw-key fallback) — and is
+    // out of the default view but toggleable (`default_visible:false`,
+    // never `hidden`).
     const byKey = new Map<string, any>((meta.columns ?? []).map((c: any) => [c.key, c]));
-    expect(byKey.get("label_key")?.format).toBe("i18n_key");
     expect(byKey.get("description_key")?.format).toBe("i18n_key");
+    expect(byKey.get("description_key")?.default_visible).toBe(false);
+    expect(byKey.get("description_key")?.hidden).not.toBe(true);
+    // The audit group owns the allocation attribution columns.
+    expect(byKey.get("last_alloc_at")?.audited).toBe(true);
+    expect(byKey.get("last_alloc_by")?.audited).toBe(true);
+    // `name` is NOT unique — no constraint may be declared on the meta.
+    expect(byKey.get("name")?.unique).not.toBe(true);
     // Counter projection — virtual machine-state columns attached
     // post-query (value/step/next + both rendered emissions + attribution).
     for (const k of ["value_next", "value_actual", "emitted_next", "emitted_actual", "last_alloc_at", "last_alloc_by"]) {
@@ -76,19 +85,19 @@ test.describe("builtin sequence registry — mounted by construction", () => {
   test("governed CRUD + validation gates", async ({ page }) => {
     // grammar gate — unparseable pattern must fail
     const bad = await page.request.post(`${CRM_BASE}/sequence`, {
-      data: { entity: { code: CODE, pattern: "X-{n:3}-{n:3}", step: "1", start: "1" } },
+      data: { entity: { name: NAME, pattern: "X-{n:3}-{n:3}", step: "1", start: "1" } },
     });
     expect(bad.status()).toBeGreaterThanOrEqual(400);
 
     const cr = await page.request.post(`${CRM_BASE}/sequence`, {
       data: {
         entity: {
-          code: CODE,
+          name: NAME,
           pattern: `E2E-{seq:5}`,
           step: "1",
           start: "1",
           tz: "Europe/Rome",
-          label_key: "crm.entities.sequence.rows.e2e",
+          description_key: "crm.entities.sequence.rows.e2e",
         },
       },
     });
@@ -101,7 +110,7 @@ test.describe("builtin sequence registry — mounted by construction", () => {
       const get = await page.request.get(`${CRM_BASE}/sequence/${uuid}`);
       expect(get.status()).toBe(200);
       const row = extJsonParse<any>(await get.text());
-      expect(row.entity?.code ?? row.code).toBe(CODE);
+      expect(row.entity?.name ?? row.name).toBe(NAME);
       expect(String(row.entity?.step ?? row.step)).toMatch(/^1n?$/);
 
       // step=0 must fail
@@ -110,9 +119,9 @@ test.describe("builtin sequence registry — mounted by construction", () => {
       });
       expect(upd.status()).toBeGreaterThanOrEqual(400);
 
-      const list = await page.request.get(`${CRM_BASE}/sequence/list?search=${CODE}`);
+      const list = await page.request.get(`${CRM_BASE}/sequence/list?search=${NAME}`);
       expect(list.status()).toBe(200);
-      expect(await list.text()).toContain(CODE);
+      expect(await list.text()).toContain(NAME);
     } finally {
       const row = extJsonParse<any>(await (await page.request.get(`${CRM_BASE}/sequence/${uuid}`)).text());
       const version = String(row.entity?.version ?? row.version);
@@ -126,9 +135,9 @@ test.describe("builtin sequence registry — mounted by construction", () => {
   test("soft-delete cascade — deleted seq fails allocation (deleted excluded wired)", async ({
     page,
   }) => {
-    const code = `e2e_seq_del_${Date.now()}`;
+    const name = `e2e_seq_del_${Date.now()}`;
     const cr = await page.request.post(`${CRM_BASE}/sequence`, {
-      data: { entity: { code, pattern: "DEL-{seq:4}", step: "1", start: "1" } },
+      data: { entity: { name, pattern: "DEL-{seq:4}", step: "1", start: "1" } },
     });
     expect([200, 201], `create: ${await cr.text()}`).toContain(cr.status());
     const created = extJsonParse<any>(await cr.text());
@@ -142,12 +151,12 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     expect(del.status()).toBe(200);
 
     try {
-      // A write carrying `{seq:{code}}` MUST fail — the registry lookup
+      // A write carrying `{seq:{uuid}}` MUST fail — the registry lookup
       // filters `deleted_at IS NULL` → SequenceNotFoundError, no silent
       // fallback: a stale directive erroring loudly IS the contract.
       const w = await page.request.post(`${CRM_BASE}/customer`, {
         data: {
-          entity: { code: { seq: { code } }, display_name: "E2E SeqDel Probe", status: "ACTIVE" },
+          entity: { code: { seq: { uuid } }, display_name: "E2E SeqDel Probe", status: "ACTIVE" },
         },
       });
       const body = await w.text();
@@ -164,6 +173,51 @@ test.describe("builtin sequence registry — mounted by construction", () => {
       await page.request.delete(
         `${CRM_BASE}/sequence/${uuid}?version=${row2.entity?.version ?? row2.version}`,
       );
+    }
+  });
+
+  test("uuid is the sole sequence identity — {seq:{code}} is rejected", async ({ page }) => {
+    // `{seq:{code}}` was REMOVED from the directive grammar (TIC census:
+    // zero legitimate persisted consumers — the alias was input sugar
+    // that undermined uuid-only identity). A write naming a sequence by
+    // `code`/`name` must fail validation loudly, never be resolved.
+    const w = await page.request.post(`${CRM_BASE}/customer`, {
+      data: {
+        entity: {
+          code: { seq: { code: "customers.code" } },
+          display_name: "E2E SeqCode Probe",
+          status: "ACTIVE",
+        },
+      },
+    });
+    const body = await w.text();
+    expect(w.status(), body).toBeGreaterThanOrEqual(400);
+    expect(body).not.toMatch(/CUST-\d{5}/);
+    // The uuid form is the identity contract — assert it is accepted on
+    // the bound field's own default sequence (resolved via list).
+    const lr = await page.request.get(`${CRM_BASE}/sequence/list?search=customers.code`);
+    const rows = extJsonParse<any>(await lr.text())?.rows ?? [];
+    const bound = rows.find((r: any) => r.name === "customers.code");
+    expect(bound?.uuid).toBeTruthy();
+    const ok = await page.request.post(`${CRM_BASE}/customer`, {
+      data: {
+        entity: {
+          code: { seq: { uuid: bound.uuid } },
+          display_name: "E2E SeqUuid Probe",
+          status: "ACTIVE",
+        },
+      },
+    });
+    const okBody = await ok.text();
+    expect(ok.status(), okBody).toBe(201);
+    const created = extJsonParse<any>(okBody);
+    try {
+      expect(String(created.code)).toMatch(/^CUST-\d{5}$/);
+    } finally {
+      const fresh = extJsonParse<any>(
+        await (await page.request.get(`${CRM_BASE}/customer/${created.uuid}`)).text(),
+      );
+      await page.request.delete(`${CRM_BASE}/customer/${created.uuid}?version=${fresh.version}`);
     }
   });
 
@@ -217,6 +271,9 @@ test.describe("builtin sequence registry — mounted by construction", () => {
       const combo = page.getByTestId("sequence-input-select");
       await expect(combo).toBeVisible({ timeout: 5000 });
       await combo.click();
+      // The bound sequence's `name` is the bound field name
+      // (`customers.code`) — `uuid` is the identity on the wire, `name`
+      // is what the operator reads.
       const opt = page
         .locator("[data-state='open'] [role='option']:visible")
         .filter({ hasText: "customers.code" })
@@ -349,34 +406,34 @@ test.describe("builtin sequence registry — mounted by construction", () => {
   test("i18n_key cells render the governed translation badge — translated + raw fallback", async ({
     page,
   }) => {
-    // Translated case — `label_key` points at a seeded key: the badge
-    // must show the RESOLVED translation, never the raw key.
-    const code = `e2e_i18n_${Date.now()}`;
+    // Translated case — `description_key` points at a seeded key: the
+    // badge must show the RESOLVED translation, never the raw key.
+    const name = `e2e_i18n_${Date.now()}`;
     const cr = await page.request.post(`${CRM_BASE}/sequence`, {
       data: {
         entity: {
-          code,
+          name,
           pattern: `I18N-{seq:3}`,
           step: "1",
           start: "1",
-          label_key: "crm.entities.sequence.fields.code", // seeded → "Code"
+          description_key: "crm.entities.sequence.fields.name", // seeded → "Name"
         },
       },
     });
     expect([200, 201], `create: ${await cr.text()}`).toContain(cr.status());
     const uuid = extJsonParse<any>(await cr.text())?.entity?.uuid;
     // Fallback case — an untranslated key resolves to itself: the badge
-    // renders the raw `label_key` (mono), never an invented label.
-    const fbCode = `e2e_i18n_fb_${Date.now()}`;
-    const fbKey = `crm.entities.sequence.rows.${fbCode}`;
+    // renders the raw `description_key` (mono), never an invented label.
+    const fbName = `e2e_i18n_fb_${Date.now()}`;
+    const fbKey = `crm.entities.sequence.rows.${fbName}`;
     const fb = await page.request.post(`${CRM_BASE}/sequence`, {
       data: {
         entity: {
-          code: fbCode,
+          name: fbName,
           pattern: `FB-{seq:3}`,
           step: "1",
           start: "1",
-          label_key: fbKey,
+          description_key: fbKey,
         },
       },
     });
@@ -390,24 +447,32 @@ test.describe("builtin sequence registry — mounted by construction", () => {
       await page.goto("/crm/settings/sequences");
       await listReq;
 
+      // `description_key` is `default_visible:false` but toggleable — the
+      // column picker must surface it and the badge cell renders once on.
+      await page.getByTestId("elt-column-selector").click();
+      const descToggle = page.getByTestId("columns-toggle-description_key");
+      await expect(descToggle).toBeVisible({ timeout: 10_000 });
+      await descToggle.click();
+      await page.keyboard.press("Escape");
+
       // Translated badge — icon + resolved label, raw key on the tooltip.
-      await page.getByTestId("entity-search").locator("input").fill(code);
-      const row = page.locator("table tbody tr", { hasText: code }).first();
+      await page.getByTestId("entity-search").locator("input").fill(name);
+      const row = page.locator("table tbody tr", { hasText: name }).first();
       await expect(row).toBeVisible({ timeout: 15_000 });
       const badge = row
         .locator('td [data-slot="badge"]')
         .filter({ has: page.locator("svg") });
-      await expect(badge).toContainText("Code");
-      await expect(badge).not.toContainText("crm.entities.sequence.fields.code");
+      await expect(badge).toContainText("Name");
+      await expect(badge).not.toContainText("crm.entities.sequence.fields.name");
       await badge.hover();
       await expect(page.locator("[data-tooltip-content]")).toContainText(
-        "crm.entities.sequence.fields.code",
+        "crm.entities.sequence.fields.name",
         { timeout: 5_000 },
       );
 
       // Raw fallback — the untranslated key renders itself, icon included.
-      await page.getByTestId("entity-search").locator("input").fill(fbCode);
-      const fbRow = page.locator("table tbody tr", { hasText: fbCode }).first();
+      await page.getByTestId("entity-search").locator("input").fill(fbName);
+      const fbRow = page.locator("table tbody tr", { hasText: fbName }).first();
       await expect(fbRow).toBeVisible({ timeout: 15_000 });
       const fbBadge = fbRow.locator('td [data-slot="badge"]').filter({ hasText: fbKey });
       await expect(fbBadge).toBeVisible();
@@ -437,7 +502,7 @@ test.describe("builtin sequence registry — mounted by construction", () => {
       const r = await page.request.post(`${CRM_BASE}/sequence`, {
         data: {
           entity: {
-            code: `e2e_side_${suffix}_${Date.now()}`,
+            name: `e2e_side_${suffix}_${Date.now()}`,
             pattern: `E2ES-${suffix}-{seq:4}`,
             step: "1",
             start: "1",
@@ -460,22 +525,22 @@ test.describe("builtin sequence registry — mounted by construction", () => {
 
     await page.goto("/crm/settings/sequences");
     await expect(page.locator("table")).toBeVisible({ timeout: 30_000 });
-    const byCode = (code: string) =>
-      page.locator("table tbody tr", { hasText: code }).first();
+    const byName = (name: string) =>
+      page.locator("table tbody tr", { hasText: name }).first();
     /** Registry rows accumulate across runs — server-side `search`
      *  narrows to the fixture row instead of relying on page-1 sort. */
-    const searchFor = async (code: string) => {
+    const searchFor = async (name: string) => {
       const listReq = page.waitForResponse(
         (r) => r.url().includes("/entities/sequence/list") && r.status() === 200,
         { timeout: 15_000 },
       );
-      await page.getByTestId("entity-search").locator("input").fill(code);
+      await page.getByTestId("entity-search").locator("input").fill(name);
       await listReq;
     };
 
     // ── Modifica → entity.record sheet in edit mode → save ────────────
-    await searchFor(String(seqEdit.code));
-    const editRow = byCode(String(seqEdit.code));
+    await searchFor(String(seqEdit.name));
+    const editRow = byName(String(seqEdit.name));
     await expect(editRow).toBeVisible({ timeout: 15_000 });
     await editRow.locator("td").last().getByRole("button").first().click();
     const menu = page.getByRole("menu");
@@ -500,8 +565,8 @@ test.describe("builtin sequence registry — mounted by construction", () => {
 
     // ── Version history → audit on the owning service ────────────────
     await page.keyboard.press("Escape");
-    await searchFor(String(seqEdit.code));
-    const auditRow = byCode(String(seqEdit.code));
+    await searchFor(String(seqEdit.name));
+    const auditRow = byName(String(seqEdit.name));
     await auditRow.locator("td").last().getByRole("button").first().click();
     const auditReq = page.waitForResponse(
       (r) =>
@@ -515,8 +580,8 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     await page.keyboard.press("Escape");
 
     // ── Row delete → confirm → DELETE on the owning service ──────────
-    await searchFor(String(seqDel.code));
-    const delRow = byCode(String(seqDel.code));
+    await searchFor(String(seqDel.name));
+    const delRow = byName(String(seqDel.name));
     await delRow.locator("td").last().getByRole("button").first().click();
     const delReq = page.waitForResponse(
       (r) =>
@@ -539,8 +604,8 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     await expect(delRow).toBeHidden({ timeout: 10_000 });
 
     // ── Bulk delete CTA present + governed dispatch ──────────────────
-    await searchFor(String(seqBulk.code));
-    const bulkRow = byCode(String(seqBulk.code));
+    await searchFor(String(seqBulk.name));
+    const bulkRow = byName(String(seqBulk.name));
     await bulkRow.getByRole("checkbox", { name: "select row" }).click();
     const bulkReq = page.waitForResponse(
       (r) =>
