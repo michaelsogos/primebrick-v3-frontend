@@ -751,7 +751,14 @@
 		context={record ?? undefined}
 		readonly={effectiveReadonly}
 		disabled={effectiveDisabled}
-		on_pick={(pick) =>
+		on_pick={(pick) => {
+			// Sheet-lifetime caret memory — the widget's own tracked caret
+			// (`pick.get_caret`) freezes the moment the stack remount kills
+			// the widget instance, and a fresh DOM input reports `{0,0}`.
+			// Recording REAL user selection events on the live element keeps
+			// the last honest caret alive across remounts — a click at
+			// position 0 post-open must still land at 0, not append.
+			let liveCaret: { start: number; end: number } | null = null;
 			openSheet(
 				'entity.sequencePattern',
 				{
@@ -780,9 +787,30 @@
 							el = cur;
 							detach = null;
 							if (el) {
-								const handler = () => cb(el!.value);
+								const track = () => {
+									liveCaret = {
+										start: el!.selectionStart ?? 0,
+										end: el!.selectionEnd ?? 0,
+									};
+								};
+								const handler = () => {
+									track();
+									cb(el!.value);
+								};
 								el.addEventListener('input', handler);
-								detach = () => el!.removeEventListener('input', handler);
+								// `select` covers user clicks/drags, keyup covers
+								// caret keys (arrows/Home/End), focus the tab-in.
+								el.addEventListener('select', track);
+								el.addEventListener('keyup', track);
+								el.addEventListener('mouseup', track);
+								el.addEventListener('focus', track);
+								detach = () => {
+									el!.removeEventListener('input', handler);
+									el!.removeEventListener('select', track);
+									el!.removeEventListener('keyup', track);
+									el!.removeEventListener('mouseup', track);
+									el!.removeEventListener('focus', track);
+								};
 								cb(el.value);
 							}
 						};
@@ -803,26 +831,42 @@
 						const v = el.value;
 						// The LIVE DOM selection is authoritative — it mirrors the
 						// tracked caret, post-open caret moves, and our own
-						// setSelectionRange. A cleared `{0,0}` (blur on some
-						// engines) falls back to the open-time snapshot; `null`
-						// snapshot = untouched field → append.
+						// setSelectionRange. A `{0,0}` (fresh remount, or a blur-
+						// cleared selection on some engines) falls back to the
+						// live-tracked caret, then the widget's open-time
+						// caret; `null` all the way = untouched → append.
 						let s = el.selectionStart ?? v.length;
 						let e = el.selectionEnd ?? v.length;
 						if (s === 0 && e === 0) {
-							s = pick.caret?.start ?? v.length;
-							e = pick.caret?.end ?? v.length;
+							const lc = liveCaret ?? pick.get_caret?.();
+							s = lc?.start ?? v.length;
+							e = lc?.end ?? v.length;
 						}
 						s = Math.max(0, Math.min(s, v.length));
 						e = Math.max(0, Math.min(e, v.length));
 						el.value = v.slice(0, s) + tok + v.slice(e);
 						const pos = s + tok.length;
 						el.setSelectionRange(pos, pos);
-						pick.caret = { start: pos, end: pos };
+						liveCaret = { start: pos, end: pos };
+						el.dispatchEvent(new InputEvent('input', { bubbles: true }));
+					},
+					// Whole-value write (the used-token `-` CTA removes a span,
+					// it does not splice at the caret) — same live channel:
+					// el.value + `input` event → bind chain → $form → draft.
+					on_write: (next: string) => {
+						const el = document.querySelector<HTMLInputElement>(
+							`[data-testid=entity-form-field-${column.key}] input`,
+						);
+						if (!el) return;
+						el.value = next;
+						el.setSelectionRange(next.length, next.length);
+						liveCaret = { start: next.length, end: next.length };
 						el.dispatchEvent(new InputEvent('input', { bubbles: true }));
 					},
 				},
 				{ stack: true },
-			)}
+			);
+		}}
 		{placeholder}
 		{...controlProps}
 	/>

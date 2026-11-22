@@ -213,6 +213,9 @@ export type SheetPanelPropsMap = {
     on_change?: (cb: (value: string) => void) => () => void;
     /** Splice `insert` at the input's saved caret/selection. */
     insert: (token: string) => void;
+    /** Replace the WHOLE pattern — the used-token `-` CTA writes the
+     *  token-stripped source through the same live channel. */
+    on_write?: (next: string) => void;
     /** Form record — `step`/`start`/`tz` example context when carried. */
     context?: Record<string, unknown>;
   };

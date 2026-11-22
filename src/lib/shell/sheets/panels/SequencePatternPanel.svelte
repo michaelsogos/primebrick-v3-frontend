@@ -3,10 +3,11 @@
   import { t } from '$lib/i18n';
   import { SheetPanelLayout } from '@primebrick/ui';
   import SheetSectionTitle from '$lib/shell/sheets/SheetSectionTitle.svelte';
-  import { Braces, Plus, Tags } from '@primebrick/ui/vendor/lucide';
+  import { Braces, Minus, Plus, Tags } from '@primebrick/ui/vendor/lucide';
   import {
     sequenceTokenCatalog,
     usedSequenceTokens,
+    removeSequenceToken,
     parseSequencePattern,
     renderSequenceValue,
     type SequenceTokenSpec,
@@ -24,11 +25,14 @@
     on_change?: (cb: (value: string) => void) => () => void;
     /** Splice `insert` at the input's saved caret/selection. */
     insert: (token: string) => void;
+    /** Replace the WHOLE pattern — the used-token `-` CTA writes the
+     *  token-stripped source through the same live channel. */
+    on_write?: (next: string) => void;
     /** Form record — `step`/`start`/`tz` example context when carried. */
     context?: Record<string, unknown>;
   }
 
-  let { get_value, on_change, insert, context }: Props = $props();
+  let { get_value, on_change, insert, on_write, context }: Props = $props();
 
   // Live pattern mirror — `get_value()` reads a DOM input (non-reactive),
   // so the panel keeps its own $state fed by the `on_change` feed; every
@@ -106,8 +110,28 @@
     }
   });
 
+  // Counter padding — `0` means no padding (`{seq}`, the default); a
+  // positive N inserts `{seq:N}` (grammar caps W at 19 = bigint digits).
+  // While the counter slot is consumed the form mirrors the pattern's
+  // own `counter_width`, disabled — the `-` CTA is the way to change it.
+  let seqWidth = $state('0');
+
+  const seqUsedWidth = $derived(
+    parsed && !(parsed instanceof Error) && used.has('seq') ? parsed.counter_width : null,
+  );
+
   function pick(spec: SequenceTokenSpec) {
-    insert(spec.insert);
+    if (spec.kind === 'counter') {
+      const w = Math.max(0, Math.min(19, Number(seqWidth) || 0));
+      insert(w > 0 ? `{seq:${w}}` : '{seq}');
+    } else {
+      insert(spec.insert);
+    }
+  }
+
+  function unpick(spec: SequenceTokenSpec) {
+    if (!spec.slot || !on_write) return;
+    on_write(removeSequenceToken(pattern, spec.slot));
   }
 </script>
 
@@ -120,8 +144,8 @@
   >
     <span class="min-w-0 flex-1">
       <span class="block font-mono font-medium">{spec.insert}</span>
-      <span class="block truncate text-xs text-muted-foreground">
-        {$t(`app.widgets.sequence_pattern.tokens.${spec.id.toLowerCase()}`)}
+      <span class="block text-xs text-muted-foreground">
+        {$t(`app.widgets.sequence_pattern.tokens.${spec.key}`)}
       </span>
     </span>
     <code
@@ -137,6 +161,17 @@
       >
         <Tags class="size-4" />
       </span>
+      <button
+        type="button"
+        class="flex shrink-0 items-center justify-center rounded-sm p-1 text-muted-foreground hover:bg-accent hover:text-destructive transition-colors"
+        onclick={() => unpick(spec)}
+        disabled={!on_write}
+        aria-label={$t('app.widgets.sequence_pattern.remove')}
+        title={$t('app.widgets.sequence_pattern.remove')}
+        data-testid={`sequence-pattern-token-${spec.id}-remove`}
+      >
+        <Minus class="size-4" />
+      </button>
     {:else}
       <button
         type="button"
@@ -149,6 +184,30 @@
         <Plus class="size-4" />
       </button>
     {/if}
+  </div>
+{/snippet}
+
+{#snippet counterRow(spec: SequenceTokenSpec)}
+  <div>
+    {@render tokenRow(spec)}
+    <!-- Padding form — authored alongside `{seq}` (the only width-bearing
+         token): 0 = no padding (default), N = `{seq:N}` on insert. -->
+    <div class="flex items-center gap-2 px-3 pb-2 pl-8" data-testid="sequence-pattern-seq-padding">
+      <label class="text-xs text-muted-foreground" for="sequence-pattern-seq-width">
+        {$t('app.widgets.sequence_pattern.tokens.seq_width')}
+      </label>
+      <input
+        id="sequence-pattern-seq-width"
+        inputmode="numeric"
+        class="w-14 rounded-sm border border-border bg-background px-2 py-1 font-mono text-xs disabled:opacity-50"
+        value={seqUsedWidth !== null ? String(seqUsedWidth) : seqWidth}
+        disabled={seqUsedWidth !== null}
+        oninput={(e) => {
+          seqWidth = e.currentTarget.value.replace(/[^0-9]/g, '').slice(0, 2);
+        }}
+        data-testid="sequence-pattern-seq-width"
+      />
+    </div>
   </div>
 {/snippet}
 
@@ -166,7 +225,11 @@
     </SheetSectionTitle>
     <div class="rounded-md border border-border">
       {#each tokens as spec (spec.id)}
-        {@render tokenRow(spec)}
+        {#if spec.kind === 'counter'}
+          {@render counterRow(spec)}
+        {:else}
+          {@render tokenRow(spec)}
+        {/if}
       {/each}
     </div>
   </div>

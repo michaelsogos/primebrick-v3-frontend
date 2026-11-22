@@ -959,20 +959,46 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     // Token rows render the catalog examples — the example counter rides
     // the form's `start` sibling (served default 1 on create).
     await expect(page.getByTestId("sequence-pattern-token-seq-example")).toHaveText("1");
-    await expect(page.getByTestId("sequence-pattern-token-seq_width-example")).toHaveText("00001");
+    // ONE counter row only — the old `{seq:W}` row is gone; width is
+    // authored in the padding form under it (0 = no padding, default).
+    await expect(page.getByTestId("sequence-pattern-token-seq_width")).toHaveCount(0);
+    const seqWidth = page.getByTestId("sequence-pattern-seq-width");
+    await expect(seqWidth).toHaveValue("0");
+    // Time tokens exist — cosmetic claim-time stamps (24h/12h/min/sec).
+    await expect(page.getByTestId("sequence-pattern-token-HH")).toBeVisible();
+    await expect(page.getByTestId("sequence-pattern-token-hh")).toBeVisible();
+    await expect(page.getByTestId("sequence-pattern-token-mm")).toBeVisible();
+    await expect(page.getByTestId("sequence-pattern-token-ss")).toBeVisible();
     // Incomplete pattern → preview shows the parser error, not a guess.
     await expect(page.getByTestId("sequence-pattern-preview-error")).toBeVisible();
 
-    // Inject {seq} — lands where the caret was (end of "INV-").
+    // Padding 4 → the counter insert emits `{seq:4}`, not `{seq}`.
+    await seqWidth.fill("4");
+    await page.getByTestId("sequence-pattern-token-seq-insert").click();
+    await expect(patternInput).toHaveValue("INV-{seq:4}");
+    // Live preview interpolates through the shared renderer.
+    await expect(page.getByTestId("sequence-pattern-preview")).toHaveText("INV-0001");
+    // Grammar arity — the used counter slot is gated (Tags badge + `-`
+    // remove CTA); the padding form mirrors the used width, disabled.
+    await expect(page.getByTestId("sequence-pattern-token-seq-used")).toBeVisible();
+    await expect(page.getByTestId("sequence-pattern-token-seq-remove")).toBeVisible();
+    await expect(seqWidth).toBeDisabled();
+    await expect(seqWidth).toHaveValue("4");
+    await expect(page.getByTestId("sequence-pattern-token-yyyy-insert")).toBeVisible();
+
+    // `-` removes the whole `{seq:4}` span — insert CTA is back, the
+    // padding form unlocks, the preview returns to the parser error.
+    await page.getByTestId("sequence-pattern-token-seq-remove").click();
+    await expect(patternInput).toHaveValue("INV-");
+    await expect(page.getByTestId("sequence-pattern-token-seq-insert")).toBeVisible();
+    await expect(seqWidth).toBeEnabled();
+    await expect(page.getByTestId("sequence-pattern-preview-error")).toBeVisible();
+
+    // Plain `{seq}` insert (padding back to 0).
+    await seqWidth.fill("0");
     await page.getByTestId("sequence-pattern-token-seq-insert").click();
     await expect(patternInput).toHaveValue("INV-{seq}");
-    // Live preview interpolates through the shared renderer.
     await expect(page.getByTestId("sequence-pattern-preview")).toHaveText("INV-1");
-    // Grammar arity — the used counter slot is gated (badge + no CTA);
-    // date/literal tokens stay insertable.
-    await expect(page.getByTestId("sequence-pattern-token-seq-used")).toBeVisible();
-    await expect(page.getByTestId("sequence-pattern-token-seq_width-used")).toBeVisible();
-    await expect(page.getByTestId("sequence-pattern-token-yyyy-insert")).toBeVisible();
 
     // Mid-string insertion — caret placed between INV- and {seq}.
     await patternInput.click();
@@ -981,13 +1007,22 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     await expect(patternInput).toHaveValue("INV-{yyyy}{seq}");
     await expect(page.getByTestId("sequence-pattern-preview")).toHaveText(/INV-\d{4}1/);
 
+    // Time token mid-string — `{mm}` inserts at caret, case-distinct
+    // from `{MM}` (both may coexist: minutes never scopes the period).
+    // Home is a REAL keystroke (programmatic setSelectionRange(0,0) is
+    // indistinguishable from a blur-cleared selection — {0,0} must come
+    // from a user gesture for the caret tracker to record it).
+    await patternInput.press("Home");
+    await page.getByTestId("sequence-pattern-token-mm-insert").click();
+    await expect(patternInput).toHaveValue("{mm}INV-{yyyy}{seq}");
+
     // Selection replace — select "{seq}" text, insert a date token over it.
     await patternInput.evaluate((el: HTMLInputElement) => {
       const i = el.value.indexOf("{seq}");
       el.setSelectionRange(i, i + 5);
     });
     await page.getByTestId("sequence-pattern-token-MM-insert").click();
-    await expect(patternInput).toHaveValue("INV-{yyyy}{MM}");
+    await expect(patternInput).toHaveValue("{mm}INV-{yyyy}{MM}");
 
     // Close the token sheet — invalid pattern (no counter) blocks submit,
     // zero POST on the wire.
@@ -996,11 +1031,20 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     await expect(submit).toBeDisabled({ timeout: 5_000 });
     expect(posts).toBe(0);
 
-    // Eraser — the standard clear CTA empties the field.
+    // Reopen the token sheet, then erase — the eraser rides the same
+    // input channel as keystrokes, so the sheet MUST react: the counter
+    // slot frees, the preview flips back to the parser error.
+    await tokensCta.click();
+    await expect(page.getByTestId("sequence-pattern-token-mm-used")).toBeVisible({
+      timeout: 5_000,
+    });
     await sheet
       .locator("[data-testid=entity-form-field-pattern] [data-testid$=-clear]")
       .click();
     await expect(patternInput).toHaveValue("");
+    await expect(page.getByTestId("sequence-pattern-token-seq-insert")).toBeVisible();
+    await expect(page.getByTestId("sequence-pattern-token-mm-insert")).toBeVisible();
+    await expect(page.getByTestId("sequence-pattern-preview-error")).toBeVisible();
   });
 
   test("entity.record update — uid pill, kind-off, reset, pencil-off silent reset, dirty-close native guard", async ({
