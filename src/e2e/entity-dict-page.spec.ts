@@ -301,6 +301,60 @@ test.describe("entity dict page (/crm/settings/customer_types)", () => {
     await expect(sheet.getByRole("button", { name: /cancel|annulla/i })).toHaveCount(0);
   });
 
+  /**
+   * Validation gate — the dict's per-cell errors now ride core
+   * `checkFieldValue` (same predicate as `entityFieldValidator`). Prove
+   * the gate mechanics on both legs: the composer ✓ never arms on an
+   * invalid `code`, and clearing a required `label_key` on a saved row
+   * kills the bulk save — in both cases NOTHING reaches the wire.
+   */
+  test("validation gate — per-cell error chrome + zero wire, composer AND saved row", async ({
+    page,
+  }) => {
+    const wire: string[] = [];
+    await page.route("**/svc/crm/api/v1/entities/customer_type*", (route) => {
+      const m = route.request().method();
+      if (m === "POST" || m === "PUT") wire.push(`${m} ${route.request().url()}`);
+      return route.continue();
+    });
+    await loginAsTestAdmin(page);
+    await page.goto(DICT_URL, { waitUntil: "domcontentloaded" });
+    await expect(page.getByTestId("entity-dict-page")).toBeVisible({ timeout: 5_000 });
+
+    // ── CREATE (composer): a non-snake `code` violates the dict key
+    //    convention — per-cell chrome + ✓ stays dead ──
+    await page.getByTestId("dict-toolbar-add").click();
+    const draft = page.getByTestId("dict-draft-row");
+    await expect(draft).toBeVisible({ timeout: 5_000 });
+    await draft.locator('[data-dict-cell="code"] input').fill("UPPER CASE!");
+    const codeError = draft.locator(
+      '[data-dict-cell="code"] [data-testid="dict-cell-error"]',
+    );
+    await expect(codeError).toBeVisible({ timeout: 5_000 });
+    await expect(codeError).not.toHaveText(/^\s*$/);
+    await expect(draft.getByTestId("dict-draft-confirm")).toBeDisabled();
+    await draft.getByTestId("dict-draft-discard").click();
+    expect(wire).toEqual([]);
+
+    // ── UPDATE (saved row): clearing the required label_key cell taints
+    //    the row AND fails validation — error chrome + save dead ──
+    const keyCell = page.getByTestId("dict-cell-label-key").first();
+    await keyCell.getByRole("button", { name: "Clear selection" }).click();
+    const cellError = page
+      .locator('[data-dict-cell="label_key"] [data-testid="dict-cell-error"]')
+      .first();
+    await expect(cellError).toBeVisible({ timeout: 5_000 });
+    await expect(cellError).not.toHaveText(/^\s*$/);
+    await expect(page.getByTestId("dict-bulk-save")).toBeDisabled();
+    expect(wire).toEqual([]);
+
+    // Revert the taint — the page returns pristine (error chrome clears,
+    // save stays gated because nothing is dirty anymore).
+    await page.getByTestId("dict-row-revert").first().click();
+    await expect(cellError).toHaveCount(0);
+    expect(wire).toEqual([]);
+  });
+
   test("saved key — editable row, Modified status, owner-scoped queueing", async ({
     page,
   }) => {

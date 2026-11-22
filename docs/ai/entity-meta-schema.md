@@ -115,6 +115,14 @@ type EntityMeta = {
   auto-injected `default_visible:false`). `hidden: true` on an authored
   column is the ONLY opt-out — it removes the column from served meta.
   Restating derived facts (`nullable`, `max_length`, `pg_type`) throws.
+- **Field validation is ONE predicate on every surface** — form pages,
+  sheets AND the dict archetype all delegate to core `checkFieldValue`
+  (via `fieldSpecToZod` binding): the same predicate
+  `entityFieldValidator` runs server-side, emitting the shared
+  `key|jsonParams` error vocabulary decoded by `translateFieldError`.
+  Surfaces own ONLY the required decision (`nullable===false`, minus
+  surface-scoped exemptions — placements on forms, suggestion-eligible
+  keys on dicts) — never re-implement rules locally.
 - **Served `default` — the decorator→meta→FE default chain** —
   `MetaColumn.default` is the create-form initial value. Sources, in
   precedence order per surface: `placement.default_value` (per-surface

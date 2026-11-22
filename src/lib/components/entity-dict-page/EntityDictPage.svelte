@@ -29,6 +29,13 @@
    *     to the standard translation gateway route.
    *   - reorder: chevrons mutate the order_field, mark rows tainted, and
    *     persist in the SAME bulk save (no dedicated endpoint).
+   *   - validation: ONE shared predicate — per-column `fieldSpecToZod`
+   *     delegates every rule to core `checkFieldValue` (the
+   *     `entityFieldValidator` predicate). The page owns only the
+   *     required decision (`nullable===false`, minus suggestion-eligible
+   *     label_key/display_field on create) and the dict `code` charset
+   *     (`isSnakeKey`); errors render as display text via
+   *     `translateFieldError` (`key|jsonParams` wire vocabulary).
    */
   import { onMount, untrack } from 'svelte';
   import { SvelteMap, SvelteSet } from 'svelte/reactivity';
@@ -48,6 +55,8 @@
   import { isEntityOpAllowed } from '$lib/permissions.svelte';
   import { extJsonParse, extJsonStringify } from '$lib/api-ext';
   import FormFieldDispatcher from '$lib/entity-form/FormFieldDispatcher.svelte';
+  import { fieldSpecToZod, translateFieldError } from '@primebrick/ui';
+  import { z } from 'zod';
   import DictDraftRow from './DictDraftRow.svelte';
   import { pushNotification } from '$lib/errors/app-errors';
   import { clearPendingTranslations, dropPendingTranslation, getPendingTranslations, addPendingTranslation } from '$lib/i18n/pending-translations.svelte';
@@ -215,12 +224,37 @@
     ),
   );
 
-  /** Meta-derived cell validation (task 5): required (nullable===false),
-   *  `max_length`/`min_length`, authored `pattern`, and the dict `code`
-   *  charset (`isSnakeKey` — the seeded vocabulary is lowercase snake).
+  /** Per-column zod schemas — `fieldSpecToZod` delegates every rule to
+   *  core `checkFieldValue`, the SAME predicate `entityFieldValidator`
+   *  runs server-side: bounds, patterns, formats, types. The dict owns
+   *  only the required decision (`nullable===false`, minus
+   *  suggestion-eligible columns) — identical to the form's
+   *  `placement.required ?? nullable===false`. Schemas are immutable per
+   *  column — cache by key+required. */
+  const dictFieldSchemas = new Map<string, z.ZodTypeAny>();
+  function dictFieldSchema(col: MetaColumn, required: boolean): z.ZodTypeAny {
+    const k = `${col.key}:${required ? 1 : 0}`;
+    let s = dictFieldSchemas.get(k);
+    if (!s) {
+      const inner = fieldSpecToZod(col, { required });
+      // Optional controls bind ''/null — normalize to `undefined` so the
+      // inner chain only sees real values (the form's own preprocess).
+      s = required
+        ? inner
+        : z.preprocess((v) => (v === '' || v === null ? undefined : v), inner.optional());
+      dictFieldSchemas.set(k, s);
+    }
+    return s;
+  }
+
+  /** Meta-derived cell validation — `checkFieldValue` per column plus
+   *  the dict `code` charset (`isSnakeKey` — the seeded vocabulary is
+   *  lowercase snake; the column carries no format/pattern covering it).
    *  `suggestion_eligible` names the columns whose empty value commits a
-   *  convention suggestion at write — `label_key`/display_field on create;
-   *  never on update (saved rows keep the hard-required gate). */
+   *  convention suggestion at write — `label_key`/display_field on
+   *  create; never on update (saved rows keep the hard-required gate).
+   *  Errors are translated at produce-time so every consumer (cells,
+   *  gates, extras sheet) receives display text. */
   function columnErrors(
     v: Record<string, unknown>,
     cols: MetaColumn[],
@@ -228,24 +262,11 @@
   ): Record<string, string[]> {
     const errs: Record<string, string[]> = {};
     for (const c of cols) {
+      const required = c.nullable === false && !suggestion_eligible?.has(c.key);
+      const r = dictFieldSchema(c, required).safeParse(v[c.key]);
+      if (!r.success) errs[c.key] = r.error.issues.map((i) => translateFieldError(i.message, $t));
       const raw = v[c.key];
-      const s = raw === null || raw === undefined ? '' : String(raw).trim();
-      if (!s) {
-        if (c.nullable === false && !suggestion_eligible?.has(c.key)) {
-          errs[c.key] = [$t('app.common.errors.required')];
-        }
-        continue;
-      }
-      if (c.max_length !== undefined && s.length > c.max_length) {
-        (errs[c.key] ??= []).push($t('app.common.validation.max_chars', { count: c.max_length }));
-      }
-      if (c.min_length !== undefined && s.length < c.min_length) {
-        (errs[c.key] ??= []).push($t('app.common.validation.min_chars', { count: c.min_length }));
-      }
-      if (c.pattern && !new RegExp(c.pattern).test(s)) {
-        (errs[c.key] ??= []).push($t('app.common.validation.regex_mismatch'));
-      }
-      if (c.key === 'code' && !isSnakeKey(s)) {
+      if (c.key === 'code' && typeof raw === 'string' && raw.trim() && !isSnakeKey(raw.trim())) {
         (errs[c.key] ??= []).push($t('app.common.validation.snake_key'));
       }
     }
@@ -324,8 +345,17 @@
     const values: Record<string, unknown> = {};
     // seq-bound draft slots start '' (directive slot, never null — a
     // null literal would cross the POST as a rejected non-directive).
+    // `col.default` (meta-authored or defaultSql-derived) wins when
+    // present — the create-prefill contract of the form surfaces.
     for (const c of editableColumns)
-      values[c.key] = c.format === 'sequence' ? '' : c.nullable === true ? null : '';
+      values[c.key] =
+        c.default !== undefined
+          ? c.default
+          : c.format === 'sequence'
+            ? ''
+            : c.nullable === true
+              ? null
+              : '';
     if (orderField) {
       const maxSort = Math.max(
         0,
