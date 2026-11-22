@@ -1011,6 +1011,101 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     }
   });
 
+  test("validation gate — per-field error chrome + zero wire on invalid, BOTH surfaces", async ({
+    page,
+  }) => {
+    const seq = await (async () => {
+      const r = await page.request.post(`${CRM_BASE}/sequence`, {
+        data: {
+          entity: {
+            name: `aaa_val_${Date.now()}`,
+            pattern: `E2EV-{seq:4}`,
+            step: "1",
+            start: "1",
+          },
+        },
+      });
+      expect(r.status()).toBe(201);
+      return extJsonParse<any>(await r.text());
+    })();
+
+    // Wire spy — an invalid submit must NEVER reach the endpoint.
+    const wireCalls: string[] = [];
+    page.on("request", (r) => {
+      if (
+        r.url().includes("/svc/crm/api/v1/entities/sequence") &&
+        (r.method() === "POST" || r.method() === "PUT")
+      )
+        wireCalls.push(`${r.method()} ${r.url()}`);
+    });
+
+    const listReq = page.waitForResponse(
+      (r) => r.url().includes("/entities/sequence/list") && r.status() === 200,
+      { timeout: 5_000 },
+    );
+    await page.goto("/crm/settings/sequences");
+    await listReq;
+
+    // ── UPDATE surface: pencil → clear a required field → error chrome
+    //    + submit disabled + no PUT ───────────────────────────────────
+    const row = page.locator("table tbody tr", { hasText: seq.name }).first();
+    await expect(row).toBeVisible({ timeout: 5_000 });
+    await row.dblclick();
+    const sheet = page.getByTestId("entity-record-sheet");
+    await expect(sheet).toBeVisible({ timeout: 5_000 });
+    await page.getByTestId("entity-record-sheet-edit-toggle").click();
+
+    const nameField = sheet.locator("[data-testid=entity-form-field-name]");
+    const nameInput = nameField.locator("input");
+    await expect(nameInput).toBeEnabled({ timeout: 5_000 });
+    await nameInput.fill("");
+    await nameInput.blur();
+
+    // The zod error renders under the field — chrome, not just gating.
+    await expect(nameField.locator(".text-destructive").first()).toBeVisible({
+      timeout: 5_000,
+    });
+    await expect(page.getByTestId("entity-form-submit")).toBeDisabled();
+    // Pristine-required → also other required siblings error? Only
+    // untouched-by-user required fields validate via forceValidation —
+    // assert at least the cleared one shows chrome; wire stays silent.
+    expect(wireCalls).toHaveLength(0);
+    // Pencil-off = silent discard → pristine → clean close.
+    await page.getByTestId("entity-record-sheet-edit-toggle").click();
+    await page.keyboard.press("Escape");
+    await expect(sheet).toBeHidden({ timeout: 5_000 });
+
+    // ── CREATE surface: one required filled → the OTHER required
+    //    fields show error chrome, submit disabled, no POST ───────────
+    await page.getByTestId("entity-create-cta").click();
+    const cSheet = page.getByTestId("entity-record-sheet");
+    await expect(cSheet).toBeVisible({ timeout: 5_000 });
+    const cNameInput = cSheet.locator("[data-testid=entity-form-field-name] input");
+    await cNameInput.fill("e2e_val_partial");
+    await cNameInput.blur();
+    // Untouched required fields carry error chrome too — the schema
+    // validates the whole object, not just the touched field.
+    await expect(
+      cSheet.locator("[data-testid=entity-form-field-pattern] .text-destructive").first(),
+    ).toBeVisible({ timeout: 5_000 });
+    await expect(
+      cSheet.locator("[data-testid=entity-form-field-step] .text-destructive").first(),
+    ).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByTestId("entity-form-submit")).toBeDisabled();
+    expect(wireCalls).toHaveLength(0);
+    // Dirty close → native confirm fires (accept → discard).
+    page.once("dialog", (d) => void d.accept());
+    await page.keyboard.press("Escape");
+    await expect(cSheet).toBeHidden({ timeout: 5_000 });
+
+    // Cleanup.
+    const g = await page.request.get(`${CRM_BASE}/sequence/${seq.uuid}`);
+    if (g.ok()) {
+      const r2 = extJsonParse<any>(await g.text());
+      await page.request.delete(`${CRM_BASE}/sequence/${seq.uuid}?version=${r2.version}`);
+    }
+  });
+
   test("row dblclick → entity.record update sheet (no kind:detail route → sheet IS the record surface)", async ({
     page,
   }) => {
