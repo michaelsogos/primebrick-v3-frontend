@@ -373,7 +373,7 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     expect(headTexts.slice(0, 9)).toEqual([
       "Name",
       "Increment",
-      "Initial Value",
+      "Start",
       "Current",
       "Next",
       "Pattern",
@@ -382,10 +382,27 @@ test.describe("builtin sequence registry — mounted by construction", () => {
       "Time zone",
     ]);
     expect(headTexts).not.toContain("Description key");
-    const allocAt = headTexts.indexOf("Last allocated at");
-    const allocBy = headTexts.indexOf("Last allocated by");
-    expect(allocAt).toBeGreaterThan(headTexts.indexOf("Time zone"));
-    expect(allocBy).toBe(allocAt + 1);
+    // `last_alloc_*` carry the standard audit anatomy — `default_visible:false`,
+    // toggleable: absent from the head like every audit stamp, surfaced by
+    // the column picker inside the audit band (first of the block).
+    expect(headTexts).not.toContain("Last allocated at");
+    expect(headTexts).not.toContain("Last allocated by");
+    await page.getByTestId("elt-column-selector").click();
+    const allocToggle = page.getByTestId("columns-toggle-last_alloc_at");
+    await expect(allocToggle).toBeVisible({ timeout: 10_000 });
+    await allocToggle.click();
+    await page.keyboard.press("Escape");
+    const headAfter = (await page.locator("table thead th").allTextContents())
+      .map((t) => t.replace(/\s+/g, " ").trim())
+      .filter(Boolean);
+    expect(headAfter.indexOf("Last allocated at")).toBeGreaterThan(
+      headAfter.indexOf("Time zone"),
+    );
+    // Restore the default view for the steps below — the toggle persists
+    // per session otherwise.
+    await page.getByTestId("elt-column-selector").click();
+    await page.getByTestId("columns-toggle-last_alloc_at").click();
+    await page.keyboard.press("Escape");
     const row = page.locator("table tbody tr", { hasText: "customers.code" }).first();
     await expect(row).toBeVisible({ timeout: 15_000 });
     // The entity_op synthesis lands the `sequence_set` CTA on the row kebab —
