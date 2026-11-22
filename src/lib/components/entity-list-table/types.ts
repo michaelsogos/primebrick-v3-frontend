@@ -148,6 +148,11 @@ export type EntityListTableProps<TRow extends Record<string, unknown>> = {
    *  override the generic "New" label in the toolbar button. */
   create_cta?: { label_key?: string; icon?: string };
   onEditAction?: (row: TRow) => void;
+  /** Row dblclick override — `EntityTablePage` wires `entity.record`
+   *  (update mode) for entities whose record surface is the sheet (no
+   *  `kind:"detail"` census route). Absent → the built-in default opens
+   *  the detail route in a new tab. */
+  onRowDblClick?: (row: TRow) => void;
   filterValues?: Record<string, unknown>;
   onFilterValuesChange?: (values: Record<string, unknown>) => void;
   onResetFilters?: () => void;

@@ -57,6 +57,10 @@
     onCreateAction?: () => void;
     /** Full override for the row edit action — bypasses navStrategy. */
     onEditAction?: (row: TRow) => void;
+    /** Full override for the row dblclick — bypasses the wired default
+     *  (`kind:"detail"` route in a new tab, else the `entity.record`
+     *  update sheet). */
+    onRowDblClick?: (row: TRow) => void;
     /** Handlers for `meta.table.row_custom_actions` entries (keyed by action_name). */
     customActionHandlers?: Record<string, (row: TRow) => void>;
     /** Row-actions column — default true. */
@@ -97,6 +101,7 @@
     editPath,
     onCreateAction,
     onEditAction,
+    onRowDblClick,
     customActionHandlers,
     rowActions = true,
     selectionLabelKey,
@@ -238,6 +243,21 @@
   const effectiveOnEditAction = $derived(
     onEditAction ?? (effectiveEditPath ? openEdit : openEditSheet)
   );
+
+  /** Row dblclick — "sheet se è previsto, altrimenti default è page":
+   *  entities whose record surface is the sheet (no `kind:"detail"`
+   *  census route) open `entity.record` in update mode (view→pencil,
+   *  same target as ref-cell drill-through); entities with a detail
+   *  page keep the built-in new-tab navigation. `service` threads
+   *  through — builtin census-map lookups are last-wins ambiguous. */
+  function openRecordSheet(row: TRow) {
+    void import('$lib/shell/sheets/sheet-manager.svelte').then(({ openSheet }) =>
+      openSheet('entity.record', { entity, value: row[uid], service }),
+    );
+  }
+  const effectiveOnRowDblClick = $derived(
+    onRowDblClick ?? (censusDetailRoute ? undefined : openRecordSheet)
+  );
   const effectiveSelectionLabelKey = $derived(
     selectionLabelKey ?? (entity ? `${entitiesNs(meta)}.entities.${entity}.plural` : undefined)
   );
@@ -264,6 +284,7 @@
     onCreateAction={effectiveOnCreateAction}
     create_cta={createCta}
     onEditAction={effectiveOnEditAction}
+    onRowDblClick={effectiveOnRowDblClick}
     defaultView={list.viewMode}
     defaultSort={meta?.table?.default_sort}
     pageSizeOptions={meta?.table?.page_size_options}

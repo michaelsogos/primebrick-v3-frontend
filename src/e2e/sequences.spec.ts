@@ -1010,4 +1010,49 @@ test.describe("builtin sequence registry — mounted by construction", () => {
       await page.request.delete(`${CRM_BASE}/sequence/${seq.uuid}?version=${r2.version}`);
     }
   });
+
+  test("row dblclick → entity.record update sheet (no kind:detail route → sheet IS the record surface)", async ({
+    page,
+  }) => {
+    const seq = await (async () => {
+      const r = await page.request.post(`${CRM_BASE}/sequence`, {
+        data: {
+          entity: {
+            name: `e2e_dbl_${Date.now()}`,
+            pattern: `E2ED-{seq:4}`,
+            step: "1",
+            start: "1",
+          },
+        },
+      });
+      expect(r.status()).toBe(201);
+      return extJsonParse<any>(await r.text());
+    })();
+
+    await page.goto("/crm/settings/sequences");
+    const row = page.locator("table tbody tr", { hasText: seq.name }).first();
+    await expect(row).toBeVisible({ timeout: 5_000 });
+    await row.dblclick();
+
+    // Sheet opens in update mode — readonly anatomy: uid pill + pencil
+    // toggle present, submit absent until the pencil arms editing.
+    const sheet = page.getByTestId("entity-record-sheet");
+    await expect(sheet).toBeVisible({ timeout: 5_000 });
+    await expect(sheet.getByTestId("entity-record-sheet-uid-badge")).toBeVisible();
+    // The pencil lives in the header chrome (actions snippet), gated on
+    // update.single — not inside the sheet body testid.
+    await expect(page.getByTestId("entity-record-sheet-edit-toggle")).toBeVisible();
+    await expect(page.getByTestId("entity-form-submit")).toHaveCount(0);
+
+    // Pristine close — no dirty guard.
+    await page.keyboard.press("Escape");
+    await expect(sheet).toBeHidden({ timeout: 5_000 });
+
+    // Cleanup.
+    const g = await page.request.get(`${CRM_BASE}/sequence/${seq.uuid}`);
+    if (g.ok()) {
+      const r2 = extJsonParse<any>(await g.text());
+      await page.request.delete(`${CRM_BASE}/sequence/${seq.uuid}?version=${r2.version}`);
+    }
+  });
 });

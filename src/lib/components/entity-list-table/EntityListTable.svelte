@@ -95,6 +95,7 @@
     onCreateAction,
     create_cta,
     onEditAction,
+    onRowDblClick: onRowDblClickProp,
     filterValues = {},
     onFilterValuesChange,
     onResetFilters,
@@ -872,7 +873,7 @@
     onCloseRowDropdown={closeRowDropdown}
     onEditRow={handleEditRow}
     rowActionsComposable={rowActionsComposable}
-    onRowDblClick={handleRowDblClick}
+    onRowDblClick={onRowDblClickProp ?? handleRowDblClick}
     bind:tableRef
     tableDensityClass={tableDensityClass}
     stickyColumnsState={stickyColumnsState}
