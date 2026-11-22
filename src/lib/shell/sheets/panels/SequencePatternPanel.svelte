@@ -8,10 +8,10 @@
     sequenceTokenCatalog,
     usedSequenceTokens,
     removeSequenceToken,
+    sequenceTokenExampleDefaults,
     parseSequencePattern,
     renderSequenceValue,
     type SequenceTokenSpec,
-    type SequenceSezToken,
   } from '@primebrick/ui';
 
   interface Props {
@@ -49,24 +49,10 @@
 
   const tokens = sequenceTokenCatalog();
 
-  // Example context — illustrative preview values. Counter defaults to the
-  // form's `start` when authored (the first emitted value) else the
-  // catalog default; `at` is now; sez samples follow the catalog defaults
-  // and become editable when the pattern uses sez slots.
-  let exampleCounter = $state('42');
-  let exampleSez = $state<Record<SequenceSezToken, string>>({
-    sez: 'A',
-    sez2: '01',
-    sez3: 'X',
-  });
-
-  $effect(() => {
-    const start = context?.start;
-    if (typeof start === 'bigint' || typeof start === 'number' || typeof start === 'string') {
-      exampleCounter = String(start);
-    }
-  });
-
+  // Example context — illustrative only: the counter rides the form's
+  // `start` sibling when authored (the first emitted value) else the
+  // catalog default; sez partitions use the shared catalog defaults
+  // (claim-time context, never persisted on the sequence row).
   const ctxTz = $derived(typeof context?.tz === 'string' && context.tz !== '' ? context.tz : undefined);
 
   /** Parsed pattern — `Error` while the source is mid-typing invalid. */
@@ -81,18 +67,22 @@
   let used = $derived(usedSequenceTokens(pattern));
 
   let counter = $derived.by(() => {
-    try {
-      return BigInt(exampleCounter.trim() || '0');
-    } catch {
-      return 42n;
+    const s = context?.start;
+    if (typeof s === 'bigint' || typeof s === 'number' || typeof s === 'string') {
+      try {
+        return BigInt(s);
+      } catch {
+        /* fall through to default */
+      }
     }
+    return sequenceTokenExampleDefaults.counter;
   });
 
   let previewPartitions = $derived.by(() => {
     const p: Record<string, string> = {};
     if (parsed && !(parsed instanceof Error)) {
       for (const s of parsed.sez_slots) {
-        if (exampleSez[s] !== '') p[s] = exampleSez[s];
+        p[s] = sequenceTokenExampleDefaults.partitions[s];
       }
     }
     return p;
@@ -151,7 +141,7 @@
     <code
       class="shrink-0 rounded-sm border border-border bg-muted px-1.5 py-0.5 font-mono text-[11px] leading-none"
       data-testid={`sequence-pattern-token-${spec.id}-example`}
-      >{spec.example({ counter, partitions: exampleSez, tz: ctxTz })}</code
+      >{spec.example({ counter, tz: ctxTz })}</code
     >
     {#if isUsed}
       <span
@@ -223,7 +213,7 @@
     <SheetSectionTitle>
       {$t('app.widgets.sequence_pattern.tokens_title')}
     </SheetSectionTitle>
-    <div class="rounded-md border border-border">
+    <div>
       {#each tokens as spec (spec.id)}
         {#if spec.kind === 'counter'}
           {@render counterRow(spec)}
@@ -238,44 +228,15 @@
     <SheetSectionTitle>
       {$t('app.widgets.sequence_pattern.preview')}
     </SheetSectionTitle>
-    <div class="flex flex-col gap-2 rounded-md border border-border p-3">
-      <div class="flex items-center gap-2">
-        <label
-          class="text-xs text-muted-foreground shrink-0"
-          for="sequence-pattern-example-counter"
-          >{$t('app.widgets.sequence_pattern.example_counter')}</label
-        >
-        <input
-          id="sequence-pattern-example-counter"
-          inputmode="numeric"
-          class="w-24 rounded-sm border border-border bg-background px-2 py-1 font-mono text-xs"
-          bind:value={exampleCounter}
-          data-testid="sequence-pattern-example-counter"
-        />
-        {#if parsed && !(parsed instanceof Error) && parsed.sez_slots.length > 0}
-          {#each parsed.sez_slots as slot (slot)}
-            <label class="text-xs font-mono text-muted-foreground shrink-0" for="sequence-pattern-sez-{slot}"
-              >{`{${slot}}`}</label
-            >
-            <input
-              id="sequence-pattern-sez-{slot}"
-              class="w-16 rounded-sm border border-border bg-background px-2 py-1 font-mono text-xs"
-              bind:value={exampleSez[slot]}
-              data-testid="sequence-pattern-sez-{slot}"
-            />
-          {/each}
-        {/if}
-      </div>
-      {#if parsed instanceof Error}
-        <p class="font-mono text-xs text-destructive" data-testid="sequence-pattern-preview-error">
-          {parsed.message}
-        </p>
-      {:else}
-        <p
-          class="rounded-sm bg-muted px-2 py-1.5 font-mono text-sm break-all"
-          data-testid="sequence-pattern-preview"
-        >{preview}</p>
-      {/if}
-    </div>
+    {#if parsed instanceof Error}
+      <p class="font-mono text-xs text-destructive" data-testid="sequence-pattern-preview-error">
+        {parsed.message}
+      </p>
+    {:else}
+      <p
+        class="rounded-sm bg-muted px-2 py-1.5 font-mono text-sm break-all"
+        data-testid="sequence-pattern-preview"
+      >{preview}</p>
+    {/if}
   </div>
 </SheetPanelLayout>

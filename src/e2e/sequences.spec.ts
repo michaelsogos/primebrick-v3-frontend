@@ -925,8 +925,10 @@ test.describe("builtin sequence registry — mounted by construction", () => {
   /**
    * `format:"sequence_pattern"` — the pattern-builder widget on the
    * `sequence.pattern` column: free literal typing, token-catalog sheet
-   * via the in-input {} CTA, insert-at-caret, used-token gating, live
-   * interpolated preview (same renderSequenceValue engine as the BE).
+   * via the in-input Tags CTA, insert-at-caret, used-token gating, live
+   * interpolated preview (same renderSequenceValue engine as the BE)
+   * both in the sheet and in the interpreter strip under the input
+   * (schedule-spec-input convention).
    */
   test("sequence_pattern widget — token sheet, caret insert, used gating, live preview", async ({
     page,
@@ -950,6 +952,11 @@ test.describe("builtin sequence registry — mounted by construction", () => {
 
     // Free literal typing — arbitrary text is accepted verbatim.
     await patternInput.fill("INV-");
+    // Interpreter strip under the input (schedule-spec convention) —
+    // an incomplete pattern shows the parser error, not a guess.
+    const strip = page.getByTestId("sequence-pattern-input-interpreter");
+    await expect(strip).toBeVisible();
+    await expect(page.getByTestId("sequence-pattern-input-error")).toBeVisible();
     // Untouched-caret insert appends at end; an invalid-incomplete
     // pattern (missing {seq}) must show the parser error in the sheet.
     const tokensCta = sheet.locator("[data-testid$=-tokens-cta]");
@@ -971,13 +978,27 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     await expect(page.getByTestId("sequence-pattern-token-ss")).toBeVisible();
     // Incomplete pattern → preview shows the parser error, not a guess.
     await expect(page.getByTestId("sequence-pattern-preview-error")).toBeVisible();
+    // The sheet preview is display-only — no counter/sez sample inputs
+    // (the example context rides the form record + catalog defaults)…
+    await expect(page.getByTestId("sequence-pattern-example-counter")).toHaveCount(0);
+    await expect(page.getByTestId("sequence-pattern-sez-sez")).toHaveCount(0);
+    // …and neither the token list nor the preview sit inside a bordered
+    // card — the sheet reads as flat rows under the section titles.
+    await expect(
+      page.getByTestId("sequence-pattern-token-seq").locator(".."),
+    ).not.toHaveClass(/border/);
+    await expect(
+      page.getByTestId("sequence-pattern-preview-error").locator(".."),
+    ).not.toHaveClass(/border/);
 
     // Padding 4 → the counter insert emits `{seq:4}`, not `{seq}`.
     await seqWidth.fill("4");
     await page.getByTestId("sequence-pattern-token-seq-insert").click();
     await expect(patternInput).toHaveValue("INV-{seq:4}");
-    // Live preview interpolates through the shared renderer.
+    // Live preview interpolates through the shared renderer — in the
+    // sheet AND in the strip under the input (same render engine).
     await expect(page.getByTestId("sequence-pattern-preview")).toHaveText("INV-0001");
+    await expect(page.getByTestId("sequence-pattern-input-example")).toHaveText("INV-0001");
     // Grammar arity — the used counter slot is gated (Tags badge + `-`
     // remove CTA); the padding form mirrors the used width, disabled.
     await expect(page.getByTestId("sequence-pattern-token-seq-used")).toBeVisible();
@@ -1045,6 +1066,9 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     await expect(page.getByTestId("sequence-pattern-token-seq-insert")).toBeVisible();
     await expect(page.getByTestId("sequence-pattern-token-mm-insert")).toBeVisible();
     await expect(page.getByTestId("sequence-pattern-preview-error")).toBeVisible();
+    // Empty input → the interpreter strip hides entirely (no stale
+    // example under an empty field).
+    await expect(page.getByTestId("sequence-pattern-input-interpreter")).toHaveCount(0);
   });
 
   test("entity.record update — uid pill, kind-off, reset, pencil-off silent reset, dirty-close native guard", async ({
