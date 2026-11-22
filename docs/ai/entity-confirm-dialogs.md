@@ -52,6 +52,13 @@
    `no-native-dialog` (`check-standards`, `NO_EXEMPT_RULES`) fails the
    build on any native dialog call. Notices use `pushNotification`;
    entity confirms use `runEntityOp`.
+   **Single exempted file**: `useUnsavedChangesGuard.svelte.ts` uses
+   `window.confirm` BY DECISION — the synchronous browser lock is required
+   (an in-app dialog leaves a race window where the user keeps
+   interacting; `confirm()` blocks the JS thread — no overlap is
+   physically possible). The exemption lives in
+   `.devin/check-standards.json` `allowPaths` as a reviewable diff;
+   every other file stays banned.
 
 ## Reference
 - Docs: `docs/dev-guide/components/entity-confirm-dialogs.mdx`

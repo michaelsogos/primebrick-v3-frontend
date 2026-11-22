@@ -154,6 +154,10 @@ the second line of `DeleteDialog` — keep it alive.
 - **Never use `DialogBordered` directly** for entity delete/restore.
 - **Native `confirm()`/`alert()`/`prompt()` are lint-banned**
   (`no-native-dialog`, non-exempt) — notices use `pushNotification`.
+  The ONLY exemption is `useUnsavedChangesGuard.svelte.ts`: the
+  unsaved-changes guard uses `window.confirm` BY DECISION — the
+  synchronous lock prevents the race window an in-app dialog would open
+  (the user could keep interacting while a confirm is pending).
 - Non-entity destructive dialogs (model cache files, MFA reset, sessions) MAY
   keep custom titles via `DialogBordered` — they are not entity records.
 

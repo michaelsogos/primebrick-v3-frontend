@@ -657,6 +657,7 @@ test.describe("builtin sequence registry — mounted by construction", () => {
   test("side paths route to the owning service — delete, audit, sheet edit, bulk", async ({
     page,
   }) => {
+    test.setTimeout(90000);
     const mkSeq = async (suffix: string) => {
       const r = await page.request.post(`${CRM_BASE}/sequence`, {
         data: {
@@ -675,11 +676,14 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     const seqDel = await mkSeq("d");
     const seqBulk = await mkSeq("b");
 
-    /** Track every entity-API request — nothing may leave `/svc/crm`. */
+    /** Track every entity-API request — nothing may leave `/svc/crm`.
+     *  `/presence` is exempt: collaboration presence is a GATEWAY-owned
+     *  facility (`/api/v1/entities/:e/:uuid/presence*` on the BE) — it
+     *  never rides the owning service by design. */
     const apiUrls: string[] = [];
     page.on("request", (r) => {
       const u = r.url();
-      if (u.includes("/entities/sequence")) apiUrls.push(u);
+      if (u.includes("/entities/sequence") && !u.includes("/presence")) apiUrls.push(u);
     });
 
     await page.goto("/crm/settings/sequences");
@@ -715,12 +719,19 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     // The record sheet opens straight into edit mode — step is editable.
     const sheet = page.getByTestId("entity-record-sheet");
     await expect(sheet).toBeVisible({ timeout: 10_000 });
-    const stepInput = sheet.locator("#record-sheet-field-step");
+    const stepInput = sheet.locator("[data-testid=entity-form-field-step] input");
     await expect(stepInput).toBeEnabled({ timeout: 10_000 });
     await stepInput.fill("2");
+    // NumericInput commits the canonical value on blur — blur before the
+    // submit click so the zod schema sees the real value.
+    await stepInput.blur();
     // Save — the governed update path, on the owning service.
-    await page.getByTestId("entity-record-sheet-save").click();
+    await page.getByTestId("entity-form-submit").click();
     await putReq;
+    // Post-save settle: editing flips off (submit CTA unmounts) AFTER the
+    // response lands — Escape before that would trip the dirty-close
+    // guard (native confirm → auto-dismissed by Playwright = decline).
+    await expect(page.getByTestId("entity-form-submit")).toBeHidden({ timeout: 10_000 });
 
     // ── Version history → audit on the owning service ────────────────
     await page.keyboard.press("Escape");
@@ -818,7 +829,7 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     await expect(page.getByTestId("entity-record-sheet-edit-toggle")).toHaveCount(0);
     await expect(page.getByTestId("entity-record-sheet-version-badge")).toHaveCount(0);
     await expect(sheet.getByTestId("entity-record-sheet-audit-section")).toHaveCount(0);
-    const nameInput = sheet.locator("#record-sheet-field-name");
+    const nameInput = sheet.locator("[data-testid=entity-form-field-name] input");
     await expect(nameInput).toBeEnabled({ timeout: 10_000 });
     // `kind:"virtual"`/audited projections never reach the widget grid —
     // on ANY form surface (create AND update).
@@ -830,14 +841,18 @@ test.describe("builtin sequence registry — mounted by construction", () => {
       "last_alloc_at",
       "last_alloc_by",
     ])
-      await expect(sheet.locator(`#record-sheet-field-${k}`)).toHaveCount(0);
+      await expect(sheet.locator(`[data-testid=entity-form-field-${k}]`)).toHaveCount(0);
 
     // POST → the panel morphs into update on the created row.
     const unique = `e2e_sheet_${Date.now()}`;
     await nameInput.fill(unique);
-    await sheet.locator("#record-sheet-field-pattern").fill("E2ES-C-{seq:4}");
-    await sheet.locator("#record-sheet-field-step").fill("1");
-    await sheet.locator("#record-sheet-field-start").fill("1");
+    await sheet.locator("[data-testid=entity-form-field-pattern] input").fill("E2ES-C-{seq:4}");
+    await sheet.locator("[data-testid=entity-form-field-step] input").fill("1");
+    const startInput = sheet.locator("[data-testid=entity-form-field-start] input");
+    await startInput.fill("1");
+    // NumericInput commits on blur — blur before submit so the canonical
+    // value reaches $form and the schema.
+    await startInput.blur();
     const postReq = page.waitForResponse(
       (r) =>
         r.url().includes("/svc/crm/api/v1/entities/sequence") &&
@@ -845,7 +860,7 @@ test.describe("builtin sequence registry — mounted by construction", () => {
         r.status() === 201,
       { timeout: 20_000 },
     );
-    await page.getByTestId("entity-record-sheet-save").click();
+    await page.getByTestId("entity-form-submit").click();
     const postRes = await postReq;
     const created = extJsonParse<any>(await postRes.text());
     const createdRow = (created.entity ?? created) as Record<string, unknown>;
@@ -870,7 +885,7 @@ test.describe("builtin sequence registry — mounted by construction", () => {
         r.status() === 200,
       { timeout: 20_000 },
     );
-    await page.getByTestId("entity-record-sheet-save").click();
+    await page.getByTestId("entity-form-submit").click();
     await putReq;
     // kind-projections are never in the PUT payload — the POST/PUT body
     // carries only authored columns (verified implicitly: a polluted

@@ -18,6 +18,7 @@
 import { z } from 'zod';
 import { fieldSpecToZod, type FormPageDecl, type MetaColumn } from '@primebrick/ui';
 import type { EntityMeta } from '$lib/entity-list/types';
+import { orderedColumns } from '$lib/entity-list';
 import {
 	extJsonParse,
 	isValidNatsSubject,
@@ -186,4 +187,28 @@ export function buildEntityFormSchema(
 		>;
 	}
 	return { schema, fields };
+}
+
+/**
+ * `synthesizeFormDecl` — the fallback `page_props.form` when an entity
+ * has no authored declaration: every writable served column in canonical
+ * `orderedColumns` order. `hidden`/`audited`/`kind` (calculated|virtual
+ * projections)/`managed`/uid/`version` never reach a form by contract —
+ * the SAME partition the SDK declaration-time gate enforces.
+ */
+export function synthesizeFormDecl(meta: EntityMeta): FormPageDecl {
+	const uid = meta.uid ?? 'uuid';
+	return {
+		fields: orderedColumns(meta.columns ?? [])
+			.filter(
+				(c) =>
+					!c.hidden &&
+					c.audited !== true &&
+					!c.kind &&
+					c.managed !== true &&
+					c.key !== uid &&
+					c.key !== 'version',
+			)
+			.map((c) => ({ key: c.key })),
+	};
 }

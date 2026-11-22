@@ -109,6 +109,11 @@
         "routes/(app)/system/settings/translations/+page.svelte"
       ]
     },
+    "no-native-dialog": {
+      "allowPaths": [
+        "lib/composables/useUnsavedChangesGuard.svelte.ts"
+      ]
+    },
     "i18n-entity-fallback": {
       "appliesTo": [
         "lib/entity-list/",

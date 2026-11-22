@@ -6,49 +6,48 @@
  * and returns `handleBeforeUnload` and `handleCancel` functions for the page
  * to wire into `<svelte:window onbeforeunload={...}>` and footer Cancel button.
  *
- * The confirm channel is module-level state rendered by ONE
- * `<UnsavedChangesGuardHost>` mounted in `(app)/+layout.svelte` — the
- * governed anatomy exists by construction; `confirm()`/`alert()`/`prompt()`
- * are banned by the `no-native-dialog` rule. `beforeunload` keeps the
- * browser's native prompt (the only surface that can block a real unload).
+ * The confirm is the NATIVE `window.confirm` — by explicit decision: the
+ * synchronous browser lock is required because an in-app dialog lets the
+ * user interact with the page while the guard is open (race window: a
+ * second nav/close attempt lands before the first resolves). `confirm()`
+ * blocks the JS thread — no overlap is physically possible. `beforeunload`
+ * keeps the browser's own native prompt for real unloads (close tab /
+ * reload), the only surface that can block them.
+ *
+ * `no-native-dialog` is exempted for THIS file alone in
+ * `.devin/check-standards.json` — everywhere else entity confirms keep the
+ * governed invoker anatomy (DeleteDialog-family, pushNotification).
  *
  * @param hasChanges Reactive getter returning whether the form has unsaved changes
  * @param confirmKey i18n key for the confirmation dialog message
  */
-import { beforeNavigate, goto } from "$app/navigation";
+import { beforeNavigate } from "$app/navigation";
 import { get } from "svelte/store";
 import { t } from "$lib/i18n";
 
-/** Module-level confirm channel — one pending guard at a time: a second
- *  request while a confirm is open resolves `false` (fail-closed). */
-export const unsavedGuardState = $state<{
-  confirm: { confirmKey: string; resolve: (ok: boolean) => void } | null;
-}>({ confirm: null });
-
-export function settleUnsavedGuardConfirm(ok: boolean): void {
-  const req = unsavedGuardState.confirm;
-  unsavedGuardState.confirm = null;
-  req?.resolve(ok);
-}
-
-function askGuardConfirm(confirmKey: string): Promise<boolean> {
-  if (unsavedGuardState.confirm) return Promise.resolve(false);
-  return new Promise((resolve) => {
-    unsavedGuardState.confirm = { confirmKey, resolve };
-  });
+/** Shared confirm primitive — the sheet close-guard and the surface's
+ *  discard path reuse the SAME native lock (no overlap by construction:
+ *  the call blocks the thread until the user answers). */
+export function guardConfirm(confirmKey: string): boolean {
+  return window.confirm(get(t)(confirmKey));
 }
 
 export function useUnsavedChangesGuard(
   hasChanges: () => boolean,
   confirmKey: string,
+  /** Runs ONLY on a confirmed leave — the caller's stale-state cleanup
+   *  (draft slot clear). A declined guard never reaches it. */
+  onConfirmLeave?: () => void,
 ) {
   beforeNavigate((navigation) => {
     if (!hasChanges()) return;
-    navigation.cancel();
-    const target = navigation.to?.url;
-    void askGuardConfirm(confirmKey).then((ok) => {
-      if (ok && target) void goto(target);
-    });
+    // Native lock — the answer is synchronous; a declined guard cancels,
+    // a confirmed one lets the navigation proceed untouched.
+    if (!guardConfirm(confirmKey)) {
+      navigation.cancel();
+      return;
+    }
+    onConfirmLeave?.();
   });
 
   function handleBeforeUnload(event: BeforeUnloadEvent) {
@@ -58,10 +57,10 @@ export function useUnsavedChangesGuard(
     }
   }
 
-  async function handleCancel() {
+  function handleCancel() {
     if (hasChanges()) {
-      const ok = await askGuardConfirm(confirmKey);
-      if (!ok) return;
+      if (!guardConfirm(confirmKey)) return;
+      onConfirmLeave?.();
     }
     if (window.opener) {
       window.close();

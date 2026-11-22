@@ -416,6 +416,22 @@ export function replaceSheet(
   openSheet(panelId as SheetPanelId, props as AnyPanelProps, options);
 }
 
+/**
+ * Dirty-close guard — ONE active registration: the panel hosting a form
+ * surface (entity.record in edit mode) sets it on mount and clears it on
+ * destroy. `SheetHost`'s close funnel consults it before `closeSheet`:
+ * returns `false` → the close vetoes (the surface's confirm dialog is
+ * already open). Programmatic `closeSheet()` calls bypass it — a code
+ * path reaching it has already settled the discard decision.
+ */
+let sheetCloseGuard: (() => boolean | Promise<boolean>) | null = null;
+export function setSheetCloseGuard(fn: (() => boolean | Promise<boolean>) | null): void {
+  sheetCloseGuard = fn;
+}
+export function getSheetCloseGuard(): (() => boolean | Promise<boolean>) | null {
+  return sheetCloseGuard;
+}
+
 export function closeSheet() {
   // Stacked close pops the right pane — the left pane slides back to the
   // right slot and the sheet stays open.

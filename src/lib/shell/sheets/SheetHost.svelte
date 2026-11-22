@@ -4,6 +4,7 @@
     closeSheet,
     sheetState,
     shouldSuppressSheetDialogClose,
+    getSheetCloseGuard,
     type SheetPanelId
   } from '$lib/shell/sheets/sheet-manager.svelte';
   import { resolveRemoteSheetDecl } from '$lib/shell/modules-shell.svelte';
@@ -120,7 +121,7 @@
    *  first. While stacked the close plays the shrink animation for the
    *  standard close duration, then mutates — the record lands exactly
    *  where the solo pane should be. */
-  function routeDialogClose() {
+  async function routeDialogClose() {
     if (popping) return;
     if (sheetState.secondary && !sheetState.expanded) {
       popping = true;
@@ -130,6 +131,13 @@
         // A re-stack during the pop abandons the deferred close.
         if (sheetState.secondary === slot) closeSheet();
       }, 300);
+      return;
+    }
+    // Dirty-close guard — a form-surface panel in edit mode may veto the
+    // close while its unsaved-changes confirm is open.
+    const g = getSheetCloseGuard();
+    if (g && !(await g())) {
+      sheetState.open = true;
       return;
     }
     closeSheet();

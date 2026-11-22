@@ -51,6 +51,9 @@ interface AuditPageRow {
 export interface CollaborativeFormOpts {
 	entity: string;
 	uuid: string;
+	/** Owning service — entity API calls (audit diff, conflict refetch)
+	 *  ride the `/svc/<code>` proxy; absent → census map (BE-owned). */
+	service?: string;
 	/**
 	 * Activation gate — reactive: the channel + handler only live while this
 	 * returns true (e.g. `isDetail && meta.collaboration.enabled`). Called
@@ -132,7 +135,7 @@ export function useCollaborativeForm(opts: CollaborativeFormOpts) {
 		let row: AuditPageRow | null = null;
 		try {
 			const page = await apiFetchExt<{ data: AuditPageRow[] }>(
-				`${entityApiBase(opts.entity)}/${opts.uuid}/audit?page=1&limit=1`,
+				`${entityApiBase(opts.entity, opts.service)}/${opts.uuid}/audit?page=1&limit=1`,
 			);
 			row = page.data[0] ?? null;
 		} catch {
@@ -284,7 +287,7 @@ export function useCollaborativeForm(opts: CollaborativeFormOpts) {
 		 */
 		async handleVersionConflict() {
 			const fresh = await apiFetchExt<Record<string, unknown>>(
-				`${entityApiBase(opts.entity)}/${opts.uuid}`,
+				`${entityApiBase(opts.entity, opts.service)}/${opts.uuid}`,
 			).catch(() => null);
 			if (!fresh) return; // record unreadable — keep the conflict surface minimal
 			if (
