@@ -359,6 +359,28 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     // kind:"list" → the EntityTablePage archetype: a real table with the
     // PoC registry row, not the settings-dictionary anatomy.
     await expect(page.locator("table")).toBeVisible({ timeout: 30_000 });
+    // The rendered columns ARE the governed surface — order and labels
+    // asserted exactly as authored on the decl (audit band last;
+    // description_key is default_visible:false → never in the head).
+    const headTexts = (await page.locator("table thead th").allTextContents())
+      .map((t) => t.replace(/\s+/g, " ").trim())
+      .filter(Boolean);
+    expect(headTexts.slice(0, 9)).toEqual([
+      "Name",
+      "Increment",
+      "Initial Value",
+      "Current",
+      "Next",
+      "Pattern",
+      "Current Sequence",
+      "Next Sequence",
+      "Time zone",
+    ]);
+    expect(headTexts).not.toContain("Description key");
+    const allocAt = headTexts.indexOf("Last allocated at");
+    const allocBy = headTexts.indexOf("Last allocated by");
+    expect(allocAt).toBeGreaterThan(headTexts.indexOf("Time zone"));
+    expect(allocBy).toBe(allocAt + 1);
     const row = page.locator("table tbody tr", { hasText: "customers.code" }).first();
     await expect(row).toBeVisible({ timeout: 15_000 });
     // The entity_op synthesis lands the `sequence_set` CTA on the row kebab —
