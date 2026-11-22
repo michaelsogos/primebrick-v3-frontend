@@ -194,7 +194,10 @@
 	/** The form's baseline values — create: declared defaults + type
 	 *  fallbacks; update: the record's values (JSON cols stringified for
 	 *  their string-bound controls). Extracted so the reset button can
-	 *  rebuild the SAME baseline from a freshly fetched record. */
+	 *  rebuild the SAME baseline from a freshly fetched record.
+	 *  Default precedence: `placement.default_value` (per-surface) →
+	 *  `column.default` (served: meta-authored or `defaultSql`-derived)
+	 *  → type fallback. */
 	function buildInitial(): Record<string, unknown> {
 		const initial: Record<string, unknown> = {};
 		for (const placement of formDecl.fields) {
@@ -208,12 +211,11 @@
 				else if (col?.format === 'sequence') initial[placement.key] = '';
 				else if (col?.type === 'boolean') initial[placement.key] = v ?? false;
 				else initial[placement.key] = v ?? '';
-			} else if (placement.default_value !== undefined) {
-				initial[placement.key] = placement.default_value;
-			} else if (col?.type === 'boolean') {
-				initial[placement.key] = false;
 			} else {
-				initial[placement.key] = '';
+				const dv = placement.default_value ?? col?.default;
+				if (dv !== undefined) initial[placement.key] = dv;
+				else if (col?.type === 'boolean') initial[placement.key] = false;
+				else initial[placement.key] = '';
 			}
 		}
 		return initial;

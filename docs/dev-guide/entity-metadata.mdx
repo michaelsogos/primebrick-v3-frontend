@@ -133,6 +133,7 @@ never authored by hand). Authored entries are presentation overrides.
 | `max_length` | From `@Column({length})` → `maxlength` attribute + `z.string().max()`. |
 | `pg_type` | Physical PG type (`varchar`, `int8`, `timestamptz`, `jsonb`, …) — informs control pick when `format` is absent; `numericKindOf` maps it to `bigint`/`number`/`decimal` for every numeric surface. |
 | `managed` | DB fills the value (`@Key` identity generation). Never client-supplied, never required — excluded from form widgets and write payloads. |
+| `default` | Create-form **initial value** — derived from `@Column({defaultSql})` constant literals (typed per `pg_type`: int8 → `bigint`, numeric → `Decimal`), or AUTHORED here as the legal column-level override (covers values not expressible in SQL — e.g. `{seq:{…}}` directives). Volatile expressions (`now()`, `uuidv7()`) are never served. A `placement.default_value` outranks it per-surface; update forms ignore it. |
 
 ### Lifecycle
 
@@ -262,7 +263,7 @@ the entity owns; it never redefines type/validation (those come from
 | `col` / `span` | `grid-column` start / span — `span:2` = full-width row. |
 | `row` / `row_span` | `grid-row` start / span — full-height column slots (e.g. a builder beside static fields). |
 | `section` | Section id grouping fields under a shared i18n header. |
-| `default_value` | Create-surface **initial value prefill** — page-domain UX, applied only on create (update surfaces read the record). |
+| `default_value` | Create-surface **initial value prefill** — the per-surface override in the default chain (`placement.default_value` > authored `MetaColumn.default` > `@Column({defaultSql})` constant > type fallback). Create-only: update surfaces read the record, never a default. |
 | `placeholder_key` | i18n key of the control placeholder. |
 | `required` | May only **loosen** the class-derived `nullable` to optional — never tighten past the physical contract. |
 

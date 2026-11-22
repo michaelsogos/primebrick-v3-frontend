@@ -496,7 +496,10 @@ test.describe("builtin sequence registry — mounted by construction", () => {
       await page.getByTestId("elt-column-selector").click();
       const descToggle = page.getByTestId("columns-toggle-description_key");
       await expect(descToggle).toBeVisible({ timeout: 5_000 });
-      await descToggle.click();
+      // dispatchEvent: the picker popover animates its scroll area — the
+      // toggle can be visible-but-unstable or momentarily below the fold;
+      // the handler is a plain click listener either way.
+      await descToggle.dispatchEvent("click");
       await page.keyboard.press("Escape");
 
       // Translated badge — icon + resolved label, raw key on the tooltip.
@@ -509,10 +512,15 @@ test.describe("builtin sequence registry — mounted by construction", () => {
       await expect(badge).toContainText("Name");
       await expect(badge).not.toContainText("crm.entities.sequence.fields.name");
       await badge.hover();
-      await expect(page.locator("[data-tooltip-content]")).toContainText(
-        "crm.entities.sequence.fields.name",
-        { timeout: 5_000 },
-      );
+      // The open tooltip — a closed-state tooltip from an earlier hover can
+      // still linger in the DOM (bits mounts per trigger); :visible filters
+      // hidden ones and hasText pins the right portal regardless of the
+      // data-state vocabulary (instant-open vs delayed-open).
+      await expect(
+        page
+          .locator('[data-tooltip-content]:visible')
+          .filter({ hasText: "crm.entities.sequence.fields.name" }),
+      ).toBeVisible({ timeout: 5_000 });
 
       // Raw fallback — the untranslated key renders itself, icon included.
       await page.getByTestId("entity-search").locator("input").fill(fbName);
@@ -830,6 +838,14 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     const nameInput = sheet.locator("[data-testid=entity-form-field-name] input");
     await expect(nameInput).toBeEnabled({ timeout: 5_000 });
 
+    // Served defaults — the decorator→meta→FE chain: `@Column({defaultSql:"1"})`
+    // → `MetaColumn.default:1n` → create prefill. The prefilled value is the
+    // real committed baseline (it rides the POST below untouched).
+    const stepIn = sheet.locator("[data-testid=entity-form-field-step] input");
+    const startIn = sheet.locator("[data-testid=entity-form-field-start] input");
+    await expect(stepIn).toHaveValue("1");
+    await expect(startIn).toHaveValue("1");
+
     // Validation gate — pristine → submit disabled; one required field
     // filled → the OTHERS still error → still disabled (canSave =
     // hasChanges && no errors — autowired zod, never a raw POST).
@@ -853,12 +869,7 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     const unique = `e2e_sheet_${Date.now()}`;
     await nameInput.fill(unique);
     await sheet.locator("[data-testid=entity-form-field-pattern] input").fill("E2ES-C-{seq:4}");
-    await sheet.locator("[data-testid=entity-form-field-step] input").fill("1");
-    const startInput = sheet.locator("[data-testid=entity-form-field-start] input");
-    await startInput.fill("1");
-    // NumericInput commits on blur — blur before submit so the canonical
-    // value reaches $form and the schema.
-    await startInput.blur();
+    // step/start ride the POST as the UNTOUCHED prefilled defaults (1n/1n).
     const postReq = page.waitForResponse(
       (r) =>
         r.url().includes("/svc/crm/api/v1/entities/sequence") &&
@@ -870,6 +881,9 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     const postRes = await postReq;
     const created = extJsonParse<any>(await postRes.text());
     const createdRow = (created.entity ?? created) as Record<string, unknown>;
+    // The untouched prefill committed — server row carries the defaults.
+    expect(String(createdRow.step)).toMatch(/^1n?$/);
+    expect(String(createdRow.start)).toMatch(/^1n?$/);
 
     // Morph → update: version badge + pencil toggle + audit section
     // return, uid block renders.
@@ -918,8 +932,8 @@ test.describe("builtin sequence registry — mounted by construction", () => {
           entity: {
             name: `e2e_guard_${Date.now()}`,
             pattern: `E2EG-{seq:4}`,
-            step: "1",
-            start: "1",
+            step: "2",
+            start: "2",
           },
         },
       });
@@ -958,6 +972,9 @@ test.describe("builtin sequence registry — mounted by construction", () => {
       await expect(sheet.locator(`[data-testid=entity-form-field-${k}]`)).toHaveCount(0);
 
     const stepInput = sheet.locator("[data-testid=entity-form-field-step] input");
+    // Update shows the RECORD's step (fixture created with step=2) — the
+    // served `default:1` is create-only and must never shadow a row value.
+    await expect(stepInput).toHaveValue("2");
     const submit = page.getByTestId("entity-form-submit");
     const resetBtn = page.getByTestId("entity-form-reset");
 
@@ -966,7 +983,7 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     await stepInput.blur();
     await expect(resetBtn).toBeEnabled({ timeout: 5_000 });
     await resetBtn.click();
-    await expect(stepInput).toHaveValue("1", { timeout: 5_000 });
+    await expect(stepInput).toHaveValue("2", { timeout: 5_000 });
     await expect(resetBtn).toBeDisabled({ timeout: 5_000 });
 
     // ── Pencil-off = SILENT reset — no dialog, field re-baselines ────
@@ -977,7 +994,7 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     expect(dialogs).toHaveLength(0); // pencil-off never asks — it IS the intent
     // Re-enter edit → the discarded value is gone (baseline, not stale).
     await page.getByTestId("entity-record-sheet-edit-toggle").click();
-    await expect(stepInput).toHaveValue("1", { timeout: 5_000 });
+    await expect(stepInput).toHaveValue("2", { timeout: 5_000 });
 
     // ── Dirty-close DECLINE → sheet stays open ───────────────────────
     await stepInput.fill("3");
@@ -998,7 +1015,7 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     await row2.locator("td").last().getByRole("button").first().click();
     await page.getByRole("menu").getByText(/modifica|edit/i).first().click();
     await expect(sheet).toBeVisible({ timeout: 5_000 });
-    await expect(stepInput).toHaveValue("1", { timeout: 5_000 });
+    await expect(stepInput).toHaveValue("2", { timeout: 5_000 });
     await page.keyboard.press("Escape");
     await expect(sheet).toBeHidden({ timeout: 5_000 });
     expect(dialogs).toHaveLength(2); // pristine close → no third confirm
@@ -1062,9 +1079,11 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     await nameInput.blur();
 
     // The zod error renders under the field — chrome, not just gating.
-    await expect(nameField.locator(".text-destructive").first()).toBeVisible({
-      timeout: 5_000,
-    });
+    // Filtered by content: the FieldErrors container mounts even when
+    // empty, and bare `.text-destructive` is also the required `*`.
+    await expect(
+      nameField.locator(".text-destructive.text-xs").filter({ hasText: /\S/ }).first(),
+    ).toBeVisible({ timeout: 5_000 });
     await expect(page.getByTestId("entity-form-submit")).toBeDisabled();
     // Pristine-required → also other required siblings error? Only
     // untouched-by-user required fields validate via forceValidation —
@@ -1084,13 +1103,28 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     await cNameInput.fill("e2e_val_partial");
     await cNameInput.blur();
     // Untouched required fields carry error chrome too — the schema
-    // validates the whole object, not just the touched field.
+    // validates the whole object, not just the touched field. The error
+    // chrome is the formsnap FieldErrors container (`.text-destructive
+    // .text-xs`) FILTERED BY CONTENT — the container mounts even when
+    // empty, and bare `.text-destructive` also matches the required `*`.
+    // step/start are prefilled by the served `default:1` → already valid
+    // → no error text.
     await expect(
-      cSheet.locator("[data-testid=entity-form-field-pattern] .text-destructive").first(),
+      cSheet
+        .locator("[data-testid=entity-form-field-pattern] .text-destructive.text-xs")
+        .filter({ hasText: /\S/ })
+        .first(),
     ).toBeVisible({ timeout: 5_000 });
     await expect(
-      cSheet.locator("[data-testid=entity-form-field-step] .text-destructive").first(),
-    ).toBeVisible({ timeout: 5_000 });
+      cSheet
+        .locator("[data-testid=entity-form-field-step] .text-destructive.text-xs")
+        .filter({ hasText: /\S/ }),
+    ).toHaveCount(0);
+    await expect(
+      cSheet
+        .locator("[data-testid=entity-form-field-start] .text-destructive.text-xs")
+        .filter({ hasText: /\S/ }),
+    ).toHaveCount(0);
     await expect(page.getByTestId("entity-form-submit")).toBeDisabled();
     expect(wireCalls).toHaveLength(0);
     // Dirty close → native confirm fires (accept → discard).

@@ -115,6 +115,16 @@ type EntityMeta = {
   auto-injected `default_visible:false`). `hidden: true` on an authored
   column is the ONLY opt-out — it removes the column from served meta.
   Restating derived facts (`nullable`, `max_length`, `pg_type`) throws.
+- **Served `default` — the decorator→meta→FE default chain** —
+  `MetaColumn.default` is the create-form initial value. Sources, in
+  precedence order per surface: `placement.default_value` (per-surface
+  override) → AUTHORED `default` in `*.meta.ts` (the legal column-level
+  override) → DERIVED from `@Column({defaultSql})` when the expression is
+  a constant literal (quoted strings, numerics, booleans — typed per
+  `pg_type`: int8 → `bigint`, numeric/money → `Decimal`, else `number`;
+  volatile expressions like `now()`/`uuidv7()` are physical-only, never
+  served — nothing deterministic to prefill). Update surfaces ignore all
+  of it — the served record is the baseline.
 
 ## Numeric columns — `uom` contract (display)
 
