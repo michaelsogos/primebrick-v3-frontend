@@ -831,6 +831,14 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     await expect(sheet.getByTestId("entity-record-sheet-audit-section")).toHaveCount(0);
     const nameInput = sheet.locator("[data-testid=entity-form-field-name] input");
     await expect(nameInput).toBeEnabled({ timeout: 10_000 });
+
+    // Validation gate — pristine → submit disabled; one required field
+    // filled → the OTHERS still error → still disabled (canSave =
+    // hasChanges && no errors — autowired zod, never a raw POST).
+    const submit = page.getByTestId("entity-form-submit");
+    await expect(submit).toBeDisabled();
+    await nameInput.fill("e2e_gate_probe");
+    await expect(submit).toBeDisabled({ timeout: 5_000 });
     // `kind:"virtual"`/audited projections never reach the widget grid —
     // on ANY form surface (create AND update).
     for (const k of [
@@ -899,6 +907,109 @@ test.describe("builtin sequence registry — mounted by construction", () => {
       await page.request.delete(
         `${CRM_BASE}/sequence/${createdRow.uuid}?version=${row.version}`,
       );
+    }
+  });
+
+  test("entity.record update — uid pill, kind-off, reset, pencil-off silent reset, dirty-close native guard", async ({
+    page,
+  }) => {
+    test.setTimeout(60000);
+    const seq = await (async () => {
+      const r = await page.request.post(`${CRM_BASE}/sequence`, {
+        data: {
+          entity: {
+            name: `e2e_guard_${Date.now()}`,
+            pattern: `E2EG-{seq:4}`,
+            step: "1",
+            start: "1",
+          },
+        },
+      });
+      expect(r.status()).toBe(201);
+      return extJsonParse<any>(await r.text());
+    })();
+
+    const dialogs: { type: string; message: string }[] = [];
+    /** Native window.confirm — every dirty-close consult goes through
+     *  it; the handler decides accept/decline per phase. */
+    let confirmAnswer = false;
+    page.on("dialog", async (d) => {
+      dialogs.push({ type: d.type(), message: d.message() });
+      if (confirmAnswer) await d.accept();
+      else await d.dismiss();
+    });
+
+    await page.goto("/crm/settings/sequences");
+    await expect(page.locator("table")).toBeVisible({ timeout: 30_000 });
+    const listReq = page.waitForResponse(
+      (r) => r.url().includes("/entities/sequence/list") && r.status() === 200,
+      { timeout: 15_000 },
+    );
+    await page.getByTestId("entity-search").locator("input").fill(String(seq.name));
+    await listReq;
+    const row = page.locator("table tbody tr", { hasText: String(seq.name) }).first();
+    await expect(row).toBeVisible({ timeout: 15_000 });
+    await row.locator("td").last().getByRole("button").first().click();
+    await page.getByRole("menu").getByText(/modifica|edit/i).first().click();
+    const sheet = page.getByTestId("entity-record-sheet");
+    await expect(sheet).toBeVisible({ timeout: 15_000 });
+
+    // Update anatomy — uid pill first element, kind projections absent.
+    await expect(sheet.getByTestId("entity-record-sheet-uid-badge")).toBeVisible();
+    for (const k of ["value_actual", "value_next", "emitted_actual", "emitted_next"])
+      await expect(sheet.locator(`[data-testid=entity-form-field-${k}]`)).toHaveCount(0);
+
+    const stepInput = sheet.locator("[data-testid=entity-form-field-step] input");
+    const submit = page.getByTestId("entity-form-submit");
+    const resetBtn = page.getByTestId("entity-form-reset");
+
+    // ── Reset eraser → served baseline (update: refetch rebaseline) ──
+    await stepInput.fill("9");
+    await stepInput.blur();
+    await expect(resetBtn).toBeEnabled({ timeout: 5_000 });
+    await resetBtn.click();
+    await expect(stepInput).toHaveValue("1", { timeout: 10_000 });
+    await expect(resetBtn).toBeDisabled({ timeout: 5_000 });
+
+    // ── Pencil-off = SILENT reset — no dialog, field re-baselines ────
+    await stepInput.fill("7");
+    await stepInput.blur();
+    await page.getByTestId("entity-record-sheet-edit-toggle").click();
+    await expect(submit).toBeHidden({ timeout: 10_000 });
+    expect(dialogs).toHaveLength(0); // pencil-off never asks — it IS the intent
+    // Re-enter edit → the discarded value is gone (baseline, not stale).
+    await page.getByTestId("entity-record-sheet-edit-toggle").click();
+    await expect(stepInput).toHaveValue("1", { timeout: 10_000 });
+
+    // ── Dirty-close DECLINE → sheet stays open ───────────────────────
+    await stepInput.fill("3");
+    await stepInput.blur();
+    await page.keyboard.press("Escape");
+    await expect.poll(() => dialogs.length, { timeout: 5_000 }).toBe(1);
+    expect(dialogs[0].type).toBe("confirm");
+    await expect(sheet).toBeVisible(); // declined → vetoed
+
+    // ── Dirty-close ACCEPT → draft.clear + close ─────────────────────
+    confirmAnswer = true;
+    await page.keyboard.press("Escape");
+    await expect(sheet).toBeHidden({ timeout: 10_000 });
+    expect(dialogs).toHaveLength(2);
+
+    // Draft cleared on confirmed discard — reopen → baseline, no stale.
+    const row2 = page.locator("table tbody tr", { hasText: String(seq.name) }).first();
+    await row2.locator("td").last().getByRole("button").first().click();
+    await page.getByRole("menu").getByText(/modifica|edit/i).first().click();
+    await expect(sheet).toBeVisible({ timeout: 15_000 });
+    await expect(stepInput).toHaveValue("1", { timeout: 10_000 });
+    await page.keyboard.press("Escape");
+    await expect(sheet).toBeHidden({ timeout: 10_000 });
+    expect(dialogs).toHaveLength(2); // pristine close → no third confirm
+
+    // Cleanup.
+    const g = await page.request.get(`${CRM_BASE}/sequence/${seq.uuid}`);
+    if (g.ok()) {
+      const r2 = extJsonParse<any>(await g.text());
+      await page.request.delete(`${CRM_BASE}/sequence/${seq.uuid}?version=${r2.version}`);
     }
   });
 });
