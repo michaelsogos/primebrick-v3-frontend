@@ -139,6 +139,22 @@ agent shell (a shell-owned server dies with the session). If a turn
 finds a service down, restart it detached. Full lifecycle rules:
 [`docs/ai/dev-server.md`](./dev-server.md).
 
+## Plan-first — MANDATORY for every governed task
+
+Any request in this workflow's scope (feature, refactor, debt, bugfix)
+runs under an open plan file in `primebrick-workspace/ai-plans/` — the
+plan is the ledger of record and the memory that survives the session.
+
+- **No plan exists → create it in TIC, before any TOC work.** Starting
+  execution without a plan file is a protocol violation.
+- **The turn names its governing plan** — which file and which task rows
+  it executes. Work outside the plan's rows is added to the table first
+  or deferred — never shipped unrecorded.
+- **A deviation from the plan is a STOP** — update the plan to the new
+  shared direction first; silent drift is the violation.
+- **The ledger is updated before the turn ends** — ✅ with commit
+  hashes, ⏳ with what remains (see "Plan status" below).
+
 ## Per-turn operating discipline — pinned, every turn
 
 These obligations apply to EVERY turn — analysis, plan, or code — not
