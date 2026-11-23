@@ -11,12 +11,17 @@
   import { usePasswordPolicy } from '$lib/composables/usePasswordPolicy.svelte';
   import PasswordChecklist from '$lib/components/forms/PasswordChecklist.svelte';
   import { extJsonParse, extJsonStringify } from '$lib/api-ext';
+  import { actionColorButtonVariant } from '@primebrick/ui';
+  import type { ActionChrome } from '../types';
 
   interface ChangePasswordDialogProps<TRow extends Record<string, unknown>> {
     open: boolean;
     onOpenChange?: (open: boolean) => void;
     row: TRow | null;
     uid: string;
+    /** The `change_password` custom action's own chrome — the row CTA and
+     *  this dialog share the same meta color by construction. */
+    chrome?: ActionChrome;
   }
 
   let {
@@ -24,7 +29,10 @@
     onOpenChange,
     row,
     uid,
+    chrome,
   }: ChangePasswordDialogProps<TRow> = $props();
+
+  let severity = $derived(chrome?.color ?? 'warning');
 
   let newPassword = $state('');
   let confirmPassword = $state('');
@@ -106,7 +114,7 @@
   }
 </script>
 
-<BorderedDialog bind:open={open} {onOpenChange} severity="warning" class="sm:max-w-md" showCloseButton={false}>
+<BorderedDialog bind:open={open} {onOpenChange} {severity} class="sm:max-w-md" showCloseButton={false}>
   <Dialog.Header class="pb-4">
     <Dialog.Title>{$t('system.settings.users.change_password_title')}</Dialog.Title>
     <Dialog.Description>{$t('system.settings.users.change_password_description')}</Dialog.Description>
@@ -157,6 +165,7 @@
       {$t('app.common.cancel')}
     </Button>
     <Button
+      variant={actionColorButtonVariant(severity)}
       class="hover:scale-105 transition-all"
       onclick={handleSubmit}
       disabled={!canSubmit}

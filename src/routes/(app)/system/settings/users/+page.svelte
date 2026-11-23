@@ -1,6 +1,7 @@
 <script lang="ts">
   import EntityTablePage from '$lib/components/entity-table-page/EntityTablePage.svelte';
   import ChangePasswordDialog from '$lib/components/entity-list-table/dialogs/ChangePasswordDialog.svelte';
+  import type { RowCustomAction } from '@primebrick/core';
 
   type UserProfileListRow = {
     uuid: string;
@@ -37,7 +38,8 @@
     }
   }}
 >
-  {#snippet extraDialogs(uid: string)}
-    <ChangePasswordDialog bind:open={changePasswordOpen} row={changePasswordRow} {uid} />
+  {#snippet extraDialogs(uid: string, rowCustomActions: RowCustomAction[] | undefined)}
+    {@const changePasswordAction = rowCustomActions?.find((a) => a.action_name === 'change_password')}
+    <ChangePasswordDialog bind:open={changePasswordOpen} row={changePasswordRow} {uid} chrome={{ color: changePasswordAction?.color }} />
   {/snippet}
 </EntityTablePage>

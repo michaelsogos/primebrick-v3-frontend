@@ -47,7 +47,7 @@ export type EntityRowActions = {
   duplicate_chrome?: ActionChrome;
 };
 
-export type ActionChrome = Pick<EntityAction, 'label_key' | 'icon' | 'color' | 'confirm_key' | 'busy_key'>;
+export type ActionChrome = Pick<EntityAction, 'label_key' | 'icon' | 'color' | 'variant' | 'confirm_key' | 'busy_key'>;
 
 export type ViewMode = 'table' | 'cards' | 'cards_list';
 

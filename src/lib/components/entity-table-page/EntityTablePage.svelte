@@ -10,6 +10,7 @@
   import { isSnakeCaseSingular } from '$lib/entity-list';
   import { EntityListTable } from '$lib/components/entity-list-table';
   import type { CellArgs } from '$lib/components/entity-list-table/types';
+  import type { RowCustomAction } from '@primebrick/core';
   // Page body chrome (the bordered box) is inherited — AppShell mounts
   // AppPageScaffold once for every (app) page; archetypes never self-wrap.
   import {
@@ -73,8 +74,10 @@
 
     /** Per-cell render override — forwarded verbatim to EntityListTable. */
     cell?: Snippet<[CellArgs<TRow>]>;
-    /** Page-specific dialogs — rendered after the table; receives the meta uid. */
-    extraDialogs?: Snippet<[uid: string]>;
+    /** Page-specific dialogs — rendered after the table; receives the meta
+     *  uid + `meta.table.row_custom_actions` so a custom-action dialog can
+     *  inherit the SAME chrome the row CTA rendered (one source). */
+    extraDialogs?: Snippet<[uid: string, row_custom_actions: RowCustomAction[] | undefined]>;
     metaLoadingView?: Snippet;
     rowsLoadingView?: Snippet;
     emptyView?: Snippet;
@@ -336,5 +339,5 @@
   />
 
 {#if extraDialogs}
-  {@render extraDialogs(uid)}
+  {@render extraDialogs(uid, meta?.table?.row_custom_actions)}
 {/if}

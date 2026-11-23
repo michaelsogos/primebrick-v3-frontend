@@ -537,8 +537,8 @@
    *  carries no override → standard chrome applies. */
   function opChrome(op: string): ActionChrome | undefined {
     const action = entityActions?.find((a) => a.op === op);
-    if (!action?.label_key && !action?.icon && !action?.color && !action?.confirm_key && !action?.busy_key) return undefined;
-    return { label_key: action.label_key, icon: action.icon, color: action.color, confirm_key: action.confirm_key, busy_key: action.busy_key };
+    if (!action?.label_key && !action?.icon && !action?.color && !action?.variant && !action?.confirm_key && !action?.busy_key) return undefined;
+    return { label_key: action.label_key, icon: action.icon, color: action.color, variant: action.variant, confirm_key: action.confirm_key, busy_key: action.busy_key };
   }
 
   const effectiveRowActions = $derived(({
@@ -597,6 +597,7 @@
   const bulkRestoreChrome = $derived(opChrome('restore.bulk'));
   const bulkDuplicateChrome = $derived(opChrome('duplicate.bulk'));
   const bulkEditChrome = $derived(opChrome('update.bulk'));
+  const bulkExportChrome = $derived(opChrome('export'));
 
   const rowActionsComposable = useRowActions<TRow>({
     entity: () => entity,
@@ -814,6 +815,7 @@
     bulkDeleteChrome={bulkDeleteChrome}
     bulkRestoreChrome={bulkRestoreChrome}
     bulkDuplicateChrome={bulkDuplicateChrome}
+    bulkExportChrome={bulkExportChrome}
     selectAll={cardSelectAllZone}
     sort={cardSortZone}
     ianaToggle={cardIanaZone}
@@ -922,5 +924,6 @@
     entities_ns={entities_ns}
     translationKey={effectiveTranslationKey}
     duplicateChrome={effectiveRowActions.duplicate_chrome}
+    exportChrome={bulkExportChrome}
   />
 

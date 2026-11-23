@@ -5,7 +5,7 @@
   import SortBuilder from './SortBuilder.svelte';
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import { fly } from 'svelte/transition';
-  import { DynamicIcon, actionColorButtonVariant } from '@primebrick/ui';
+  import { DynamicIcon, actionChromeButtonProps } from '@primebrick/ui';
   import type { Snippet } from 'svelte';
   import type { MetaColumn, AdvancedFilter, BulkCustomAction, SortDir } from '$lib/entity-list/types';
   import type { ActionChrome } from '../types';
@@ -42,6 +42,7 @@
     bulkDeleteChrome,
     bulkRestoreChrome,
     bulkDuplicateChrome,
+    bulkExportChrome,
     bulkExtraActions,
     selectAll,
     sort,
@@ -79,6 +80,9 @@
     /** `meta.actions["duplicate.bulk"]` chrome — violet by contract
      *  (`ActionColor`: violet IS the clone semantic). */
     bulkDuplicateChrome?: ActionChrome;
+    /** `meta.actions["export"]` chrome — primary+outline by served
+     *  default (secondary affordance); both export CTAs share the op. */
+    bulkExportChrome?: ActionChrome;
     /** Host-specific bulk CTAs rendered after the standard + meta-declared
      *  set (e.g. the dict page's local revert — a page-state op, not an
      *  `entity_op` route, so it cannot ride `bulkCustomActions`). */
@@ -207,8 +211,7 @@
     <div in:fly={{ y: 20, duration: 200 }} class="flex flex-wrap items-center gap-2">
       {#if bulkCapabilities.export}
         <Button
-          variant="outline"
-          tone="info"
+          {...actionChromeButtonProps(bulkExportChrome, 'outline')}
           size="xs"
           onclick={onBulkExport}
         >
@@ -218,8 +221,7 @@
       {/if}
       {#if bulkCapabilities.htmlExport}
         <Button
-          variant="outline"
-          tone="info"
+          {...actionChromeButtonProps(bulkExportChrome, 'outline')}
           size="xs"
           onclick={onHtmlExport}
         >
@@ -229,7 +231,7 @@
       {/if}
       {#if bulkCapabilities.edit && onBulkEdit}
         <Button
-          variant={bulkEditChrome?.color ? actionColorButtonVariant(bulkEditChrome.color) : 'default'}
+          {...actionChromeButtonProps(bulkEditChrome)}
           size="xs"
           onclick={onBulkEdit}
           disabled={selectedKeys.length < 1 || selectedKeys.length > 100 || hasDeletedSelected}
@@ -245,7 +247,7 @@
       {/if}
       {#if bulkCapabilities.duplicate}
         <Button
-          variant={bulkDuplicateChrome?.color ? actionColorButtonVariant(bulkDuplicateChrome.color) : 'violet'}
+          {...actionChromeButtonProps(bulkDuplicateChrome, 'violet')}
           size="xs"
           onclick={onBulkDuplicate}
           disabled={selectedKeys.length < 2}
@@ -260,7 +262,7 @@
       {/if}
       {#if bulkCapabilities.delete}
         <Button
-          variant={bulkDeleteChrome?.color ? actionColorButtonVariant(bulkDeleteChrome.color) : 'destructive'}
+          {...actionChromeButtonProps(bulkDeleteChrome, 'destructive')}
           size="xs"
           onclick={onBulkDelete}
           disabled={selectedKeys.length < 1 || hasDeletedSelected}
@@ -276,7 +278,7 @@
       {/if}
       {#if hasDeletedSelected && bulkCapabilities.restore}
         <Button
-          variant={bulkRestoreChrome?.color ? actionColorButtonVariant(bulkRestoreChrome.color) : 'warning'}
+          {...actionChromeButtonProps(bulkRestoreChrome, 'warning')}
           size="xs"
           onclick={onBulkRestore}
           disabled={!allSelectedDeleted}
@@ -292,7 +294,7 @@
       {/if}
       {#each bulkCustomActions as action (action.action_name)}
         <Button
-          variant={actionColorButtonVariant(action.color)}
+          {...actionChromeButtonProps(action)}
           size="xs"
           onclick={() => onBulkCustomAction?.(action)}
           disabled={action.requires_selection !== false && selectedKeys.length === 0}

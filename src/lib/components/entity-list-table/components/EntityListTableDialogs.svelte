@@ -16,7 +16,8 @@
     entity,
     entities_ns,
     translationKey,
-    duplicateChrome
+    duplicateChrome,
+    exportChrome
   }: EntityListTableDialogsProps = $props();
 
   type EntityListTableDialogsProps = {
@@ -34,6 +35,10 @@
     /** `meta.actions[op]` chrome — meta-driven dialog copy (title verb,
      *  confirm message, busy label, accent severity). */
     duplicateChrome?: ActionChrome;
+    /** `meta.actions["export"]` chrome — the op's `color` IS the export
+     *  dialogs' severity (primary by served default). Both export
+     *  confirms and the preview share the op's chrome. */
+    exportChrome?: ActionChrome;
   };
 
   async function confirmExportRow() {
@@ -105,6 +110,7 @@
   onFileTypeChange={(type) => exportComposable.setFileType(type as 'xlsx' | 'csv')}
   onConfirm={confirmExportRow}
   onCancel={cancelExportRow}
+  chrome={exportChrome}
 />
 
 <HtmlExportDialog
@@ -117,6 +123,7 @@
   isExporting={exportComposable.state.isHtmlExporting}
   onConfirm={confirmHtmlExport}
   onCancel={cancelHtmlExport}
+  chrome={exportChrome}
 />
 
 <DuplicateDialog
@@ -148,4 +155,5 @@
   onCopyHtmlToClipboard={copyHtmlToClipboard}
   onCopyEmailHtmlToClipboard={copyEmailHtmlToClipboard}
   onClose={closeHtmlPreview}
+  chrome={exportChrome}
 />
