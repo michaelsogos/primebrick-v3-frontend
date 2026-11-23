@@ -68,7 +68,7 @@
 	import { ruleJsonCompletions } from './rule-schema-completions';
 	import RuleFilterEditor from './RuleFilterEditor.svelte';
 	import { CircleCheck, CircleX } from '@primebrick/ui/vendor/lucide';
-	import { getPrioritizedIanaTimeZones, getResolvedIanaTimeZone } from '@primebrick/ui';
+	import { getPinnedIanaTimeZones, getPrioritizedIanaTimeZones, getResolvedIanaTimeZone } from '@primebrick/ui';
 	import { calendarDateToUtcIso, isoToCalendarDate } from './date-wire';
 	import type { CalendarDate, CalendarDateTime } from '@internationalized/date';
 	import { extJsonParse } from '$lib/api-ext';
@@ -615,10 +615,18 @@
 	/** `options_source:"iana.tzones"` — closed client-side vocabulary;
 	 *  no fetch, no state. Picker order: browser zone → UTC → primary
 	 *  zones of the supported UI locales → the sorted rest. */
+	const ianaPinnedCount = getPinnedIanaTimeZones({ locales: UI_LANGS }).length;
 	const ianaTzOptions = getPrioritizedIanaTimeZones({ locales: UI_LANGS }).map(
 		// `_icon`/`_icon_color` — the option-row anatomy, same contract as
-		// the census vocabularies (globe tinted like `send`/sky-500).
-		(tz) => ({ value: tz, label: tz, _icon: 'globe', _icon_color: 'sky-500' }),
+		// the census vocabularies (globe tinted like `send`/sky-500);
+		// `_sep` marks the divider row: first zone past the pinned group.
+		(tz, i) => ({
+			value: tz,
+			label: tz,
+			_icon: 'globe',
+			_icon_color: 'sky-500',
+			...(i === ianaPinnedCount ? { _sep: true } : {}),
+		}),
 	);
 
 	// Restore display labels for `entity_ref` selections that pre-date the
@@ -945,6 +953,7 @@
 		labelField="label"
 		iconField="_icon"
 		iconColorField="_icon_color"
+		separatorBeforeField="_sep"
 		{placeholder}
 		disabled={effectiveLocked}
 		{...controlProps}
