@@ -205,7 +205,7 @@
 {/snippet}
 
 {#snippet counterRow(spec: SequenceTokenSpec)}
-  <div>
+  <div class="rounded-md hover:bg-accent transition-colors">
     {@render tokenRow(spec)}
     <!-- Padding field — canonical PrimeField + NumericInput anatomy
          (label above, full-width control): 0 = no padding (default),
