@@ -68,7 +68,7 @@
 	import { ruleJsonCompletions } from './rule-schema-completions';
 	import RuleFilterEditor from './RuleFilterEditor.svelte';
 	import { CircleCheck, CircleX } from '@primebrick/ui/vendor/lucide';
-	import { getIanaTimeZones, getResolvedIanaTimeZone } from '@primebrick/ui';
+	import { getPrioritizedIanaTimeZones, getResolvedIanaTimeZone } from '@primebrick/ui';
 	import { calendarDateToUtcIso, isoToCalendarDate } from './date-wire';
 	import type { CalendarDate, CalendarDateTime } from '@internationalized/date';
 	import { extJsonParse } from '$lib/api-ext';
@@ -613,9 +613,11 @@
 	});
 
 	/** `options_source:"iana.tzones"` — closed client-side vocabulary;
-	 *  no fetch, no state — the same list `getIanaTimeZones` feeds the
-	 *  date dropper's zone selector. */
-	const ianaTzOptions = getIanaTimeZones().map((tz) => ({ value: tz, label: tz }));
+	 *  no fetch, no state. Picker order: browser zone → UTC → primary
+	 *  zones of the supported UI locales → the sorted rest. */
+	const ianaTzOptions = getPrioritizedIanaTimeZones({ locales: UI_LANGS }).map(
+		(tz) => ({ value: tz, label: tz }),
+	);
 
 	// Restore display labels for `entity_ref` selections that pre-date the
 	// loaded option pages (draft state, URL-restored filters, edit-form
