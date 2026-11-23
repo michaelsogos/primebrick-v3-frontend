@@ -50,8 +50,8 @@
 	import { ColorSelector } from '$lib/components/ui/color-selector';
 	import { MetaAvatar } from '$lib/components/ui/avatar-preview';
 	import { t, dict } from '$lib/i18n';
-	import { i18nKeyOptions, coerceI18nKeyChange } from '$lib/i18n/i18n-key-options';
-	import { slugifyKey, suggestedKeyFor } from '$lib/i18n/dict-suggestion';
+	import { i18nKeyOptions, coerceI18nKeyChange, I18N_KEY_OPTION_ICON, I18N_KEY_OPTION_COLOR } from '$lib/i18n/i18n-key-options';
+	import { i18nKeySuggestionFor, slugifyKey } from '$lib/i18n/dict-suggestion';
 	import { UI_LANGS } from '$lib/i18n/languages';
 	import { uiLang } from '$lib/i18n/store.svelte';
 	import { apiFetch } from '$lib/api';
@@ -668,9 +668,7 @@
 	const i18nKeyPlaceholder = $derived(`custom.${i18nKeyScope}${i18nKeyLeaf}`);
 	const i18nKeyDefaultSearch = $derived(`${i18nKeyScope}${i18nKeyLeaf}`);
 	const i18nKeySuggestion = $derived(
-		translation_key
-			? suggestedKeyFor(translation_key, record?.code ?? record?.name)
-			: `custom.entities.${i18nKeyLeaf}`,
+		i18nKeySuggestionFor(translation_key, record?.code ?? record?.name),
 	);
 	const i18nKeyFieldOptions = $derived(
 		i18nKeyOptions(
@@ -1061,6 +1059,8 @@
 		iconField="_icon"
 		iconColorField="_icon_color"
 		allowCreate={true}
+		createdIcon={I18N_KEY_OPTION_ICON}
+		createdIconColor={I18N_KEY_OPTION_COLOR}
 		defaultSearch={i18nKeyDefaultSearch}
 		placeholder={i18nKeyPlaceholder}
 		searchPlaceholder={i18nKeyPlaceholder}

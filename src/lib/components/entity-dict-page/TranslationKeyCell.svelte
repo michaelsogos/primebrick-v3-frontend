@@ -11,7 +11,7 @@
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import { getPendingTranslation } from '$lib/i18n/pending-translations.svelte';
   import { slugifyKey, suggestedKeyFor } from '$lib/i18n/dict-suggestion';
-  import { i18nKeyOptions, coerceI18nKeyChange } from '$lib/i18n/i18n-key-options';
+  import { i18nKeyOptions, coerceI18nKeyChange, I18N_KEY_OPTION_ICON, I18N_KEY_OPTION_COLOR } from '$lib/i18n/i18n-key-options';
   import type { MetaColumn } from '$lib/entity-list/types';
 
   let {
@@ -121,6 +121,8 @@
       iconField="_icon"
       iconColorField="_icon_color"
       allowCreate
+      createdIcon={I18N_KEY_OPTION_ICON}
+      createdIconColor={I18N_KEY_OPTION_COLOR}
       defaultSearch={defaultSearch}
       placeholder={placeholderKey}
       searchPlaceholder={placeholderKey}

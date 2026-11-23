@@ -62,6 +62,7 @@
 	import { userProfileState } from '$lib/user-profile-store.svelte';
 	import { computeInitials } from '$lib/utils/avatar-initials';
 	import type { EntityMeta, MetaColumn } from '$lib/entity-list/types';
+	import { i18nKeySuggestionFor } from '$lib/i18n/dict-suggestion';
 	import type { FormPageDecl } from '@primebrick/ui';
 	import { seedPayloadMapEntries, type PayloadMap } from '@primebrick/ui';
 
@@ -200,6 +201,16 @@
 	 *  Default precedence: `placement.default_value` (per-surface) →
 	 *  `column.default` (served: meta-authored or `defaultSql`-derived)
 	 *  → type fallback. */
+	/** `format:"i18n_key"` fields carry an ASSIGNED suggestion (convention
+	 *  key tracking code/name) — it must live in the baseline, or the
+	 *  dispatcher's mount-time assign reads as a user edit (born-tainted
+	 *  form → false unsaved-changes confirm). Same formula the dispatcher
+	 *  derives — one shared source in `dict-suggestion.ts`. */
+	const i18nKeyInitial = (col: MetaColumn | undefined): string =>
+		col?.format === 'i18n_key'
+			? i18nKeySuggestionFor(meta.translation_key, servedRecord?.code ?? servedRecord?.name)
+			: '';
+
 	function buildInitial(): Record<string, unknown> {
 		const initial: Record<string, unknown> = {};
 		for (const placement of formDecl.fields) {
@@ -211,12 +222,14 @@
 				// seq-bound columns hold the DIRECTIVE slot, never the stored
 				// literal — '' keeps the column omitted (untouched).
 				else if (col?.format === 'sequence') initial[placement.key] = '';
+				else if (col?.format === 'i18n_key') initial[placement.key] = (v as string | undefined) || i18nKeyInitial(col);
 				else if (col?.type === 'boolean') initial[placement.key] = v ?? false;
 				else initial[placement.key] = v ?? '';
 			} else {
 				const dv = placement.default_value ?? col?.default;
 				if (dv !== undefined) initial[placement.key] = dv;
 				else if (col?.type === 'boolean') initial[placement.key] = false;
+				else if (col?.format === 'i18n_key') initial[placement.key] = i18nKeyInitial(col);
 				else initial[placement.key] = '';
 			}
 		}
