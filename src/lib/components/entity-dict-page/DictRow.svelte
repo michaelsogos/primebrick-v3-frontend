@@ -18,7 +18,7 @@
    */
   import { t, formatUiDateTime } from '$lib/i18n';
   import { uiLang } from '$lib/i18n/store.svelte';
-  import { Badge, Button, Checkbox, DynamicIcon, SelectableRow } from '@primebrick/ui';
+  import { Badge, Button, Checkbox, DynamicIcon, SelectableRow, toDisplayString } from '@primebrick/ui';
   import FormFieldDispatcher from '$lib/entity-form/FormFieldDispatcher.svelte';
   import TranslationKeyCell from './TranslationKeyCell.svelte';
   import DictFieldCell from './DictFieldCell.svelte';
@@ -122,7 +122,7 @@
     onmovedown?: () => void;
   } = $props();
 
-  const row_uid = $derived(String(row[uid] ?? ''));
+  const row_uid = $derived(toDisplayString(row[uid] ?? ''));
 
   /** The VALUE column — display_field when it is editable, else the
    *  canonical dict label column (`label_key`); `format:"i18n_key"`
@@ -135,14 +135,14 @@
   /** L1 icon — rendered ONLY when the entity maps an `icon` column and the
    *  row carries a value; absent column/value → no icon (no default). */
   const rowIcon = $derived(
-    columns_map?.has('icon') && row['icon'] ? String(row['icon']) : '',
+    columns_map?.has('icon') && row['icon'] ? toDisplayString(row['icon']) : '',
   );
 
   /** The row's i18n stem — the VALUE column's live value (`label_key` on
    *  keyed dicts). Derived desc/tooltip keys are suffixes on this stem —
    *  the seeded composition convention (`…rows.<code>.description`,
    *  same as `entities.ai_model.qwen3_4b.description`). */
-  const labelStem = $derived(String(values[display_field ?? 'label_key'] ?? ''));
+  const labelStem = $derived(toDisplayString(values[display_field ?? 'label_key'] ?? ''));
 
   /** L2 desc — an explicit `description_key`/`description` column wins
    *  (non-keyed dicts, name_local family); else the derived
@@ -150,13 +150,13 @@
    *  (missing translation → absent line, no invented content). */
   const desc = $derived.by(() => {
     if (columns_map?.has('description_key')) {
-      const k = String(row['description_key'] ?? '').trim();
+      const k = toDisplayString(row['description_key'] ?? '').trim();
       if (!k) return '';
       const v = $t(k);
       return v === k ? '' : v;
     }
     if (columns_map?.has('description')) {
-      return String(row['description'] ?? '').trim();
+      return toDisplayString(row['description'] ?? '').trim();
     }
     if (!labelStem) return '';
     const k = `${labelStem}.description`;
@@ -169,13 +169,13 @@
    *  the desc text (that text already owns LINE 2). */
   const tooltip = $derived.by(() => {
     if (columns_map?.has('tooltip_key')) {
-      const k = String(row['tooltip_key'] ?? '').trim();
+      const k = toDisplayString(row['tooltip_key'] ?? '').trim();
       if (!k) return '';
       const v = $t(k);
       return v === k ? '' : v;
     }
     if (columns_map?.has('tooltip')) {
-      return String(row['tooltip'] ?? '').trim();
+      return toDisplayString(row['tooltip'] ?? '').trim();
     }
     if (!labelStem) return '';
     const k = `${labelStem}.tooltip`;
@@ -185,14 +185,14 @@
 
   const version = $derived(row['version'] as number | undefined);
   const updatedAt = $derived(
-    row['updated_at'] ? formatUiDateTime(String(row['updated_at']), $uiLang) : '',
+    row['updated_at'] ? formatUiDateTime(toDisplayString(row['updated_at']), $uiLang) : '',
   );
   // Same fallback pattern as ConfigListRow: updated_by_name (join) → raw.
   const updatedByName = $derived(
-    row['updated_by_name'] && String(row['updated_by_name']).trim()
-      ? String(row['updated_by_name'])
-      : row['updated_by'] && String(row['updated_by']).trim()
-        ? String(row['updated_by'])
+    row['updated_by_name'] && toDisplayString(row['updated_by_name']).trim()
+      ? toDisplayString(row['updated_by_name'])
+      : row['updated_by'] && toDisplayString(row['updated_by']).trim()
+        ? toDisplayString(row['updated_by'])
         : '',
   );
 
@@ -263,7 +263,7 @@
         <Badge
           variant="outline"
           class="shrink-0 border-muted-foreground/30 bg-muted/50 font-mono text-xs text-muted-foreground"
-          title={String(row['code'] ?? '')}
+          title={toDisplayString(row['code'] ?? '')}
         >
           {row['code']}
         </Badge>
@@ -324,7 +324,7 @@
             {#if valueColumn.format === 'i18n_key'}
               <TranslationKeyCell
                 column={valueColumn}
-                value={String(values[valueColumn.key] ?? '')}
+                value={toDisplayString(values[valueColumn.key] ?? '')}
                 record={values}
                 {translation_key}
                 {pending_owner}

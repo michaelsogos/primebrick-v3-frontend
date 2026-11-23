@@ -41,6 +41,7 @@ import type {
 } from '$lib/entity-list/types';
 import type { DeepReadonly } from '@primebrick/ui';
 import { SvelteURLSearchParams } from 'svelte/reactivity';
+import { toDisplayString } from '@primebrick/ui';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -135,9 +136,9 @@ export function useEntityRefOptions(
 				qs.set(`filters[${fi}][field]`, f.field);
 				qs.set(`filters[${fi}][op]`, f.op);
 				if (Array.isArray(f.value)) {
-					for (const v of f.value) qs.append(`filters[${fi}][value][]`, String(v));
+					for (const v of f.value) qs.append(`filters[${fi}][value][]`, toDisplayString(v));
 				} else {
-					qs.set(`filters[${fi}][value]`, String(f.value));
+					qs.set(`filters[${fi}][value]`, toDisplayString(f.value));
 				}
 				qs.set(`filters[${fi}][connector]`, 'AND');
 				fi++;

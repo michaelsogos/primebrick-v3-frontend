@@ -1333,4 +1333,68 @@ test.describe("builtin sequence registry — mounted by construction", () => {
       await page.request.delete(`${CRM_BASE}/sequence/${seq.uuid}?version=${r2.version}`);
     }
   });
+
+  test("sequence_set row action → SequenceSetDialog renders canonical controls (no raw inputs)", async ({
+    page,
+  }) => {
+    // Fixture row — the dialog opens on a live sequence.
+    const seq = await (async () => {
+      const r = await page.request.post(`${CRM_BASE}/sequence`, {
+        data: {
+          entity: {
+            name: `e2e_seqset_${Date.now()}`,
+            pattern: `E2ES-{sez}-{sez2}-{sez3}-{seq:4}`,
+            step: "1",
+            start: "1",
+          },
+        },
+      });
+      expect(r.status()).toBe(201);
+      return extJsonParse<any>(await r.text());
+    })();
+
+    await page.goto("/crm/settings/sequences");
+    await page.getByTestId("entity-search").locator("input").fill(seq.name);
+    const row = page.locator("table tbody tr", { hasText: seq.name }).first();
+    await expect(row).toBeVisible({ timeout: 5_000 });
+
+    // Row actions menu → the sequence_set parametric op. Its menu label is
+    // `<entities_ns>.actions.sequence_set` — resolved or raw-key fallback.
+    await row.getByRole("button", { name: /row actions|azioni riga/i }).click();
+    const setItem = page
+      .getByRole("menuitem")
+      .filter({ hasText: /sequence_set|counter|contatore/i });
+    await expect(setItem).toBeVisible({ timeout: 5_000 });
+    await setItem.click();
+
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible({ timeout: 5_000 });
+    await expect(dialog.getByTestId("sequence-set-analysis")).toBeVisible();
+
+    // Canonical control anatomy — the point under test:
+    //   `next`      → NumericInput (real input, bigint kind)
+    //   `sez*`      → TextInput per slot (real editable inputs, not raw)
+    //   `at`        → DateWheelPicker popover trigger = a BUTTON, and the
+    //                 dialog carries NO input[type="datetime-local"] at all.
+    await expect(dialog.getByTestId("sequence-set-next")).toBeVisible();
+    for (const slot of ["sez", "sez2", "sez3"]) {
+      const input = dialog.getByTestId(`sequence-set-${slot}`);
+      await expect(input).toBeVisible();
+      await input.fill(`K${slot}`);
+      await expect(input).toHaveValue(`K${slot}`);
+    }
+    await expect(dialog.locator("button[data-testid='sequence-set-at']")).toBeVisible();
+    await expect(dialog.locator("input[type='datetime-local']")).toHaveCount(0);
+
+    // Cancel closes — no submit, no counter write.
+    await dialog.getByRole("button", { name: /cancel|annulla/i }).click();
+    await expect(dialog).toBeHidden({ timeout: 5_000 });
+
+    // Cleanup.
+    const g = await page.request.get(`${CRM_BASE}/sequence/${seq.uuid}`);
+    if (g.ok()) {
+      const r2 = extJsonParse<any>(await g.text());
+      await page.request.delete(`${CRM_BASE}/sequence/${seq.uuid}?version=${r2.version}`);
+    }
+  });
 });

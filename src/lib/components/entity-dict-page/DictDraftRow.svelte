@@ -11,7 +11,7 @@
    * No version/audit lines — the row is not persisted yet.
    */
   import { t } from '$lib/i18n';
-  import { Button } from '@primebrick/ui';
+  import { Button, toDisplayString } from '@primebrick/ui';
   import { Check, X } from '@primebrick/ui/vendor/lucide';
   import FormFieldDispatcher from '$lib/entity-form/FormFieldDispatcher.svelte';
   import TranslationKeyCell from './TranslationKeyCell.svelte';
@@ -121,7 +121,7 @@
             {#if valueColumn.format === 'i18n_key'}
               <TranslationKeyCell
                 column={valueColumn}
-                value={String(values[valueColumn.key] ?? '')}
+                value={toDisplayString(values[valueColumn.key] ?? '')}
                 record={values}
                 {translation_key}
                 {pending_owner}
@@ -150,7 +150,7 @@
     {/if}
   </div>
 
-  <!-- Right 2/12: composer CTAs — ✓ confirm (→pending) + ✕ discard.
+  <!-- Right 2/12: composer CTAs — ✓ confirm → pending; ✕ discard.
        `items-start` + `pt-7` aligns the CTAs with the input row, not
        the label row, so an error line growing a cell never recenters
        them. -->

@@ -45,7 +45,7 @@ test.describe("entity events choreography — trigger authored in the browser", 
   let trigUuid = "";
   let trigVersion = 0;
   let dummyUuid = "";
-  let dummyVersion = 0;
+  const dummyVersion = 0;
   let bulkWatcherUuid = "";
 
   test("create the event-sourced trigger via the UI form → durable consumer binds", async ({

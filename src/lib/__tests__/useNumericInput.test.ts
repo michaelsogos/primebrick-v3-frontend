@@ -87,14 +87,14 @@ describe('useNumericInput', () => {
 
   it('effectiveMin respects explicit min rule over default 0', () => {
     const { num } = createComposable('bigint', extJsonStringify({
-      validation: { unsigned: true, required: true, rules: { min: { value: 10, error_label_key: 'err.min' } } },
+      validation: { unsigned: true, required: true, rules: { min: { value: 10, error_label_key: 'app.err.min' } } },
     }));
     expect(num.effectiveMin).toBe('10');
   });
 
   it('effectiveMin is the explicit min value when not unsigned', () => {
     const { num } = createComposable('number', extJsonStringify({
-      validation: { required: true, rules: { min: { value: -5, error_label_key: 'err.min' } } },
+      validation: { required: true, rules: { min: { value: -5, error_label_key: 'app.err.min' } } },
     }));
     expect(num.effectiveMin).toBe('-5');
   });

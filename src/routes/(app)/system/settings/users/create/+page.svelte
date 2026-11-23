@@ -2,7 +2,7 @@
   import { orderedColumns } from '$lib/entity-list';
   import { browser } from '$app/environment';
   import { t } from '$lib/i18n';
-  import { Button } from '@primebrick/ui';
+  import { Button, toDisplayString } from '@primebrick/ui';
   import { TextInput } from '@primebrick/ui';
   import { Badge } from '@primebrick/ui';
   import FormPageLayout from '$lib/components/FormPageLayout.svelte';
@@ -224,7 +224,7 @@
         // unsaved-changes guard sees a still-tainted form and cancels the
         // navigation with a spurious confirm() dialog.
         justSaved = true;
-        await goto(resolve(`/system/settings/users/${encodeURIComponent(String(data.profile?.uuid))}` as '/'));
+        await goto(resolve(`/system/settings/users/${encodeURIComponent(toDisplayString(data.profile?.uuid))}` as '/'));
       } catch (error) {
         console.error('Failed to create user:', error);
         cancel();

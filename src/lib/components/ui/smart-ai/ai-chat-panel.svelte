@@ -22,7 +22,7 @@
    */
   import { onMount, untrack, type Snippet } from 'svelte';
   import { browser } from '$app/environment';
-  import { Button } from '@primebrick/ui';
+  import { Button, toDisplayString } from '@primebrick/ui';
   import { SafeHtml } from '@primebrick/ui';
   import { Textarea } from '@primebrick/ui';
   import { ComboSelect } from '@primebrick/ui';
@@ -238,7 +238,7 @@
       //    it through the ai service, never the host config API.
       const moduleConfig = await fetchModuleConfig('ai');
       const entry = moduleConfig.find((e) => e.key === 'ai_assistant_model');
-      const configuredId = entry?.value ? String(entry.value) : null;
+      const configuredId = entry?.value ? toDisplayString(entry.value) : null;
       if (!configuredId) {
         // Mandatory config missing — surface the error instead of faking a model.
         modelId = null;

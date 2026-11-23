@@ -264,7 +264,7 @@
           entity: entityCtx.entity,
           translationKey: entityCtx.translationKey,
           entities_ns: cellEntitiesNs,
-          rowUuid: String(row[entityCtx.uid]),
+          rowUuid: toDisplayString(row[entityCtx.uid]),
           columns: entityCtx.columns,
         });
       }}

@@ -70,6 +70,7 @@ import { useSyncChannel } from '$lib/composables/useSyncChannel.svelte';
 import { serviceCodeOf, useServiceAvailability } from '$lib/composables/use-service-availability.svelte';
 import { onConnectivityRestored } from '$lib/app-connectivity-events';
 import type { DeepReadonly } from '@primebrick/ui';
+import { toDisplayString } from '@primebrick/ui';
 
 export interface FixedFilter {
   field: string;
@@ -346,7 +347,7 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
       // URL filters WIN over persisted state — `filteredListHref` deep
       // links (ref_count / reverse_ref navigation) must land applied,
       // before the first loadRows ships them.
-      const url = parseUrlFilters(new URLSearchParams(window.location.search));
+      const url = parseUrlFilters(new SvelteURLSearchParams(window.location.search));
       if (url.hasUrlFilters) {
         _state.filterValues = { ..._state.filterValues, ...url.filterValues };
         if (url.advancedFilters.length) _state.advancedFilters = [..._state.advancedFilters, ...url.advancedFilters];
@@ -494,10 +495,10 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
       qs.set(`filters[${fi}][op]`, f.op);
       if (Array.isArray(f.value)) {
         for (const v of f.value) {
-          qs.append(`filters[${fi}][value][]`, String(v));
+          qs.append(`filters[${fi}][value][]`, toDisplayString(v));
         }
       } else {
-        qs.set(`filters[${fi}][value]`, String(f.value));
+        qs.set(`filters[${fi}][value]`, toDisplayString(f.value));
       }
       qs.set(`filters[${fi}][connector]`, 'AND');
       fi++;

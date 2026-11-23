@@ -14,14 +14,16 @@
    * refreshes by convention.
    */
   import { t } from '$lib/i18n';
-  import { Button, Label, Dialog, BorderedDialog, NumericInput } from '@primebrick/ui';
+  import { Button, Label, Dialog, BorderedDialog, NumericInput, TextInput, DateWheelPicker, getResolvedIanaTimeZone, toDisplayString } from '@primebrick/ui';
+  import { CalendarDateTime } from '@internationalized/date';
+  import { calendarDateToUtcIso } from '$lib/entity-form/date-wire';
   import { pushNotification } from '$lib/errors/app-errors';
   import { apiFetch, entityApiBase } from '$lib/api';
   import { extJsonParse, extJsonStringify } from '$lib/api-ext';
   import { untrack } from 'svelte';
   import { runEntityOp, fetchEntityMeta, type EntityMeta } from '$lib/entity-list';
   import { useSyncChannel } from '$lib/composables/useSyncChannel.svelte';
-  import type { RFC7807Error } from '$lib/errors/rfc7807';
+
 
   /** Wire contract — `sequence-analyze` response (snake_case verbatim). */
   interface SequenceAnalyze {
@@ -72,18 +74,19 @@
   let analyzeFailed = $state(false);
   let nextValue = $state('');
   let sezValues = $state<Record<'sez' | 'sez2' | 'sez3', string>>({ sez: '', sez2: '', sez3: '' });
-  let atValue = $state('');
+  let atValue = $state<CalendarDateTime | null>(null);
+  let atTz = $state(getResolvedIanaTimeZone() ?? 'UTC');
   let isSubmitting = $state(false);
 
   /** Partition slots the row's pattern declares — `{sez}`/`{sez2}`/`{sez3}`
    *  tokens decide which inputs the dialog renders (the counter is
    *  partition-scoped; no slot → no input). */
   const sezSlots = $derived.by<('sez' | 'sez2' | 'sez3')[]>(() => {
-    const pattern = String(row?.pattern ?? '');
+    const pattern = toDisplayString(row?.pattern ?? '');
     return (['sez', 'sez2', 'sez3'] as const).filter((s) => pattern.includes(`{${s}}`));
   });
 
-  const rowCode = $derived(String(row?.code ?? ''));
+  const rowCode = $derived(toDisplayString(row?.code ?? ''));
   const canSubmit = $derived(nextValue.trim() !== '' && !isSubmitting && meta !== null);
 
   function sezBody(): Record<string, string> {
@@ -103,9 +106,9 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: extJsonStringify({
-          uuid: String(row[uid]),
+          uuid: toDisplayString(row[uid]),
           ...sezBody(),
-          ...(atValue !== '' ? { at: new Date(atValue).toISOString() } : {}),
+          ...(atValue ? { at: calendarDateToUtcIso(atValue, atTz, 'datetime') } : {}),
         }),
       });
       if (!res.ok) {
@@ -117,7 +120,7 @@
       // Prefill ONLY on the first analysis of this dialog session — the
       // operator's edit must never be clobbered by a re-analysis.
       if (nextValue === '' && analysis.suggested_start !== null) {
-        nextValue = String(analysis.suggested_start);
+        nextValue = toDisplayString(analysis.suggested_start);
       }
     } catch {
       analyzeFailed = true;
@@ -131,7 +134,7 @@
     // differ from the previous open).
     nextValue = '';
     sezValues = { sez: '', sez2: '', sez3: '' };
-    atValue = '';
+    atValue = null;
     analysis = null;
     analyzeFailed = false;
     void fetchEntityMeta(basePath)
@@ -150,10 +153,10 @@
   $effect(() => {
     if (!open || !row) return;
     // track context deps
-    sezValues.sez;
-    sezValues.sez2;
-    sezValues.sez3;
-    atValue;
+    void sezValues.sez;
+    void sezValues.sez2;
+    void sezValues.sez3;
+    void atValue;
     const g = ++analyzeGen;
     const timer = setTimeout(() => {
       if (g === analyzeGen) void runAnalyze();
@@ -166,10 +169,10 @@
     isSubmitting = true;
     try {
       const body = {
-        uuid: String(row[uid]),
+        uuid: toDisplayString(row[uid]),
         next: BigInt(nextValue),
         ...sezBody(),
-        ...(atValue !== '' ? { at: new Date(atValue).toISOString() } : {}),
+        ...(atValue ? { at: calendarDateToUtcIso(atValue, atTz, 'datetime') } : {}),
       };
       const ok = await runEntityOp({
         op: 'sequence_set',
@@ -253,7 +256,7 @@
         {/if}
         {#if analysis.conflicts_above !== null && analysis.conflicts_above > 0n}
           <p class="mt-1 text-warning">
-            {$t('app.widgets.sequence.set.conflicts', { count: String(analysis.conflicts_above) })}
+            {$t('app.widgets.sequence.set.conflicts', { count: toDisplayString(analysis.conflicts_above) })}
           </p>
         {/if}
         {#if analysis.ambiguous && analysis.ambiguous.length > 0}
@@ -289,9 +292,8 @@
         <Label for={`sequence-set-${slot}`} class="text-sm font-medium leading-none">
           {$t(`app.widgets.sequence.sez_${slot}`)}
         </Label>
-        <input
+        <TextInput
           id={`sequence-set-${slot}`}
-          class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs"
           bind:value={sezValues[slot]}
           disabled={isSubmitting}
           data-testid={`sequence-set-${slot}`}
@@ -303,13 +305,13 @@
       <Label for="sequence-set-at" class="text-sm font-medium leading-none">
         {$t('app.widgets.sequence.set.at_label')}
       </Label>
-      <input
+      <DateWheelPicker
         id="sequence-set-at"
-        type="datetime-local"
-        class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs"
+        includeTime
         bind:value={atValue}
+        bind:timezone={atTz}
         disabled={isSubmitting}
-        data-testid="sequence-set-at"
+        dataTestId="sequence-set-at"
       />
     </div>
   </div>

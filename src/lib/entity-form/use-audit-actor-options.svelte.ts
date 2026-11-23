@@ -31,6 +31,7 @@
 import { apiFetchWithTimeout, entityApiBase } from '$lib/api';
 import { extJsonParse } from '$lib/api-ext';
 import type { DeepReadonly } from '@primebrick/ui';
+import { SvelteMap } from 'svelte/reactivity';
 
 export type AuditActorOption = {
 	value: string;
@@ -41,7 +42,7 @@ export type AuditActorOption = {
  *  reopen) while still refetching on the next panel open. */
 const CACHE_TTL_MS = 30_000;
 
-const _cache = new Map<string, { at: number; promise: Promise<AuditActorOption[]> }>();
+const _cache = new SvelteMap<string, { at: number; promise: Promise<AuditActorOption[]> }>();
 
 function fetchActors(entity: string): Promise<AuditActorOption[]> {
 	const hit = _cache.get(entity);
@@ -51,8 +52,8 @@ function fetchActors(entity: string): Promise<AuditActorOption[]> {
 			if (!res.ok) return [] as AuditActorOption[];
 			const data = extJsonParse<{ items?: AuditActorOption[] }>(await res.text());
 			return (data.items ?? []).map((i) => ({
-				value: String(i.value),
-				label: String(i.label ?? i.value),
+				value: i.value,
+				label: i.label ?? i.value,
 			}));
 		})
 		.catch(() => [] as AuditActorOption[]);

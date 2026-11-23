@@ -27,7 +27,7 @@ describe("buildConfigValueSchema — bigint", () => {
 
   it("enforces min rule (numeric value)", () => {
     const tc = extJsonStringify({
-      validation: { required: true, rules: { min: { value: 1, error_label_key: "err.min" } } },
+      validation: { required: true, rules: { min: { value: 1, error_label_key: "app.err.min" } } },
     });
     const schema = buildConfigValueSchema("bigint", tc);
     expect(safeParse(schema, "0").success).toBe(false);
@@ -37,7 +37,7 @@ describe("buildConfigValueSchema — bigint", () => {
 
   it("enforces max rule (numeric value)", () => {
     const tc = extJsonStringify({
-      validation: { required: true, rules: { max: { value: 90, error_label_key: "err.max" } } },
+      validation: { required: true, rules: { max: { value: 90, error_label_key: "app.err.max" } } },
     });
     const schema = buildConfigValueSchema("bigint", tc);
     expect(safeParse(schema, "91").success).toBe(false);
@@ -76,7 +76,7 @@ describe("buildConfigValueSchema — number", () => {
 
   it("enforces min rule (numeric value)", () => {
     const tc = extJsonStringify({
-      validation: { required: true, rules: { min: { value: 0, error_label_key: "err.min" } } },
+      validation: { required: true, rules: { min: { value: 0, error_label_key: "app.err.min" } } },
     });
     const schema = buildConfigValueSchema("number", tc);
     expect(safeParse(schema, "-1").success).toBe(false);
@@ -99,7 +99,7 @@ describe("buildConfigValueSchema — money", () => {
 
   it("enforces min rule (numeric value)", () => {
     const tc = extJsonStringify({
-      validation: { required: true, rules: { min: { value: 0, error_label_key: "err.min" } } },
+      validation: { required: true, rules: { min: { value: 0, error_label_key: "app.err.min" } } },
     });
     const schema = buildConfigValueSchema("money", tc);
     expect(safeParse(schema, "-1").success).toBe(false);
@@ -108,7 +108,7 @@ describe("buildConfigValueSchema — money", () => {
 
   it("enforces max rule (numeric value)", () => {
     const tc = extJsonStringify({
-      validation: { required: true, rules: { max: { value: 1000, error_label_key: "err.max" } } },
+      validation: { required: true, rules: { max: { value: 1000, error_label_key: "app.err.max" } } },
     });
     const schema = buildConfigValueSchema("money", tc);
     expect(safeParse(schema, "1000.01").success).toBe(false);
@@ -170,7 +170,7 @@ describe("buildConfigValueSchema — required", () => {
 describe("buildConfigValueSchema — string min/max (length)", () => {
   it("enforces min length", () => {
     const tc = extJsonStringify({
-      validation: { required: true, rules: { min: { value: 6, error_label_key: "err.min" } } },
+      validation: { required: true, rules: { min: { value: 6, error_label_key: "app.err.min" } } },
     });
     const schema = buildConfigValueSchema("string", tc);
     expect(safeParse(schema, "abc").success).toBe(false);
@@ -179,7 +179,7 @@ describe("buildConfigValueSchema — string min/max (length)", () => {
 
   it("enforces max length", () => {
     const tc = extJsonStringify({
-      validation: { required: true, rules: { max: { value: 5, error_label_key: "err.max" } } },
+      validation: { required: true, rules: { max: { value: 5, error_label_key: "app.err.max" } } },
     });
     const schema = buildConfigValueSchema("string", tc);
     expect(safeParse(schema, "abcdef").success).toBe(false);
@@ -297,7 +297,7 @@ describe("buildConfigValueSchema — unsigned bigint", () => {
 
   it("respects explicit min rule over default 0 when unsigned=true", () => {
     const tc = extJsonStringify({
-      validation: { unsigned: true, required: true, rules: { min: { value: 10, error_label_key: "err.min" } } },
+      validation: { unsigned: true, required: true, rules: { min: { value: 10, error_label_key: "app.err.min" } } },
     });
     const schema = buildConfigValueSchema("bigint", tc);
     expect(safeParse(schema, "5").success).toBe(false);
@@ -352,19 +352,19 @@ describe("buildConfigValueSchema — regex with flags", () => {
 
   it("uses custom error key for mismatch (not for invalid pattern)", () => {
     const tc = extJsonStringify({
-      validation: { required: true, rules: { regex: { pattern: "^[a-z]+$", error_label_key: "err.regex" } } },
+      validation: { required: true, rules: { regex: { pattern: "^[a-z]+$", error_label_key: "app.err.regex" } } },
     });
     const schema = buildConfigValueSchema("string", tc);
     const result = schema.safeParse("ABC");
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.issues[0].message).toBe("err.regex");
+      expect(result.error.issues[0].message).toBe("app.err.regex");
     }
   });
 
   it("uses invalidRegexPattern for invalid pattern (even with custom error key)", () => {
     const tc = extJsonStringify({
-      validation: { required: true, rules: { regex: { pattern: "[invalid", error_label_key: "err.regex" } } },
+      validation: { required: true, rules: { regex: { pattern: "[invalid", error_label_key: "app.err.regex" } } },
     });
     const schema = buildConfigValueSchema("string", tc);
     const result = schema.safeParse("any value");

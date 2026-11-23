@@ -237,7 +237,7 @@ test.describe("job-chain-live — engine semantics end to end", () => {
           kind: "map",
           entries: {
             customer_name: { kind: "const", value: "chain-interval" },
-            big_id: { kind: "const", value: 9007199254740993 },
+            big_id: { kind: "const", value: 9007199254740993n },
             score: { kind: "const", value: 99.5 },
           },
         },
@@ -678,7 +678,7 @@ test.describe("job-chain-live — engine semantics end to end", () => {
   });
 
   // ── PHASE 6 — metrics artifact ────────────────────────────────────────
-  test("phase 6 — latency report attached", async ({}, testInfo) => {
+  test("phase 6 — latency report attached", async (_, testInfo) => {
     // Late correlation — sender_log carries no request_id, so the exec stamp
     // is the FIRST log at/after each run's creation for our recipient
     // (monotonic: later runs match later logs). Fake-Brevo captures pair by

@@ -40,6 +40,7 @@ import { useMfaStepUp } from '$lib/composables/useMfaStepUp.svelte';
 import { pushNotification } from '$lib/errors/app-errors';
 import { findActionEndpoint, fillActionPath } from './action-endpoints';
 import type { EntityAction, EntityActionEndpoint, EntityMeta } from './types';
+import { toDisplayString } from '@primebrick/ui';
 
 /** Chrome fields an op may override via `meta.actions[op]` — the shape
  *  the confirm dialogs already consume (ELT's `ActionChrome`). */
@@ -158,7 +159,7 @@ function chromeOf(action?: EntityAction): EntityOpChrome | undefined {
 
 function defaultRecordName(row: Record<string, unknown>, meta?: EntityMeta | null, uid = 'uuid'): string | undefined {
   const candidate = row['code'] ?? (meta?.display_field ? row[meta.display_field] : undefined) ?? row[uid];
-  return candidate === undefined || candidate === null ? undefined : String(candidate);
+  return candidate === undefined || candidate === null ? undefined : toDisplayString(candidate);
 }
 
 /** Custom executors may return a boolean — normalize to a Response so
@@ -280,7 +281,7 @@ function defaultRequest(
   // only come from client-built rows, never from the wire).
   const versionQs = (r?: Record<string, unknown>) => {
     const v = r?.version;
-    return v === undefined || v === null || v === '' ? '' : `?version=${v}`;
+    return v === undefined || v === null || v === '' ? '' : `?version=${toDisplayString(v)}`;
   };
   const auth = (token: string | null): Record<string, string> =>
     token ? { 'x-mfa-action-authorization': token } : {};
@@ -291,7 +292,7 @@ function defaultRequest(
       if (!row) return null;
       const url = ep
         ? serviceApiPrefix(entity, args.service) + fillActionPath(ep.path, row, uid)
-        : `${base}/${encodeURIComponent(String(row[uid]))}${op === 'purge.single' ? '/purge' : ''}`;
+        : `${toDisplayString(base)}/${encodeURIComponent(toDisplayString(row[uid]))}${toDisplayString(op === 'purge.single' ? '/purge' : '')}`;
       return (token) =>
         apiFetch(`${url}${versionQs(row)}`, {
           method: ep?.method || 'DELETE',
@@ -302,7 +303,7 @@ function defaultRequest(
       if (!row) return null;
       const url = ep
         ? serviceApiPrefix(entity, args.service) + fillActionPath(ep.path, row, uid)
-        : `${base}/${encodeURIComponent(String(row[uid]))}/restore`;
+        : `${toDisplayString(base)}/${encodeURIComponent(toDisplayString(row[uid]))}/restore`;
       return (token) =>
         apiFetch(`${url}${versionQs(row)}`, {
           method: ep?.method || 'POST',
@@ -310,7 +311,7 @@ function defaultRequest(
         });
     }
     case 'delete.bulk': {
-      const items = (rows ?? []).map((r) => ({ uuid: String(r[uid]), version: r.version }));
+      const items = (rows ?? []).map((r) => ({ uuid: toDisplayString(r[uid]), version: r.version }));
       if (items.length === 0) return null;
       const url = ep ? serviceApiPrefix(entity, args.service) + ep.path : `${base}/bulk-delete`;
       return (token) =>
@@ -326,7 +327,7 @@ function defaultRequest(
       return async (token) => {
         for (const r of targets) {
           const res = await apiFetch(
-            `${base}/${encodeURIComponent(String(r[uid]))}/restore${versionQs(r)}`,
+            `${toDisplayString(base)}/${encodeURIComponent(toDisplayString(r[uid]))}/restore${toDisplayString(versionQs(r))}`,
             { method: 'POST', headers: auth(token) },
           );
           if (!res.ok) return res;

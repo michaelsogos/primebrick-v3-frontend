@@ -1,6 +1,6 @@
 <script lang="ts">
   import { t, dict, getDictKeys } from '$lib/i18n';
-  import { SwitchField } from '@primebrick/ui';
+  import { SwitchField, toDisplayString } from '@primebrick/ui';
   import { TextInput } from '@primebrick/ui';
   import { SmartRegexInput } from '$lib/components/ui/smart-regex-input';
   import { ComboSelect } from '@primebrick/ui';
@@ -63,14 +63,14 @@
   $effect(() => {
     const v = builder.validation;
     if (v?.rules?.min) {
-      minInput = String(v.rules.min.value);
+      minInput = toDisplayString(v.rules.min.value);
       minErrorKey = v.rules.min.error_label_key ?? autoErrorLabelKey(configKey, 'min');
     } else {
       minInput = '';
       minErrorKey = '';
     }
     if (v?.rules?.max) {
-      maxInput = String(v.rules.max.value);
+      maxInput = toDisplayString(v.rules.max.value);
       maxErrorKey = v.rules.max.error_label_key ?? autoErrorLabelKey(configKey, 'max');
     } else {
       maxInput = '';

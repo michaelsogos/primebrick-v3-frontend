@@ -8,6 +8,7 @@
   import { uiLang } from '$lib/i18n/store.svelte';
   import { appErrors, clearAppErrors, type AppError } from '$lib/errors/app-errors';
   import { cn } from '$lib/utils';
+  import { toDisplayString } from '@primebrick/ui';
   import { SheetPanelLayout } from '@primebrick/ui';
   import SheetHeaderAction from '$lib/shell/sheets/SheetHeaderAction.svelte';
   import { TriangleAlert } from '@primebrick/ui/vendor/lucide';
@@ -138,7 +139,7 @@
                   variant="outline"
                   class="h-auto border px-1.5 py-0.5 text-[10px] font-medium"
                 >
-                  {String(e.internalCode)}
+                  {toDisplayString(e.internalCode)}
                 </Badge>
               {/if}
               {#if e.instance}
@@ -146,7 +147,7 @@
                   variant="outline"
                   class="h-auto border px-1.5 py-0.5 text-[10px] font-medium"
                 >
-                  {String(e.instance)}
+                  {toDisplayString(e.instance)}
                 </Badge>
               {/if}
             </div>

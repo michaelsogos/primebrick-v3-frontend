@@ -873,7 +873,7 @@ export async function fetchTranslationList(moduleCode: string, query: {
   if (query.search_in?.length) params.set('search_in', query.search_in.join(','));
   if (query.connector) params.set('connector', query.connector);
   query.filters?.forEach((f, i) => appendListFilterTerm(params, i, { field: f.field, op: f.op, value: f.value }));
-  const res = await apiFetch(`/api/v1/entities/translation/list?${params}`);
+  const res = await apiFetch(`/api/v1/entities/translation/list?${params.toString()}`);
   if (!res.ok) throw new Error(`Translations list request failed (${res.status})`);
   return await res.text().then((t) => extJsonParse<any>(t));
 }

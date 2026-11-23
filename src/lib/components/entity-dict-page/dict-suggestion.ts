@@ -6,6 +6,8 @@
  * only user-writable namespace; the slug derives from the row's immutable
  * `code` so the suggestion tracks the identity the row already carries.
  */
+import { toDisplayString } from '@primebrick/ui';
+
 export function slugifyKey(text: string): string {
   return text
     .trim()
@@ -15,6 +17,6 @@ export function slugifyKey(text: string): string {
 }
 
 export function suggestedKeyFor(translationKey: string, code: unknown): string {
-  const slug = slugifyKey(String(code ?? ''));
+  const slug = slugifyKey(toDisplayString(code));
   return slug ? `custom.entities.${translationKey}.rows.${slug}` : '';
 }

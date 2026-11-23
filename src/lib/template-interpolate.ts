@@ -1,3 +1,4 @@
+import { toDisplayString } from '@primebrick/ui';
 /**
  * Template interpolator with nested path support.
  * Accepts dot notation for nested paths, e.g. `${user.name}`, `${org.display_name}`.
@@ -12,6 +13,6 @@ export function interpolateTemplate(template: string, data: Record<string, unkno
       return undefined;
     }, data);
 
-    return value !== undefined && value !== null ? String(value) : match;
+    return value !== undefined && value !== null ? toDisplayString(value) : match;
   });
 }

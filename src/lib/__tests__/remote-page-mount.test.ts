@@ -9,6 +9,7 @@ import { getFallbackDict, mergeModuleDict } from '../i18n';
 import { DEFAULT_LANG } from '../i18n/languages';
 import Counter from './Counter.svelte';
 import Echo from './Echo.svelte';
+import { toDisplayString } from '@primebrick/ui';
 
 beforeAll(() => {
 	// t() returns the raw key when the dict is empty — merge the fallback so
@@ -78,7 +79,7 @@ describe('RemotePageMount', () => {
 
 		await seenCtx!.api('/api/v1/entities/job_schedule');
 		const calledWith = fetchSpy.mock.calls[0]?.[0];
-		expect(String(calledWith)).toContain('/svc/job/api/v1/entities/job_schedule');
+		expect(calledWith?.toString() ?? '').toContain('/svc/job/api/v1/entities/job_schedule');
 		vi.unstubAllGlobals();
 	});
 

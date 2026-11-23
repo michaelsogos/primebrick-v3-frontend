@@ -7,6 +7,7 @@ import { findActionEndpoint } from '$lib/entity-list';
 import { appendListFilterParams } from '$lib/entity-list/list-filter-params';
 import type { DeepReadonly } from '@primebrick/ui';
 import { extJsonParse } from '$lib/api-ext';
+import { toDisplayString } from '@primebrick/ui';
 
 interface ExportOptions {
   entity: () => string;
@@ -264,7 +265,7 @@ export function useExport(options: ExportOptions) {
       // 'non_deleted' is default (EXCLUDED), so no param needed
 
       Object.entries(filters).forEach(([key, value]) => {
-        params.append(key, String(value));
+        params.append(key, toDisplayString(value));
       });
 
       const response = await apiFetch(`${exportBase(entity)}?${params.toString()}`);

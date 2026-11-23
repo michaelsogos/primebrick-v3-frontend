@@ -18,6 +18,7 @@
    */
   import { page as appPage } from '$app/state';
   import { goto } from '$app/navigation';
+  import { resolve as resolvePath } from '$app/paths';
   import { error } from '@sveltejs/kit';
   import { get } from 'svelte/store';
   import { t } from '$lib/i18n';
@@ -53,7 +54,7 @@
       modules = fetched;
       const r = resolvePageForPath(appPage.url.pathname, modules);
       if (r.kind === 'redirect') {
-        void goto(r.href, { replaceState: true });
+        void goto(resolvePath(r.href as '/'), { replaceState: true });
         return;
       }
       resolved = r;

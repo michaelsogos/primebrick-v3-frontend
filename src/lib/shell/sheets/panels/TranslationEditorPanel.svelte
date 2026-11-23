@@ -226,7 +226,6 @@
   /** Per-language row helpers — read live state inside the each block. */
   const rowOf = (l: UiLang) => existing[l];
   const savedOf = (l: UiLang) => rowOf(l) != null;
-  const isEn = (l: UiLang) => EN_LANGS.includes(l);
   /** Editable: missing rows always; saved rows need the update perm AND a
    *  CAS identity (rows read via the flat-dict fallback carry none →
    *  disabled, an honest degradation — never a phantom update). */

@@ -8,6 +8,8 @@ import { appendListFilterParams } from '$lib/entity-list/list-filter-params';
 import type { MetaColumn } from '$lib/entity-list/types';
 import type { DeepReadonly } from '@primebrick/ui';
 import { extJsonParse, extJsonStringify } from '$lib/api-ext';
+import { toDisplayString } from '@primebrick/ui';
+import { SvelteURLSearchParams } from 'svelte/reactivity';
 
 export interface BulkActionsOptions {
   entity: () => string;
@@ -99,7 +101,7 @@ export function useBulkActions(options: BulkActionsOptions) {
     const uid = uidFn?.() ?? 'uuid';
     const items: Array<{ uuid: string; version: number }> = [];
     for (let page = 1; ; page++) {
-      const params = new URLSearchParams();
+      const params = new SvelteURLSearchParams();
       params.set('page', String(page));
       params.set('page_size', '200');
       const search = searchFn?.();
@@ -119,7 +121,7 @@ export function useBulkActions(options: BulkActionsOptions) {
       }
       const data = (await res.text().then((t) => extJsonParse<any>(t))) as { rows?: Array<Record<string, unknown>>; total?: number | bigint };
       const rows = data.rows ?? [];
-      for (const row of rows) items.push({ uuid: String(row[uid]), version: row.version as number });
+      for (const row of rows) items.push({ uuid: toDisplayString(row[uid]), version: row.version as number });
       if (rows.length === 0 || items.length >= Number(data.total ?? 0)) break;
     }
     return items;

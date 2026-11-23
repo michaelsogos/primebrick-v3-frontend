@@ -26,6 +26,8 @@ import { t } from '$lib/i18n';
 import { uiLang } from '$lib/i18n/store.svelte';
 import { loadModuleTranslations } from '$lib/i18n/use-module-translations.svelte';
 
+import { SvelteSet } from 'svelte/reactivity';
+
 /** Detailed ComboSelect option for a census subject — the shape
  *  `display="detailed"` consumers render (`_desc` italic line, `_sub`
  *  raw-subject line, left icon). */
@@ -103,7 +105,7 @@ export function useCensusSubjectOptions(modules: () => ModuleInfo[]): CensusSubj
 	// `translations_module ?? id`. Virtual/delegating modules (api →
 	// system) own no translations schema; fetching their raw id 404s.
 	const censusContributors = $derived(
-		new Set(
+		new SvelteSet(
 			modules()
 				.filter((m) => (m.callables?.callables?.length ?? 0) > 0 || (m.events?.emits?.length ?? 0) > 0)
 				.map((m) => m.translations_module ?? m.id),

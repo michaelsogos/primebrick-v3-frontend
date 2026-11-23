@@ -8,7 +8,7 @@
    */
   import { SvelteSet } from 'svelte/reactivity';
   import { t, dict } from '$lib/i18n';
-  import { ComboSelect, Badge } from '@primebrick/ui';
+  import { ComboSelect, Badge, toDisplayString } from "@primebrick/ui";
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import { getPendingTranslation } from '$lib/i18n/pending-translations.svelte';
   import { slugifyKey, suggestedKeyFor } from './dict-suggestion';
@@ -48,7 +48,7 @@
    * carries the prefix INCLUDING the key segment — it pre-filters to the
    * keys of THIS code and the Create row offers the scoped path.
    */
-  const keyLeaf = $derived(slugifyKey(String(record['code'] ?? '')) || 'my_custom_code');
+  const keyLeaf = $derived(slugifyKey(toDisplayString(record['code'] ?? '')) || 'my_custom_code');
   const placeholderKey = $derived(`custom.${rowsPrefix}${keyLeaf}`);
   const defaultSearch = $derived(`${rowsPrefix}${keyLeaf}`);
 

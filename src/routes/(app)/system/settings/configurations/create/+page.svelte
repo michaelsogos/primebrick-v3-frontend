@@ -2,7 +2,7 @@
 
   import { onMount, tick } from 'svelte';
   import { t, dict } from '$lib/i18n';
-  import { Button } from '@primebrick/ui';
+  import { Button, toDisplayString } from '@primebrick/ui';
   import { TextInput } from '@primebrick/ui';
   import { SwitchField } from '@primebrick/ui';
   import { ComboSelect } from '@primebrick/ui';
@@ -257,7 +257,7 @@
     $errors?.value
       ? Array.isArray($errors.value)
         ? $errors.value.map(String)
-        : [String($errors.value)]
+        : [toDisplayString($errors.value)]
       : [],
   );
 

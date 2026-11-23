@@ -171,7 +171,7 @@ export async function postJobAction(
   body: Record<string, unknown>,
 ): Promise<{ status: number; body: unknown }> {
   const res = await request.post(`${JOB_API}/actions/${action}`, { data: body });
-  let parsed: unknown = null;
+  let parsed: unknown;
   try {
     parsed = await res.text().then((t) => extJsonParse<any>(t));
   } catch {

@@ -1,4 +1,5 @@
 <script lang="ts" generics="TRow extends Record<string, unknown>">
+  import { toDisplayString } from '@primebrick/ui';
   import { t } from '$lib/i18n';
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
@@ -203,7 +204,7 @@
 
   function openEdit(row: TRow) {
     if (!effectiveEditPath) return;
-    const url = effectiveEditPath.replace(':uuid', encodeURIComponent(String(row[uid])));
+    const url = effectiveEditPath.replace(':uuid', encodeURIComponent(toDisplayString(row[uid])));
     if (navStrategy === 'popup') {
       const w = window.open(url, '_blank');
       if (w) w.focus();

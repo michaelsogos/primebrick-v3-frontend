@@ -17,7 +17,7 @@
  *                                          @primebrick/ui/vendor/<lib> subpath.
  */
 
-import { VENDOR_BLOCKED_PACKAGES, specifierTopPackage } from '@primebrick/ui';
+import { VENDOR_BLOCKED_PACKAGES, specifierTopPackage, toDisplayString } from '@primebrick/ui';
 
 import { extJsonStringify } from '$lib/api-ext';
 export interface LoadResult {
@@ -190,7 +190,7 @@ export async function loadSourceModule(entryUrl: string): Promise<LoaderReport> 
 					const dep = await compileOne(r.url);
 					replacements.set(spec, dep.blobUrl);
 				} catch (err) {
-					report.failed.push({ url: r.url, stage: 'dep-of:' + url, error: String(err) });
+					report.failed.push({ url: r.url, stage: 'dep-of:' + url, error: (err instanceof Error ? err.message : toDisplayString(err)) });
 					throw err;
 				}
 			}
@@ -213,7 +213,7 @@ export async function loadSourceModule(entryUrl: string): Promise<LoaderReport> 
 			if (r && r !== entry) report.modules.push(r);
 		}
 	} catch (err) {
-		report.failed.push({ url: entryUrl, stage: 'entry', error: String(err) });
+		report.failed.push({ url: entryUrl, stage: 'entry', error: (err instanceof Error ? err.message : toDisplayString(err)) });
 	}
 	report.totalMs = performance.now() - t0;
 	return report;

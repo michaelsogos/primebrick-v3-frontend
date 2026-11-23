@@ -26,8 +26,7 @@ import {
 	type MountSheetFn,
 	type RemoteDepsManifest,
 	type VendorManifest,
-	type VendorMismatch,
-} from '@primebrick/ui';
+	type VendorMismatch, toDisplayString } from '@primebrick/ui';
 import HostMountShell from './HostMountShell.svelte';
 import { extJsonParse } from '$lib/api-ext';
 
@@ -85,7 +84,7 @@ export type RemoteLoadDeps = {
 export const VENDOR_MANIFEST_URL = '/vendor/vendor-manifest.json';
 
 function errorMessage(e: unknown): string {
-	return e instanceof Error ? e.message : String(e);
+	return e instanceof Error ? e.message : toDisplayString(e);
 }
 
 /** sha256 of `buf` as lowercase hex (Web Crypto — works in browser + Node 24). */

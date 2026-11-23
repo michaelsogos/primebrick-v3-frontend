@@ -65,6 +65,8 @@
 	import type { FormPageDecl } from '@primebrick/ui';
 	import { seedPayloadMapEntries, type PayloadMap } from '@primebrick/ui';
 
+	import { SvelteMap } from 'svelte/reactivity';
+
 	let {
 		entity,
 		service,
@@ -158,8 +160,8 @@
 	// derived ONCE for every options_source surface.
 	const census = useCensusSubjectOptions(() => modules);
 
-	const prepared = $derived.by(() => {
-		return buildEntityFormSchema(meta, formDecl, {
+	const prepared = $derived(
+		buildEntityFormSchema(meta, formDecl, {
 			resolveCallable: (subject) =>
 				census.callableDecls.find((c) => c.subject === subject)?.payload_schema as
 					| Record<string, unknown>
@@ -168,9 +170,9 @@
 				census.emitDecls.find((e) => e.subject === subject)?.payload_schema as
 					| Record<string, unknown>
 					| undefined,
-		});
-	});
-	const columnMap = $derived(new Map((meta?.columns ?? []).map((c) => [c.key, c])));
+		}),
+	);
+	const columnMap = $derived(new SvelteMap((meta?.columns ?? []).map((c) => [c.key, c])));
 
 	let formObj = $state<ReturnType<typeof superForm> | null>(null);
 	type PreparedForm = NonNullable<typeof formObj>;

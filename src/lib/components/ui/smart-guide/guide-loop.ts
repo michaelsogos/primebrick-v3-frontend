@@ -25,6 +25,7 @@ import { get } from 'svelte/store';
 import { uiLang } from '$lib/i18n/store.svelte';
 
 import { extJsonStringify, extJsonParse } from '$lib/api-ext';
+import { toDisplayString } from '@primebrick/ui';
 /** Loop knobs — all overridable per cerebellum tuning via execution_config
  *  keys of the same name; values below are the built-in defaults. The
  *  preflight stages (S0/S2) are deliberately pinned to temperature 0 and
@@ -616,7 +617,7 @@ export async function runGuideRetrievalLoop(
   /** docs_fetch executor — full-document dereference, capped for prompt size. */
   const execFetch = async (path: string, repo?: string): Promise<string> => {
     const t0 = performance.now();
-    const doc = await fetchDoc({ path, repo }).catch((e) => ({ error: String(e) }));
+    const doc = await fetchDoc({ path, repo }).catch((e) => ({ error: (e instanceof Error ? e.message : toDisplayString(e)) }));
     stageLog('tool_docs_fetch', { ms: Math.round(performance.now() - t0), path, found: !!doc && !('error' in doc) });
     if (!doc || 'error' in doc)
       // Steer lazy agents back to search: Coder models skip docs_search and
@@ -862,7 +863,7 @@ export async function runGuideRetrievalLoop(
     }
   } catch (e) {
     throw new Error(
-      `Documentation retrieval failed: ${e instanceof Error ? e.message : String(e)}`,
+      `Documentation retrieval failed: ${e instanceof Error ? e.message : toDisplayString(e)}`,
       { cause: e },
     );
   }
@@ -877,7 +878,7 @@ export async function runGuideRetrievalLoop(
       await execSearch(text, []);
     } catch (e) {
       throw new Error(
-        `Documentation retrieval failed: ${e instanceof Error ? e.message : String(e)}`,
+        `Documentation retrieval failed: ${e instanceof Error ? e.message : toDisplayString(e)}`,
         { cause: e },
       );
     }

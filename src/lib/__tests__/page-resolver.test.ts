@@ -74,8 +74,8 @@ const settingsModule: ModuleInfo = {
 	is_default: true,
 	route_prefixes: ['/system/settings'],
 	nav: [
-		{ id: 'profile', label_key: 'tabs.profile', href: '/system/settings/profile', default: true },
-		{ id: 'users', label_key: 'tabs.users', href: '/system/settings/users' },
+		{ id: 'profile', label_key: 'app.tabs.profile', href: '/system/settings/profile', default: true },
+		{ id: 'users', label_key: 'app.tabs.users', href: '/system/settings/users' },
 	],
 	routes: [
 		{ route: '/system/settings/profile' },

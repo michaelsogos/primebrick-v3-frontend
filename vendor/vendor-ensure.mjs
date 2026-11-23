@@ -22,7 +22,7 @@
  */
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
-import { join, dirname, relative } from 'node:path';
+import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 
@@ -68,7 +68,7 @@ for (const repo of ['primebrick-v3-ui', 'primebrick-v3-core']) {
 
 const stamp = hash.digest('hex');
 let current = '';
-try { current = readFileSync(STAMP, 'utf8').trim(); } catch {}
+try { current = readFileSync(STAMP, 'utf8').trim(); } catch { /* stamp unreadable → rebuild below */ }
 
 if (current === stamp && existsSync(MANIFEST)) {
   console.log('[vendor-ensure] vendor inputs unchanged — skipping build');

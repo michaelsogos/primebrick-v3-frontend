@@ -143,6 +143,7 @@
         "lib/components/entity-list-table/"
       ]
     },
+    "display-coerce": {},
     "icon-no-fallback": {},
     "panel-footer-start": {
       "appliesTo": [

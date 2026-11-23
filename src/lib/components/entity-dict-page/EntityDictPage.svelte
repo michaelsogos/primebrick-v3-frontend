@@ -38,12 +38,12 @@
    *     `translateFieldError` (`key|jsonParams` wire vocabulary).
    */
   import { onMount, untrack } from 'svelte';
-  import { SvelteMap, SvelteSet } from 'svelte/reactivity';
+  import { SvelteMap, SvelteSet, SvelteURLSearchParams } from 'svelte/reactivity';
   import { t } from '$lib/i18n';
   import { apiFetch, entityApiBase } from '$lib/api';
   import { useSyncChannel } from '$lib/composables/useSyncChannel.svelte';
   import { useEntityList } from '$lib/composables/useEntityList.svelte';
-  import { useSelection, Button, Badge, Toolbar, RefreshButton, DynamicIcon } from '@primebrick/ui';
+  import { useSelection, Button, Badge, Toolbar, RefreshButton, DynamicIcon, toDisplayString } from '@primebrick/ui';
   import { SelectableFieldset, DeletionFilterToggle } from '@primebrick/ui';
   import { LoadingBar } from '$lib/components/ui/loading-bar';
   import * as Sortable from '$lib/components/ui/sortable';
@@ -54,7 +54,7 @@
   import { entitiesNs } from '$lib/utils/entity-meta';
   import { isEntityOpAllowed } from '$lib/permissions.svelte';
   import { extJsonParse, extJsonStringify } from '$lib/api-ext';
-  import FormFieldDispatcher from '$lib/entity-form/FormFieldDispatcher.svelte';
+
   import { fieldSpecToZod, translateFieldError } from '@primebrick/ui';
   import { z } from 'zod';
   import DictDraftRow from './DictDraftRow.svelte';
@@ -219,7 +219,7 @@
    *  or label_key). The ✓ gate is scoped to THESE fields only (D1):
    *  extras the composer cannot render gate the SAVE, not confirm. */
   const composerKeys = $derived(
-    new Set(
+    new SvelteSet(
       [displayField, 'code', 'label_key'].filter((k): k is string => typeof k === 'string'),
     ),
   );
@@ -231,7 +231,7 @@
    *  suggestion-eligible columns) — identical to the form's
    *  `placement.required ?? nullable===false`. Schemas are immutable per
    *  column — cache by key+required. */
-  const dictFieldSchemas = new Map<string, z.ZodTypeAny>();
+  const dictFieldSchemas = new SvelteMap<string, z.ZodTypeAny>();
   function dictFieldSchema(col: MetaColumn, required: boolean): z.ZodTypeAny {
     const k = `${col.key}:${required ? 1 : 0}`;
     let s = dictFieldSchemas.get(k);
@@ -280,7 +280,7 @@
     const errs = columnErrors(
       d.values,
       editableColumns.filter((c) => composerKeys.has(c.key)),
-      new Set([displayField ?? 'label_key']),
+      new SvelteSet([displayField ?? 'label_key']),
     );
     if (codeProbe.exists) (errs['code'] ??= []).push($t('system.entities.dict.code_exists'));
     return errs;
@@ -296,7 +296,7 @@
    *  bracket-notation on the canonical wire format). */
   let codeProbe = $state({ checking: false, exists: false });
   let codeProbeTimer: ReturnType<typeof setTimeout> | null = null;
-  const composerCode = $derived(String(drafts[0]?.values['code'] ?? '').trim());
+  const composerCode = $derived(toDisplayString(drafts[0]?.values['code'] ?? '').trim());
   $effect(() => {
     const code = composerCode;
     if (codeProbeTimer) clearTimeout(codeProbeTimer);
@@ -307,7 +307,7 @@
     codeProbeTimer = setTimeout(() => {
       void (async () => {
         try {
-          const qs = new URLSearchParams();
+          const qs = new SvelteURLSearchParams();
           qs.set('filters[0][field]', 'code');
           qs.set('filters[0][op]', '=');
           qs.set('filters[0][value]', code);
@@ -316,7 +316,7 @@
           if (res.ok) {
             const data = (await res.text().then((t) => extJsonParse(t))) as { rows?: unknown[] };
             // Still the live composer value — a stale probe never sticks.
-            if (String(drafts[0]?.values['code'] ?? '').trim() === code) {
+            if (toDisplayString(drafts[0]?.values['code'] ?? '').trim() === code) {
               codeProbe.exists = (data.rows?.length ?? 0) > 0;
             }
           }
@@ -406,7 +406,7 @@
           // (the widget displays the served literal via `existing`).
           v[c.key] = c.format === 'sequence' ? '' : r[c.key];
         }
-        next[String(r[uid])] = v;
+        next[toDisplayString(r[uid])] = v;
       }
       values = next;
       originals = $state.snapshot(next);
@@ -418,12 +418,12 @@
   const taintedUids = $derived.by<ReadonlySet<string>>(() => {
     const tainted = new SvelteSet<string>();
     for (const r of list.rows) {
-      const id = String(r[uid]);
+      const id = toDisplayString(r[uid]);
       const curr = values[id];
       const orig = originals[id];
       if (!curr || !orig) continue;
       for (const c of updateEditableColumns) {
-        if (String(curr[c.key] ?? '') !== String(orig[c.key] ?? '')) {
+        if (toDisplayString(curr[c.key] ?? '') !== toDisplayString(orig[c.key] ?? '')) {
           tainted.add(id);
           break;
         }
@@ -444,7 +444,7 @@
   function pendingValid(d: Draft): boolean {
     return (
       Object.keys(
-        columnErrors(d.values, editableColumns, new Set([displayField ?? 'label_key'])),
+        columnErrors(d.values, editableColumns, new SvelteSet([displayField ?? 'label_key'])),
       ).length === 0
     );
   }
@@ -502,7 +502,7 @@
       if (!curr || !orig) continue;
       const d: Record<string, unknown> = {};
       for (const c of updateEditableColumns) {
-        if (String(curr[c.key] ?? '') !== String(orig[c.key] ?? '')) d[c.key] = curr[c.key];
+        if (toDisplayString(curr[c.key] ?? '') !== toDisplayString(orig[c.key] ?? '')) d[c.key] = curr[c.key];
       }
       if (Object.keys(d).length > 0) m[id] = d;
     }
@@ -529,7 +529,7 @@
     rowVersions: () => {
       const m: Record<string, number> = {};
       for (const id of Object.keys(taintMap)) {
-        const r = list.rows.find((row) => String(row[uid]) === id);
+        const r = list.rows.find((row) => toDisplayString(row[uid]) === id);
         if (r) m[id] = Number(r['version'] ?? 0);
       }
       return m;
@@ -603,7 +603,7 @@
    *  rendered order equals the post-save order. */
   function effectiveOrderOf(r: Record<string, unknown>): number {
     return orderField
-      ? Number(values[String(r[uid])]?.[orderField] ?? r[orderField] ?? 0)
+      ? Number(values[toDisplayString(r[uid])]?.[orderField] ?? r[orderField] ?? 0)
       : 0;
   }
 
@@ -619,11 +619,11 @@
    *  `values[uid]` (taint), pending endpoints write `d.values` directly. */
   const renderEntries = $derived.by(() => {
     const saved = displayRows.map((r, i) => ({
-      id: String(r[uid]),
+      id: toDisplayString(r[uid]),
       kind: 'saved' as const,
       row: r,
       sort: orderField
-        ? Number(values[String(r[uid])]?.[orderField] ?? r[orderField] ?? 0)
+        ? Number(values[toDisplayString(r[uid])]?.[orderField] ?? r[orderField] ?? 0)
         : 0,
       seq: i,
     }));
@@ -644,7 +644,7 @@
   function orderValueOf(chainId: string): unknown {
     const p = pendings.find((x) => x.__draft === chainId);
     if (p) return p.values[orderField!];
-    const row = list.rows.find((r) => String(r[uid]) === chainId);
+    const row = list.rows.find((r) => toDisplayString(r[uid]) === chainId);
     return values[chainId]?.[orderField!] ?? row?.[orderField!];
   }
 
@@ -714,7 +714,7 @@
   const selClient = useClientSelection<Record<string, unknown>>({
     selectedKeys: () => selectedKeys,
     rows: () => list.rows,
-    rowKey: (r) => String(r[uid]),
+    rowKey: (r) => toDisplayString(r[uid]),
     pageSize: () => list.pageSize,
     rowsLoading: () => list.rowsLoading,
     rowSelectionEnabled: () => true,
@@ -730,7 +730,7 @@
   const modClient = useClientSelection<Record<string, unknown>>({
     selectedKeys: () => modifiedUids,
     rows: () => list.rows,
-    rowKey: (r) => String(r[uid]),
+    rowKey: (r) => toDisplayString(r[uid]),
     pageSize: () => list.pageSize,
     rowsLoading: () => list.rowsLoading,
     rowSelectionEnabled: () => true,
@@ -748,13 +748,13 @@
   const filteredRows = $derived.by(() => {
     if (!filterActive) return displayRows;
     const pool = new SvelteMap<string, Record<string, unknown>>();
-    for (const r of displayRows) pool.set(String(r[uid]), r);
-    for (const r of selClient.orderedSelectedRows) pool.set(String(r[uid]), r);
-    for (const r of modClient.orderedSelectedRows) pool.set(String(r[uid]), r);
+    for (const r of displayRows) pool.set(toDisplayString(r[uid]), r);
+    for (const r of selClient.orderedSelectedRows) pool.set(toDisplayString(r[uid]), r);
+    for (const r of modClient.orderedSelectedRows) pool.set(toDisplayString(r[uid]), r);
     const mod = new SvelteSet(modifiedUids);
     const sel = new SvelteSet(selectedKeys);
     const out = [...pool.values()].filter((r) => {
-      const k = String(r[uid]);
+      const k = toDisplayString(r[uid]);
       return (!showModifiedOnly || mod.has(k)) && (!showSelectedOnly || sel.has(k));
     });
     if (orderField) out.sort((a, b) => effectiveOrderOf(a) - effectiveOrderOf(b));
@@ -776,7 +776,7 @@
   const filteredEntries = $derived.by(() => {
     if (!filterActive) return renderEntries;
     const saved = filteredRows.map((r, i) => ({
-      id: String(r[uid]),
+      id: toDisplayString(r[uid]),
       kind: 'saved' as const,
       row: r,
       sort: effectiveOrderOf(r),
@@ -852,7 +852,7 @@
     [...selection.state.selected_ids].filter((id) => taintedUids.has(id)).length,
   );
   const selectedRows = $derived(
-    displayRows.filter((r) => selection.isSelected(String(r[uid]))),
+    displayRows.filter((r) => selection.isSelected(toDisplayString(r[uid]))),
   );
   const hasDeletedSelected = $derived(
     selectedRows.some((r) => r['deleted_at'] !== null && r['deleted_at'] !== undefined),
@@ -907,7 +907,7 @@
    *  keyed on the row's human identity instead). */
   const taintedRowTitles = $derived(
     displayRows
-      .filter((r) => taintedUids.has(String(r[uid])))
+      .filter((r) => taintedUids.has(toDisplayString(r[uid])))
       .map((r) => rowTitle(r)),
   );
 
@@ -917,9 +917,9 @@
   function rowTitle(r: Record<string, unknown>): string {
     if (displayField) {
       const v = r[displayField];
-      if (typeof v === 'string' && v) return $t(v) === v ? String(r['code'] ?? v) : $t(v);
+      if (typeof v === 'string' && v) return $t(v) === v ? toDisplayString(r['code'] ?? v) : $t(v);
     }
-    return String(r['code'] ?? r[uid] ?? '');
+    return toDisplayString(r['code'] ?? r[uid] ?? '');
   }
 
   // ─── Writes — standard {entity} envelopes on the entity-router ────────
@@ -932,7 +932,7 @@
     saving = true;
     try {
       for (const id of taintedUids) {
-        const row = list.rows.find((r) => String(r[uid]) === id);
+        const row = list.rows.find((r) => toDisplayString(r[uid]) === id);
         if (!row) continue;
         // Update envelope = the update-mode editable set only — `immutable`
         // columns (create-set, e.g. `code`) never ride a PUT payload
@@ -957,7 +957,7 @@
       for (const d of pendings) {
         // Empty label_key commits the convention suggestion — the
         // "(optional)" chip's promise (task 7, config-create parity).
-        if (displayField && !String(d.values[displayField] ?? '').trim()) {
+        if (displayField && !toDisplayString(d.values[displayField] ?? '').trim()) {
           const suggested = suggestedKeyFor(translationKey, d.values['code']);
           if (suggested) d.values[displayField] = suggested;
         }
@@ -1063,7 +1063,7 @@
    *  never persisted (zero server work). A pending-only selection drops
    *  immediately — no request exists to confirm. */
   async function bulkDelete() {
-    const pendingIds = new Set(
+    const pendingIds = new SvelteSet(
       [...selection.state.selected_ids].filter((id) =>
         pendings.some((p) => p.__draft === id),
       ),
@@ -1090,14 +1090,6 @@
   // ─── Pagination — bounded: meta.table.page_size_options ───────────────
   const totalPages = $derived(Math.max(1, Math.ceil(Number(list.total) / list.pageSize)));
   const pageSizeOptions = $derived(meta?.table?.page_size_options ?? [10, 25, 50]);
-  const rangeStart = $derived(
-    Number(list.total) === 0 ? 0 : (list.page - 1) * list.pageSize + 1,
-  );
-  const rangeEnd = $derived(
-    Number(list.total) === 0
-      ? 0
-      : Math.min(list.page * list.pageSize, Number(list.total)),
-  );
 
   /** Filtered-view pager values — ELT's footerUsesClientPaging contract:
    *  while an eye filter is on, range/pages/total describe the local
@@ -1125,27 +1117,27 @@
     editable_columns: updateEditableColumns,
     extras_columns: extrasColumns,
     columns_map: columnMap,
-    values: values[String(r[uid])] ?? {},
-    errors: invalidRowUids.has(String(r[uid]))
-      ? columnErrors(values[String(r[uid])] ?? {}, updateEditableColumns)
+    values: values[toDisplayString(r[uid])] ?? {},
+    errors: invalidRowUids.has(toDisplayString(r[uid]))
+      ? columnErrors(values[toDisplayString(r[uid])] ?? {}, updateEditableColumns)
       : {},
-    tainted: taintedUids.has(String(r[uid])),
-    selected: selection.isSelected(String(r[uid])),
+    tainted: taintedUids.has(toDisplayString(r[uid])),
+    selected: selection.isSelected(toDisplayString(r[uid])),
     deleted: r['deleted_at'] !== null && r['deleted_at'] !== undefined,
     can_update: canUpdate,
     can_delete: canDelete,
     can_restore: canRestore,
     orderable: orderField !== undefined && !filterActive,
     sortable: orderField !== undefined && !groupField && !filterActive,
-    reorder_first: renderChain[0] === String(r[uid]),
-    reorder_last: renderChain[renderChain.length - 1] === String(r[uid]),
-    onchange: (key: string, v: unknown) => cellChange(String(r[uid]), key, v),
-    onrevert: () => revertRow(String(r[uid])),
-    ontoggle: (checked: boolean) => selection.toggleSelect(String(r[uid]), checked),
+    reorder_first: renderChain[0] === toDisplayString(r[uid]),
+    reorder_last: renderChain[renderChain.length - 1] === toDisplayString(r[uid]),
+    onchange: (key: string, v: unknown) => cellChange(toDisplayString(r[uid]), key, v),
+    onrevert: () => revertRow(toDisplayString(r[uid])),
+    ontoggle: (checked: boolean) => selection.toggleSelect(toDisplayString(r[uid]), checked),
     ondelete: () => void deleteRow(r),
     onrestore: () => void restoreRow(r),
-    onmoveup: () => move(String(r[uid]), -1),
-    onmovedown: () => move(String(r[uid]), 1),
+    onmoveup: () => move(toDisplayString(r[uid]), -1),
+    onmovedown: () => move(toDisplayString(r[uid]), 1),
   });
 
   /** Pending rows — a confirmed-not-yet-saved `Draft` rendered through
@@ -1168,7 +1160,7 @@
     extras_columns: extrasColumns,
     columns_map: columnMap,
     values: p.values,
-    errors: columnErrors(p.values, editableColumns, new Set([displayField ?? 'label_key'])),
+    errors: columnErrors(p.values, editableColumns, new SvelteSet([displayField ?? 'label_key'])),
     pending: true as const,
     selected: selection.isSelected(p.__draft),
     can_update: canUpdate,
@@ -1342,13 +1334,13 @@
                appended after the saved stream (D2). Reorder chevrons
                stay enabled; drag-drop is not offered here (a cross-group
                drag would silently alter group membership). -->
-          {#each ungrouped as r (String(r[uid]))}
+          {#each ungrouped as r (toDisplayString(r[uid]))}
             <DictRow {...rowProps(r)} />
           {/each}
 
           {#each [...grouped.keys()] as gk (gk)}
             <SelectableFieldset label={gk}>
-              {#each grouped.get(gk) ?? [] as r (String(r[uid]))}
+              {#each grouped.get(gk) ?? [] as r (toDisplayString(r[uid]))}
                 <DictRow {...rowProps(r)} />
               {/each}
             </SelectableFieldset>

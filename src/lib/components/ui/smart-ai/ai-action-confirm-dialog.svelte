@@ -16,7 +16,7 @@
   import { page } from '$app/state';
   import { resolve } from '$app/paths';
   import { t } from '$lib/i18n';
-  import { Button } from '@primebrick/ui';
+  import { Button, toDisplayString } from '@primebrick/ui';
   import { Input } from '@primebrick/ui';
   import { JsonEditor } from '@primebrick/ui';
   import { Dialog } from '@primebrick/ui';
@@ -126,7 +126,7 @@ import { extJsonStringify, extJsonParse } from '$lib/api-ext';
       requiredFields = cols
         .filter((c): c is Record<string, unknown> => !!c && typeof c === 'object')
         .filter((c) => c.required === true || c.nullable === false)
-        .map((c) => String(c.name))
+        .map((c) => toDisplayString(c.name))
         .filter((n) => !['uuid', 'created_at', 'updated_at', 'deleted_at', 'version'].includes(n));
     }
   }
@@ -244,7 +244,7 @@ import { extJsonStringify, extJsonParse } from '$lib/api-ext';
       </div>
       {#if candidates.length > 0}
         <ul class="max-h-48 space-y-1 overflow-auto">
-          {#each candidates as c (String(c.uuid))}
+          {#each candidates as c (toDisplayString(c.uuid))}
             <li>
               <button
                 type="button"
@@ -252,7 +252,7 @@ import { extJsonStringify, extJsonParse } from '$lib/api-ext';
                 onclick={() => void pickCandidate(c)}
               >
                 {(c.name ?? c.email ?? c.title ?? c.code ?? c.uuid) as string}
-                <span class="ml-1 text-muted-foreground">({String(c.uuid).slice(0, 8)}…)</span>
+                <span class="ml-1 text-muted-foreground">({toDisplayString(c.uuid).slice(0, 8)}…)</span>
               </button>
             </li>
           {/each}

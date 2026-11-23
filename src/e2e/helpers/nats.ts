@@ -196,7 +196,7 @@ export async function tap(subject: string): Promise<{
           hdrs[k] = m.headers.get(k) ?? "";
         }
       }
-      let payload: unknown = null;
+      let payload: unknown;
       try {
         payload = extJsonParse(new TextDecoder().decode(m.data));
       } catch {

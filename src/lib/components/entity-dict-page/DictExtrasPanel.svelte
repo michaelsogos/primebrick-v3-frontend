@@ -15,7 +15,7 @@
    * dispatcher + immutable/calculated disable logic).
    */
   import { t } from '$lib/i18n';
-  import { SheetPanelLayout } from '@primebrick/ui';
+  import { SheetPanelLayout, toDisplayString } from "@primebrick/ui";
   import { SlidersHorizontal } from '@primebrick/ui/vendor/lucide';
   import DictFieldCell from './DictFieldCell.svelte';
   import TranslationKeyCell from './TranslationKeyCell.svelte';
@@ -30,7 +30,7 @@
     columns_map,
     translation_key,
     pending_owner,
-    title,
+    title: titleProp,
     service,
     readonly = false,
   }: {
@@ -67,8 +67,8 @@
     {$t('system.entities.dict.extras')}
   {/snippet}
 
-  {#if title}
-    <p class="text-sm text-muted-foreground">{title}</p>
+  {#if titleProp}
+    <p class="text-sm text-muted-foreground">{titleProp}</p>
   {/if}
 
   {#each columns as c (c.key)}
@@ -80,7 +80,7 @@
         {#snippet control({ id })}
           <TranslationKeyCell
             column={c}
-            value={String(values()[c.key] ?? '')}
+            value={toDisplayString(values()[c.key] ?? '')}
             record={values()}
             {translation_key}
             {pending_owner}

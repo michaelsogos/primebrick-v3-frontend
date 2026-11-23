@@ -4,6 +4,7 @@ import { pushNotification } from '$lib/errors/app-errors';
 import type { EntityMeta } from '$lib/entity-list/types';
 import type { DeepReadonly } from '@primebrick/ui';
 import { extJsonParse, extJsonStringify } from '$lib/api-ext';
+import { toDisplayString } from '@primebrick/ui';
 
 /** @deprecated use `EntityMeta` from `$lib/entity-list/types` — kept as an
  *  alias during the canonical-schema migration. */
@@ -81,20 +82,20 @@ export function useEntityMetadata(options: UseEntityMetadataOptions) {
       console.error('[METADATA NETWORK ERROR] Failed to load entity metadata:', {
         endpoint,
         entity: entityName,
-        error: err instanceof Error ? err.message : String(err),
+        error: err instanceof Error ? err.message : toDisplayString(err),
         timestamp: new SvelteDate().toISOString()
       });
 
       // RFC ERROR TOAST - Network error
       pushNotification({
         impact: 'HIGH',
-        message: `Network error: ${err instanceof Error ? err.message : String(err)}`,
+        message: `Network error: ${err instanceof Error ? err.message : toDisplayString(err)}`,
         scope: `Endpoint: ${endpoint}, Entity: ${entityName}`,
         tags: [{ label: 'METADATA', tone: 'danger' }],
         toast: true
       });
 
-      _state.error = err instanceof Error ? err.message : String(err);
+      _state.error = err instanceof Error ? err.message : toDisplayString(err);
     } finally {
       _state.loading = false;
     }

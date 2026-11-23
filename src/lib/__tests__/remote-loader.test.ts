@@ -99,8 +99,8 @@ describe('loadRemoteModule', () => {
 	const fetchJs =
 		(body = 'js', status = 200) =>
 		async (u: RequestInfo | URL) =>
-			new Response(String(u).endsWith('.deps.json') ? 'nf' : body, {
-				status: String(u).endsWith('.deps.json') ? 404 : status,
+			new Response(u.toString().endsWith('.deps.json') ? 'nf' : body, {
+				status: u.toString().endsWith('.deps.json') ? 404 : status,
 			});
 
 	it('returns the module on success (no integrity)', async () => {
@@ -126,7 +126,7 @@ describe('loadRemoteModule', () => {
 		await expect(
 			loadRemoteModule(url, undefined, {
 				fetch_fn: async (u) =>
-					new Response('nope', { status: String(u).endsWith('.js') ? 404 : 404 }),
+					new Response('nope', { status: u.toString().endsWith('.js') ? 404 : 404 }),
 			}),
 		).rejects.toMatchObject({ kind: 'http', status: 404 });
 	});
@@ -138,8 +138,8 @@ describe('loadRemoteModule', () => {
 		const importFn = vi.fn(async () => mod);
 		const result = await loadRemoteModule(url, `sha256-hex-unreachable`, {
 			fetch_fn: async (u) =>
-				new Response(String(u).endsWith('.deps.json') ? 'nf' : bytes, {
-					status: String(u).endsWith('.deps.json') ? 404 : 200,
+				new Response(u.toString().endsWith('.deps.json') ? 'nf' : bytes, {
+					status: u.toString().endsWith('.deps.json') ? 404 : 200,
 				}),
 			import_fn: importFn,
 		}).catch((e) => e);
@@ -149,8 +149,8 @@ describe('loadRemoteModule', () => {
 
 		const ok = await loadRemoteModule(url, hex, {
 			fetch_fn: async (u) =>
-				new Response(String(u).endsWith('.deps.json') ? 'nf' : bytes, {
-					status: String(u).endsWith('.deps.json') ? 404 : 200,
+				new Response(u.toString().endsWith('.deps.json') ? 'nf' : bytes, {
+					status: u.toString().endsWith('.deps.json') ? 404 : 200,
 				}),
 			import_fn: importFn,
 		});
@@ -166,8 +166,8 @@ describe('loadRemoteModule', () => {
 		await expect(
 			loadRemoteModule(url, other, {
 				fetch_fn: async (u) =>
-					new Response(String(u).endsWith('.deps.json') ? 'nf' : bytes, {
-						status: String(u).endsWith('.deps.json') ? 404 : 200,
+					new Response(u.toString().endsWith('.deps.json') ? 'nf' : bytes, {
+						status: u.toString().endsWith('.deps.json') ? 404 : 200,
 					}),
 				import_fn: importFn,
 			}),
@@ -196,7 +196,7 @@ describe('loadRemoteModule — vendor handshake', () => {
 	});
 	const fetchWith = (depsBody: string | null, depsStatus = 200, manifestBody = manifest) =>
 		vi.fn(async (u: RequestInfo | URL) => {
-			const s = String(u);
+			const s = u.toString();
 			if (s.endsWith('.deps.json'))
 				return new Response(depsBody ?? 'nf', { status: depsBody == null ? 404 : depsStatus });
 			if (s.endsWith('vendor-manifest.json')) return new Response(manifestBody, { status: 200 });
@@ -230,7 +230,7 @@ describe('loadRemoteModule — vendor handshake', () => {
 			message: expect.stringContaining('svelte: requires 5.58.0, host provides 5.57.2'),
 		});
 		// chunk itself was never fetched — fail fast on the cheapest check
-		expect(fetch_fn.mock.calls.map((c) => String(c[0]))).not.toContainEqual(
+		expect(fetch_fn.mock.calls.map((c) => c[0].toString())).not.toContainEqual(
 			expect.stringContaining('jobs-page.js'),
 		);
 		expect(import_fn).not.toHaveBeenCalled();
@@ -268,7 +268,7 @@ describe('loadRemoteModule — vendor handshake', () => {
 
 	it('classifies a host-manifest failure as http', async () => {
 		const fetch_fn = vi.fn(async (u: RequestInfo | URL) => {
-			const s = String(u);
+			const s = u.toString();
 			if (s.endsWith('.deps.json'))
 				return new Response(extJsonStringify({ vendor_requires: { svelte: '5.57.2' } }), {
 					status: 200,
@@ -310,7 +310,7 @@ describe('sibling .sha256 — content-addressed loads', () => {
 	/** Server double: `.deps.json` 404s; `.sha256` + chunk come from `state`. */
 	const server = (state: { sha: string | null; body: string; chunkStatus?: number }) =>
 		vi.fn(async (u: RequestInfo | URL) => {
-			const s = String(u);
+			const s = u.toString();
 			if (s.includes('.deps.json')) return new Response('nf', { status: 404 });
 			if (s.includes('.sha256'))
 				return state.sha == null
@@ -332,7 +332,7 @@ describe('sibling .sha256 — content-addressed loads', () => {
 		const sha = await sha256Hex(bytes.buffer as ArrayBuffer);
 		const import_fn = vi.fn(async () => mod);
 		const fetch_fn = vi.fn(async (u: RequestInfo | URL) => {
-			const s = String(u);
+			const s = u.toString();
 			if (s.includes('.deps.json')) return new Response('nf', { status: 404 });
 			if (s.includes('.sha256')) return new Response(sha + '\n', { status: 200 });
 			return new Response(bytes, { status: 200 });
@@ -343,7 +343,7 @@ describe('sibling .sha256 — content-addressed loads', () => {
 		const result = await loadRemoteModuleCached(url, undefined, { fetch_fn, import_fn });
 		expect(result.mod).toBe(mod);
 		expect(import_fn).toHaveBeenCalledWith(expect.stringMatching(/^blob:/));
-		expect(fetch_fn.mock.calls.map((c) => String(c[0]))).toContain(shaUrl);
+		expect(fetch_fn.mock.calls.map((c) => c[0].toString())).toContain(shaUrl);
 	});
 
 	it('falls back to native import when no sibling exists (404)', async () => {
@@ -368,7 +368,7 @@ describe('sibling .sha256 — content-addressed loads', () => {
 			'../components/remote-page/remote-loader'
 		);
 		await loadRemoteModuleCached(url + '?decl=1', sha, { fetch_fn, import_fn });
-		expect(fetch_fn.mock.calls.map((c) => String(c[0]))).not.toContainEqual(
+		expect(fetch_fn.mock.calls.map((c) => c[0].toString())).not.toContainEqual(
 			expect.stringContaining('.sha256'),
 		);
 	});
@@ -409,7 +409,7 @@ describe('sibling .sha256 — content-addressed loads', () => {
 		await expect(
 			loadRemoteModuleCached(url + '?err=1', undefined, {
 				fetch_fn: async (u) =>
-					new Response('x', { status: String(u).includes('.sha256') ? 500 : 200 }),
+					new Response('x', { status: u.toString().includes('.sha256') ? 500 : 200 }),
 			}),
 		).rejects.toMatchObject({ kind: 'http', status: 500 });
 	});

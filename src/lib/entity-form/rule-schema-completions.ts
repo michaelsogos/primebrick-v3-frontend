@@ -28,7 +28,7 @@
  */
 import { syntaxTree } from '@codemirror/language';
 import type { EditorState } from '@codemirror/state';
-import { PAYLOAD_MAP_META_KINDS } from '@primebrick/ui';
+import { PAYLOAD_MAP_META_KINDS, toDisplayString } from '@primebrick/ui';
 
 import { extJsonStringify } from '$lib/api-ext';
 export interface JsonSchema {
@@ -179,7 +179,7 @@ export function ruleJsonCompletions(
 		if (!obj || obj.name !== 'Object') return null;
 
 		const { from, to, inString } = replaceRange(ctx, innermost);
-		const quote = (v: unknown) => (inString ? String(v) : extJsonStringify(v));
+		const quote = (v: unknown) => (inString ? toDisplayString(v) : extJsonStringify(v));
 
 		if (propName === 'field' || propName === 'path') {
 			// Dot-paths into the selected event's payload.

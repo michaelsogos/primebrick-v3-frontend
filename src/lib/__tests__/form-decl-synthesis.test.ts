@@ -3,7 +3,7 @@ import { synthesizeFormDecl } from "../entity-form/build-entity-form-schema";
 import type { EntityMeta, MetaColumn } from "$lib/entity-list/types";
 
 const col = (key: string, order: number, over: Partial<MetaColumn> = {}): MetaColumn =>
-	({ key, label_key: `fields.${key}`, type: "text", order, ...over }) as MetaColumn;
+	({ key, label_key: `app.fields.${key}`, type: "text", order, ...over }) as MetaColumn;
 
 const metaOf = (columns: MetaColumn[]): EntityMeta =>
 	({

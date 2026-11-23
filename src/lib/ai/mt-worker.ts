@@ -25,6 +25,7 @@ import {
   type ProgressInfo,
   type TranslationPipeline,
 } from '@primebrick/ui/vendor/transformers';
+import { toDisplayString } from '@primebrick/ui';
 
 const MODEL_ID = 'Xenova/m2m100_418M';
 /** Per-component dtype — seq2seq wants encoder + merged-decoder flavors. */
@@ -92,7 +93,7 @@ self.addEventListener('message', async (event: MessageEvent<InMsg>) => {
     post({
       type: 'error',
       seq: msg.type === 'translate' ? msg.seq : undefined,
-      message: err instanceof Error ? err.message : String(err),
+      message: err instanceof Error ? err.message : toDisplayString(err),
     });
   }
 });

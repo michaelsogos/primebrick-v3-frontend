@@ -99,7 +99,7 @@
   /** The audit fetch failed because the OWNING SERVICE can't be reached
    *  (proxy 502/503-scoped or network failure) — the watermark names the
    *  service instead of the generic error. */
-  const ownerUnreachableMessage = $derived.by(() =>
+  const ownerUnreachableMessage = $derived(
     ownerServiceName
       ? $t('app.service.entity_owner_unreachable', { service: ownerServiceName, entity: entitySingular })
       : $t('app.service.entity_owner_unreachable_generic'),
@@ -570,7 +570,7 @@
                        and the actor link stay neutral. -->
                   <span class={colorClass}>{getAuditActionLabel(entry.action)}</span>
                   {#if entry.changed_by}
-                    {' '}<span class="font-normal text-foreground">{$t('system.entities.version_history.by')}</span>{' '}
+                    &nbsp;<span class="font-normal text-foreground">{$t('system.entities.version_history.by')}</span>&nbsp;
                     <button
                       type="button"
                       class="font-normal text-foreground underline-offset-2 rounded-sm px-0.5 hover:bg-accent hover:underline cursor-pointer"
@@ -611,7 +611,7 @@
                                     class="shadow-none text-xs"
                                     style="background-color: {oldBadgeColors.bgColor}; color: {oldBadgeColors.textColor}; border-color: {oldBadgeColors.borderColor};"
                                   >
-                                    {delta.oldBadgeLabelText || (delta.oldBadgeLabelKey ? $t(delta.oldBadgeLabelKey) : String(delta.oldValue))}
+                                    {delta.oldBadgeLabelText || (delta.oldBadgeLabelKey ? $t(delta.oldBadgeLabelKey) : toDisplayString(delta.oldValue))}
                                   </Badge>
                                 {:else if delta.isColor && delta.oldColorValue}
                                   <Tooltip.Root>
@@ -646,7 +646,7 @@
                                     class="shadow-none text-xs"
                                     style="background-color: {newBadgeColors.bgColor}; color: {newBadgeColors.textColor}; border-color: {newBadgeColors.borderColor};"
                                   >
-                                    {delta.badgeLabelText || (delta.badgeLabelKey ? $t(delta.badgeLabelKey) : String(delta.newValue))}
+                                    {delta.badgeLabelText || (delta.badgeLabelKey ? $t(delta.badgeLabelKey) : toDisplayString(delta.newValue))}
                                   </Badge>
                                 {:else if delta.isColor && delta.colorValue}
                                   <Tooltip.Root>

@@ -30,8 +30,7 @@
     DynamicIcon,
     formatListCellValue,
     getResolvedIanaTimeZone,
-    numericKindOf,
-  } from '@primebrick/ui';
+    numericKindOf, toDisplayString } from '@primebrick/ui';
   import SheetHeaderAction from '$lib/shell/sheets/SheetHeaderAction.svelte';
   import FormFieldDispatcher from '$lib/entity-form/FormFieldDispatcher.svelte';
   import { useCensusSubjectOptions } from '$lib/entity-form/use-census-subject-options.svelte';
@@ -334,7 +333,7 @@
     ) {
       return col
         ? `${formatListCellValue(col, v.start, $uiLang)} – ${formatListCellValue(col, v.end, $uiLang)}`
-        : `${String(v.start)} – ${String(v.end)}`;
+        : `${toDisplayString(v.start)} – ${toDisplayString(v.end)}`;
     }
     return col ? formatListCellValue(col, v, $uiLang) : String(v);
   }

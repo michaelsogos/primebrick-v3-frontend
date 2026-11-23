@@ -25,7 +25,7 @@
  */
 import { SvelteDate } from 'svelte/reactivity';
 import type { DeepReadonly } from '@primebrick/ui';
-import { useAiModels } from '@primebrick/ui';
+import { useAiModels, toDisplayString } from '@primebrick/ui';
 import { apiFetch } from '$lib/api';
 import { useAiCerebellum } from '@primebrick/ui';
 import { resolveEffectiveParams, type EffectiveAiParams } from '@primebrick/ui';
@@ -495,7 +495,7 @@ export function useAiAssistant<TChoice = unknown>(
       try {
         current_worker.postMessage({ type: 'generate', messages, params });
       } catch (e) {
-        finishWorkerGeneration(e instanceof Error ? e : new Error(String(e)));
+        finishWorkerGeneration(e instanceof Error ? e : new Error((e instanceof Error ? e.message : toDisplayString(e))));
       }
     });
   }

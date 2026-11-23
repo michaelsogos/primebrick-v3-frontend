@@ -13,6 +13,7 @@
     footerPage,
     footerTotalPages,
     footerUsesClientPaging,
+    // eslint-disable-next-line no-useless-assignment -- $bindable default: read through the parent's bind:, invisible to flow analysis
     clientSelectedPage = $bindable(1),
     rowSelectionEnabled,
     selectionCount,
@@ -24,8 +25,6 @@
     showSelectedOnly = $bindable(false),
     pageSize,
     pageSizeOptions,
-    page,
-    totalPages,
     onPageChange,
     onPageSizeChange,
     create_label_key

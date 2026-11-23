@@ -26,6 +26,7 @@
    * silently by contract).
    */
   import { onMount, untrack } from 'svelte';
+  import { resolve } from '$app/paths';
   import { t } from '$lib/i18n';
   import { apiFetch, entityApiBase, routesCensusFromModules, ApiUnreachableError } from '$lib/api';
   import { serviceCodeOf } from '$lib/composables/use-service-availability.svelte';
@@ -35,7 +36,7 @@
   import { Accordion, Badge, Button, DynamicIcon, SheetPanelFooter, SheetPanelLayout, toDisplayString } from '@primebrick/ui';
   import EntityFormSurface from '$lib/entity-form/EntityFormSurface.svelte';
   import EntityRecordUid from '../EntityRecordUid.svelte';
-  import { openSheet, closeSheet, setSheetCloseGuard } from '$lib/shell/sheets/sheet-manager.svelte';
+  import { openSheet, setSheetCloseGuard } from '$lib/shell/sheets/sheet-manager.svelte';
   import { isEntityOpAllowed } from '$lib/permissions.svelte';
   import { useAuditBox } from '$lib/composables/useAuditBox';
   import type { AuditData } from '$lib/utils/audit-data';
@@ -45,6 +46,8 @@
   import type { MetaColumn, EntityMeta } from '$lib/entity-list/types';
   import type { FormFieldPlacement } from '@primebrick/ui';
   import { isUUID, StateHero } from '@primebrick/ui';
+
+  import { SvelteURLSearchParams } from 'svelte/reactivity';
 
   let {
     entity,
@@ -323,7 +326,7 @@
         return;
       }
       if (ff && ff !== uid) {
-        const params = new URLSearchParams();
+        const params = new SvelteURLSearchParams();
         params.set('filters[0][field]', ff);
         params.set('filters[0][op]', '=');
         params.set('filters[0][value]', String(value));
@@ -339,7 +342,7 @@
           notFound = true;
           return;
         }
-        uuid = String(hit[uid]);
+        uuid = toDisplayString(hit[uid]);
       }
       heroUid = uuid;
       const res = await apiFetch(`${basePath}/${uuid}`);
@@ -399,7 +402,7 @@
     {/if}
     {#if listHref}
       <a
-        href={listHref}
+        href={resolve(listHref as '/')}
         target="_blank"
         rel="noopener noreferrer"
         class="inline-flex items-center gap-1 text-muted-foreground transition-colors hover:text-foreground"

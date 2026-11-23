@@ -22,9 +22,7 @@
 		PropNavigator,
 		TextInput,
 		schemaToNavNodes,
-		type PropNavNode,
-		type SchemaLike,
-	} from '@primebrick/ui';
+		type SchemaLike, toDisplayString } from "@primebrick/ui";
 	import { X as XIcon, Plus } from '@primebrick/ui/vendor/lucide';
 	import { t } from '$lib/i18n';
 	import {
@@ -142,7 +140,7 @@ import { extJsonStringify, extJsonParse } from '$lib/api-ext';
 	// (`x_label_key` → translated), `_sub` (readable type line), and the
 	// type icons so this picker and the payload-map selector can never
 	// diverge into two presentations of the same schema.
-	const pathTree = $derived.by(() => schemaToNavNodes(source_schema as SchemaLike | undefined));
+	const pathTree = $derived(schemaToNavNodes(source_schema as SchemaLike | undefined));
 
 	// The value control is typed by the selected path's schema leaf:
 	// enum → single combo over the closed vocabulary, boolean → yes/no
@@ -241,7 +239,7 @@ import { extJsonStringify, extJsonParse } from '$lib/api-ext';
 	function badgeValue(f: RuleFilterItem): string {
 		if (f.value === true || f.value === false)
 			return $t(f.value ? 'system.entities.list.boolean_true' : 'system.entities.list.boolean_false');
-		return String(f.value ?? '');
+		return toDisplayString(f.value ?? '');
 	}
 </script>
 

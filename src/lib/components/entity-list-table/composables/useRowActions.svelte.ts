@@ -5,6 +5,7 @@ import type { MetaColumn, EntityAction, EntityMeta, RowCustomAction } from '$lib
 import { findActionEndpoint, fillActionPath, runEntityOp } from '$lib/entity-list';
 import type { DeepReadonly } from '@primebrick/ui';
 import { extJsonParse, extJsonStringify } from '$lib/api-ext';
+import { toDisplayString } from '@primebrick/ui';
 
 export interface RowActionsOptions<TRow extends Record<string, unknown>> {
   entity: () => string;
@@ -220,7 +221,7 @@ export function useRowActions<TRow extends Record<string, unknown>>(
     const translationKey = translationKeyFn?.() ?? entity;
     const uid = uidFn();
     const columns = columnsFn();
-    const rowUuid = String((row as Record<string, unknown>)[uid]);
+    const rowUuid = toDisplayString((row as Record<string, unknown>)[uid]);
     const { openSheet } = await import('$lib/shell/sheets/sheet-manager.svelte');
     openSheet('entity.versionHistory', {
       entity,
@@ -246,7 +247,7 @@ export function useRowActions<TRow extends Record<string, unknown>>(
     // (suspend/reactivate/restore-style writes) get the caller-observed
     // version exactly like delete/restore do. Endpoints that ignore query
     // params are unaffected.
-    const versionQs = row.version !== undefined && row.version !== null ? `?version=${row.version}` : '';
+    const versionQs = row.version !== undefined && row.version !== null ? `?version=${toDisplayString(row.version)}` : '';
     const url = serviceApiPrefix(entityFn(), serviceFn?.()) + fillActionPath(ep.path, row, uidFn()) + versionQs;
     const body = action.row_key
       ? extJsonStringify({ [action.row_key]: row[action.row_key] })
@@ -287,7 +288,7 @@ export function useRowActions<TRow extends Record<string, unknown>>(
     if (handler) {
       handler(row);
     } else {
-      let dispatched = false;
+      let dispatched: boolean;
       try {
         dispatched = await runEndpointAction(action, row);
       } catch (error) {

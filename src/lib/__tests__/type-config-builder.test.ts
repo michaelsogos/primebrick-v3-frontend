@@ -122,12 +122,12 @@ describe('useTypeConfigBuilder', () => {
 
   it('updating configKey does NOT override custom error_label_keys', () => {
     const { builder, getLastJson } = createBuilder('string', 'initial_key');
-    builder.setMin(1, 'my.custom.error.key');
+    builder.setMin(1, 'app.my.custom.error.key');
     let parsed = extJsonParse<any>(getLastJson());
-    expect(parsed.validation.rules.min.error_label_key).toBe('my.custom.error.key');
+    expect(parsed.validation.rules.min.error_label_key).toBe('app.my.custom.error.key');
     builder.setConfigKey('new_key');
     parsed = extJsonParse<any>(getLastJson());
-    expect(parsed.validation.rules.min.error_label_key).toBe('my.custom.error.key');
+    expect(parsed.validation.rules.min.error_label_key).toBe('app.my.custom.error.key');
   });
 
   it('setMin(null) removes min rule', () => {
@@ -203,11 +203,11 @@ describe('useTypeConfigBuilder', () => {
 
   it('setRegex stores flags + error_label_key together', () => {
     const { builder, getLastJson } = createBuilder('string');
-    builder.setRegex('^[a-z]+$', 'gi', 'err.regex');
+    builder.setRegex('^[a-z]+$', 'gi', 'app.err.regex');
     const parsed = extJsonParse<any>(getLastJson());
     expect(parsed.validation.rules.regex.pattern).toBe('^[a-z]+$');
     expect(parsed.validation.rules.regex.flags).toBe('gi');
-    expect(parsed.validation.rules.regex.error_label_key).toBe('err.regex');
+    expect(parsed.validation.rules.regex.error_label_key).toBe('app.err.regex');
   });
 
   it('setRegex("") removes regex rule', () => {
@@ -253,14 +253,14 @@ describe('useTypeConfigBuilder', () => {
 
   it('setBadgeValue adds a badge value', () => {
     const { builder, getLastJson } = createBuilder('badge');
-    builder.setBadgeValue('active', 'status.active', 'green');
+    builder.setBadgeValue('active', 'app.status.active', 'green');
     const parsed = extJsonParse<any>(getLastJson());
-    expect(parsed.values.active).toEqual({ label_key: 'status.active', color: 'green' });
+    expect(parsed.values.active).toEqual({ label_key: 'app.status.active', color: 'green' });
   });
 
   it('removeBadgeValue removes a badge value', () => {
     const { builder, getLastJson } = createBuilder('badge');
-    builder.setBadgeValue('active', 'status.active', 'green');
+    builder.setBadgeValue('active', 'app.status.active', 'green');
     builder.removeBadgeValue('active');
     const parsed = extJsonParse<any>(getLastJson());
     expect(parsed.values).toBeUndefined();

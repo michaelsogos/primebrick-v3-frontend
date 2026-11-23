@@ -9,7 +9,7 @@
    */
   import { t } from '$lib/i18n';
   import { uiLang } from '$lib/i18n/store.svelte';
-  import { SheetPanelLayout, formatListCellValue } from '@primebrick/ui';
+  import { SheetPanelLayout, formatListCellValue, toDisplayString } from '@primebrick/ui';
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import { Rows3 } from '@primebrick/ui/vendor/lucide';
   import type { MetaColumn } from '$lib/entity-list/types';
@@ -17,7 +17,7 @@
   let {
     entity,
     uid = 'uuid',
-    title,
+    title: titleProp,
     rows,
     columns,
   }: {
@@ -48,7 +48,7 @@
     <Rows3 class="size-4" />
   {/snippet}
   {#snippet title()}
-    {title}
+    {titleProp}
   {/snippet}
 
   <ul class="divide-y divide-border" data-testid="bulk-edit-rows">
@@ -60,7 +60,7 @@
           onclick={() => openRecord(row)}
           data-testid="bulk-edit-row"
         >
-          <span class="block truncate font-mono text-xs text-muted-foreground">{String(row[uid])}</span>
+          <span class="block truncate font-mono text-xs text-muted-foreground">{toDisplayString(row[uid])}</span>
           <span class="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs">
             {#each columns as col (col.key)}
               <span class="truncate">

@@ -1,9 +1,15 @@
 <script lang="ts">
   import { untrack } from 'svelte';
   import { t } from '$lib/i18n';
-  import { SheetPanelLayout } from '@primebrick/ui';
+  import {
+    Badge,
+    NumericInput,
+    PrimeField,
+    SheetPanelFooter,
+    SheetPanelLayout,
+  } from '@primebrick/ui';
   import SheetSectionTitle from '$lib/shell/sheets/SheetSectionTitle.svelte';
-  import { Braces, Minus, Plus, Tags } from '@primebrick/ui/vendor/lucide';
+  import { CircleAlert, Minus, Plus, Tags } from '@primebrick/ui/vendor/lucide';
   import {
     sequenceTokenCatalog,
     usedSequenceTokens,
@@ -53,7 +59,13 @@
   // `start` sibling when authored (the first emitted value) else the
   // catalog default; sez partitions use the shared catalog defaults
   // (claim-time context, never persisted on the sequence row).
-  const ctxTz = $derived(typeof context?.tz === 'string' && context.tz !== '' ? context.tz : undefined);
+  // Example tz — the record's `tz` sibling when authored, else the
+  // BROWSER-local zone: examples must read like the user's clock, not UTC.
+  const ctxTz = $derived(
+    typeof context?.tz === 'string' && context.tz !== ''
+      ? context.tz
+      : Intl.DateTimeFormat().resolvedOptions().timeZone,
+  );
 
   /** Parsed pattern — `Error` while the source is mid-typing invalid. */
   let parsed = $derived.by(() => {
@@ -102,7 +114,7 @@
 
   // Counter padding — `0` means no padding (`{seq}`, the default); a
   // positive N inserts `{seq:N}` (grammar caps W at 19 = bigint digits).
-  // While the counter slot is consumed the form mirrors the pattern's
+  // While the counter slot is consumed the field mirrors the pattern's
   // own `counter_width`, disabled — the `-` CTA is the way to change it.
   let seqWidth = $state('0');
 
@@ -110,13 +122,32 @@
     parsed && !(parsed instanceof Error) && used.has('seq') ? parsed.counter_width : null,
   );
 
-  function pick(spec: SequenceTokenSpec) {
-    if (spec.kind === 'counter') {
-      const w = Math.max(0, Math.min(19, Number(seqWidth) || 0));
-      insert(w > 0 ? `{seq:${w}}` : '{seq}');
-    } else {
-      insert(spec.insert);
+  /** Effective width — the pattern's own while consumed, the authored
+   *  padding value otherwise. Drives the composed tag (`{seq:N}`), the
+   *  live example and the insert text — always in sync. */
+  const seqW = $derived(
+    seqUsedWidth ?? Math.max(0, Math.min(19, Number(seqWidth) || 0)),
+  );
+
+  /** Composed counter token — the row's tag reads `{seq}` or `{seq:N}` so
+   *  the authored padding is visible BEFORE inserting. */
+  const seqInsert = $derived(seqW > 0 ? `{seq:${seqW}}` : '{seq}');
+
+  /** Live counter example — rendered through the shared engine with the
+   *  effective width (`0042` for W=4), updates as padding is typed. */
+  const seqExample = $derived.by(() => {
+    try {
+      return renderSequenceValue(parseSequencePattern(seqInsert), counter, new Date(), {
+        tz: ctxTz,
+        partitions: {},
+      });
+    } catch {
+      return String(counter);
     }
+  });
+
+  function pick(spec: SequenceTokenSpec) {
+    insert(spec.kind === 'counter' ? seqInsert : spec.insert);
   }
 
   function unpick(spec: SequenceTokenSpec) {
@@ -127,13 +158,14 @@
 
 {#snippet tokenRow(spec: SequenceTokenSpec)}
   {@const isUsed = spec.slot !== undefined && used.has(spec.slot)}
+  {@const isCounter = spec.kind === 'counter'}
   <div
     class="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm {isUsed ? 'opacity-50' : ''}"
     data-testid={`sequence-pattern-token-${spec.id}`}
     data-used={isUsed}
   >
     <span class="min-w-0 flex-1">
-      <span class="block font-mono font-medium">{spec.insert}</span>
+      <span class="block font-mono font-medium" data-testid={`sequence-pattern-token-${spec.id}-tag`}>{isCounter ? seqInsert : spec.insert}</span>
       <span class="block text-xs text-muted-foreground">
         {$t(`app.widgets.sequence_pattern.tokens.${spec.key}`)}
       </span>
@@ -141,7 +173,7 @@
     <code
       class="shrink-0 rounded-sm border border-border bg-muted px-1.5 py-0.5 font-mono text-[11px] leading-none"
       data-testid={`sequence-pattern-token-${spec.id}-example`}
-      >{spec.example({ counter, tz: ctxTz })}</code
+      >{isCounter ? seqExample : spec.example({ counter, tz: ctxTz })}</code
     >
     {#if isUsed}
       <span
@@ -180,33 +212,55 @@
 {#snippet counterRow(spec: SequenceTokenSpec)}
   <div>
     {@render tokenRow(spec)}
-    <!-- Padding form — authored alongside `{seq}` (the only width-bearing
-         token): 0 = no padding (default), N = `{seq:N}` on insert. -->
-    <div class="flex items-center gap-2 px-3 pb-2 pl-8" data-testid="sequence-pattern-seq-padding">
-      <label class="text-xs text-muted-foreground" for="sequence-pattern-seq-width">
-        {$t('app.widgets.sequence_pattern.tokens.seq_width')}
-      </label>
-      <input
+    <!-- Padding field — canonical PrimeField + NumericInput anatomy
+         (label above, full-width control): 0 = no padding (default),
+         N → `{seq:N}` on insert. The tag and example update live. -->
+    <div class="px-3 pb-2 pl-8" data-testid="sequence-pattern-seq-padding">
+      <PrimeField
         id="sequence-pattern-seq-width"
-        inputmode="numeric"
-        class="w-14 rounded-sm border border-border bg-background px-2 py-1 font-mono text-xs disabled:opacity-50"
-        value={seqUsedWidth !== null ? String(seqUsedWidth) : seqWidth}
-        disabled={seqUsedWidth !== null}
-        oninput={(e) => {
-          seqWidth = e.currentTarget.value.replace(/[^0-9]/g, '').slice(0, 2);
-        }}
-        data-testid="sequence-pattern-seq-width"
-      />
+        label={$t('app.widgets.sequence_pattern.tokens.seq_width')}
+        data-testid="sequence-pattern-seq-padding-field"
+      >
+        {#snippet control({ id })}
+          <NumericInput
+            {id}
+            kind="bigint"
+            bind:value={seqWidth}
+            min={0}
+            max={19}
+            unsigned
+            disabled={seqUsedWidth !== null}
+            data-testid="sequence-pattern-seq-width"
+          />
+        {/snippet}
+      </PrimeField>
     </div>
   </div>
 {/snippet}
 
 <SheetPanelLayout contentClass="p-0">
   {#snippet icon()}
-    <Braces class="size-4" />
+    <Tags class="size-4" />
   {/snippet}
   {#snippet title()}
     {$t('app.widgets.sequence_pattern.title')}
+  {/snippet}
+  {#snippet footer()}
+    <!-- Sticky FOOT preview — SheetPanelFooter is the canonical FOOT
+         anatomy; the example rides the `start` slot (meta content),
+         Badge-chrome, no "Preview" label — the badge IS the preview. -->
+    <SheetPanelFooter data-testid="sequence-pattern-preview-foot">
+      {#snippet start()}
+        {#if parsed instanceof Error}
+          <CircleAlert class="size-4 shrink-0 text-destructive" />
+          <span class="text-xs text-destructive break-all" data-testid="sequence-pattern-preview-error">
+            {parsed.message}
+          </span>
+        {:else}
+          <Badge variant="secondary" data-testid="sequence-pattern-preview">{preview}</Badge>
+        {/if}
+      {/snippet}
+    </SheetPanelFooter>
   {/snippet}
 
   <div class="px-3 pb-2">
@@ -222,21 +276,5 @@
         {/if}
       {/each}
     </div>
-  </div>
-
-  <div class="px-3 pb-3">
-    <SheetSectionTitle>
-      {$t('app.widgets.sequence_pattern.preview')}
-    </SheetSectionTitle>
-    {#if parsed instanceof Error}
-      <p class="font-mono text-xs text-destructive" data-testid="sequence-pattern-preview-error">
-        {parsed.message}
-      </p>
-    {:else}
-      <p
-        class="rounded-sm bg-muted px-2 py-1.5 font-mono text-sm break-all"
-        data-testid="sequence-pattern-preview"
-      >{preview}</p>
-    {/if}
   </div>
 </SheetPanelLayout>

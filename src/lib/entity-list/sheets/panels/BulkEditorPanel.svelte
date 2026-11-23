@@ -21,6 +21,7 @@
    * `extra.issues` (per-row stale/vanished diagnostics) in the governed
    * error dialog. Atomic by contract: all-or-nothing.
    */
+  import { SvelteMap } from 'svelte/reactivity';
   import { t } from '$lib/i18n';
   import { uiLang } from '$lib/i18n/store.svelte';
   import {
@@ -32,8 +33,7 @@
     Accordion,
     formatListCellValue,
     columnSchemaLeaf,
-    schemaTypeIcon,
-  } from '@primebrick/ui';
+    schemaTypeIcon, toDisplayString } from '@primebrick/ui';
   import { openSheet, closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import SheetHeaderAction from '$lib/shell/sheets/SheetHeaderAction.svelte';
   import FormFieldDispatcher from '$lib/entity-form/FormFieldDispatcher.svelte';
@@ -85,7 +85,7 @@
 
   const census = useCensusSubjectOptions(() => shellNav.modules);
   const columnsMap = $derived.by<ReadonlyMap<string, MetaColumn>>(() => {
-    const m = new Map<string, MetaColumn>();
+    const m = new SvelteMap<string, MetaColumn>();
     for (const c of meta?.columns ?? []) m.set(c.key, c);
     return m;
   });
@@ -125,7 +125,7 @@
   /** Group the selected rows by their current value of `key` — the "conto"
    *  the user asked for: who holds which value before the patch lands. */
   function distribution(key: string): { value: unknown; count: number; rows: Record<string, unknown>[] }[] {
-    const groups = new Map<unknown, { value: unknown; rows: Record<string, unknown>[] }>();
+    const groups = new SvelteMap<unknown, { value: unknown; rows: Record<string, unknown>[] }>();
     for (const r of rows) {
       const v = r[key];
       const b = bucketKey(v);
@@ -204,7 +204,7 @@
           )
           .map((k) => [k, values[k]]),
       );
-      const items = rows.map((r) => ({ uuid: String(r[uid]), version: r.version as number }));
+      const items = rows.map((r) => ({ uuid: toDisplayString(r[uid]), version: r.version as number }));
       const ep = findActionEndpoint(meta?.actions, 'update.bulk');
       const url = ep ? serviceApiPrefix(entity, service) + ep.path : `${entityApiBase(entity, service)}/bulk-update`;
       const ok = await runEntityOp({
@@ -269,6 +269,7 @@
                   type="button"
                   class="italic text-muted-foreground underline decoration-dotted underline-offset-2 hover:text-foreground"
                   onclick={() => openRowsDrill(col, rows)}
+                  data-testid="bulk-editor-mixed-{col.key}"
                 >
                   {$t('system.entities.bulk_editor.mixed')}
                 </button>
@@ -329,6 +330,7 @@
                 type="button"
                 class="rounded border border-border bg-muted/40 px-1.5 py-0.5 hover:bg-muted"
                 onclick={() => openRowsDrill(col, rows)}
+                data-testid="bulk-editor-dist-more"
               >+{distribution(key).length - 3}</button>
             {/if}
             <span class="ml-auto text-muted-foreground" data-testid="bulk-editor-impact-{key}">
@@ -383,6 +385,7 @@
                       type="button"
                       class="italic text-muted-foreground underline decoration-dotted underline-offset-2 hover:text-foreground"
                       onclick={() => openRowsDrill(col, rows)}
+                      data-testid="bulk-editor-mixed-{col.key}"
                     >
                       {$t('system.entities.bulk_editor.mixed')}
                     </button>

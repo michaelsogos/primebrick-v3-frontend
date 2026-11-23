@@ -11,6 +11,7 @@
  * for actions whose endpoint is absent (stale/mocked metas).
  */
 import type { EntityAction, EntityActionEndpoint, RowCustomAction } from './types';
+import { toDisplayString } from '@primebrick/ui';
 
 /** Look up the declared endpoint for an op — null when the action or its
  *  endpoint is absent (disabled ops carry no endpoint). */
@@ -60,6 +61,6 @@ export function fillActionPath(
       }
       return match;
     }
-    return encodeURIComponent(String(value));
+    return encodeURIComponent(toDisplayString(value));
   });
 }

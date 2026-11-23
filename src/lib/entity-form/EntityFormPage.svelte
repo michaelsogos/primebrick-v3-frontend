@@ -16,7 +16,7 @@
 	 * update mode of the SAME archetype) → GET prefill, PUT
 	 * `update.single` with optimistic `version`.
 	 */
-	import { untrack } from 'svelte';
+
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';

@@ -31,7 +31,7 @@ import { extJsonStringify } from '$lib/api-ext';
   let {
     value,
     row,
-    title,
+    title: titleProp,
   }: {
     /** The cell's parsed DST document (string JSON — the editor contract). */
     value: unknown;
@@ -146,7 +146,7 @@ import { extJsonStringify } from '$lib/api-ext';
     <Waypoints class="size-4" />
   {/snippet}
   {#snippet title()}
-    {title ?? $t('app.widgets.mapper.title')}
+    {titleProp ?? $t('app.widgets.mapper.title')}
   {/snippet}
 
   <div class="h-full overflow-auto p-3 space-y-3">
