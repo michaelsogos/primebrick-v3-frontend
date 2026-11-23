@@ -89,7 +89,12 @@ type EntityMeta = {
     source/destination anatomy `nats_subject` owns. Declared on columns
     whose VALUES are translation keys (dict `label_key`/
     `description_key`, sequence labels); the dict page's
-    `TranslationKeyCell` dispatch reads the same contract.
+    `TranslationKeyCell` dispatch reads the same contract. On FORM
+    surfaces the format autowires the canonical translation-key
+    ComboSelect (`i18nKeyOptions` shared vocabulary scoped to
+    `*.entities.<translation_key>.rows.*`, `custom.*` suggestion +
+    `allowCreate`, `coerceI18nKeyChange` commit rules) — the ONE control
+    every key-picking surface consumes.
   - `json` → human-readable chips/prose where the shape is known
     (`job_trigger.filter` conditions), else safe stringified preview.
   - `identifier`/`display_name` → standard text affordances.

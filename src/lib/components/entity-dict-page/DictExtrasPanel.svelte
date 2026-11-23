@@ -102,6 +102,7 @@
           record={values()}
           mode="update"
           {service}
+          {translation_key}
           {readonly}
           controlProps={{
             id: `${baseId}-${c.key}`,

@@ -941,6 +941,66 @@ test.describe("builtin sequence registry — mounted by construction", () => {
   });
 
   /**
+   * `format:"i18n_key"` — `description_key` autowires the canonical
+   * translation-key ComboSelect (the SAME anatomy the dict-page
+   * TranslationKeyCell and the config-builder key selectors share through
+   * `i18nKeyOptions`): combobox trigger, `*.entities.sequence.rows.*`
+   * scoped vocabulary, `languages` icon on option rows, `custom.*`
+   * convention suggestion tracking the name field, allowCreate.
+   */
+  test("description_key — i18n_key autowires the canonical translation-key ComboSelect", async ({
+    page,
+  }) => {
+    await page.goto("/crm/settings/sequences");
+    await expect(page.locator("table")).toBeVisible({ timeout: 5_000 });
+    await page.getByTestId("entity-create-cta").click();
+    const sheet = page.getByTestId("entity-record-sheet");
+    await expect(sheet).toBeVisible({ timeout: 5_000 });
+
+    const field = sheet.getByTestId("entity-form-field-description_key");
+    await expect(field).toBeVisible();
+    // A combobox trigger — never a bare text input.
+    const combo = field.locator('[role="combobox"]');
+    await expect(combo).toBeVisible();
+
+    // The `custom.*` suggestion tracks the row's name →
+    // `custom.entities.sequence.rows.<slug>` seeds the search on open.
+    await sheet
+      .locator("[data-testid=entity-form-field-name] input")
+      .fill("e2e dk probe");
+    await combo.click();
+    const search = page.locator('[data-slot="command-input"]:visible').last();
+    await expect(search).toHaveValue("custom.entities.sequence.rows.e2e_dk_probe");
+
+    // Vocabulary scope — clearing the seed shows the full row family:
+    // every option lives under `*.entities.sequence.rows.*`; real
+    // vocabulary options carry the `languages` icon (the synthetic
+    // Create row does not — it's not a vocabulary item).
+    await search.fill("");
+    const options = page.locator("[data-state='open'] [role='option']:visible");
+    const n = await options.count();
+    for (let i = 0; i < n; i++) {
+      const opt = options.nth(i);
+      await expect(opt).toContainText(/entities\.sequence\.rows\./);
+      if (!(await opt.textContent())?.trim().startsWith("Create")) {
+        await expect(opt.locator("svg.lucide-languages")).toBeVisible();
+      }
+    }
+
+    // allowCreate — the typed key commits verbatim via the create offer.
+    await search.fill("custom.entities.sequence.rows.e2e_dk_probe");
+    const createRow = page
+      .getByRole("option")
+      .filter({ hasText: "custom.entities.sequence.rows.e2e_dk_probe" })
+      .first();
+    await expect(createRow).toBeVisible({ timeout: 5_000 });
+    await createRow.click();
+    await expect(combo).toContainText("custom.entities.sequence.rows.e2e_dk_probe", {
+      timeout: 5_000,
+    });
+  });
+
+  /**
    * `format:"sequence_pattern"` — the pattern-builder widget on the
    * `sequence.pattern` column: free literal typing, token-catalog sheet
    * via the in-input Tags CTA, insert-at-caret, used-token gating, live

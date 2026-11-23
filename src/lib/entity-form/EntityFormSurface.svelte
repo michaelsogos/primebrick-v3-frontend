@@ -668,6 +668,7 @@
 												{mode}
 												served_record={servedRecord ?? undefined}
 												service={svcCode ?? service}
+												translation_key={meta.translation_key}
 												bind:value={$form[placement.key]}
 												bind:record={$form}
 											/>

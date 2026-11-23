@@ -52,6 +52,7 @@
 		sourceEmit,
 		disabledBadgeValues,
 		service,
+		translation_key,
 	}: {
 		column: MetaColumn;
 		/** Declared `page_props.form` placement — placeholder_key /
@@ -90,6 +91,9 @@
 		/** Owning module code — seq-bound controls resolve the module-local
 		 *  builtin registry through it (see FormFieldDispatcher). */
 		service?: string;
+		/** Served entity `translation_key` — scopes `format:"i18n_key"`
+		 *  vocabulary + suggestion (see FormFieldDispatcher). */
+		translation_key?: string;
 	} = $props();
 
 	// Construction guard — `column` is mount-stable (keyed per col.key in
@@ -202,6 +206,7 @@ const fieldReadonly = $derived(readonly);
 		readonly={fieldReadonly}
 		{served_record}
 		{service}
+		{translation_key}
 		bind:value
 		bind:record
 	/>

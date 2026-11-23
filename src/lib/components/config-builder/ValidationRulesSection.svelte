@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { t, dict, getDictKeys } from '$lib/i18n';
+  import { t, dict } from '$lib/i18n';
+  import { i18nKeyOptions } from '$lib/i18n/i18n-key-options';
   import { SwitchField, toDisplayString } from '@primebrick/ui';
   import { TextInput } from '@primebrick/ui';
   import { SmartRegexInput } from '$lib/components/ui/smart-regex-input';
@@ -40,8 +41,7 @@
   );
 
   // All i18n keys for ComboSelect error_label_key selectors
-  const allI18nKeys = $derived(getDictKeys($dict as Record<string, unknown>));
-  const errorKeyOptions = $derived(allI18nKeys.map((k: string) => ({ key: k })));
+  const errorKeyOptions = $derived(i18nKeyOptions($dict as Record<string, unknown>));
 
   // Local state for inputs that don't map 1:1 to builder mutators.
   // NOTE: bind:value on <input type="number"> yields `number | null` at

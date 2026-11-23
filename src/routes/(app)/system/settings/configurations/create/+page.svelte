@@ -2,6 +2,7 @@
 
   import { onMount, tick } from 'svelte';
   import { t, dict } from '$lib/i18n';
+  import { i18nKeyOptions, authConfigKeyPrefix } from '$lib/i18n/i18n-key-options';
   import { Button, toDisplayString } from '@primebrick/ui';
   import { TextInput } from '@primebrick/ui';
   import { SwitchField } from '@primebrick/ui';
@@ -292,37 +293,32 @@
 
   // Reactive i18n key placeholders based on the config key being typed.
   // Uses 'my_custom_setting' as fallback when key is empty (same convention as the builder).
-  const labelKeyPlaceholder = $derived(
-    `system.settings.config.auth.${$form.key?.trim() || 'my_custom_setting'}.label`,
-  );
+  const labelKeyPlaceholder = $derived(`${authConfigKeyPrefix($form.key ?? '')}label`);
   const descriptionKeyPlaceholder = $derived(
-    `system.settings.config.auth.${$form.key?.trim() || 'my_custom_setting'}.description`,
+    `${authConfigKeyPrefix($form.key ?? '')}description`,
   );
 
   // ─── i18n key options for label_key / description_key ComboSelects ──────
-  // The dict is flat (keys are dot-paths), so Object.keys() gives us all keys.
-  // Filter to system.settings.config.auth.*.label / .description leaves.
-  // These are the selectable options; the user can also type a new key (allowCreate).
-  const allI18nKeys = $derived(Object.keys($dict as Record<string, string>));
+  // The dict is flat (keys are dot-paths): filter to
+  // system.settings.config.auth.*.label / .description leaves through the
+  // shared vocabulary helper. The user can also type a new key (allowCreate).
   const labelKeyOptions = $derived(
-    allI18nKeys
-      .filter((k) => k.startsWith('system.settings.config.auth.') && k.endsWith('.label'))
-      .map((k) => ({ key: k, _icon: 'languages', _icon_color: 'sky-500' })),
+    i18nKeyOptions($dict as Record<string, string>, {
+      prefix: 'system.settings.config.auth.',
+      suffix: '.label',
+    }),
   );
   const descriptionKeyOptions = $derived(
-    allI18nKeys
-      .filter((k) => k.startsWith('system.settings.config.auth.') && k.endsWith('.description'))
-      .map((k) => ({ key: k, _icon: 'languages', _icon_color: 'sky-500' })),
+    i18nKeyOptions($dict as Record<string, string>, {
+      prefix: 'system.settings.config.auth.',
+      suffix: '.description',
+    }),
   );
 
   // Pre-filter prefix: when the popover opens, only show keys matching the
   // current config key. User can clear the search (X button) to see all.
-  const labelKeyDefaultSearch = $derived(
-    `system.settings.config.auth.${$form.key?.trim() || 'my_custom_setting'}.`,
-  );
-  const descriptionKeyDefaultSearch = $derived(
-    `system.settings.config.auth.${$form.key?.trim() || 'my_custom_setting'}.`,
-  );
+  const labelKeyDefaultSearch = $derived(authConfigKeyPrefix($form.key ?? ''));
+  const descriptionKeyDefaultSearch = $derived(authConfigKeyPrefix($form.key ?? ''));
 
   function handleLabelKeyChange(value: string | string[]) {
     $form.label_key = Array.isArray(value) ? value[0] ?? '' : value;

@@ -66,7 +66,7 @@
   import { runEntityOp } from '$lib/entity-list/use-entity-op.svelte';
   import DictRow from './DictRow.svelte';
   import { isSnakeKey } from '@primebrick/ui';
-  import { suggestedKeyFor } from './dict-suggestion';
+  import { suggestedKeyFor } from '$lib/i18n/dict-suggestion';
   import type { CensusRoute } from '$lib/api';
 
   let { decl }: { decl: CensusRoute } = $props();

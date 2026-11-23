@@ -49,7 +49,9 @@
 	import { PhoneInput } from '$lib/components/ui/phone-input';
 	import { ColorSelector } from '$lib/components/ui/color-selector';
 	import { MetaAvatar } from '$lib/components/ui/avatar-preview';
-	import { t } from '$lib/i18n';
+	import { t, dict } from '$lib/i18n';
+	import { i18nKeyOptions, coerceI18nKeyChange } from '$lib/i18n/i18n-key-options';
+	import { slugifyKey, suggestedKeyFor } from '$lib/i18n/dict-suggestion';
 	import { UI_LANGS } from '$lib/i18n/languages';
 	import { uiLang } from '$lib/i18n/store.svelte';
 	import { apiFetch } from '$lib/api';
@@ -150,6 +152,11 @@
 		 *  (the census map is ambiguous for builtin entities — same
 		 *  reason `entityApiBase` takes the explicit override). */
 		service?: string;
+		/** The entity's `translation_key` from served meta — scopes the
+		 *  `format:"i18n_key"` vocabulary to `*.entities.<tk>.rows.*` and
+		 *  derives the `custom.entities.<tk>.rows.<slug>` suggestion.
+		 *  Absent (fallback surfaces) → the broader `.entities.` family. */
+		translation_key?: string;
 	}
 
 	let {
@@ -172,6 +179,7 @@
 		served_record,
 		columns,
 		service,
+		translation_key,
 	}: Props = $props();
 
 	const control = $derived(
@@ -231,6 +239,7 @@
 		'sequence',
 		'sequence_pattern',
 		'iana_tz',
+		'i18n_key',
 	]);
 
 	/** Filter-surface map — the DIFFERENCES from form (everything else is
@@ -305,7 +314,7 @@
 		// the preview renderer is a form/list surface, never a filter control.
 		if (column.type === 'avatar') return 'text';
 		const resolved = deriveControl();
-		if (resolved === 'subject_combo' || resolved === 'json' || resolved === 'rule_filter' || resolved === 'payload_map' || resolved === 'schedule_spec' || resolved === 'sequence' || resolved === 'sequence_pattern')
+		if (resolved === 'subject_combo' || resolved === 'json' || resolved === 'rule_filter' || resolved === 'payload_map' || resolved === 'schedule_spec' || resolved === 'sequence' || resolved === 'sequence_pattern' || resolved === 'i18n_key')
 			return 'text';
 		if (FILTER_CONTROLS.has(resolved)) return resolved;
 		throw new Error(
@@ -331,6 +340,7 @@
 		if (format === 'schedule_spec') return 'schedule_spec';
 		if (format === 'sequence') return 'sequence';
 		if (format === 'sequence_pattern') return 'sequence_pattern';
+		if (format === 'i18n_key') return 'i18n_key';
 		// `rule_filter` wins over the jsonb fallback — a RuleFilter[]
 		// column renders the guided composer, never raw JSON first.
 		if (format === 'rule_filter') return 'rule_filter';
@@ -627,6 +637,34 @@
 			_icon_color: 'sky-500',
 			...(i === ianaPinnedCount ? { _sep: true } : {}),
 		}),
+	);
+
+	/**
+	 * `format:"i18n_key"` — translation-key pick through the shared
+	 * vocabulary helper (same anatomy as the dict-page TranslationKeyCell
+	 * and the config-builder key selectors: `{key}` + `languages`/`sky-500`
+	 * icon). Scope: the entity's row-label family `*.entities.<tk>.rows.*`
+	 * (`translation_key` arrives from served meta; absent → `.entities.`
+	 * broad). The bound value stays selectable via `extra`.
+	 */
+	const i18nKeyScope = $derived(
+		translation_key ? `entities.${translation_key}.rows.` : 'entities.',
+	);
+	const i18nKeyFieldOptions = $derived(
+		i18nKeyOptions(
+			$dict as Record<string, string>,
+			{ contains: i18nKeyScope },
+			typeof stringValue.value === 'string' && stringValue.value ? [stringValue.value] : [],
+		),
+	);
+	/** `custom.*` convention suggestion — slug from the row's `code`/`name`
+	 *  (same source as the dict-page suggestion); prefix-only when nothing
+	 *  slug-able exists yet. */
+	const i18nKeySuggestion = $derived(
+		translation_key
+			? suggestedKeyFor(translation_key, record?.code ?? record?.name) ||
+					`custom.${i18nKeyScope}`
+			: 'custom.entities.',
 	);
 
 	// Restore display labels for `entity_ref` selections that pre-date the
@@ -955,6 +993,30 @@
 		iconColorField="_icon_color"
 		separatorBeforeField="_sep"
 		{placeholder}
+		disabled={effectiveLocked}
+		{...controlProps}
+	/>
+{:else if control === 'i18n_key'}
+	<!-- `format:"i18n_key"` — translation-key pick/create; the shared
+	     `i18nKeyOptions` vocabulary + `custom.*` suggestion, same ComboSelect
+	     contract as the dict-page TranslationKeyCell. -->
+	<ComboSelect
+		mode="single"
+		value={stringValue.value}
+		onChange={(v) => {
+			const raw = Array.isArray(v) ? (v[0] ?? '') : v;
+			stringValue.value = coerceI18nKeyChange(raw, i18nKeyScope, slugifyKey);
+		}}
+		options={i18nKeyFieldOptions}
+		valueField="key"
+		labelField="key"
+		isLabelTranslated={true}
+		iconField="_icon"
+		iconColorField="_icon_color"
+		allowCreate={true}
+		defaultSearch={i18nKeySuggestion}
+		placeholder={placeholder ?? i18nKeySuggestion}
+		display="detailed"
 		disabled={effectiveLocked}
 		{...controlProps}
 	/>

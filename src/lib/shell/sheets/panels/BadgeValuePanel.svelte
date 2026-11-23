@@ -18,6 +18,7 @@
    */
   import { untrack } from 'svelte';
   import { t, dict } from '$lib/i18n';
+  import { i18nKeyOptions, authConfigKeyPrefix } from '$lib/i18n/i18n-key-options';
   import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import { SheetPanelLayout, SheetPanelFooter } from '@primebrick/ui';
   import { Button } from '@primebrick/ui';
@@ -64,17 +65,15 @@
   /** Color picker popover open state — closed when a system swatch is picked. */
   let colorPopoverOpen = $state(false);
 
-  const allI18nKeys = $derived(Object.keys($dict as Record<string, string>));
   const labelKeyOptions = $derived(
-    allI18nKeys
-      .filter((k) => k.startsWith('system.settings.config.auth.'))
-      .map((k) => ({ key: k })),
+    i18nKeyOptions($dict as Record<string, string>, {
+      prefix: 'system.settings.config.auth.',
+    }),
   );
 
   function labelKeySearchFor(rowValue: string) {
-    const key = config_key.trim() || 'my_custom_setting';
     const suffix = rowValue.trim() ? `badge.${rowValue.trim()}` : 'badge.';
-    return `system.settings.config.auth.${key}.${suffix}`;
+    return `${authConfigKeyPrefix(config_key)}${suffix}`;
   }
 
   /** Suggested label key shown as placeholder — also the committed value

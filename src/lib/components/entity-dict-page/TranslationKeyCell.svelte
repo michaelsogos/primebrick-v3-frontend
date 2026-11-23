@@ -6,12 +6,12 @@
    * user-writable namespace) + the languages CTA that opens
    * `i18n.translationEditor` on the selected key.
    */
-  import { SvelteSet } from 'svelte/reactivity';
   import { t, dict } from '$lib/i18n';
   import { ComboSelect, Badge, toDisplayString } from "@primebrick/ui";
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import { getPendingTranslation } from '$lib/i18n/pending-translations.svelte';
-  import { slugifyKey, suggestedKeyFor } from './dict-suggestion';
+  import { slugifyKey, suggestedKeyFor } from '$lib/i18n/dict-suggestion';
+  import { i18nKeyOptions, coerceI18nKeyChange } from '$lib/i18n/i18n-key-options';
   import type { MetaColumn } from '$lib/entity-list/types';
 
   let {
@@ -68,18 +68,16 @@
     if (!value || value === prev) onchange(s);
   });
 
-  const options = $derived.by(() => {
-    const list = new SvelteSet(
-      Object.keys($dict as Record<string, string>).filter((k) => k.includes(rowsPrefix)),
-    );
+  const options = $derived(
     // The suggestion never enters the vocabulary list — it's the assigned
     // value rendered as the created-value chip. Other explicit values
-    // (existing custom keys) stay selectable.
-    if (value && value !== suggestedKey) list.add(value);
-    // Every item carries the i18n archetype icon — `languages` in the same
-    // `sky-500` token as the trigger-page `send` icon (census callables).
-    return [...list].sort().map((key) => ({ key, _icon: 'languages', _icon_color: 'sky-500' }));
-  });
+    // (existing custom keys) stay selectable via `extra`.
+    i18nKeyOptions(
+      $dict as Record<string, string>,
+      { contains: rowsPrefix },
+      value && value !== suggestedKey ? [value] : [],
+    ),
+  );
 
   /**
    * Select or create. A FULL key — `custom.*` or any existing
@@ -90,17 +88,7 @@
    */
   function handleChange(v: string | string[]) {
     const raw = Array.isArray(v) ? (v[0] ?? '') : v;
-    const trimmed = raw.trim();
-    if (!trimmed) return onchange('');
-    // Fully namespaced `*.entities.*` key (an existing option or a typed
-    // full key) → verbatim; never rewritten.
-    if (/^[a-z_]+\.entities\./.test(trimmed)) return onchange(trimmed);
-    // Namespace-less `entities.<tk>.rows.<leaf>` — the defaultSearch seed /
-    // Create offer → convention-scoped under `custom.*`.
-    if (trimmed.startsWith('entities.')) return onchange(`custom.${trimmed}`);
-    // Free text → new `custom.*` convention key.
-    const slug = slugifyKey(trimmed);
-    onchange(slug ? `custom.${rowsPrefix}${slug}` : trimmed);
+    onchange(coerceI18nKeyChange(raw, rowsPrefix, slugifyKey));
   }
 
   function openTranslations() {
