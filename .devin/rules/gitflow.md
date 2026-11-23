@@ -10,7 +10,7 @@ the normative text lives in the canonical doc (rules are pointers, not
 docs — and `docs/` survives independently of Devin).
 
 ## Enforcement
-- NEVER commit automatically — wait for explicit user instruction.
+- COMMIT AT EVERY MODIFICATION TURN — standing authorization, no per-commit approval; every commit is pushed immediately (COMMIT ⇒ PUSH).
 - NEVER work directly on `develop` or `main`.
 - Version bump MUST be committed on the release/hotfix branch before
   merge to `main`. NO 'v' prefix in tags.
