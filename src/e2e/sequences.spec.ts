@@ -68,7 +68,6 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     expect(byKey.get("tz")?.options_source).toBe("iana.tzones");
     expect(byKey.get("tz")?.default).toBe("UTC");
     expect(byKey.get("tz")?.allow_create).not.toBe(true);
-    expect(byKey.get("tz")?.icon).toBe("globe");
     // The audit group owns the allocation attribution columns.
     expect(byKey.get("last_alloc_at")?.audited).toBe(true);
     expect(byKey.get("last_alloc_by")?.audited).toBe(true);

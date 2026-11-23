@@ -616,7 +616,9 @@
 	 *  no fetch, no state. Picker order: browser zone → UTC → primary
 	 *  zones of the supported UI locales → the sorted rest. */
 	const ianaTzOptions = getPrioritizedIanaTimeZones({ locales: UI_LANGS }).map(
-		(tz) => ({ value: tz, label: tz }),
+		// `_icon`/`_icon_color` — the option-row anatomy, same contract as
+		// the census vocabularies (globe tinted like `send`/sky-500).
+		(tz) => ({ value: tz, label: tz, _icon: 'globe', _icon_color: 'sky-500' }),
 	);
 
 	// Restore display labels for `entity_ref` selections that pre-date the
@@ -941,6 +943,8 @@
 		options={ianaTzOptions}
 		valueField="value"
 		labelField="label"
+		iconField="_icon"
+		iconColorField="_icon_color"
 		{placeholder}
 		disabled={effectiveLocked}
 		{...controlProps}
@@ -1063,6 +1067,8 @@
 		options={ianaTzOptions}
 		valueField="value"
 		labelField="label"
+		iconField="_icon"
+		iconColorField="_icon_color"
 		{placeholder}
 		disabled={effectiveLocked}
 		{...controlProps}
