@@ -33,7 +33,7 @@ interface LoopDebug {
   generations: { start: number; end?: number; raw?: string }[];
   embed_queries: string[];
   docs_search_calls: number;
-  docs_search_keywords: (string[] | undefined)[];
+  docs_search_bodies: (string | undefined)[];
   routes_census_calls: number;
   worker_debug: string[];
   /** Ordered [guide-loop] stage telemetry lines emitted by guide-loop.ts. */
@@ -150,7 +150,7 @@ test.describe("Guide agentic loop — WebGPU parity vs CPU baseline", () => {
         generations: [],
         embed_queries: [],
         docs_search_calls: 0,
-        docs_search_keywords: [],
+        docs_search_bodies: [],
         routes_census_calls: 0,
         worker_debug: [],
         loop_events: [],
@@ -167,10 +167,11 @@ test.describe("Guide agentic loop — WebGPU parity vs CPU baseline", () => {
         const url = typeof input === "string" ? input : input instanceof Request ? input.url : input.toString();
         if (url.includes("/svc/ai/api/v1/system/docs/search")) {
           w.__loop_debug!.docs_search_calls++;
-          try {
-            const body = JSON.parse((init?.body as string) ?? "{}") as { keywords?: string[] };
-            w.__loop_debug!.docs_search_keywords.push(body.keywords as string[] | undefined);
-          } catch { w.__loop_debug!.docs_search_keywords.push(undefined); }
+          // The raw request body, verbatim — wire parsing lives Node-side
+          // (the ext-json codec does not exist inside evaluate'd code).
+          w.__loop_debug!.docs_search_bodies.push(
+            typeof init?.body === "string" ? init.body : undefined,
+          );
         }
         // The route census is derived client-side from the /modules
         // discovery payload (the /system/routes endpoint is retired) —

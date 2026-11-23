@@ -9,7 +9,7 @@
   import { t } from '$lib/i18n';
   import { loadPublicTranslations } from '$lib/i18n/use-module-translations.svelte';
   import { uiLang } from '$lib/i18n/store.svelte';
-  import { Button } from '@primebrick/ui';
+  import { Button, toDisplayString } from '@primebrick/ui';
   import { OtpInput } from '@primebrick/ui';
   import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
   import { Alert, AlertDescription } from '$lib/components/ui/alert';
@@ -106,7 +106,7 @@
       const data = await res.text().then((t) => extJsonParse<{ valid?: boolean; display_name?: string; expires_at?: number }>(t));
       if (res.ok && data.valid) {
         _state.display_name = data.display_name ?? '';
-        _state.expires_at = data.expires_at === undefined ? '' : String(data.expires_at);
+        _state.expires_at = data.expires_at === undefined ? '' : toDisplayString(data.expires_at);
         // Automatically send OTP after token verification
         await sendOtp();
       } else {
