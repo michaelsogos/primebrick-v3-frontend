@@ -53,6 +53,7 @@
 		disabledBadgeValues,
 		service,
 		translation_key,
+		pending_owner,
 	}: {
 		column: MetaColumn;
 		/** Declared `page_props.form` placement — placeholder_key /
@@ -94,6 +95,9 @@
 		/** Served entity `translation_key` — scopes `format:"i18n_key"`
 		 *  vocabulary + suggestion (see FormFieldDispatcher). */
 		translation_key?: string;
+		/** Pending-translations queue owner — the entity's API base path;
+		 *  powers the i18n_key languages CTA + pending badge. */
+		pending_owner?: string;
 	} = $props();
 
 	// Construction guard — `column` is mount-stable (keyed per col.key in
@@ -207,6 +211,7 @@ const fieldReadonly = $derived(readonly);
 		{served_record}
 		{service}
 		{translation_key}
+		{pending_owner}
 		bind:value
 		bind:record
 	/>

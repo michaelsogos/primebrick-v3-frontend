@@ -103,6 +103,7 @@
           mode="update"
           {service}
           {translation_key}
+          {pending_owner}
           {readonly}
           controlProps={{
             id: `${baseId}-${c.key}`,

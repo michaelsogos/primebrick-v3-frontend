@@ -56,6 +56,8 @@
 	import { uiLang } from '$lib/i18n/store.svelte';
 	import { apiFetch } from '$lib/api';
 	import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
+	import { Badge } from '@primebrick/ui';
+	import { getPendingTranslation } from '$lib/i18n/pending-translations.svelte';
 	import { useEntityRefOptions } from './use-entity-ref-options.svelte';
 	import { useAuditActorOptions } from './use-audit-actor-options.svelte';
 	import { useActiveRoles } from '$lib/composables/useActiveRoles.svelte';
@@ -157,6 +159,10 @@
 		 *  derives the `custom.entities.<tk>.rows.<slug>` suggestion.
 		 *  Absent (fallback surfaces) → the broader `.entities.` family. */
 		translation_key?: string;
+		/** The pending-translations queue owner (the entity's API base
+		 *  path) — the languages CTA + pending-badge of `i18n_key`
+		 *  controls read it; absent → badge hidden, CTA still opens. */
+		pending_owner?: string;
 	}
 
 	let {
@@ -180,6 +186,7 @@
 		columns,
 		service,
 		translation_key,
+		pending_owner,
 	}: Props = $props();
 
 	const control = $derived(
@@ -640,32 +647,72 @@
 	);
 
 	/**
-	 * `format:"i18n_key"` — translation-key pick through the shared
-	 * vocabulary helper (same anatomy as the dict-page TranslationKeyCell
-	 * and the config-builder key selectors: `{key}` + `languages`/`sky-500`
-	 * icon). Scope: the entity's row-label family `*.entities.<tk>.rows.*`
-	 * (`translation_key` arrives from served meta; absent → `.entities.`
-	 * broad). The bound value stays selectable via `extra`.
+	 * `format:"i18n_key"` — the SAME contract `TranslationKeyCell` owns,
+	 * never a diluted variant: the shared `i18nKeyOptions` vocabulary
+	 * scoped to `*.entities.<tk>.rows.*` (`.entities.` broad when the
+	 * served meta carries no `translation_key`), `languages`/`sky-500`
+	 * option icons, the `custom.*` convention suggestion assigned as a
+	 * real value (tracks `code`/`name`, respects an explicit pick/clear
+	 * until the source moves), `defaultSearch`/`placeholder` ALWAYS a
+	 * full pre-built key (`<scope><slug|my_custom_code>` — a bare
+	 * namespace ending with a dot is never seeded), `allowCreate` with
+	 * `coerceI18nKeyChange` verbatim/scoping rules, and the languages
+	 * CTA opening `i18n.translationEditor` for the picked key.
 	 */
 	const i18nKeyScope = $derived(
 		translation_key ? `entities.${translation_key}.rows.` : 'entities.',
+	);
+	const i18nKeyLeaf = $derived(
+		slugifyKey(toDisplayString(record?.code ?? record?.name ?? '')) || 'my_custom_code',
+	);
+	const i18nKeyPlaceholder = $derived(`custom.${i18nKeyScope}${i18nKeyLeaf}`);
+	const i18nKeyDefaultSearch = $derived(`${i18nKeyScope}${i18nKeyLeaf}`);
+	const i18nKeySuggestion = $derived(
+		translation_key
+			? suggestedKeyFor(translation_key, record?.code ?? record?.name)
+			: `custom.entities.${i18nKeyLeaf}`,
 	);
 	const i18nKeyFieldOptions = $derived(
 		i18nKeyOptions(
 			$dict as Record<string, string>,
 			{ contains: i18nKeyScope },
-			typeof stringValue.value === 'string' && stringValue.value ? [stringValue.value] : [],
+			typeof stringValue.value === 'string' &&
+			stringValue.value &&
+			stringValue.value !== i18nKeySuggestion
+				? [stringValue.value]
+				: [],
 		),
 	);
-	/** `custom.*` convention suggestion — slug from the row's `code`/`name`
-	 *  (same source as the dict-page suggestion); prefix-only when nothing
-	 *  slug-able exists yet. */
-	const i18nKeySuggestion = $derived(
-		translation_key
-			? suggestedKeyFor(translation_key, record?.code ?? record?.name) ||
-					`custom.${i18nKeyScope}`
-			: 'custom.entities.',
+	// The suggestion is the ASSIGNED value — a previous suggestion is
+	// replaced when its source moves; an explicit user pick or clear is
+	// respected until the source changes (TranslationKeyCell semantics).
+	let i18nKeyLastSuggested = '';
+	$effect(() => {
+		if (control !== 'i18n_key') return;
+		const s = i18nKeySuggestion;
+		const prev = i18nKeyLastSuggested;
+		i18nKeyLastSuggested = s;
+		if (!s || s === prev) return;
+		if (!stringValue.value || stringValue.value === prev) stringValue.value = s;
+	});
+	const i18nKeyPendingLangs = $derived(
+		pending_owner && typeof stringValue.value === 'string' && stringValue.value
+			? Object.keys(getPendingTranslation(pending_owner, stringValue.value) ?? {})
+			: [],
 	);
+	const i18nKeyLangsCta = $derived([
+		{
+			icon: 'languages',
+			label: $t('system.settings.translations.title'),
+			onclick: () =>
+				openSheet('i18n.translationEditor', {
+					i18n_key: stringValue.value,
+					pending_owner: pending_owner ?? '',
+				}),
+			disabled: !stringValue.value || effectiveReadonly || effectiveDisabled,
+			'data-testid': 'i18n-key-translations',
+		},
+	]);
 
 	// Restore display labels for `entity_ref` selections that pre-date the
 	// loaded option pages (draft state, URL-restored filters, edit-form
@@ -1014,12 +1061,27 @@
 		iconField="_icon"
 		iconColorField="_icon_color"
 		allowCreate={true}
-		defaultSearch={i18nKeySuggestion}
-		placeholder={placeholder ?? i18nKeySuggestion}
+		defaultSearch={i18nKeyDefaultSearch}
+		placeholder={i18nKeyPlaceholder}
+		searchPlaceholder={i18nKeyPlaceholder}
+		truncateFrom="start"
 		display="detailed"
 		disabled={effectiveLocked}
+		trailing_ctas={i18nKeyLangsCta}
 		{...controlProps}
-	/>
+	>
+		{#snippet trailing()}
+			{#if i18nKeyPendingLangs.length}
+				<Badge
+					variant="outline"
+					class="border-primary/50 px-1 text-[10px]"
+					title={i18nKeyPendingLangs.join(', ')}
+				>
+					+{i18nKeyPendingLangs.length}
+				</Badge>
+			{/if}
+		{/snippet}
+	</ComboSelect>
 {:else if control === 'role_multi'}
 	<ComboSelect
 		mode="multi"

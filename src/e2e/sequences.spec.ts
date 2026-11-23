@@ -962,15 +962,29 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     // A combobox trigger — never a bare text input.
     const combo = field.locator('[role="combobox"]');
     await expect(combo).toBeVisible();
+    // The languages CTA is part of the anatomy — opens the translation
+    // editor for the picked key; disabled until a key exists.
+    const langsCta = field.getByTestId("i18n-key-translations");
+    await expect(langsCta).toBeVisible();
+    await expect(langsCta).toBeDisabled();
 
-    // The `custom.*` suggestion tracks the row's name →
-    // `custom.entities.sequence.rows.<slug>` seeds the search on open.
+    // The `custom.*` suggestion is the ASSIGNED value — typing the row's
+    // name fills the field with `custom.entities.sequence.rows.<slug>`,
+    // the trigger shows it, the CTA activates.
     await sheet
       .locator("[data-testid=entity-form-field-name] input")
       .fill("e2e dk probe");
+    await expect(combo).toContainText("custom.entities.sequence.rows.e2e_dk_probe", {
+      timeout: 5_000,
+    });
+    await expect(langsCta).toBeEnabled();
+
+    // Open — defaultSearch carries the FULL namespace-less seed
+    // `entities.sequence.rows.<slug>` — a key leaf, never a bare prefix
+    // ending with a dot.
     await combo.click();
     const search = page.locator('[data-slot="command-input"]:visible').last();
-    await expect(search).toHaveValue("custom.entities.sequence.rows.e2e_dk_probe");
+    await expect(search).toHaveValue("entities.sequence.rows.e2e_dk_probe");
 
     // Vocabulary scope — clearing the seed shows the full row family:
     // every option lives under `*.entities.sequence.rows.*`; real
@@ -987,15 +1001,16 @@ test.describe("builtin sequence registry — mounted by construction", () => {
       }
     }
 
-    // allowCreate — the typed key commits verbatim via the create offer.
-    await search.fill("custom.entities.sequence.rows.e2e_dk_probe");
+    // allowCreate + the shared coercion — an `entities.*` typed path
+    // commits convention-scoped under `custom.*` (the dict-cell rule).
+    await search.fill("entities.sequence.rows.e2e_other");
     const createRow = page
       .getByRole("option")
-      .filter({ hasText: "custom.entities.sequence.rows.e2e_dk_probe" })
+      .filter({ hasText: "entities.sequence.rows.e2e_other" })
       .first();
     await expect(createRow).toBeVisible({ timeout: 5_000 });
     await createRow.click();
-    await expect(combo).toContainText("custom.entities.sequence.rows.e2e_dk_probe", {
+    await expect(combo).toContainText("custom.entities.sequence.rows.e2e_other", {
       timeout: 5_000,
     });
   });
