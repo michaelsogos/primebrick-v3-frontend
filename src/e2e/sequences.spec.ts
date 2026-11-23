@@ -1008,9 +1008,9 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     // sheet AND in the strip under the input (same render engine).
     await expect(page.getByTestId("sequence-pattern-preview")).toHaveText("INV-0001");
     await expect(page.getByTestId("sequence-pattern-input-example")).toHaveText("INV-0001");
-    // Grammar arity — the used counter slot is gated (Tags badge + `-`
-    // remove CTA); the padding form mirrors the used width, disabled.
-    await expect(page.getByTestId("sequence-pattern-token-seq-used")).toBeVisible();
+    // Grammar arity — the used counter slot is gated (data-used flag +
+    // `-` remove CTA); the padding form mirrors the used width, disabled.
+    await expect(page.getByTestId("sequence-pattern-token-seq")).toHaveAttribute("data-used", "true");
     await expect(page.getByTestId("sequence-pattern-token-seq-remove")).toBeVisible();
     await expect(seqWidth).toBeDisabled();
     await expect(seqWidth).toHaveValue("4");
@@ -1065,7 +1065,7 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     // input channel as keystrokes, so the sheet MUST react: the counter
     // slot frees, the preview flips back to the parser error.
     await tokensCta.click();
-    await expect(page.getByTestId("sequence-pattern-token-mm-used")).toBeVisible({
+    await expect(page.getByTestId("sequence-pattern-token-mm")).toHaveAttribute("data-used", "true", {
       timeout: 5_000,
     });
     await sheet

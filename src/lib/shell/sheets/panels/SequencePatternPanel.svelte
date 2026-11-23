@@ -9,7 +9,7 @@
     SheetPanelLayout,
   } from '@primebrick/ui';
   import SheetSectionTitle from '$lib/shell/sheets/SheetSectionTitle.svelte';
-  import { CircleAlert, Minus, Plus, Tags } from '@primebrick/ui/vendor/lucide';
+  import { CircleAlert, Hash, Minus, Plus } from '@primebrick/ui/vendor/lucide';
   import {
     sequenceTokenCatalog,
     usedSequenceTokens,
@@ -160,32 +160,27 @@
   {@const isUsed = spec.slot !== undefined && used.has(spec.slot)}
   {@const isCounter = spec.kind === 'counter'}
   <div
-    class="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm {isUsed ? 'opacity-50' : ''}"
+    class="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-accent transition-colors"
     data-testid={`sequence-pattern-token-${spec.id}`}
     data-used={isUsed}
   >
     <span class="min-w-0 flex-1">
-      <span class="block font-mono font-medium" data-testid={`sequence-pattern-token-${spec.id}-tag`}>{isCounter ? seqInsert : spec.insert}</span>
+      <span class="flex items-center gap-2">
+        <span class="font-mono font-bold" data-testid={`sequence-pattern-token-${spec.id}-tag`}>{isCounter ? seqInsert : spec.insert}</span>
+        <code
+          class="shrink-0 rounded-sm border border-border bg-muted px-1.5 py-0.5 font-mono text-[11px] leading-none"
+          data-testid={`sequence-pattern-token-${spec.id}-example`}
+          >{isCounter ? seqExample : spec.example({ counter, tz: ctxTz })}</code
+        >
+      </span>
       <span class="block text-xs text-muted-foreground">
         {$t(`app.widgets.sequence_pattern.tokens.${spec.key}`)}
       </span>
     </span>
-    <code
-      class="shrink-0 rounded-sm border border-border bg-muted px-1.5 py-0.5 font-mono text-[11px] leading-none"
-      data-testid={`sequence-pattern-token-${spec.id}-example`}
-      >{isCounter ? seqExample : spec.example({ counter, tz: ctxTz })}</code
-    >
     {#if isUsed}
-      <span
-        class="flex shrink-0 items-center gap-1 text-xs text-muted-foreground"
-        title={$t('app.widgets.sequence_pattern.used')}
-        data-testid={`sequence-pattern-token-${spec.id}-used`}
-      >
-        <Tags class="size-4" />
-      </span>
       <button
         type="button"
-        class="flex shrink-0 items-center justify-center rounded-sm p-1 text-muted-foreground hover:bg-accent hover:text-destructive transition-colors"
+        class="flex shrink-0 items-center justify-center rounded-sm p-1 text-destructive transition-colors"
         onclick={() => unpick(spec)}
         disabled={!on_write}
         aria-label={$t('app.widgets.sequence_pattern.remove')}
@@ -197,7 +192,7 @@
     {:else}
       <button
         type="button"
-        class="flex shrink-0 items-center justify-center rounded-sm p-1 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+        class="flex shrink-0 items-center justify-center rounded-sm p-1 text-primary transition-colors"
         onclick={() => pick(spec)}
         aria-label={$t('app.widgets.sequence_pattern.insert')}
         title={$t('app.widgets.sequence_pattern.insert')}
@@ -215,7 +210,7 @@
     <!-- Padding field — canonical PrimeField + NumericInput anatomy
          (label above, full-width control): 0 = no padding (default),
          N → `{seq:N}` on insert. The tag and example update live. -->
-    <div class="px-3 pb-2 pl-8" data-testid="sequence-pattern-seq-padding">
+    <div class="px-3 pb-2" data-testid="sequence-pattern-seq-padding">
       <PrimeField
         id="sequence-pattern-seq-width"
         label={$t('app.widgets.sequence_pattern.tokens.seq_width')}
@@ -240,15 +235,14 @@
 
 <SheetPanelLayout contentClass="p-0">
   {#snippet icon()}
-    <Tags class="size-4" />
+    <Hash class="size-4" />
   {/snippet}
   {#snippet title()}
     {$t('app.widgets.sequence_pattern.title')}
   {/snippet}
   {#snippet footer()}
     <!-- Sticky FOOT preview — SheetPanelFooter is the canonical FOOT
-         anatomy; the example rides the `start` slot (meta content),
-         Badge-chrome, no "Preview" label — the badge IS the preview. -->
+         anatomy; labeled "Preview" + the rendered example in Badge-chrome. -->
     <SheetPanelFooter data-testid="sequence-pattern-preview-foot">
       {#snippet start()}
         {#if parsed instanceof Error}
@@ -257,6 +251,7 @@
             {parsed.message}
           </span>
         {:else}
+          <span class="text-xs font-medium text-muted-foreground">{$t('app.widgets.sequence_pattern.preview')}</span>
           <Badge variant="secondary" data-testid="sequence-pattern-preview">{preview}</Badge>
         {/if}
       {/snippet}
