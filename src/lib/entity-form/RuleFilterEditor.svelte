@@ -108,7 +108,7 @@ import { extJsonStringify, extJsonParse } from '$lib/api-ext';
 	// (the composer can't lie about a document it can't parse).
 	function parseFilters(raw: string): RuleFilterItem[] | null {
 		try {
-			const parsed = extJsonParse<any>(raw);
+			const parsed = extJsonParse<unknown>(raw);
 			if (!Array.isArray(parsed)) return null;
 			if (parsed.some((f) => !f || typeof f !== 'object' || typeof f.field !== 'string')) return null;
 			return parsed as RuleFilterItem[];

@@ -103,8 +103,8 @@ function expectedOwner(modules: ModuleInfo[], pathname: string): string | null {
 async function fetchModules(page: Page): Promise<ModuleInfo[]> {
   const res = await page.request.get("/api/v1/modules");
   expect(res.ok(), "GET /api/v1/modules must succeed").toBeTruthy();
-  const body = await res.text().then((t) => extJsonParse<any>(t));
-  const mods: ModuleInfo[] = body.modules ?? body;
+  const body = await res.text().then((t) => extJsonParse<Record<string, unknown>>(t));
+  const mods: ModuleInfo[] = (body.modules ?? body) as ModuleInfo[];
   return mods.filter((m) => m.enabled !== false);
 }
 
@@ -187,7 +187,7 @@ async function expectedModuleLabel(page: Page, m: ModuleInfo): Promise<string> {
     `/api/v1/system/translations/${dictModuleOf(m)}/en-GB`
   );
   if (!res.ok()) return m.name;
-  const dict: Record<string, string> = await res.text().then((t) => extJsonParse<any>(t));
+  const dict: Record<string, string> = await res.text().then((t) => extJsonParse<Record<string, string>>(t));
   return dict[m.label_key] ?? m.name;
 }
 
@@ -314,9 +314,24 @@ test.describe("module ownership — observable contract", () => {
       // The primary prefix is derived: /{part_of}/{code}, collapsing to
       // /{code} when part_of === code. Extras may only add /{root}/{code}
       // — the code stays the URL's second segment under every root.
-      const urlCode = urlCodeOf(m);
-      const expectedPrimary =
-        m.part_of === urlCode ? `/${urlCode}` : `/${m.part_of}/${urlCode}`;
+      // Virtual siblings nest one level deeper: served as {parentCode}-{sibId}
+      // with part_of inherited from the parent, their primary prefix is
+      // {parentPrimary}/{sibId} (e.g. job-settings → /system/job/settings).
+      const sibParent =
+        m.translations_module != null && m.id === `${m.translations_module}-${m.name}`
+          ? m.translations_module
+          : undefined;
+      const urlCode = sibParent ? m.name : urlCodeOf(m);
+      const parentSegs = sibParent
+        ? sibParent === m.part_of
+          ? [sibParent]
+          : [m.part_of, sibParent]
+        : null;
+      const expectedPrimary = parentSegs
+        ? `/${[...parentSegs, urlCode].join("/")}`
+        : m.part_of === urlCode
+          ? `/${urlCode}`
+          : `/${m.part_of}/${urlCode}`;
       const prefixes = m.route_prefixes ?? [];
       // Headless services (ai, emailsender, webhook) declare no nav/prefixes
       // — the primary-prefix contract only applies to page-owning modules.
@@ -328,8 +343,9 @@ test.describe("module ownership — observable contract", () => {
       }
       for (const p of prefixes) {
         const segs = p.split("/").filter(Boolean);
+        const codeIdx = parentSegs ? parentSegs.length : segs.length === 1 ? 0 : 1;
         expect(
-          segs.length === 1 ? segs[0] === urlCode : segs[1] === urlCode,
+          segs[codeIdx] === urlCode,
           `module '${m.id}' prefix '${p}' must keep '${urlCode}' as its last declared segment`
         ).toBeTruthy();
       }
@@ -394,7 +410,7 @@ test.describe("module ownership — observable contract", () => {
         `/api/v1/system/translations/${dictId}/en-GB`
       );
       expect(res.ok(), `dict endpoint for '${dictId}' must succeed`).toBeTruthy();
-      const dict = await res.text().then((t) => extJsonParse<any>(t));
+      const dict = await res.text().then((t) => extJsonParse<{ dict?: Record<string, unknown> }>(t));
       const size = Object.keys(dict?.dict ?? dict ?? {}).length;
       expect(size, `module '${dictId}' dictionary must not be empty`).toBeGreaterThan(0);
     }
@@ -486,13 +502,13 @@ test.describe("module ownership — observable contract", () => {
   }) => {
     const modules = await fetchModules(page);
     const appDictRes = await page.request.get("/api/v1/system/translations/public/en-GB");
-    const appDict: Record<string, string> = appDictRes.ok() ? await appDictRes.text().then((t) => extJsonParse<any>(t)) : {};
+    const appDict: Record<string, string> = appDictRes.ok() ? await appDictRes.text().then((t) => extJsonParse<Record<string, string>>(t)) : {};
 
     for (const m of pageModules(modules)) {
       const nav = await fetchModuleNav(page, m.id);
       const moduleLabel = await expectedModuleLabel(page, m);
       const dictRes = await page.request.get(`/api/v1/system/translations/${dictModuleOf(m)}/en-GB`);
-      const dict: Record<string, string> = dictRes.ok() ? await dictRes.text().then((t) => extJsonParse<any>(t)) : {};
+      const dict: Record<string, string> = dictRes.ok() ? await dictRes.text().then((t) => extJsonParse<Record<string, string>>(t)) : {};
 
       // One probe per root slice — the first declared nav link of each
       // root the module serves (crm → /crm/customers + /system/crm/pipeline).

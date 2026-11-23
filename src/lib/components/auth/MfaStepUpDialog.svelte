@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { RFC7807Error } from '$lib/errors/rfc7807';
   import { Dialog } from '@primebrick/ui';
   import { BorderedDialog } from '@primebrick/ui';
   import { Button } from '@primebrick/ui';
@@ -61,11 +62,11 @@
         body: extJsonStringify({ action, target_resource }),
       });
       if (!resp.ok) {
-        const err = await resp.text().then((t) => extJsonParse<any>(t));
+        const err = await resp.text().then((t) => extJsonParse<RFC7807Error>(t));
         error = err.detail || $t('app.auth.mfa_step_up.step_up_initiate_error');
         return;
       }
-      const data = await resp.text().then((t) => extJsonParse<any>(t));
+      const data = await resp.text().then((t) => extJsonParse<{ mfa_challenge_token: string; available_factors: typeof availableFactors }>(t));
       challengeToken = data.mfa_challenge_token;
       availableFactors = data.available_factors;
       factorId = availableFactors[0]?.factor_id ?? '';
@@ -95,12 +96,12 @@
         }),
       });
       if (!resp.ok) {
-        const err = await resp.text().then((t) => extJsonParse<any>(t));
+        const err = await resp.text().then((t) => extJsonParse<RFC7807Error>(t));
         error = err.detail || $t('app.auth.mfa.invalid_code');
         otp.reset();
         return;
       }
-      const data = await resp.text().then((t) => extJsonParse<any>(t));
+      const data = await resp.text().then((t) => extJsonParse<{ action_authorization_token: string }>(t));
       pushNotification({
         impact: 'NONE',
         message: $t('app.auth.mfa_step_up.step_up_authorized'),

@@ -121,7 +121,7 @@ export function extractJsonCandidate(raw: string): string | null {
       if (depth === 0) {
         const candidate = text.slice(start, i + 1);
         try {
-          extJsonParse<any>(candidate);
+          extJsonParse<unknown>(candidate);
           return candidate;
         } catch {
           // Unparseable slice (e.g. a prose bracket) — fall back to the
@@ -184,7 +184,7 @@ export function useJsonSchemaAi(model_id: string, opts: JsonSchemaAiOptions) {
     const result = opts.validate(json);
     let parsed: unknown;
     try {
-      parsed = extJsonParse<any>(json);
+      parsed = extJsonParse<unknown>(json);
     } catch {
       return result;
     }
@@ -200,7 +200,7 @@ export function useJsonSchemaAi(model_id: string, opts: JsonSchemaAiOptions) {
     const { valid, errors } = validateStrict(json);
     let pretty = json;
     try {
-      pretty = extJsonStringify(extJsonParse<any>(json), 2);
+      pretty = extJsonStringify(extJsonParse<unknown>(json), 2);
     } catch { /* keep raw */ }
     return { kind: 'config', json: pretty, valid, errors };
   };

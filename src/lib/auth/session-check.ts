@@ -77,12 +77,12 @@ export async function refreshAccessToken(): Promise<void> {
     });
 
     if (!response.ok) {
-      const errorData = await response.text().then((t) => extJsonParse<any>(t));
+      const errorData = await response.text().then((t) => extJsonParse<{ detail?: string }>(t));
       console.error('[Token Refresh] Failed:', errorData);
       throw new Error(errorData.detail || 'Token refresh failed');
     }
 
-    const data = await response.text().then((t) => extJsonParse<any>(t));
+    const data = await response.text().then((t) => extJsonParse<{ success?: boolean; user?: Record<string, unknown> }>(t));
 
     // Update the session mirror — session fields ONLY (username, idp_code,
     // expires_at, roles, organization). A raw sessionStorage replace here

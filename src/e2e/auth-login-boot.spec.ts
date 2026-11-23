@@ -19,7 +19,7 @@ import { loginAsTestAdmin, E2E_ADMIN_USERNAME, E2E_ADMIN_PASSWORD } from "./help
 import { extJsonStringify, extJsonParse } from '@primebrick/core/ext-json';
 /** Read the mirrored session user from sessionStorage. */
 async function sessionUser(page: Page) {
-  return page.evaluate(() => extJsonParse<any>(sessionStorage.getItem("user") ?? "null"));
+  return page.evaluate(() => extJsonParse<Record<string, unknown>>(sessionStorage.getItem("user") ?? "null"));
 }
 
 /** Cookie names present in the browser context. */
@@ -50,7 +50,7 @@ test.describe.serial("Login boot, redirect & logout", () => {
   test("expired token → refresh → redirect_path honored", async () => {
     // Force expires_at into the past — boot must take the refresh branch.
     await page.evaluate(() => {
-      const u = extJsonParse<any>(sessionStorage.getItem("user")!);
+      const u = extJsonParse<Record<string, unknown>>(sessionStorage.getItem("user")!);
       u.expires_at = Date.now() - 1000;
       sessionStorage.setItem("user", extJsonStringify(u));
     });

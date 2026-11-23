@@ -208,7 +208,7 @@ test.describe("Guide action CTAs — tool path (transport intercepted)", () => {
     await argsArea.waitFor({ state: "visible", timeout: 10_000 });
     // Args are editable JSON — model's payload pre-fills the textarea.
     const argsValue = await argsArea.inputValue();
-    expect(extJsonParse<any>(argsValue)).toMatchObject({ entity: "user" });
+    expect(extJsonParse<unknown>(argsValue)).toMatchObject({ entity: "user" });
     await page.getByTestId("guide-action-execute").click();
     await expect
       .poll(() => mcpCalls.filter((c) => c.tool === "create_entity").length, { timeout: 10_000 })

@@ -62,7 +62,7 @@ test.describe("system trigger — ai.partition_maintenance", () => {
     // ── S2: the served row projects is_system + system_key
     const get = await page.request.get(`${JOB_API}/entities/job_trigger/${trig.uuid}`);
     expect(get.ok()).toBeTruthy();
-    const served = (await get.text().then((t) => extJsonParse<any>(t))) as Record<string, unknown>;
+    const served = (await get.text().then((t) => extJsonParse<unknown>(t))) as Record<string, unknown>;
     expect(served.is_system).toBe(true);
     expect(served.system_key).toBe(SYS_KEY);
     const version = served.version as number;
@@ -72,7 +72,7 @@ test.describe("system trigger — ai.partition_maintenance", () => {
       data: { entity: { target_subject: "emailsender.send", version } },
     });
     expect(frozen.status()).toBe(400);
-    expect(extJsonStringify(await frozen.text().then((t) => extJsonParse<any>(t)))).toContain("system_trigger_immutable");
+    expect(extJsonStringify(await frozen.text().then((t) => extJsonParse<unknown>(t)))).toContain("system_trigger_immutable");
 
     // system_key may never be shed or swapped — the field is `immutable`,
     // a stronger guarantee than the system-trigger rule (it fires first).
@@ -80,7 +80,7 @@ test.describe("system trigger — ai.partition_maintenance", () => {
       data: { entity: { system_key: null, version } },
     });
     expect(shed.status()).toBe(400);
-    expect(extJsonStringify(await shed.text().then((t) => extJsonParse<any>(t)))).toContain("immutable");
+    expect(extJsonStringify(await shed.text().then((t) => extJsonParse<unknown>(t)))).toContain("immutable");
 
     // users cannot claim system rows — POST carrying system_key → 400
     const claim = await page.request.post(`${JOB_API}/entities/job_trigger`, {
@@ -95,16 +95,16 @@ test.describe("system trigger — ai.partition_maintenance", () => {
       },
     });
     expect(claim.status()).toBe(400);
-    expect(extJsonStringify(await claim.text().then((t) => extJsonParse<any>(t)))).toContain("immutable");
+    expect(extJsonStringify(await claim.text().then((t) => extJsonParse<unknown>(t)))).toContain("immutable");
 
     // ── S4: user-owned fields edit — rename round-trips via the same API
     const renamed = "ai-partition-maintenance-e2e";
     const put = await page.request.put(`${JOB_API}/entities/job_trigger/${trig.uuid}`, {
       data: { entity: { name: renamed, version } },
     });
-    expect(put.status(), extJsonStringify(await put.text().then((t) => extJsonParse<any>(t)).catch(() => null))).toBe(200);
+    expect(put.status(), extJsonStringify(await put.text().then((t) => extJsonParse<unknown>(t)).catch(() => null))).toBe(200);
     const cur = await page.request.get(`${JOB_API}/entities/job_trigger/${trig.uuid}`);
-    const after = (await cur.text().then((t) => extJsonParse<any>(t))) as { name: string; version: number };
+    const after = (await cur.text().then((t) => extJsonParse<unknown>(t))) as { name: string; version: number };
     expect(after.name).toBe(renamed);
     const back = await page.request.put(`${JOB_API}/entities/job_trigger/${trig.uuid}`, {
       data: { entity: { name: trig.name, version: after.version } },

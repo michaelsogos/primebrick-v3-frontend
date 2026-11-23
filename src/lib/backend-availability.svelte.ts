@@ -102,7 +102,7 @@ async function rawFetchHealth(timeoutMs = 5000): Promise<HealthResult> {
       if (res.status === 503) {
         let parsed: unknown;
         try {
-          parsed = await res.text().then((t) => extJsonParse<any>(t));
+          parsed = await res.text().then((t) => extJsonParse<unknown>(t));
         } catch {
           return { ok: false, status: 503 };
         }
@@ -114,7 +114,7 @@ async function rawFetchHealth(timeoutMs = 5000): Promise<HealthResult> {
     }
     let parsed: unknown;
     try {
-      parsed = await res.text().then((t) => extJsonParse<any>(t));
+      parsed = await res.text().then((t) => extJsonParse<unknown>(t));
     } catch {
       return { ok: false, status: res.status };
     }

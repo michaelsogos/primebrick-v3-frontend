@@ -106,12 +106,12 @@ async function expectedTree(page: Page, configType: string): Promise<{ roots: To
   // only need a flat key→string lookup, so we rebuild `t` from the same
   // module dicts the app merges (system + public).
   const [meta, sysDict, pubDict] = await Promise.all([
-    page.request.get(`${BASE_URL}/api/v1/entities/config_entry/meta`).then((r) => r.text().then((t) => extJsonParse<any>(t))),
-    page.request.get(`${BASE_URL}/api/v1/system/translations/system/it-IT`).then((r) => (r.ok() ? r.text().then((t) => extJsonParse<any>(t)) : {})),
-    page.request.get(`${BASE_URL}/api/v1/system/translations/public/it-IT`).then((r) => (r.ok() ? r.text().then((t) => extJsonParse<any>(t)) : {})),
+    page.request.get(`${BASE_URL}/api/v1/entities/config_entry/meta`).then((r) => r.text().then((t) => extJsonParse<{ type_capabilities?: Record<string, unknown> }>(t))),
+    page.request.get(`${BASE_URL}/api/v1/system/translations/system/it-IT`).then((r) => (r.ok() ? r.text().then((t) => extJsonParse<Record<string, unknown>>(t)) : {})),
+    page.request.get(`${BASE_URL}/api/v1/system/translations/public/it-IT`).then((r) => (r.ok() ? r.text().then((t) => extJsonParse<Record<string, unknown>>(t)) : {})),
   ]);
   return page.evaluate(async ({ type, meta, dicts }) => {
-    const mods: any[] = [];
+    const mods: Record<string, unknown>[] = [];
     for (const url of [
       "/src/lib/components/ui/smart-json-config/type-config-explorer.ts",
       "/src/lib/config/type-config-schema.ts",
@@ -120,16 +120,21 @@ async function expectedTree(page: Page, configType: string): Promise<{ roots: To
     ]) {
       // Race each import — a wedged module fetch would stall the whole
       // Promise.all forever; surface WHICH one instead.
-      (window as any).__et_step = url;
+      (window as unknown as { __et_step?: string }).__et_step = url;
       mods.push(
         await Promise.race([
           import(/* @vite-ignore */ url),
           new Promise((_, rej) => setTimeout(() => rej(new Error(`import timeout: ${url}`)), 15_000)),
         ]),
       );
-      (window as any).__et_step = `done:${url}`;
+      (window as unknown as { __et_step?: string }).__et_step = `done:${url}`;
     }
-    const [{ schemaForCapabilities }, { typeConfigJsonSchema }, explorer, topicI18n] = mods;
+    const [{ schemaForCapabilities }, { typeConfigJsonSchema }, explorer, topicI18n] = mods as [
+      { schemaForCapabilities: (s: unknown, c: unknown) => unknown },
+      { typeConfigJsonSchema: unknown },
+      { buildSchemaTopics: (s: unknown) => unknown },
+      { localizeTopics: (t: unknown, c: unknown, tr: (k: string) => string) => unknown },
+    ];
     // Flat key→string lookup — same merge the app does (module dicts), and
     // t() returns the key itself when missing.
     const flatDict = { ...(dicts.public as Record<string, string>), ...(dicts.system as Record<string, string>) };
@@ -329,7 +334,7 @@ test.describe("JSON-schema assistant — topic navigation sweep", () => {
           expectedTree(page, "string"),
           new Promise<never>((_, rej) => setTimeout(() => rej(new Error("evaluate timeout")), 45_000)),
         ]).catch(async (e) => {
-          const step = await page.evaluate(() => (window as any).__et_step ?? "(none)").catch(() => "(evaluate dead)");
+          const step = await page.evaluate(() => (window as unknown as { __et_step?: string }).__et_step ?? "(none)").catch(() => "(evaluate dead)");
           log(`  expectedTree failed: ${(e as Error).message} — last step: ${step}`);
           return null;
         }),
@@ -461,7 +466,7 @@ test.describe("JSON-schema assistant — topic navigation sweep", () => {
           expectedTree(page, "string"),
           new Promise<never>((_, rej) => setTimeout(() => rej(new Error("evaluate timeout")), 45_000)),
         ]).catch(async (e) => {
-          const step = await page.evaluate(() => (window as any).__et_step ?? "(none)").catch(() => "(evaluate dead)");
+          const step = await page.evaluate(() => (window as unknown as { __et_step?: string }).__et_step ?? "(none)").catch(() => "(evaluate dead)");
           log(`  expectedTree failed: ${(e as Error).message} — last step: ${step}`);
           return null;
         }),

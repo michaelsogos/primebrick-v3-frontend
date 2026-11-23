@@ -385,7 +385,7 @@ test.describe("AI quality — guide_test_score", () => {
             }
             if (pendingGuideStage) {
               try {
-                turnTrace.push({ stage: pendingGuideStage, ...extJsonParse<any>(v as string) });
+                turnTrace.push({ stage: pendingGuideStage, ...extJsonParse<Record<string, unknown>>(v as string) });
               } catch {
                 turnTrace.push({ stage: pendingGuideStage, raw_arg: String(v).slice(0, 2000) });
               }

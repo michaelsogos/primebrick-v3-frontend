@@ -105,7 +105,7 @@
         }
 
         // The response IS the updated entity (DAL RETURNING), not a wrapper.
-        await response.text().then((t) => extJsonParse<any>(t));
+        await response.text().then((t) => extJsonParse<unknown>(t));
         console.log('Organization updated successfully');
         // Refresh the organization data to show updated audit info
         await loadOrganization();
@@ -139,7 +139,7 @@
         console.error('Failed to load organization');
         return;
       }
-      const data = await response.text().then((t) => extJsonParse<any>(t));
+      const data = await response.text().then((t) => extJsonParse<NonNullable<typeof organization>>(t));
       organization = data;
       // Reset form with loaded data
       reset({

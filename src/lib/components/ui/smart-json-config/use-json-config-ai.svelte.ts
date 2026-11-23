@@ -58,7 +58,7 @@ function buildSystemPrompt(schema: object, current_json: string): string {
 /** Validate a JSON candidate against the type_config zod schema. */
 export function validateCandidate(json: string): JsonCandidateValidation {
   try {
-    const parsed = extJsonParse<any>(json);
+    const parsed = extJsonParse<unknown>(json);
     const result = typeConfigSchema.safeParse(parsed);
     if (result.success) return { valid: true, errors: [] };
     const errors = result.error.issues.map(

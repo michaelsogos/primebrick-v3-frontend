@@ -46,7 +46,7 @@ export function usePasswordPolicy() {
     try {
       const res = await apiFetch("/api/v1/system/password-policy");
       if (res.ok) {
-        const data = (await res.text().then((t) => extJsonParse<any>(t))) as PasswordPolicyResponse;
+        const data = (await res.text().then((t) => extJsonParse<unknown>(t))) as PasswordPolicyResponse;
         _state.policy = data.policy;
         _state.errorLabelKey = data.errorLabelKey;
         _state.checklistRules = [...data.checklistRules];

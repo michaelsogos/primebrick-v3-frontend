@@ -586,7 +586,7 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
           15_000
         );
         if (!res.ok) continue;
-        const data = (await res.text().then((t) => extJsonParse<any>(t))) as Record<string, unknown>;
+        const data = (await res.text().then((t) => extJsonParse<unknown>(t))) as Record<string, unknown>;
         const map = data[cfg.response_field ?? 'stats'];
         _state.sparklineData[col.key] = {
           by_key: (map ?? {}) as Record<string, unknown[]>,

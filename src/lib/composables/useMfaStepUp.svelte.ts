@@ -70,7 +70,7 @@ export function useMfaStepUp() {
     const resp = await requestFn(null);
 
     if (resp.status === 403) {
-      const errorData = await resp.text().then((t) => extJsonParse<any>(t)).catch(() => null);
+      const errorData = await resp.text().then((t) => extJsonParse<{ extra?: { mfa_step_up_required?: boolean } }>(t)).catch(() => null);
       if (errorData?.extra?.mfa_step_up_required) {
         // Show the step-up dialog and wait for the user to verify
         return new Promise<Response>((resolve) => {

@@ -22,7 +22,7 @@
  * rides the shared `writePerms` grant. Residue-free: seeded rows are
  * bulk-deleted at the end, pass or fail.
  */
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import { loginAsTestAdmin } from "./helpers/admin-login";
 import { getPool } from "./helpers/db";
 
@@ -34,7 +34,7 @@ const NAME_B = `e2e-bulkedit-b-${TS}`;
 const NEW_SCHEDULE = "@every 2h";
 const JOB_BASE = "/svc/job/api/v1/entities";
 
-const mk = async (page: any, name: string) => {
+const mk = async (page: Page, name: string) => {
   const r = await page.request.post(`${JOB_BASE}/job_trigger`, {
     data: {
       entity: {
@@ -47,7 +47,7 @@ const mk = async (page: any, name: string) => {
     },
   });
   expect(r.status(), await r.text()).toBe(201);
-  return (await r.text().then((t: string) => extJsonParse<any>(t))) as {
+  return (await r.text().then((t: string) => extJsonParse<unknown>(t))) as {
     uuid: string;
     version: number;
   };
@@ -69,13 +69,13 @@ test.describe("bulk editor — update.bulk end to end", () => {
     ] as const) {
       const r = await page.request.get(`${base}/${entity}/meta`);
       expect(r.status(), `${entity} meta`).toBe(200);
-      const meta = await r.text().then((t: string) => extJsonParse<any>(t));
+      const meta = await r.text().then((t: string) => extJsonParse<{ actions?: Array<{ op?: string; enabled?: boolean; icon?: string }>; meta?: { actions?: Array<{ op?: string; enabled?: boolean; icon?: string }> } }>(t));
       const actions = meta?.actions ?? meta?.meta?.actions;
-      const bulk = (actions ?? []).find((a: any) => a.op === "update.bulk");
+      const bulk = (actions ?? []).find((a) => a.op === "update.bulk");
       expect(bulk, `${entity}: meta.actions must declare update.bulk`).toBeTruthy();
-      expect(bulk.enabled, `${entity}: update.bulk must be enabled`).toBe(true);
+      expect(bulk!.enabled, `${entity}: update.bulk must be enabled`).toBe(true);
       expect(
-        bulk.icon,
+        bulk!.icon,
         `${entity}: update.bulk chrome — the edit canon is pencil`,
       ).toBe("pencil");
 

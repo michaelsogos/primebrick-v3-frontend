@@ -56,7 +56,7 @@ function writeSessionCache(): void {
 async function load(): Promise<void> {
 	const res = await apiFetch('/api/v1/auth/me/preferences');
 	if (!res.ok) return; // fail-soft — cached mirror keeps working
-	const body = (await res.text().then((t) => extJsonParse<any>(t))) as { preferences?: Record<string, unknown> };
+	const body = (await res.text().then((t) => extJsonParse<unknown>(t))) as { preferences?: Record<string, unknown> };
 	_state.data = body.preferences ?? {};
 	_state.loaded = true;
 	writeSessionCache();

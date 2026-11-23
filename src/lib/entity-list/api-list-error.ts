@@ -48,7 +48,7 @@ export interface ApiErrorDetails {
 /** Parse the response body for RFC 7807 / legacy `error` fields (best-effort). */
 export async function readApiErrorDetails(res: Response): Promise<ApiErrorDetails> {
   try {
-    const data = (await res.text().then((t) => extJsonParse<any>(t))) as {
+    const data = (await res.text().then((t) => extJsonParse<unknown>(t))) as {
       error?: unknown;
       title?: unknown;
       internal_code?: unknown;

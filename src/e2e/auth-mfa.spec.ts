@@ -128,7 +128,7 @@ test.describe.serial("Suite C — MFA enrollment + login MFA challenge", () => {
   test("Step 3: verify /api/v1/auth/me reports has_mfa=true", async () => {
     const resp = await adminPage.request.get("/api/v1/auth/me");
     expect(resp.ok()).toBeTruthy();
-    const body = await resp.text().then((t) => extJsonParse<any>(t));
+    const body = await resp.text().then((t) => extJsonParse<Record<string, unknown>>(t));
     expect(body.has_mfa).toBe(true);
   });
 

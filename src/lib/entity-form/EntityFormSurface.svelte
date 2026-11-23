@@ -259,7 +259,7 @@
 							continue;
 						}
 						if (col?.format === 'json' || col?.pg_type === 'jsonb' || col?.pg_type === 'json') {
-							v = typeof v === 'string' ? extJsonParse<any>(v) : v;
+							v = typeof v === 'string' ? extJsonParse<unknown>(v) : v;
 						}
 						entityPayload[placement.key] = v;
 					}
@@ -296,7 +296,7 @@
 						body: extJsonStringify({ entity: entityPayload }),
 					});
 					if (!res.ok) {
-						const detail = await res.text().then((t) => extJsonParse<any>(t)).catch(() => null);
+						const detail = await res.text().then((t) => extJsonParse<{ internal_code?: string; error?: string }>(t)).catch(() => null);
 						// ERR01 — optimistic lock lost: another write landed first.
 						if (!isCreate && res.status === 409 && detail?.internal_code === 'ERR01') {
 							await collab.handleVersionConflict();
@@ -321,7 +321,7 @@
 						message: $t('app.common.save_success'),
 						scope: entity,
 					});
-					const body = await res.text().then((t) => extJsonParse<any>(t)).catch(() => null);
+					const body = await res.text().then((t) => extJsonParse<Record<string, unknown>>(t)).catch(() => null);
 					if (!isCreate) {
 						// RETURNING row is authoritative — realign the optimistic
 						// lock to the new version, rebaseline, stay open.
@@ -388,7 +388,7 @@
 		const field = 'payload_map';
 		let current: PayloadMap = {};
 		try {
-			const parsed = extJsonParse<any>((($form as Record<string, unknown>)[field] as string) || '{}');
+			const parsed = extJsonParse<unknown>((($form as Record<string, unknown>)[field] as string) || '{}');
 			if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) current = parsed as PayloadMap;
 		} catch {
 			// unparseable authored JSON — the seeds merge onto an empty base

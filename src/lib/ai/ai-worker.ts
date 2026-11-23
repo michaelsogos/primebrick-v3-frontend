@@ -229,7 +229,7 @@ async function inspectRepoFiles(repo_id: string, dtype: string): Promise<RepoFil
   try {
     const res = await fetch(`https://huggingface.co/api/models/${repo_id}`);
     if (!res.ok) return empty;
-    const { siblings } = (await res.text().then((t) => extJsonParse<any>(t))) as { siblings?: { rfilename: string }[] };
+    const { siblings } = (await res.text().then((t) => extJsonParse<unknown>(t))) as { siblings?: { rfilename: string }[] };
     const names = new Set((siblings ?? []).map((f) => f.rfilename));
     const map: Record<string, number> = {};
     for (const name of names) {

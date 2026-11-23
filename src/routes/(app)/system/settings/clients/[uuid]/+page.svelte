@@ -130,7 +130,7 @@
         body: extJsonStringify(body),
       });
       if (!res.ok) throw new Error(`rotate failed (${res.status})`);
-      const result = (await res.text().then((t) => extJsonParse<any>(t))) as { client_key?: string };
+      const result = (await res.text().then((t) => extJsonParse<unknown>(t))) as { client_key?: string };
       rotateKey = '';
       if (result.client_key) {
         issuedKey = result.client_key;
@@ -149,7 +149,7 @@
   async function showDerivedSecret() {
     const res = await apiFetch(`/api/v1/entities/client_registry/${uuid}/derive-secret`);
     if (!res.ok) return;
-    const data = (await res.text().then((t) => extJsonParse<any>(t))) as { service_key_derivation_secret?: string };
+    const data = (await res.text().then((t) => extJsonParse<unknown>(t))) as { service_key_derivation_secret?: string };
     derivedSecret = data.service_key_derivation_secret ?? null;
   }
 
@@ -182,7 +182,7 @@
           cancel();
           return;
         }
-        await response.text().then((t) => extJsonParse<any>(t));
+        await response.text().then((t) => extJsonParse<unknown>(t));
         await loadClient();
         notifyParentRefresh();
         if (window.opener) window.close();
@@ -206,7 +206,7 @@
     try {
       const response = await apiFetch(`/api/v1/entities/client_registry/${uuid}`);
       if (!response.ok) return;
-      const data = await response.text().then((t) => extJsonParse<any>(t));
+      const data = await response.text().then((t) => extJsonParse<NonNullable<typeof client>>(t));
       client = data;
       reset({
         data: {

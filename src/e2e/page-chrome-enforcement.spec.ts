@@ -59,7 +59,7 @@ test.describe("page chrome enforcement (mandatory header)", () => {
     // `chrome:'remote'` — the sanctioned opt-out — and assert the host
     // honors it. Vacuous pass today if no decl uses the flag.
     const modsRes = await page.request.get("/api/v1/modules");
-    const { modules } = (await modsRes.text().then((t) => extJsonParse<any>(t))) as {
+    const { modules } = (await modsRes.text().then((t) => extJsonParse<unknown>(t))) as {
       modules: Array<{
         id: string;
         nav?: { routes?: Array<{ path?: string; chrome?: string; label_key?: string }> };

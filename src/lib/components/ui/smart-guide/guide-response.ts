@@ -61,7 +61,7 @@ export function parseGuideResponse(raw: string, grounding_context?: string): Gui
     .trim();
   let value: unknown;
   try {
-    value = extJsonParse<any>(json);
+    value = extJsonParse<unknown>(json);
   } catch {
     // Salvage: the answer envelope can be truncated mid-string when the
     // generation hits max_tokens (invalid JSON, usable prose). Extract the

@@ -41,7 +41,7 @@ test.describe("job_schedule lifecycle CTAs — :filled icons", () => {
     // Wire contract — synthesized row/bulk custom actions in served meta.
     const meta = await page.evaluate(async () => {
       const res = await fetch("/svc/job/api/v1/entities/job_schedule/meta");
-      const body = await res.text().then((t) => extJsonParse<any>(t));
+      const body = await res.text().then((t) => extJsonParse<{ table?: { row_custom_actions?: unknown; bulk_custom_actions?: unknown } }>(t));
       return {
         row: (body.table?.row_custom_actions ?? []) as CtaRow[],
         bulk: (body.table?.bulk_custom_actions ?? []) as CtaRow[],

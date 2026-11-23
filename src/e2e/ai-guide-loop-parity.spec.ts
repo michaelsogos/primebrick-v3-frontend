@@ -84,7 +84,7 @@ function parseStageJson(raw: string): unknown | null {
   // JSON failures when the capture is complete.
   if (/^(Thought|Action|Final)\s*:/m.test(text)) return { react: true };
   try {
-    return extJsonParse<any>(text);
+    return extJsonParse<unknown>(text);
   } catch {
     return null;
   }
@@ -168,8 +168,8 @@ test.describe("Guide agentic loop — WebGPU parity vs CPU baseline", () => {
         if (url.includes("/svc/ai/api/v1/system/docs/search")) {
           w.__loop_debug!.docs_search_calls++;
           try {
-            const body = extJsonParse<any>((init?.body as string) ?? "{}");
-            w.__loop_debug!.docs_search_keywords.push(body.keywords);
+            const body = extJsonParse<Record<string, unknown>>((init?.body as string) ?? "{}");
+            w.__loop_debug!.docs_search_keywords.push(body.keywords as string[] | undefined);
           } catch { w.__loop_debug!.docs_search_keywords.push(undefined); }
         }
         // The route census is derived client-side from the /modules

@@ -8,6 +8,7 @@
   import { t } from '$lib/i18n';
   import { apiFetch } from '$lib/api';
   import { pushNotification } from '$lib/errors/app-errors';
+  import type { RFC7807Error } from '$lib/errors/rfc7807';
   import { userProfileStore } from '$lib/user-profile-store.svelte';
   import { ShieldCheck } from '@primebrick/ui/vendor/lucide';
   import { Smartphone } from '@primebrick/ui/vendor/lucide';
@@ -38,11 +39,11 @@
     try {
       const resp = await apiFetch('/api/v1/auth/mfa/enroll/begin', { method: 'POST' });
       if (!resp.ok) {
-        const err = await resp.text().then((t) => extJsonParse<any>(t));
+        const err = await resp.text().then((t) => extJsonParse<RFC7807Error>(t));
         pushNotification({ ...err, toast: false });
         return;
       }
-      const data = await resp.text().then((t) => extJsonParse<any>(t));
+      const data = await resp.text().then((t) => extJsonParse<{ enrollment_token: string; secret: string; qr_code_url: string; recovery_codes?: string[] }>(t));
       enrollmentToken = data.enrollment_token;
       secret = data.secret;
       qrCodeUrl = data.qr_code_url;
@@ -78,7 +79,7 @@
         }),
       });
       if (!resp.ok) {
-        const err = await resp.text().then((t) => extJsonParse<any>(t));
+        const err = await resp.text().then((t) => extJsonParse<RFC7807Error>(t));
         enrollError = err.detail || $t('app.auth.mfa.invalid_code');
         otp.reset();
         return;

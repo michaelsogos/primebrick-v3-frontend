@@ -150,7 +150,7 @@
     if (selectConfig?.api_url) {
       selectLoading = true;
       apiFetch(selectConfig.api_url, { method: selectConfig.api_verb ?? 'GET' })
-        .then((res) => res.text().then((t) => extJsonParse<any>(t)))
+        .then((res) => res.text().then((t) => extJsonParse<Record<string, string>[] | { rows?: Record<string, string>[]; roles?: Record<string, string>[]; organizations?: Record<string, string>[]; services?: Record<string, string>[] }>(t)))
         .then((data) => {
           const arr: Record<string, string>[] = Array.isArray(data)
             ? data
@@ -245,7 +245,7 @@
     if (!error.includes('|')) return $t(error);
     const [key, jsonParams] = error.split('|', 2);
     try {
-      const params = extJsonParse<any>(jsonParams);
+      const params = extJsonParse<Record<string, unknown>>(jsonParams);
       return $t(key, params);
     } catch {
       return $t(key);

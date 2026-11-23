@@ -116,10 +116,10 @@ export function useBulkActions(options: BulkActionsOptions) {
       params.set('deleted_records', deletedRecords);
       const res = await apiFetch(`${entityApiBase(entityFn(), serviceFn?.())}/list?${params.toString()}`);
       if (!res.ok) {
-        const data = (await res.text().then((t) => extJsonParse<any>(t)).catch(() => null)) as RFC7807Error | null;
+        const data = (await res.text().then((t) => extJsonParse<unknown>(t)).catch(() => null)) as RFC7807Error | null;
         throw { ...(data ?? {}), title: data?.title || 'Bulk scope enumeration failed', status: data?.status || res.status };
       }
-      const data = (await res.text().then((t) => extJsonParse<any>(t))) as { rows?: Array<Record<string, unknown>>; total?: number | bigint };
+      const data = (await res.text().then((t) => extJsonParse<unknown>(t))) as { rows?: Array<Record<string, unknown>>; total?: number | bigint };
       const rows = data.rows ?? [];
       for (const row of rows) items.push({ uuid: toDisplayString(row[uid]), version: row.version as number });
       if (rows.length === 0 || items.length >= Number(data.total ?? 0)) break;
@@ -275,13 +275,13 @@ export function useBulkActions(options: BulkActionsOptions) {
       });
 
       if (!response.ok) {
-        const errorData = await response.text().then((t) => extJsonParse<any>(t)) as RFC7807Error & { duplicateResults?: { successful: string[]; failed: Array<{ uuid: string; error: string }> } };
+        const errorData = await response.text().then((t) => extJsonParse<unknown>(t)) as RFC7807Error & { duplicateResults?: { successful: string[]; failed: Array<{ uuid: string; error: string }> } };
         const enhancedError = { ...errorData, duplicateResults: errorData.duplicateResults };
         pushNotification(enhancedError);
         throw enhancedError;
       }
 
-      const result = await response.text().then((t) => extJsonParse<any>(t)) as { uuids: string[]; errors: Array<{ uuid: string; error: string }> };
+      const result = await response.text().then((t) => extJsonParse<unknown>(t)) as { uuids: string[]; errors: Array<{ uuid: string; error: string }> };
       if (result.errors.length > 0) {
         pushNotification({
           impact: 'MEDIUM',

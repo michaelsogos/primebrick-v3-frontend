@@ -79,7 +79,7 @@ import { extJsonStringify, extJsonParse } from '$lib/api-ext';
    *  feeds the validate-and-repair loop). */
   function validateCandidate(json: string) {
     try {
-      extJsonParse<any>(json);
+      extJsonParse<unknown>(json);
       return { valid: true, errors: [] as string[] };
     } catch {
       return { valid: false, errors: ['Invalid JSON syntax'] };
@@ -165,7 +165,7 @@ import { extJsonStringify, extJsonParse } from '$lib/api-ext';
         return;
       }
       try {
-        const compact = extJsonStringify(extJsonParse<any>(target.json));
+        const compact = extJsonStringify(extJsonParse<unknown>(target.json));
         on_apply_json(compact);
         ai.resolveChoice(message.uuid, 'applied', {
           condensed_content: $t('app.smart.json.ai.applied_summary', { json: compact }),

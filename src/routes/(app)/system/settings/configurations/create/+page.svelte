@@ -231,7 +231,7 @@
       try {
         const res = await apiFetch(`/api/v1/entities/config_entry/list`);
         if (res.ok) {
-          const data = (await res.text().then((t) => extJsonParse<any>(t))) as { rows: Array<{ key: string }> };
+          const data = (await res.text().then((t) => extJsonParse<unknown>(t))) as { rows: Array<{ key: string }> };
           keyExistsError = data.rows.some((r) => r.key === keyValue);
         }
       } catch {

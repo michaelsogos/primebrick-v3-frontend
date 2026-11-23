@@ -42,7 +42,7 @@ export function useActiveRoles(options?: {
       try {
         const res = await apiFetch("/api/v1/system/roles/active");
         if (res.ok) {
-          const data = await res.text().then((t) => extJsonParse<any>(t));
+          const data = await res.text().then((t) => extJsonParse<{ roles?: ActiveRole[] }>(t));
           _state.roles = (data.roles ?? []) as ActiveRole[];
         }
       } catch (e) {

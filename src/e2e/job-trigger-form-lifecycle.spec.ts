@@ -149,7 +149,7 @@ test.describe("job_trigger entity-form archetype lifecycle", () => {
       `${JOB_BASE}/job_trigger/list?filters[0][field]=name&filters[0][op]==&filters[0][value]=${encodeURIComponent(RULE_NAME)}`,
     );
     expect(listRes.ok()).toBeTruthy();
-    const rows = ((await listRes.text().then((t) => extJsonParse<any>(t))).rows ?? []) as Array<{ uuid: string; version: number }>;
+    const rows = ((await listRes.text().then((t) => extJsonParse<Record<string, unknown>>(t))).rows ?? []) as Array<{ uuid: string; version: number }>;
     expect(rows.length).toBe(1);
     createdUuid = rows[0].uuid;
     createdVersion = rows[0].version;
@@ -167,7 +167,7 @@ test.describe("job_trigger entity-form archetype lifecycle", () => {
     const check = await page.request.get(
       `${JOB_BASE}/job_trigger/list?filters[0][field]=name&filters[0][op]==&filters[0][value]=${encodeURIComponent(RULE_NAME)}`,
     );
-    const rows = ((await check.text().then((t) => extJsonParse<any>(t))).rows ?? []) as unknown[];
+    const rows = ((await check.text().then((t) => extJsonParse<Record<string, unknown>>(t))).rows ?? []) as unknown[];
     expect(rows.length).toBe(0);
   });
 });

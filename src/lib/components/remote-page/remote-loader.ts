@@ -210,7 +210,7 @@ async function verifyVendorDeps(
 	}
 	let deps_manifest: RemoteDepsManifest;
 	try {
-		deps_manifest = (await res.text().then((t) => extJsonParse<any>(t))) as RemoteDepsManifest;
+		deps_manifest = (await res.text().then((t) => extJsonParse<unknown>(t))) as RemoteDepsManifest;
 	} catch {
 		throw new RemoteLoadError('vendor', 'unreadable deps manifest (invalid JSON)');
 	}
@@ -232,7 +232,7 @@ async function verifyVendorDeps(
 	}
 	let host_manifest: VendorManifest;
 	try {
-		host_manifest = (await host_res.text().then((t) => extJsonParse<any>(t))) as VendorManifest;
+		host_manifest = (await host_res.text().then((t) => extJsonParse<unknown>(t))) as VendorManifest;
 	} catch {
 		throw new RemoteLoadError('vendor', 'unreadable host vendor manifest (invalid JSON)');
 	}

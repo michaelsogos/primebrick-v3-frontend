@@ -168,7 +168,7 @@ test.describe("job-chain-live — engine semantics end to end", () => {
     // Admin actor uuid — the identity for originator/user-lane events.
     const me = await page.request.get("/api/v1/auth/me");
     expect(me.ok()).toBeTruthy();
-    const meBody = (await me.text().then((t) => extJsonParse<any>(t))) as { profile?: { uuid?: string } };
+    const meBody = (await me.text().then((t) => extJsonParse<unknown>(t))) as { profile?: { uuid?: string } };
     H.adminUuid = meBody.profile?.uuid ?? "";
     expect(H.adminUuid).not.toBe("");
 
@@ -182,7 +182,7 @@ test.describe("job-chain-live — engine semantics end to end", () => {
     // purges their declarations + mirrors.
     const trigList = await page.request.get(`${SVC}/entities/job_trigger/list?page_size=100`);
     if (trigList.ok()) {
-      const trows = ((await trigList.text().then((t) => extJsonParse<any>(t))) as { rows?: Array<{ uuid: string; name: string }> }).rows ?? [];
+      const trows = ((await trigList.text().then((t) => extJsonParse<unknown>(t))) as { rows?: Array<{ uuid: string; name: string }> }).rows ?? [];
       for (const t of trows.filter((x) => x.name.startsWith("e2e-chain-"))) {
         await deleteTrigger(page.request, t.uuid);
       }
@@ -454,7 +454,7 @@ test.describe("job-chain-live — engine semantics end to end", () => {
       },
     });
     expect(below.status()).toBe(400);
-    const belowBody = extJsonStringify(await below.text().then((t) => extJsonParse<any>(t)));
+    const belowBody = extJsonStringify(await below.text().then((t) => extJsonParse<unknown>(t)));
     expect(belowBody).toContain("schedule_spec_min_interval");
 
     // B1 — run_as:"system" → permissioned callable: no user context exists
@@ -642,7 +642,7 @@ test.describe("job-chain-live — engine semantics end to end", () => {
       `${SVC}/entities/job_schedule/list?filters[0][field]=schedule_subject&filters[0][op]=%3D&filters[0][value]=${encodeURIComponent(tDrift.schedule_subject)}`,
     );
     expect(list.ok()).toBeTruthy();
-    const listBody = (await list.text().then((t) => extJsonParse<any>(t))) as { rows: Array<Record<string, unknown>> };
+    const listBody = (await list.text().then((t) => extJsonParse<unknown>(t))) as { rows: Array<Record<string, unknown>> };
     expect(listBody.rows[0]?.drift).toBe("stale");
     // The declaration is still live — fires continue despite the mirror.
     expect(await getScheduleDecl(tDrift.schedule_subject)).not.toBeNull();
@@ -672,7 +672,7 @@ test.describe("job-chain-live — engine semantics end to end", () => {
     );
     const listBody2Text = await list2.text();
     expect(list2.status(), `job_schedule list (missing-drift): ${listBody2Text}`).toBe(200);
-    const listBody2 = extJsonParse<any>(listBody2Text) as { rows: Array<Record<string, unknown>> };
+    const listBody2 = extJsonParse<unknown>(listBody2Text) as { rows: Array<Record<string, unknown>> };
     expect(listBody2.rows[0]?.drift).toBe("missing");
     await postJobAction(req, "disable-schedule", { schedule_subject: tMissing.schedule_subject });
   });
@@ -699,7 +699,7 @@ test.describe("job-chain-live — engine semantics end to end", () => {
     );
     const endpoint = (prov.rows[0]?.api_endpoint as string | null) ?? "";
     const brevoCaps = endpoint
-      ? ((await (await fetch(`${endpoint}/__captures`)).text().then((t) => extJsonParse<any>(t))) as Array<{
+      ? ((await (await fetch(`${endpoint}/__captures`)).text().then((t) => extJsonParse<unknown>(t))) as Array<{
           received_at: number;
           body: unknown;
         }>)

@@ -209,7 +209,7 @@ test.describe.serial("Suite A — User creation + password login", () => {
     // Assert: /api/v1/auth/me returns the user (session is established).
     const meResponse = await loginPage.request.get("/api/v1/auth/me");
     expect(meResponse.ok()).toBeTruthy();
-    const meBody = await meResponse.text().then((t) => extJsonParse<any>(t));
+    const meBody = await meResponse.text().then((t) => extJsonParse<{ profile?: Record<string, unknown>; username?: string }>(t));
     expect(meBody.profile?.idp_username ?? meBody.username).toBe(testUser.username);
 
     await loginContext.close();

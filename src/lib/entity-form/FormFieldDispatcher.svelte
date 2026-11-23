@@ -697,7 +697,7 @@
 		if (src.api_url && src.api_verb && src.value_field && src.label_field) {
 			const res = await apiFetch(src.api_url, { method: src.api_verb });
 			if (!res.ok) return [];
-			const data = (await res.text().then((t) => extJsonParse<any>(t))) as { rows?: Record<string, unknown>[] };
+			const data = (await res.text().then((t) => extJsonParse<unknown>(t))) as { rows?: Record<string, unknown>[] };
 			const vf = src.value_field;
 			const lf = src.label_field;
 			return (data.rows ?? []).map((row) => ({

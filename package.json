@@ -18,7 +18,7 @@
     "preview": "vite preview",
     "prepare": "svelte-kit sync || echo .",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json && tsc -p tsconfig.node.json && pnpm check:stringify",
-    "lint": "node --max-old-space-size=8192 node_modules/eslint/bin/eslint.js . --cache",
+    "lint": "node --max-old-space-size=8192 node_modules/eslint/bin/eslint.js . --cache --max-warnings=0",
     "lint:fix": "node --max-old-space-size=8192 node_modules/eslint/bin/eslint.js . --fix",
     "check:standards": "bun ../primebrick-v3-sdk/tools/check-standards.ts src --profile=fe",
     "check:stringify": "bun ../primebrick-v3-sdk/tools/check-stringify.ts src --scope=lib,routes",

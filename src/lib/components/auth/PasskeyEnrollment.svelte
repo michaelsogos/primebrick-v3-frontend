@@ -2,6 +2,7 @@
   import { onMount } from "svelte";
   import { apiFetch } from "$lib/api";
   import { pushNotification } from "$lib/errors/app-errors";
+  import type { RFC7807Error } from "$lib/errors/rfc7807";
   import { Button } from '@primebrick/ui';
   import { Spinner } from "$lib/components/ui/spinner";
   import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "$lib/components/ui/card";
@@ -45,7 +46,7 @@
     try {
       const resp = await apiFetch("/api/v1/auth/webauthn/credentials");
       if (resp.ok) {
-        const data = await resp.text().then((t) => extJsonParse<any>(t));
+        const data = await resp.text().then((t) => extJsonParse<{ credentials?: WebauthnCredentialInfo[] }>(t));
         credentials = (data.credentials ?? []) as WebauthnCredentialInfo[];
       }
     } catch (error) {
@@ -67,12 +68,12 @@
       });
 
       if (!beginResp.ok) {
-        const err = await beginResp.text().then((t) => extJsonParse<any>(t));
+        const err = await beginResp.text().then((t) => extJsonParse<RFC7807Error>(t));
         pushNotification({ ...err, toast: false });
         return;
       }
 
-      const { nonce, options } = await beginResp.text().then((t) => extJsonParse<any>(t));
+      const { nonce, options } = await beginResp.text().then((t) => extJsonParse<{ nonce: string; options: Record<string, unknown> }>(t));
 
       // Step 2: browser ceremony — navigator.credentials.create() shows the
       // OS passkey enrollment prompt (FaceID / TouchID / Windows Hello / security key).
@@ -105,7 +106,7 @@
       });
 
       if (!finishResp.ok) {
-        const err = await finishResp.text().then((t) => extJsonParse<any>(t));
+        const err = await finishResp.text().then((t) => extJsonParse<RFC7807Error>(t));
         pushNotification({ ...err, toast: false });
         return;
       }
@@ -155,7 +156,7 @@
         method: "DELETE",
       });
       if (!resp.ok) {
-        const err = await resp.text().then((t) => extJsonParse<any>(t));
+        const err = await resp.text().then((t) => extJsonParse<RFC7807Error>(t));
         pushNotification({ ...err, toast: false });
         return;
       }

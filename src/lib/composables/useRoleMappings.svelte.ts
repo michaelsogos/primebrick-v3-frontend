@@ -19,6 +19,7 @@
 import type { DeepReadonly } from '@primebrick/ui';
 import { apiFetch } from "$lib/api";
 import { pushNotification } from "$lib/errors/app-errors";
+import type { RFC7807Error } from '$lib/errors/rfc7807';
 import { extJsonParse, extJsonStringify } from '$lib/api-ext';
 
 export interface RoleMapping {
@@ -67,10 +68,10 @@ export function useRoleMappings() {
         "/api/v1/entities/role_mapping/list?page=1&page_size=100&sort_key=created_at&sort_dir=desc",
       );
       if (res.ok) {
-        const data = await res.text().then((t) => extJsonParse<any>(t));
+        const data = await res.text().then((t) => extJsonParse<{ rows?: RoleMapping[] }>(t));
         _state.roles = (data.rows ?? []) as RoleMapping[];
       } else {
-        const body = await res.text().then((t) => extJsonParse<any>(t)).catch(() => null);
+        const body = await res.text().then((t) => extJsonParse<RFC7807Error>(t)).catch(() => null);
         _state.error = body?.detail ?? `HTTP ${res.status}`;
         pushNotification(body ?? { impact: "HIGH", message: `HTTP ${res.status}`, scope: "roles" });
       }
@@ -86,9 +87,9 @@ export function useRoleMappings() {
     try {
       const res = await apiFetch(`/api/v1/entities/role_mapping/${encodeURIComponent(uuid)}`);
       if (res.ok) {
-        return (await res.text().then((t) => extJsonParse<any>(t))) as RoleMapping;
+        return (await res.text().then((t) => extJsonParse<unknown>(t))) as RoleMapping;
       }
-      const body = await res.text().then((t) => extJsonParse<any>(t)).catch(() => null);
+      const body = await res.text().then((t) => extJsonParse<RFC7807Error>(t)).catch(() => null);
       pushNotification(body ?? { impact: "MEDIUM", message: `HTTP ${res.status}`, scope: "roles" });
       return null;
     } catch (e) {
@@ -106,12 +107,12 @@ export function useRoleMappings() {
         body: extJsonStringify({ entity: input }),
       });
       if (res.ok) {
-        const role = (await res.text().then((t) => extJsonParse<any>(t))) as RoleMapping;
+        const role = (await res.text().then((t) => extJsonParse<unknown>(t))) as RoleMapping;
         await list();
         pushNotification({ impact: "NONE", message: "Role created", scope: "roles" });
         return role;
       }
-      const body = await res.text().then((t) => extJsonParse<any>(t)).catch(() => null);
+      const body = await res.text().then((t) => extJsonParse<RFC7807Error>(t)).catch(() => null);
       pushNotification(body ?? { impact: "HIGH", message: `HTTP ${res.status}`, scope: "roles" });
       return null;
     } catch (e) {
@@ -133,7 +134,7 @@ export function useRoleMappings() {
         pushNotification({ impact: "NONE", message: "Role updated", scope: "roles" });
         return true;
       }
-      const body = await res.text().then((t) => extJsonParse<any>(t)).catch(() => null);
+      const body = await res.text().then((t) => extJsonParse<RFC7807Error>(t)).catch(() => null);
       pushNotification(body ?? { impact: "HIGH", message: `HTTP ${res.status}`, scope: "roles" });
       return false;
     } catch (e) {

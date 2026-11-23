@@ -2,6 +2,7 @@
   import { onMount, untrack } from 'svelte';
   import { apiFetch } from '$lib/api';
   import { mapRFC7807ToMessageKey } from '$lib/errors/rfc7807-mapper';
+  import type { RFC7807Error } from '$lib/errors/rfc7807';
   import { pushNotification } from '$lib/errors/app-errors';
   import { userProfileStore } from '$lib/user-profile-store.svelte';
   import { Button } from '@primebrick/ui';
@@ -55,7 +56,7 @@
         body: extJsonStringify({ mfa_challenge_token: mfa_challenge_token }),
       });
       if (resp.ok) {
-        const data = await resp.text().then((t) => extJsonParse<any>(t));
+        const data = await resp.text().then((t) => extJsonParse<{ mfa_challenge_token: string; available_factors: typeof available_factors }>(t));
         challengeToken = data.mfa_challenge_token;
         factors = data.available_factors;
       }
@@ -91,7 +92,7 @@
       });
 
       if (!response.ok) {
-        const errorData = await response.text().then((t) => extJsonParse<any>(t));
+        const errorData = await response.text().then((t) => extJsonParse<RFC7807Error>(t));
         pushNotification({ ...errorData, toast: false });
 
         const mappedError = mapRFC7807ToMessageKey({
@@ -108,7 +109,7 @@
         return;
       }
 
-      const data = await response.text().then((t) => extJsonParse<any>(t));
+      const data = await response.text().then((t) => extJsonParse<{ success?: boolean; user?: Record<string, unknown> }>(t));
       if (data.success && data.user) {
         userProfileStore.setSession(data.user);
       }
@@ -116,7 +117,7 @@
       // OTP left bound makes PinInput re-fire onComplete in the effect
       // flush → duplicate verify with the consumed challenge token.
       otp.reset();
-      onsuccess?.(data);
+      onsuccess?.(data as { success: boolean; user: Record<string, unknown> });
     } catch (error) {
       console.error('[MFA Verify Error]', error);
       errorMsg = $t('app.auth.login.mfa.connection_error');

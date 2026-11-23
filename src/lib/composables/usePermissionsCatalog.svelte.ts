@@ -35,7 +35,7 @@ export function usePermissionsCatalog() {
     try {
       const res = await apiFetch("/api/v1/system/permissions");
       if (res.ok) {
-        const data = await res.text().then((t) => extJsonParse<any>(t));
+        const data = await res.text().then((t) => extJsonParse<{ modules?: PermissionModule[] }>(t));
         _state.modules = (data.modules ?? []) as PermissionModule[];
       } else {
         _state.error = `HTTP ${res.status}`;

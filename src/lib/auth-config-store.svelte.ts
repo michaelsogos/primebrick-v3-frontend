@@ -37,7 +37,7 @@ export async function loadAuthConfig(): Promise<void> {
   try {
     const resp = await apiFetch("/api/v1/auth/config");
     if (resp.ok) {
-      authConfigState.config = await resp.text().then((t) => extJsonParse<any>(t));
+      authConfigState.config = await resp.text().then((t) => extJsonParse<AuthConfigPublic>(t));
     }
   } catch {
     // Fail closed — config stays null, flags are all false

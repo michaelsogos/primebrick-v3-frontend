@@ -23,6 +23,7 @@
   import { usePasswordPolicy } from '$lib/composables/usePasswordPolicy.svelte';
   import { apiFetch } from '$lib/api';
   import { pushNotification } from '$lib/errors/app-errors';
+  import type { RFC7807Error } from '$lib/errors/rfc7807';
   import { onMount } from 'svelte';
   import { KeyRound } from '@primebrick/ui/vendor/lucide';
   import { extJsonParse, extJsonStringify } from '$lib/api-ext';
@@ -76,7 +77,7 @@
           });
           reset();
         } else {
-          const err = await resp.text().then((t) => extJsonParse<any>(t));
+          const err = await resp.text().then((t) => extJsonParse<RFC7807Error>(t));
           pushNotification({ ...err, toast: false });
           cancel();
         }

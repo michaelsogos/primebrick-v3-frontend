@@ -79,7 +79,7 @@ test.describe("collaborative update surface (job_trigger detail)", () => {
         const errBody = await res.text();
         throw new Error(`fixture POST rejected (${res.status()}): ${errBody}`);
       }
-      const body = (await res.text().then((t) => extJsonParse<any>(t))) as { uuid: string };
+      const body = (await res.text().then((t) => extJsonParse<unknown>(t))) as { uuid: string };
       fixtureUuids.push(body.uuid);
       return body.uuid;
     } finally {
@@ -99,7 +99,7 @@ test.describe("collaborative update surface (job_trigger detail)", () => {
       for (const uuid of fixtureUuids) {
         // Re-read version — saves bumped it since creation.
         const get = await page.request.get(`${JOB_BASE}/job_trigger/${uuid}`);
-        const row = (await get.text().then((t) => extJsonParse<any>(t))) as { version: number };
+        const row = (await get.text().then((t) => extJsonParse<unknown>(t))) as { version: number };
         await page.request.delete(`${JOB_BASE}/job_trigger/${uuid}?version=${row.version}`);
       }
     } finally {
@@ -227,7 +227,7 @@ test.describe("collaborative update surface (job_trigger detail)", () => {
       // /auth/me) and its tooltip labels it as my other tab
       // (en "other tab" / it "scheda").
       const selfUuid = await pageA.evaluate(async () => {
-        const me = await fetch("/api/v1/auth/me").then((r) => r.text().then((t) => extJsonParse<any>(t)));
+        const me = await fetch("/api/v1/auth/me").then((r) => r.text().then((t) => extJsonParse<{ uuid?: string }>(t)));
         return me.uuid as string;
       });
       await expect(otherTabAvatar).toHaveAttribute("data-presence-user", selfUuid!);

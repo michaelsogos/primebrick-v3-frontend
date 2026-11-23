@@ -47,7 +47,7 @@ const SIDEBAR_LINKS = "[data-sidebar='content'] a[href]";
  */
 async function expectedJobModuleLabel(page: import("@playwright/test").Page): Promise<string> {
   const modsRes = await page.request.get("/api/v1/modules");
-  const mods = (((await modsRes.text().then((t) => extJsonParse<any>(t))).modules ?? []) as Array<{
+  const mods = (((await modsRes.text().then((t) => extJsonParse<Record<string, unknown>>(t))).modules ?? []) as Array<{
     id: string;
     name: string;
     label_key?: string;
@@ -55,7 +55,7 @@ async function expectedJobModuleLabel(page: import("@playwright/test").Page): Pr
   const job = mods.find((m) => m.id === "job");
   if (!job?.label_key) return job?.name ?? "job";
   const dictRes = await page.request.get(`/api/v1/system/translations/${job.id}/en-GB`);
-  const dict: Record<string, string> = dictRes.ok() ? await dictRes.text().then((t) => extJsonParse<any>(t)) : {};
+  const dict: Record<string, string> = dictRes.ok() ? await dictRes.text().then((t) => extJsonParse<Record<string, string>>(t)) : {};
   return dict[job.label_key] ?? job.name;
 }
 
@@ -247,7 +247,7 @@ test.describe("/system/job/* pages (module-owned)", () => {
     // array stays in declaration order; orderedColumns sorts by `order`.
     const meta = await page.evaluate(async () => {
       const res = await fetch("/svc/job/api/v1/entities/job_trigger/meta");
-      const body = await res.text().then((t) => extJsonParse<any>(t));
+      const body = await res.text().then((t) => extJsonParse<Record<string, unknown>>(t));
       return (body.columns ?? []) as { key: string; order: number }[];
     });
     const ord = (k: string) => meta.find((c) => c.key === k)?.order ?? -1;
@@ -275,7 +275,7 @@ test.describe("/system/job/* pages (module-owned)", () => {
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
     const flags = await page.evaluate(async () => {
       const res = await fetch("/svc/job/api/v1/entities/job_trigger/meta");
-      const cols = ((await res.text().then((t) => extJsonParse<any>(t))).columns ?? []) as {
+      const cols = ((await res.text().then((t) => extJsonParse<Record<string, unknown>>(t))).columns ?? []) as {
         key: string;
         default_visible?: boolean;
         hideable?: boolean;
@@ -365,7 +365,7 @@ test.describe("/system/job/* pages (module-owned)", () => {
     // Served-meta contract — the physical drop + calculated projections.
     const meta = await page.evaluate(async () => {
       const res = await fetch("/svc/job/api/v1/entities/job_run/meta");
-      return res.text().then((t) => extJsonParse<any>(t));
+      return res.text().then((t) => extJsonParse<{ columns?: unknown; table?: { default_sort?: unknown; filter_presets?: Array<{ id: string; options?: Array<{ id: string; icon?: string }> }>; [k: string]: unknown } }>(t));
     });
     const cols = (meta.columns ?? []) as {
       key: string;
@@ -463,9 +463,9 @@ test.describe("/system/job/* pages (module-owned)", () => {
     // Monitor-first order: sent (default) → succeeded → failed aggregate → all.
     expect(preset).toMatchObject({ display: "button_group", default_option: "sent" });
     expect(
-      preset?.options.map((o: { id: string }) => o.id),
+      preset?.options?.map((o: { id: string }) => o.id),
     ).toEqual(["sent", "succeeded", "failed", "all"]);
-    expect(preset?.options.find((o: { id: string }) => o.id === "failed")).toMatchObject({
+    expect(preset?.options?.find((o: { id: string }) => o.id === "failed")).toMatchObject({
       icon: "triangle-exclamation-point",
       where: [{ field: "status", op: "IN", value: ["failed", "lost", "skipped"] }],
     });
@@ -566,7 +566,7 @@ test.describe("/system/job/* pages (module-owned)", () => {
     const failed = await page
       .request
       .get("/svc/job/api/v1/entities/job_run/list?filters[0][field]=status&filters[0][op]=%3D&filters[0][value]=failed&page_size=5")
-      .then((r) => r.text().then((t) => extJsonParse<any>(t)))
+      .then((r) => r.text().then((t) => extJsonParse<Record<string, unknown>>(t)))
       .then((b) => (b.rows ?? []) as { error_code?: string | null }[]);
     test.skip(
       !failed.some((r) => r.error_code),
@@ -629,7 +629,7 @@ test.describe("/system/job/* pages (module-owned)", () => {
     // never a bare array again.
     await expect(async () => {
       const raw = await page.evaluate((k) => sessionStorage.getItem(k), VK);
-      const parsed = extJsonParse<any>(raw ?? "null") as { v?: number; shown?: unknown; hidden?: unknown } | null;
+      const parsed = extJsonParse<unknown>(raw ?? "null") as { v?: number; shown?: unknown; hidden?: unknown } | null;
       expect(parsed?.v).toBe(2);
       expect(Array.isArray(parsed?.shown)).toBe(true);
       expect(Array.isArray(parsed?.hidden)).toBe(true);
@@ -653,7 +653,7 @@ test.describe("/system/job/* pages (module-owned)", () => {
       const list = await fetch(
         "/svc/job/api/v1/entities/job_run/list?page=1&page_size=1",
       )
-        .then((r) => r.text().then((t) => extJsonParse<any>(t)))
+        .then((r) => r.text().then((t) => extJsonParse<{ rows?: Array<Record<string, unknown>> }>(t)))
         .catch(() => null);
       const row = list?.rows?.[0] ?? null;
       if (!row?.uuid) return { status: -1, body: "no job_run row" };
@@ -741,7 +741,7 @@ test.describe("/system/job/* pages (module-owned)", () => {
       const list = await fetch(
         "/svc/job/api/v1/entities/job_trigger/list?page=1&page_size=25",
       )
-        .then((r) => r.text().then((t) => extJsonParse<any>(t)))
+        .then((r) => r.text().then((t) => extJsonParse<{ rows?: Array<{ uuid?: string }> }>(t)))
         .catch(() => null);
       const rows = (list?.rows ?? []) as { uuid?: string }[];
       for (const row of rows) {
@@ -751,13 +751,13 @@ test.describe("/system/job/* pages (module-owned)", () => {
         );
         if (res.status !== 200) return { status: res.status, body: await res.text() };
         const body = await res.text();
-        if ((extJsonParse<any>(body).data ?? []).length > 0)
+        if ((extJsonParse<{ data?: unknown[] }>(body).data ?? []).length > 0)
           return { status: res.status, body };
       }
       return { status: -1, body: "no job_trigger row with audit history" };
     });
     expect(result.status).toBe(200);
-    const payload = extJsonParse<any>(result.body) as {
+    const payload = extJsonParse<unknown>(result.body) as {
       data: { uuid: string; action: string; changed_at: string }[];
       pagination: { hasMore: boolean };
     };

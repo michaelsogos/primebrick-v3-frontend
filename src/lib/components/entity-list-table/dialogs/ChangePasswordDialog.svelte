@@ -74,7 +74,7 @@
       });
 
       if (!res.ok) {
-        const errData = await res.text().then((t) => extJsonParse<any>(t)) as RFC7807Error & Record<string, unknown>;
+        const errData = await res.text().then((t) => extJsonParse<unknown>(t)) as RFC7807Error & Record<string, unknown>;
         pushNotification(errData);
         return;
       }

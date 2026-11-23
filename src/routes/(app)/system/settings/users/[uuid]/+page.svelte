@@ -154,7 +154,7 @@
           return;
         }
 
-        const data = await response.text().then((t) => extJsonParse<any>(t));
+        const data = await response.text().then((t) => extJsonParse<NonNullable<typeof user>>(t));
         if (data) {
           // The write response IS the authoritative entity (RETURNING) —
           // consume it directly instead of re-fetching.
@@ -188,7 +188,7 @@
         console.error('Failed to load user');
         return;
       }
-      const data = await response.text().then((t) => extJsonParse<any>(t));
+      const data = await response.text().then((t) => extJsonParse<NonNullable<typeof user>>(t));
       user = data;
       reset({
         data: {

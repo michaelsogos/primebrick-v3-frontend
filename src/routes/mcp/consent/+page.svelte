@@ -11,7 +11,7 @@
   import { cn } from '$lib/utils';
   import { t } from '$lib/i18n';
   import { avatarFallbackChromeClasses } from '$lib/avatar-chrome-palette';
-  import { userProfileState, userProfileStore } from '$lib/user-profile-store.svelte';
+  import { userProfileState, userProfileStore, type UserProfile } from '$lib/user-profile-store.svelte';
   import { apiFetch } from '$lib/api';
   import {
     parseConsentParams,
@@ -60,7 +60,7 @@
     try {
       const response = await apiFetch('/api/v1/auth/me', { method: 'GET' });
       if (response.ok) {
-        const data = await response.text().then((t) => extJsonParse<any>(t));
+        const data = await response.text().then((t) => extJsonParse<{ user?: UserProfile }>(t));
         if (data.user) {
           userProfileStore.set(data.user);
         }

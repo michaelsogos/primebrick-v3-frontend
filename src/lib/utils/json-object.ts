@@ -15,7 +15,7 @@ export function tryParseJsonObject(val: unknown): Record<string, unknown> | unde
   const trimmed = val.trim();
   if (!trimmed.startsWith('{') || !trimmed.endsWith('}')) return undefined;
   try {
-    const parsed: unknown = extJsonParse<any>(trimmed);
+    const parsed: unknown = extJsonParse<unknown>(trimmed);
     return (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed))
       ? parsed as Record<string, unknown>
       : undefined;

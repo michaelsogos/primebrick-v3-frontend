@@ -181,7 +181,7 @@ export function useRegexAi(
     // Step 2: Try JSON.parse with backslash sanitization
     const sanitized = text.replace(/\\(?!["\\bfnrtu/])/g, '\\\\');
     try {
-      const parsed = extJsonParse<any>(sanitized);
+      const parsed = extJsonParse<{ patterns?: unknown[] }>(sanitized);
       if (parsed && Array.isArray(parsed.patterns)) {
         return parsed.patterns
           .filter(
@@ -286,7 +286,7 @@ export function useRegexAi(
         `Generate up to 5 positive examples (values that MATCH) and up to 5 negative examples (values that do NOT match) for the regex pattern "${pattern}" with flags "${flags}". Respond as JSON: {"positive": ["..."], "negative": ["..."]}`,
         { temperature: 0.5 },
       );
-      const parsed = extJsonParse<any>(responseText);
+      const parsed = extJsonParse<{ positive?: string[]; negative?: string[] }>(responseText);
       return {
         positive: Array.isArray(parsed.positive) ? parsed.positive.slice(0, 5) : [],
         negative: Array.isArray(parsed.negative) ? parsed.negative.slice(0, 5) : [],

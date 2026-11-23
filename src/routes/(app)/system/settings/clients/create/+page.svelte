@@ -94,7 +94,7 @@
           body: extJsonStringify({ entity }),
         });
         if (!res.ok) throw new Error(`client_registry create failed (${res.status})`);
-        const created = (await res.text().then((t) => extJsonParse<any>(t))) as { client_key?: string };
+        const created = (await res.text().then((t) => extJsonParse<unknown>(t))) as { client_key?: string };
 
         notifyParentRefresh();
         reset({ data: $form });

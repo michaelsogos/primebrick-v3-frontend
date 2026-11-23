@@ -34,7 +34,7 @@ import { extJsonStringify, extJsonParse } from '$lib/api-ext';
 
   function prettyJson(json: string): string {
     try {
-      return extJsonStringify(extJsonParse<any>(json), 2);
+      return extJsonStringify(extJsonParse<unknown>(json), 2);
     } catch {
       return json;
     }
@@ -42,7 +42,7 @@ import { extJsonStringify, extJsonParse } from '$lib/api-ext';
 
   function compactJson(json: string): string {
     try {
-      return extJsonStringify(extJsonParse<any>(json));
+      return extJsonStringify(extJsonParse<unknown>(json));
     } catch {
       return json;
     }
@@ -75,7 +75,7 @@ import { extJsonStringify, extJsonParse } from '$lib/api-ext';
   // Falls back to the raw string when the JSON can't be parsed.
   const previewJson = $derived.by(() => {
     try {
-      return extJsonParse<any>(builder.json);
+      return extJsonParse<unknown>(builder.json);
     } catch {
       return builder.json;
     }

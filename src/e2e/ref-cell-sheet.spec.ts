@@ -60,7 +60,7 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
         void res
           .text()
 
-          .then((t) => extJsonParse<any>(t))
+          .then((t) => extJsonParse<{ rows?: ListRow[] }>(t))
           .then((j) => {
             if (Array.isArray(j?.rows)) listRows = j.rows as ListRow[];
           })
@@ -263,7 +263,7 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
         void res
           .text()
 
-          .then((t) => extJsonParse<any>(t))
+          .then((t) => extJsonParse<{ data?: Array<{ uuid: string; action: string; changed_by: string | null; changed_by_name: string | null }> }>(t))
           .then((j) => {
             if (Array.isArray(j?.data)) auditRows.push(...j.data);
           })
@@ -575,7 +575,7 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
         },
       });
       expect(res.ok()).toBeTruthy();
-      const body = await res.text().then((t) => extJsonParse<any>(t));
+      const body = await res.text().then((t) => extJsonParse<{ created_by?: unknown; uuid?: string; row?: { created_by?: unknown; uuid?: string }; entity?: { created_by?: unknown; uuid?: string } }>(t));
       suspendedUuid = (body?.created_by ?? body?.row?.created_by ?? body?.entity?.created_by) as
         | string
         | undefined;
@@ -591,7 +591,7 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
       const res = await page.request.get(
         `/api/v1/entities/user_profile/list?filters[0][field]=uuid&filters[0][op]=%3D&filters[0][value]=${suspendedUuid}`,
       );
-      const j = await res.text().then((t) => extJsonParse<any>(t));
+      const j = await res.text().then((t) => extJsonParse<{ rows?: Array<{ uuid: string; version: number }> }>(t));
       return j?.rows?.[0] as { uuid: string; version: number } | undefined;
     };
     const before = await profileOf();
@@ -626,7 +626,7 @@ test.describe("ref cell — link anatomy + entity.record sheet", () => {
         const custRes = await page.request.get(
           `/svc/crm/api/v1/entities/customer/list?filters[0][field]=uuid&filters[0][op]=%3D&filters[0][value]=${customerUuid}`,
         );
-        const cust = (await custRes.text().then((t) => extJsonParse<any>(t)))?.rows?.[0] as { version: number } | undefined;
+        const cust = (await custRes.text().then((t) => extJsonParse<{ rows?: Array<{ version: number }> }>(t)))?.rows?.[0] as { version: number } | undefined;
         if (cust) {
           await page.request.delete(
             `/svc/crm/api/v1/entities/customer/${customerUuid}?version=${cust.version}`,

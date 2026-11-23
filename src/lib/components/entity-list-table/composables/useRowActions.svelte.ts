@@ -169,13 +169,13 @@ export function useRowActions<TRow extends Record<string, unknown>>(
       });
 
       if (!response.ok) {
-        const errorData = await response.text().then((t) => extJsonParse<any>(t)) as RFC7807Error & { duplicateResults?: { successful: string[]; failed: Array<{ uuid: string; error: string }> } };
+        const errorData = await response.text().then((t) => extJsonParse<unknown>(t)) as RFC7807Error & { duplicateResults?: { successful: string[]; failed: Array<{ uuid: string; error: string }> } };
         const enhancedError = { ...errorData, duplicateResults: errorData.duplicateResults };
         pushNotification(enhancedError);
         throw enhancedError;
       }
 
-      const result = await response.text().then((t) => extJsonParse<any>(t)) as { uuids: string[]; errors: Array<{ uuid: string; error: string }> };
+      const result = await response.text().then((t) => extJsonParse<unknown>(t)) as { uuids: string[]; errors: Array<{ uuid: string; error: string }> };
       if (result.errors.length > 0) {
         pushNotification({
           impact: 'MEDIUM',

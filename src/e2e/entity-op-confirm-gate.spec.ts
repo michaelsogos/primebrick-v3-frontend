@@ -54,7 +54,7 @@ async function createTempRow(page: Page, code: string): Promise<{ uuid: string; 
     },
   });
   expect(res.ok(), `temp row create failed: ${res.status()} ${await res.text()}`).toBeTruthy();
-  const body = (await res.text().then((t) => extJsonParse<any>(t))) as {
+  const body = (await res.text().then((t) => extJsonParse<unknown>(t))) as {
     uuid?: string;
     version?: number;
     entity?: { uuid?: string; version?: number };
@@ -76,7 +76,7 @@ async function cleanupTempRow(page: Page, code: string): Promise<void> {
       .get(`${API}/list?deleted_records=${deleted}&page_size=50`)
       .catch(() => null);
     if (!list?.ok()) return undefined;
-    const body = (await list.text().then((t) => extJsonParse<any>(t)).catch(() => null)) as {
+    const body = (await list.text().then((t) => extJsonParse<unknown>(t)).catch(() => null)) as {
       rows?: Array<{ uuid?: string; code?: string; version?: number }>;
       items?: Array<{ uuid?: string; code?: string; version?: number }>;
     } | null;
@@ -290,7 +290,7 @@ async function createTempTemplate(page: Page, code: string): Promise<{ uuid: str
     data: { entity: { code, language_iso: "en", subject: `E2E gate ${code}` } },
   });
   expect(res.ok(), `temp template create failed: ${res.status()} ${await res.text()}`).toBeTruthy();
-  const body = (await res.text().then((t) => extJsonParse<any>(t))) as {
+  const body = (await res.text().then((t) => extJsonParse<unknown>(t))) as {
     uuid?: string;
     version?: number;
     entity?: { uuid?: string; version?: number };
@@ -306,7 +306,7 @@ async function cleanupTempTemplate(page: Page, code: string): Promise<void> {
       .get(`${TPL_API}/list?deleted_records=${deleted}&page_size=50`)
       .catch(() => null);
     if (!list?.ok()) return undefined;
-    const body = (await list.text().then((t) => extJsonParse<any>(t)).catch(() => null)) as {
+    const body = (await list.text().then((t) => extJsonParse<unknown>(t)).catch(() => null)) as {
       rows?: Array<{ uuid?: string; code?: string; version?: number }>;
       items?: Array<{ uuid?: string; code?: string; version?: number }>;
     } | null;
@@ -396,7 +396,7 @@ async function createTempTrigger(page: Page, name: string): Promise<{ uuid: stri
     },
   });
   expect(res.ok(), `temp trigger create failed: ${res.status()} ${await res.text()}`).toBeTruthy();
-  const body = (await res.text().then((t) => extJsonParse<any>(t))) as {
+  const body = (await res.text().then((t) => extJsonParse<unknown>(t))) as {
     uuid?: string;
     version?: number;
     entity?: { uuid?: string; version?: number };
@@ -412,7 +412,7 @@ async function cleanupTempTrigger(page: Page, name: string): Promise<void> {
       .get(`${TRIGGERS_API}/list?deleted_records=${deleted}&page_size=50`)
       .catch(() => null);
     if (!list?.ok()) return undefined;
-    const body = (await list.text().then((t) => extJsonParse<any>(t)).catch(() => null)) as {
+    const body = (await list.text().then((t) => extJsonParse<unknown>(t)).catch(() => null)) as {
       rows?: Array<{ uuid?: string; name?: string; version?: number }>;
       items?: Array<{ uuid?: string; name?: string; version?: number }>;
     } | null;
@@ -570,7 +570,7 @@ test.describe("entity-op confirm gate — custom op confirm_key", () => {
       `${USERS_API}/list?filters[0][field]=idp_username&filters[0][op]=%3D&filters[0][value]=${encodeURIComponent(username)}&page_size=5`,
     );
     expect(list.ok(), `user_profile list failed: ${list.status()}`).toBeTruthy();
-    const body = (await list.text().then((t) => extJsonParse<any>(t))) as {
+    const body = (await list.text().then((t) => extJsonParse<unknown>(t))) as {
       rows?: Array<{ uuid?: string; idp_username?: string; display_name?: string; suspended?: boolean | number | bigint }>;
       items?: Array<{ uuid?: string; idp_username?: string; display_name?: string; suspended?: boolean | number | bigint }>;
     };

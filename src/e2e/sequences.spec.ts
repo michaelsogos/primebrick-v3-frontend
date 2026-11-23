@@ -23,6 +23,15 @@ import { extJsonParse, extJsonStringify } from "@primebrick/core/ext-json";
 const CRM_BASE = "/svc/crm/api/v1/entities";
 const NAME = `e2e_seq_${Date.now()}`;
 
+type SeqCol = { key: string; format?: string; [k: string]: unknown };
+type SeqMeta = {
+  entity?: string;
+  entities_ns?: string;
+  columns?: SeqCol[];
+  actions?: Array<{ op: string; label_key?: string }>;
+};
+type SeqRow = { entity?: Record<string, unknown>; version?: unknown; uuid?: string; name?: string; [k: string]: unknown };
+
 // Serial — the suite mutates shared DB state (bound rows, live counters)
 // and intercepts routes; parallel workers race the same rows and starve
 // the single dev stack (same convention as the other DB-coupled specs).
@@ -36,10 +45,10 @@ test.describe("builtin sequence registry — mounted by construction", () => {
   test("meta + list serve without a module-authored decl", async ({ page }) => {
     const r = await page.request.get(`${CRM_BASE}/sequence/meta`);
     expect(r.status()).toBe(200);
-    const meta = extJsonParse<any>(await r.text());
+    const meta = extJsonParse<SeqMeta>(await r.text());
     expect(meta.entity).toBe("sequence");
     expect(meta.entities_ns).toBe("crm"); // derived — never authored
-    const keys = (meta.columns ?? []).map((c: any) => c.key);
+    const keys = (meta.columns ?? []).map((c) => c.key);
     for (const k of ["name", "pattern", "step", "start", "tz", "description_key"]) {
       expect(keys, `column ${k}`).toContain(k);
     }
@@ -49,7 +58,7 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     // cell (languages icon + resolved label, raw-key fallback) — and is
     // out of the default view but toggleable (`default_visible:false`,
     // never `hidden`).
-    const byKey = new Map<string, any>((meta.columns ?? []).map((c: any) => [c.key, c]));
+    const byKey = new Map<string, SeqCol>((meta.columns ?? []).map((c) => [c.key, c]));
     expect(byKey.get("description_key")?.format).toBe("i18n_key");
     expect(byKey.get("description_key")?.default_visible).toBe(false);
     expect(byKey.get("description_key")?.hidden).not.toBe(true);
@@ -65,14 +74,14 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     }
     // Soft-delete reads as Disable/Enable on sequences (actions_overrides).
     for (const op of ["delete.single", "delete.bulk", "restore.single", "restore.bulk"]) {
-      const a = (meta.actions ?? []).find((x: any) => x.op === op);
+      const a = (meta.actions ?? []).find((x) => x.op === op);
       expect(a?.label_key, `action ${op}`).toContain(".actions.");
     }
 
     const lr = await page.request.get(`${CRM_BASE}/sequence/list`);
     expect(lr.status()).toBe(200);
-    const list = extJsonParse<any>(await lr.text());
-    const rows: any[] = list?.rows ?? list?.items ?? [];
+    const list = extJsonParse<{ rows?: Array<Record<string, unknown>>; items?: Array<Record<string, unknown>> }>(await lr.text());
+    const rows: Array<Record<string, unknown>> = list?.rows ?? list?.items ?? [];
     expect(rows.length).toBeGreaterThan(0);
     // The projection is attached per served row — never-claimed sequences
     // show value_next = start and value_actual/emitted_actual = null.
@@ -107,14 +116,14 @@ test.describe("builtin sequence registry — mounted by construction", () => {
       },
     });
     expect([200, 201], `create: ${await cr.text()}`).toContain(cr.status());
-    const created = extJsonParse<any>(await cr.text());
+    const created = extJsonParse<SeqRow>(await cr.text());
     const uuid = created?.entity?.uuid ?? created?.uuid;
     expect(uuid).toBeTruthy();
 
     try {
       const get = await page.request.get(`${CRM_BASE}/sequence/${uuid}`);
       expect(get.status()).toBe(200);
-      const row = extJsonParse<any>(await get.text());
+      const row = extJsonParse<SeqRow>(await get.text());
       expect(row.entity?.name ?? row.name).toBe(NAME);
       expect(String(row.entity?.step ?? row.step)).toMatch(/^1n?$/);
 
@@ -128,7 +137,7 @@ test.describe("builtin sequence registry — mounted by construction", () => {
       expect(list.status()).toBe(200);
       expect(await list.text()).toContain(NAME);
     } finally {
-      const row = extJsonParse<any>(await (await page.request.get(`${CRM_BASE}/sequence/${uuid}`)).text());
+      const row = extJsonParse<SeqRow>(await (await page.request.get(`${CRM_BASE}/sequence/${uuid}`)).text());
       const version = String(row.entity?.version ?? row.version);
       // `version` rides the QUERY string on governed writes — a body field
       // is ignored (`VERSION_REQUIRED`); an unasserted cleanup call here
@@ -145,11 +154,11 @@ test.describe("builtin sequence registry — mounted by construction", () => {
       data: { entity: { name, pattern: "DEL-{seq:4}", step: "1", start: "1" } },
     });
     expect([200, 201], `create: ${await cr.text()}`).toContain(cr.status());
-    const created = extJsonParse<any>(await cr.text());
+    const created = extJsonParse<SeqRow>(await cr.text());
     const uuid = created?.entity?.uuid ?? created?.uuid;
     expect(uuid).toBeTruthy();
 
-    const row = extJsonParse<any>(await (await page.request.get(`${CRM_BASE}/sequence/${uuid}`)).text());
+    const row = extJsonParse<SeqRow>(await (await page.request.get(`${CRM_BASE}/sequence/${uuid}`)).text());
     const del = await page.request.delete(
       `${CRM_BASE}/sequence/${uuid}?version=${row.entity?.version ?? row.version}`,
     );
@@ -172,7 +181,7 @@ test.describe("builtin sequence registry — mounted by construction", () => {
       // counters are never deleted with the definition.
       const rr = await page.request.post(`${CRM_BASE}/sequence/${uuid}/restore?version=2`);
       expect(rr.status()).toBe(200);
-      const row2 = extJsonParse<any>(
+      const row2 = extJsonParse<SeqRow>(
         await (await page.request.get(`${CRM_BASE}/sequence/${uuid}`)).text(),
       );
       await page.request.delete(
@@ -201,13 +210,13 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     // The uuid form is the identity contract — assert it is accepted on
     // the bound field's own default sequence (resolved via list).
     const lr = await page.request.get(`${CRM_BASE}/sequence/list?search=customers.code`);
-    const rows = extJsonParse<any>(await lr.text())?.rows ?? [];
-    const bound = rows.find((r: any) => r.name === "customers.code");
+    const rows = extJsonParse<{ rows?: Array<{ name?: string; uuid?: string }> }>(await lr.text())?.rows ?? [];
+    const bound = rows.find((r) => r.name === "customers.code");
     expect(bound?.uuid).toBeTruthy();
     const ok = await page.request.post(`${CRM_BASE}/customer`, {
       data: {
         entity: {
-          code: { seq: { uuid: bound.uuid } },
+          code: { seq: { uuid: bound!.uuid } },
           display_name: "E2E SeqUuid Probe",
           status: "ACTIVE",
         },
@@ -215,11 +224,11 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     });
     const okBody = await ok.text();
     expect(ok.status(), okBody).toBe(201);
-    const created = extJsonParse<any>(okBody);
+    const created = extJsonParse<SeqRow>(okBody);
     try {
       expect(String(created.code)).toMatch(/^CUST-\d{5}$/);
     } finally {
-      const fresh = extJsonParse<any>(
+      const fresh = extJsonParse<SeqRow>(
         await (await page.request.get(`${CRM_BASE}/customer/${created.uuid}`)).text(),
       );
       await page.request.delete(`${CRM_BASE}/customer/${created.uuid}?version=${fresh.version}`);
@@ -241,7 +250,7 @@ test.describe("builtin sequence registry — mounted by construction", () => {
         data: { entity: { display_name: name, status: "ACTIVE" } },
       });
       expect(res.status()).toBe(201);
-      const row = extJsonParse<any>(await res.text());
+      const row = extJsonParse<SeqRow>(await res.text());
       expect(String(row.code)).toMatch(/^CUST-\d{5}$/);
       return row;
     };
@@ -313,10 +322,10 @@ test.describe("builtin sequence registry — mounted by construction", () => {
       await expect
         .poll(
           async () => {
-            const ra = extJsonParse<any>(
+            const ra = extJsonParse<SeqRow>(
               await (await page.request.get(`${CRM_BASE}/customer/${a.uuid}`)).text(),
             );
-            const rb = extJsonParse<any>(
+            const rb = extJsonParse<SeqRow>(
               await (await page.request.get(`${CRM_BASE}/customer/${b.uuid}`)).text(),
             );
             codes = [String(ra.code), String(rb.code)].sort();
@@ -329,7 +338,7 @@ test.describe("builtin sequence registry — mounted by construction", () => {
       expect(nums[1]! - nums[0]!).toBe(1);
     } finally {
       for (const row of [a, b]) {
-        const fresh = extJsonParse<any>(
+        const fresh = extJsonParse<SeqRow>(
           await (await page.request.get(`${CRM_BASE}/customer/${row.uuid}`)).text(),
         );
         await page.request.delete(
@@ -465,7 +474,7 @@ test.describe("builtin sequence registry — mounted by construction", () => {
       },
     });
     expect([200, 201], `create: ${await cr.text()}`).toContain(cr.status());
-    const uuid = extJsonParse<any>(await cr.text())?.entity?.uuid;
+    const uuid = extJsonParse<{ entity?: { uuid?: string } }>(await cr.text())?.entity?.uuid;
     // Fallback case — an untranslated key resolves to itself: the badge
     // renders the raw `description_key` (mono), never an invented label.
     const fbName = `e2e_i18n_fb_${Date.now()}`;
@@ -482,7 +491,7 @@ test.describe("builtin sequence registry — mounted by construction", () => {
       },
     });
     expect([200, 201], `fb create: ${await fb.text()}`).toContain(fb.status());
-    const fbUuid = extJsonParse<any>(await fb.text())?.entity?.uuid;
+    const fbUuid = extJsonParse<{ entity?: { uuid?: string } }>(await fb.text())?.entity?.uuid;
     try {
       const listReq = page.waitForResponse(
         (r) => r.url().includes("/entities/sequence/list") && r.status() === 200,
@@ -676,7 +685,7 @@ test.describe("builtin sequence registry — mounted by construction", () => {
         },
       });
       expect(r.status()).toBe(201);
-      return (await r.text().then((t) => extJsonParse<any>(t))) as Record<string, unknown>;
+      return (await r.text().then((t) => extJsonParse<unknown>(t))) as Record<string, unknown>;
     };
     const seqEdit = await mkSeq("e");
     const seqDel = await mkSeq("d");
@@ -804,7 +813,7 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     for (const s of [seqEdit, seqDel, seqBulk]) {
       const g = await page.request.get(`${CRM_BASE}/sequence/${s.uuid}`);
       if (!g.ok()) continue;
-      const row = extJsonParse<any>(await g.text());
+      const row = extJsonParse<SeqRow>(await g.text());
       await page.request.delete(`${CRM_BASE}/sequence/${s.uuid}?version=${row.version}`);
     }
   });
@@ -879,7 +888,7 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     );
     await page.getByTestId("entity-form-submit").click();
     const postRes = await postReq;
-    const created = extJsonParse<any>(await postRes.text());
+    const created = extJsonParse<SeqRow>(await postRes.text());
     const createdRow = (created.entity ?? created) as Record<string, unknown>;
     // The untouched prefill committed — server row carries the defaults.
     expect(String(createdRow.step)).toMatch(/^1n?$/);
@@ -915,7 +924,7 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     // Cleanup fixture.
     const g = await page.request.get(`${CRM_BASE}/sequence/${createdRow.uuid}`);
     if (g.ok()) {
-      const row = extJsonParse<any>(await g.text());
+      const row = extJsonParse<SeqRow>(await g.text());
       await page.request.delete(
         `${CRM_BASE}/sequence/${createdRow.uuid}?version=${row.version}`,
       );
@@ -1087,7 +1096,7 @@ test.describe("builtin sequence registry — mounted by construction", () => {
         },
       });
       expect(r.status()).toBe(201);
-      return extJsonParse<any>(await r.text());
+      return extJsonParse<SeqRow>(await r.text());
     })();
 
     const dialogs: { type: string; message: string }[] = [];
@@ -1172,7 +1181,7 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     // Cleanup.
     const g = await page.request.get(`${CRM_BASE}/sequence/${seq.uuid}`);
     if (g.ok()) {
-      const r2 = extJsonParse<any>(await g.text());
+      const r2 = extJsonParse<SeqRow>(await g.text());
       await page.request.delete(`${CRM_BASE}/sequence/${seq.uuid}?version=${r2.version}`);
     }
   });
@@ -1192,7 +1201,7 @@ test.describe("builtin sequence registry — mounted by construction", () => {
         },
       });
       expect(r.status()).toBe(201);
-      return extJsonParse<any>(await r.text());
+      return extJsonParse<SeqRow>(await r.text());
     })();
 
     // Wire spy — an invalid submit must NEVER reach the endpoint.
@@ -1214,7 +1223,7 @@ test.describe("builtin sequence registry — mounted by construction", () => {
 
     // ── UPDATE surface: pencil → clear a required field → error chrome
     //    + submit disabled + no PUT ───────────────────────────────────
-    const row = page.locator("table tbody tr", { hasText: seq.name }).first();
+    const row = page.locator("table tbody tr", { hasText: seq.name! }).first();
     await expect(row).toBeVisible({ timeout: 5_000 });
     await row.dblclick();
     const sheet = page.getByTestId("entity-record-sheet");
@@ -1284,7 +1293,7 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     // Cleanup.
     const g = await page.request.get(`${CRM_BASE}/sequence/${seq.uuid}`);
     if (g.ok()) {
-      const r2 = extJsonParse<any>(await g.text());
+      const r2 = extJsonParse<SeqRow>(await g.text());
       await page.request.delete(`${CRM_BASE}/sequence/${seq.uuid}?version=${r2.version}`);
     }
   });
@@ -1304,11 +1313,11 @@ test.describe("builtin sequence registry — mounted by construction", () => {
         },
       });
       expect(r.status()).toBe(201);
-      return extJsonParse<any>(await r.text());
+      return extJsonParse<SeqRow>(await r.text());
     })();
 
     await page.goto("/crm/settings/sequences");
-    const row = page.locator("table tbody tr", { hasText: seq.name }).first();
+    const row = page.locator("table tbody tr", { hasText: seq.name! }).first();
     await expect(row).toBeVisible({ timeout: 5_000 });
     await row.dblclick();
 
@@ -1329,7 +1338,7 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     // Cleanup.
     const g = await page.request.get(`${CRM_BASE}/sequence/${seq.uuid}`);
     if (g.ok()) {
-      const r2 = extJsonParse<any>(await g.text());
+      const r2 = extJsonParse<SeqRow>(await g.text());
       await page.request.delete(`${CRM_BASE}/sequence/${seq.uuid}?version=${r2.version}`);
     }
   });
@@ -1350,12 +1359,12 @@ test.describe("builtin sequence registry — mounted by construction", () => {
         },
       });
       expect(r.status()).toBe(201);
-      return extJsonParse<any>(await r.text());
+      return extJsonParse<SeqRow>(await r.text());
     })();
 
     await page.goto("/crm/settings/sequences");
-    await page.getByTestId("entity-search").locator("input").fill(seq.name);
-    const row = page.locator("table tbody tr", { hasText: seq.name }).first();
+    await page.getByTestId("entity-search").locator("input").fill(seq.name!);
+    const row = page.locator("table tbody tr", { hasText: seq.name! }).first();
     await expect(row).toBeVisible({ timeout: 5_000 });
 
     // Row actions menu → the sequence_set parametric op. Its menu label is
@@ -1393,7 +1402,7 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     // Cleanup.
     const g = await page.request.get(`${CRM_BASE}/sequence/${seq.uuid}`);
     if (g.ok()) {
-      const r2 = extJsonParse<any>(await g.text());
+      const r2 = extJsonParse<SeqRow>(await g.text());
       await page.request.delete(`${CRM_BASE}/sequence/${seq.uuid}?version=${r2.version}`);
     }
   });

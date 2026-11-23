@@ -75,14 +75,14 @@
         });
 
         if (!response.ok) {
-          const errorData = await response.text().then((t) => extJsonParse<any>(t));
+          const errorData = await response.text().then((t) => extJsonParse<unknown>(t));
           console.error('Failed to create organization:', errorData);
           cancel();
           return;
         }
 
         // The response IS the created entity (DAL RETURNING), not a wrapper.
-        const organization = await response.text().then((t) => extJsonParse<any>(t));
+        const organization = await response.text().then((t) => extJsonParse<{ uuid?: string }>(t));
         if (organization?.uuid) {
           console.log('Organization created successfully');
 
@@ -171,7 +171,7 @@
         return ValidationResult.ERROR_API;
       }
 
-      const data = await response.text().then((t) => extJsonParse<any>(t));
+      const data = await response.text().then((t) => extJsonParse<{ available?: boolean }>(t));
       if (data.available === true) {
         return ValidationResult.VALID;
       } else {

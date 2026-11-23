@@ -94,7 +94,7 @@ import { extJsonStringify, extJsonParse } from '$lib/api-ext';
     if (!requiredFields.length) return [];
     let current: Record<string, unknown>;
     try {
-      current = extJsonParse<any>(argsText);
+      current = extJsonParse<Record<string, unknown>>(argsText);
     } catch {
       return requiredFields; // unparseable → everything missing
     }
@@ -163,7 +163,7 @@ import { extJsonStringify, extJsonParse } from '$lib/api-ext';
         ? ((res.result as Record<string, unknown>)[entityName] as Record<string, unknown>)
         : (res.result as Record<string, unknown>);
       // Merge resolved identifiers into args (uuid + version for delete/restore)
-      const next = extJsonParse<any>(argsText || '{}');
+      const next = extJsonParse<Record<string, unknown>>(argsText || '{}');
       next.uuid = uuid;
       const version = resolvedEntity.version;
       if (version !== undefined && next.version === undefined) next.version = Number(version);
@@ -182,7 +182,7 @@ import { extJsonStringify, extJsonParse } from '$lib/api-ext';
     let args: Record<string, unknown> = action.args;
     if (isCreateUpdate || !isReadOnlyArgs) {
       try {
-        args = extJsonParse<any>(argsText);
+        args = extJsonParse<Record<string, unknown>>(argsText);
       } catch {
         error = 'Invalid JSON';
         executing = false;

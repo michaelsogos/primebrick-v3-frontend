@@ -1,6 +1,7 @@
 <script lang="ts">
   import { apiFetch } from "$lib/api";
   import { pushNotification } from "$lib/errors/app-errors";
+  import type { RFC7807Error } from "$lib/errors/rfc7807";
   import { Button } from '@primebrick/ui';
   import { Spinner } from "$lib/components/ui/spinner";
   import { t } from "$lib/i18n";
@@ -62,13 +63,13 @@
       });
 
       if (!beginResp.ok) {
-        const err = await beginResp.text().then((t) => extJsonParse<any>(t));
+        const err = await beginResp.text().then((t) => extJsonParse<RFC7807Error>(t));
         pushNotification({ ...err, ...passkeyErrorMessage(err), toast: false });
         onerror?.();
         return;
       }
 
-      const { nonce, options } = await beginResp.text().then((t) => extJsonParse<any>(t));
+      const { nonce, options } = await beginResp.text().then((t) => extJsonParse<{ nonce: string; options: Record<string, unknown> }>(t));
 
       // Step 2: browser ceremony — navigator.credentials.get() shows the OS
       // passkey prompt (FaceID / TouchID / security key).
@@ -99,17 +100,17 @@
       });
 
       if (!finishResp.ok) {
-        const err = await finishResp.text().then((t) => extJsonParse<any>(t));
+        const err = await finishResp.text().then((t) => extJsonParse<RFC7807Error>(t));
         pushNotification({ ...err, ...passkeyErrorMessage(err), toast: false });
         onerror?.();
         return;
       }
 
-      const data = await finishResp.text().then((t) => extJsonParse<any>(t));
+      const data = await finishResp.text().then((t) => extJsonParse<{ success?: boolean; user?: Record<string, unknown> }>(t));
       if (data.success && data.user) {
         userProfileStore.setSession(data.user);
       }
-      onsuccess?.(data);
+      onsuccess?.(data as { success: boolean; user: Record<string, unknown> });
     } catch (error) {
       // AbortError = user cancelled the browser prompt — not a real error
       if (error instanceof DOMException && error.name === "AbortError") {

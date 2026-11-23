@@ -140,7 +140,7 @@ import { extJsonStringify, extJsonParse } from '$lib/api-ext';
     const match = raw.match(/\{[\s\S]*\}/);
     let generated: Record<string, string>;
     try {
-      generated = match ? extJsonParse<any>(match[0]) : {};
+      generated = match ? extJsonParse<Record<string, string>>(match[0]) : {};
     } catch { generated = {}; }
     // Always seed the user's own text for their language even if the model
     // skipped it; fall back to the source text for missing locales.
@@ -185,7 +185,7 @@ import { extJsonStringify, extJsonParse } from '$lib/api-ext';
     if (!ai) return;
     let merged: Record<string, unknown>;
     try {
-      merged = extJsonParse<any>(currentJsonText() || '{}');
+      merged = extJsonParse<Record<string, unknown>>(currentJsonText() || '{}');
     } catch { merged = {}; }
     ai.proposeCandidate(extJsonStringify(setJsonPath(merged, path, key)));
   }
@@ -250,7 +250,7 @@ import { extJsonStringify, extJsonParse } from '$lib/api-ext';
         return;
       }
       try {
-        const compact = extJsonStringify(extJsonParse<any>(target.json));
+        const compact = extJsonStringify(extJsonParse<unknown>(target.json));
         on_apply_json(compact);
         ai.resolveChoice(message.uuid, 'applied', {
           condensed_content: $t('app.smart.json.ai.applied_summary', { json: compact }),

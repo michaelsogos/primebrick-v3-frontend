@@ -31,7 +31,7 @@ describe("E2E test-score update parameter binding", () => {
     expect(query).toContain("working_set_detail = $5::jsonb");
     expect(query).toContain("dtype IS NOT DISTINCT FROM $6");
     expect(values[3]).toBe(2);
-    expect(extJsonParse<any>(values[4] as string).measured_ctx_tokens).toBe(128n);
+    expect(extJsonParse<{ measured_ctx_tokens: bigint }>(values[4] as string).measured_ctx_tokens).toBe(128n);
   });
 });
 

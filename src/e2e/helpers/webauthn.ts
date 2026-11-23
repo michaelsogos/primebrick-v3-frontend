@@ -114,7 +114,7 @@ export async function savePasskey(passkey: CapturedPasskey): Promise<void> {
 export async function loadPasskey(): Promise<CapturedPasskey | null> {
   try {
     const content = await fs.readFile(PASSKEY_FILE, "utf-8");
-    return extJsonParse<any>(content) as CapturedPasskey;
+    return extJsonParse<unknown>(content) as CapturedPasskey;
   } catch {
     return null;
   }

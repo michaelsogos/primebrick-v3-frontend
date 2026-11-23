@@ -24,7 +24,7 @@
     try {
       const res = await apiFetch('/api/v1/system/organizations/active');
       if (res.ok) {
-        const data = await res.text().then((t) => extJsonParse<any>(t));
+        const data = await res.text().then((t) => extJsonParse<{ organizations?: ActiveOrg[] }>(t));
         activeOrgs = data.organizations ?? [];
         if (activeOrgs.length > 0 && !selectedOrgId) {
           selectedOrgId = activeOrgs[0].idp_code;

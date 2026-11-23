@@ -319,7 +319,7 @@ export function createSsePostStream(opts: SsePostStreamOptions): () => void {
           // Non-OK status — try to parse the error body as JSON
           let errorBody: unknown;
           try {
-            errorBody = await res.text().then((t) => extJsonParse<any>(t));
+            errorBody = await res.text().then((t) => extJsonParse<unknown>(t));
           } catch {
             // Body is not JSON — fall back to text
             errorBody = await res.text().catch(() => null);

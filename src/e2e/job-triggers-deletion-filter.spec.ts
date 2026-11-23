@@ -37,7 +37,7 @@ test.describe("/system/job/triggers deletion filter", () => {
       if (res.url().includes("/entities/job_trigger/list") && res.ok())
         res
           .text()
-          .then((t) => extJsonParse<any>(t))
+          .then((t) => extJsonParse<{ total?: unknown }>(t))
           .then((body) => listTotals.push(Number(body?.total)))
           .catch(() => {});
     });
@@ -308,7 +308,7 @@ test.describe("/system/job/triggers deletion filter", () => {
     page.on("response", (res) => {
       const u = res.url();
       if (u.includes("/entities/job_trigger/list") && u.includes("deleted_records=EXCLUDED") && res.ok())
-        res.text().then((t) => extJsonParse<any>(t)).then((b) => { excludedTotal = Number(b?.total ?? -1); }).catch(() => {});
+        res.text().then((t) => extJsonParse<{ total?: unknown }>(t)).then((b) => { excludedTotal = Number(b?.total ?? -1); }).catch(() => {});
     });
 
     await page.goto("/system/job/triggers", { waitUntil: "domcontentloaded" });

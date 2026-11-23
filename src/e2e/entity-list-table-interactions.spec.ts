@@ -511,7 +511,7 @@ test.describe("card-view toolbar zones (/crm/customers)", () => {
     await page.goto("/system/settings/users", { waitUntil: "domcontentloaded" });
     const resp = await respPromise;
     expect(resp.status()).toBe(200);
-    const body = (await resp.text().then((t) => extJsonParse<any>(t))) as { organizations?: unknown };
+    const body = (await resp.text().then((t) => extJsonParse<unknown>(t))) as { organizations?: unknown };
     expect(Array.isArray(body.organizations)).toBe(true);
   });
 });

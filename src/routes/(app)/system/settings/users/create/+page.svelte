@@ -95,11 +95,11 @@
       try {
         const res = await apiFetch('/api/v1/system/organizations/active');
         if (res.ok) {
-          const data = await res.text().then((t) => extJsonParse<any>(t));
+          const data = await res.text().then((t) => extJsonParse<{ organizations?: OrgOption[] }>(t));
           // Only orgs backed by a real IdP org (idp_name) can host new users —
           // without it the bound value would serialize to "[object Object]".
           availableOrgs = (data.organizations ?? []).filter(
-            (org: Record<string, unknown>) => typeof org.idp_name === 'string' && org.idp_name,
+            (org) => typeof org.idp_name === 'string' && org.idp_name,
           );
         }
       } catch (e) {
@@ -197,13 +197,13 @@
         });
 
         if (!response.ok) {
-          const errorData = await response.text().then((t) => extJsonParse<any>(t));
+          const errorData = await response.text().then((t) => extJsonParse<unknown>(t));
           console.error('Failed to create user:', errorData);
           cancel();
           return;
         }
 
-        const data = await response.text().then((t) => extJsonParse<any>(t));
+        const data = await response.text().then((t) => extJsonParse<{ profile?: { email?: string; uuid?: string } }>(t));
         console.log('User created successfully');
 
         // Show toast — different message when invitation was sent
@@ -267,7 +267,7 @@
       const params = new URLSearchParams({ username, idp_org: idpOrg });
       const response = await apiFetch(`/api/v1/auth/users/check-username?${params.toString()}`);
       if (!response.ok) return ValidationResult.ERROR_API;
-      const data = await response.text().then((t) => extJsonParse<any>(t));
+      const data = await response.text().then((t) => extJsonParse<{ available?: boolean }>(t));
       return data.available === true ? ValidationResult.VALID : ValidationResult.NOT_VALID;
     } catch (error) {
       console.error('Error checking username availability:', error);

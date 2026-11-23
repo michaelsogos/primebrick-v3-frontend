@@ -93,7 +93,7 @@ export const typeConfigJsonSchema = z.toJSONSchema(typeConfigSchema);
 export function parseTypeConfig(type_config?: string | null): ParsedTypeConfig | null {
   if (!type_config) return null;
   try {
-    return extJsonParse<any>(type_config) as ParsedTypeConfig;
+    return extJsonParse<unknown>(type_config) as ParsedTypeConfig;
   } catch {
     return null;
   }

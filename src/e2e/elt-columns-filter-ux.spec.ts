@@ -144,7 +144,7 @@ test.describe("ELT columns/filter UX — job_schedule", () => {
       const u = new URL(url);
       if (!u.searchParams.get("search")) return;
       try {
-        const body = await res.text().then((t) => extJsonParse<any>(t));
+        const body = await res.text().then((t) => extJsonParse<{ total?: unknown }>(t));
         searchCalls.push({
           status: res.status(),
           total: Number(body.total ?? -1),

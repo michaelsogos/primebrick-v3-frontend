@@ -146,7 +146,7 @@ import { extJsonStringify, extJsonParse } from '$lib/api-ext';
   function handleApply() {
     if (choice.kind !== 'config' || !choice.valid) return;
     try {
-      const compact = extJsonStringify(extJsonParse<any>(choice.json));
+      const compact = extJsonStringify(extJsonParse<unknown>(choice.json));
       on_apply_json(compact);
       // Sheet stays open — the assistant supports iterative refinement.
       // Condense the assistant turn to a compact applied-state summary so

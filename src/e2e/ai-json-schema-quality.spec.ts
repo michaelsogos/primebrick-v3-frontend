@@ -311,7 +311,7 @@ function scoreTurn(
     return { score: 0, verdict: "fail", reason: "no JSON candidate produced" };
   let parsed: Record<string, unknown>;
   try {
-    parsed = extJsonParse<any>(json);
+    parsed = extJsonParse<Record<string, unknown>>(json);
   } catch {
     return { score: 0, verdict: "fail", reason: "invalid JSON syntax" };
   }

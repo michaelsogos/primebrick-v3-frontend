@@ -31,7 +31,7 @@ export function useEntityMetadata(options: UseEntityMetadataOptions) {
     try {
       const res = await apiFetch(endpoint);
       if (res.ok) {
-        const data = await res.text().then((t) => extJsonParse<any>(t));
+        const data = await res.text().then((t) => extJsonParse<EntityMeta>(t));
 
         // Code Guardrail: Check if metadata becomes null after loading
         if (!data || !data.columns || data.columns.length === 0) {

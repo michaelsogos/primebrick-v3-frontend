@@ -4,6 +4,7 @@
   import { t } from '$lib/i18n';
   import { apiFetch } from '$lib/api';
   import { pushNotification } from '$lib/errors/app-errors';
+  import type { RFC7807Error } from '$lib/errors/rfc7807';
   import { userProfileStore } from '$lib/user-profile-store.svelte';
   import { decodeCredentialCreationOptions, encodeAuthenticatorAttestation } from '$lib/webauthn/codec';
   import { getPlatformVersion } from '$lib/webauthn/platform-info';
@@ -34,12 +35,12 @@
       });
 
       if (!beginResp.ok) {
-        const err = await beginResp.text().then((t) => extJsonParse<any>(t));
+        const err = await beginResp.text().then((t) => extJsonParse<RFC7807Error>(t));
         pushNotification({ ...err, toast: false });
         return;
       }
 
-      const { nonce, options } = await beginResp.text().then((t) => extJsonParse<any>(t));
+      const { nonce, options } = await beginResp.text().then((t) => extJsonParse<{ nonce: string; options: Record<string, unknown> }>(t));
 
       // Step 2: browser ceremony
       const decoded = decodeCredentialCreationOptions(options);
@@ -63,7 +64,7 @@
       });
 
       if (!finishResp.ok) {
-        const err = await finishResp.text().then((t) => extJsonParse<any>(t));
+        const err = await finishResp.text().then((t) => extJsonParse<RFC7807Error>(t));
         pushNotification({ ...err, toast: false });
         return;
       }

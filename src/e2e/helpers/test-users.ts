@@ -87,7 +87,7 @@ async function loadIdpConfig(): Promise<IdpConfig> {
   };
 }
 
-async function casdoorFetch(cfg: IdpConfig, path: string, init?: RequestInit): Promise<any> {
+async function casdoorFetch(cfg: IdpConfig, path: string, init?: RequestInit): Promise<Record<string, unknown> | null> {
   const url = new URL(`${cfg.endpoint}/api${path}`);
   url.searchParams.set("clientId", cfg.clientId);
   url.searchParams.set("clientSecret", cfg.clientSecret);
@@ -95,13 +95,13 @@ async function casdoorFetch(cfg: IdpConfig, path: string, init?: RequestInit): P
     ...init,
     headers: { "Content-Type": "application/json", ...init?.headers },
   });
-  return res.text().then((t) => extJsonParse<any>(t)).catch(() => null);
+  return res.text().then((t) => extJsonParse<Record<string, unknown>>(t)).catch(() => null);
 }
 
 async function deleteCasdoorUser(cfg: IdpConfig, name: string): Promise<void> {
   // Best-effort: fetch for the id, then delete.
   const got = await casdoorFetch(cfg, `/get-user?id=${encodeURIComponent(`${cfg.org}/${name}`)}`);
-  const user = got?.data;
+  const user = got?.data as { id?: string } | undefined;
   if (!user?.id) return;
   await casdoorFetch(cfg, `/delete-user?id=${encodeURIComponent(`${cfg.org}/${name}`)}`, {
     method: "POST",
@@ -116,7 +116,7 @@ async function getRole(cfg: IdpConfig): Promise<Record<string, unknown>> {
     `/get-role?id=${encodeURIComponent(`${cfg.org}/${ADMIN_ROLE}`)}`,
   );
   if (!got?.data) throw new Error(`[E2E] Casdoor get-role failed: ${extJsonStringify(got)}`);
-  return got.data;
+  return got.data as Record<string, unknown>;
 }
 
 // update-role applies the body verbatim — omitted fields are reset to their
@@ -156,7 +156,7 @@ async function unlinkCasdoorUserFromRole(cfg: IdpConfig, userKey: string): Promi
 /** Link/unlink a user into ANY Casdoor role (get-role/update-role by name). */
 async function getNamedRole(cfg: IdpConfig, roleName: string): Promise<Record<string, unknown> | null> {
   const got = await casdoorFetch(cfg, `/get-role?id=${encodeURIComponent(`${cfg.org}/${roleName}`)}`);
-  return got?.data ?? null;
+  return (got?.data ?? null) as Record<string, unknown> | null;
 }
 
 async function updateNamedRoleUsers(
@@ -266,10 +266,10 @@ async function createE2eAdminLikeActor(
 
   // add-user returns data:"Affected" — fetch the created user for its id.
   // get-user is eventually consistent right after creation → retry briefly.
-  let casdoorUser: any = null;
+  let casdoorUser: Record<string, unknown> | null = null;
   for (let i = 0; i < 10 && !casdoorUser?.id; i++) {
     const created = await casdoorFetch(cfg, `/get-user?id=${encodeURIComponent(`${cfg.org}/${name}`)}`);
-    casdoorUser = created?.data;
+    casdoorUser = created?.data as Record<string, unknown> | null;
     if (!casdoorUser?.id) await new Promise((r) => setTimeout(r, 500));
   }
   if (!casdoorUser?.id) {
@@ -436,10 +436,10 @@ export async function createE2eUserActor(): Promise<{ username: string; password
     throw new Error(`[E2E] Casdoor add-user for non-admin actor failed: ${extJsonStringify(addRes)}`);
   }
 
-  let casdoorUser: any = null;
+  let casdoorUser: Record<string, unknown> | null = null;
   for (let i = 0; i < 10 && !casdoorUser?.id; i++) {
     const created = await casdoorFetch(cfg, `/get-user?id=${encodeURIComponent(`${cfg.org}/${USER_ACTOR_NAME}`)}`);
-    casdoorUser = created?.data;
+    casdoorUser = created?.data as Record<string, unknown> | null;
     if (!casdoorUser?.id) await new Promise((r) => setTimeout(r, 500));
   }
   if (!casdoorUser?.id) {

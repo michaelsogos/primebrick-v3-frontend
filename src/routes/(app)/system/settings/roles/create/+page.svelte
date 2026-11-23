@@ -48,7 +48,7 @@
     try {
       const res = await apiFetch('/api/v1/system/organizations/active');
       if (res.ok) {
-        const data = await res.text().then((t) => extJsonParse<any>(t));
+        const data = await res.text().then((t) => extJsonParse<{ organizations?: OrgOption[] }>(t));
         orgs = (data.organizations ?? []) as OrgOption[];
       }
     } catch (e) {

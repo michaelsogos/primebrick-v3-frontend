@@ -445,7 +445,7 @@ export const aiChatStore = {
     try {
       const res = await apiFetch('/api/v1/ai/conversations');
       if (!res.ok) return;
-      const data = await res.text().then((t) => extJsonParse<any>(t)) as { conversations: AiConversation[] };
+      const data = await res.text().then((t) => extJsonParse<unknown>(t)) as { conversations: AiConversation[] };
       state.conversations = data.conversations ?? [];
     } catch (err) {
       console.error('[ai-chat] Failed to load conversations:', err);
@@ -457,7 +457,7 @@ export const aiChatStore = {
     try {
       const res = await apiFetch(`/api/v1/ai/conversations/${uuid}`);
       if (!res.ok) return;
-      const data = await res.text().then((t) => extJsonParse<any>(t)) as { conversation: AiConversation; messages: AiMessage[] };
+      const data = await res.text().then((t) => extJsonParse<unknown>(t)) as { conversation: AiConversation; messages: AiMessage[] };
       state.currentConversationUuid = uuid;
       state.messages = data.messages ?? [];
       state.error = null;

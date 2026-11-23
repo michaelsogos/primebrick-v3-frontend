@@ -951,7 +951,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: extJsonStringify({ entity: entityBody }),
         });
-        if (!res.ok) throw await res.text().then((t) => extJsonParse<any>(t)).catch(() => new Error(`update failed (${res.status})`));
+        if (!res.ok) throw await res.text().then((t) => extJsonParse<unknown>(t)).catch(() => new Error(`update failed (${res.status})`));
         originals = { ...originals, [id]: $state.snapshot(values[id]) };
       }
       for (const d of pendings) {
@@ -973,7 +973,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: extJsonStringify({ entity: postBody }),
         });
-        if (!res.ok) throw await res.text().then((t) => extJsonParse<any>(t)).catch(() => new Error(`create failed (${res.status})`));
+        if (!res.ok) throw await res.text().then((t) => extJsonParse<unknown>(t)).catch(() => new Error(`create failed (${res.status})`));
         pendings = pendings.filter((x) => x !== d);
       }
       // Pending translations → the standard translation gateway route —

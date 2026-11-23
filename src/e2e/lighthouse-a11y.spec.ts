@@ -177,8 +177,8 @@ test.describe("lighthouse accessibility audit", () => {
       }
       await sweepLhTabs();
 
-      const report = extJsonParse<any>(readFileSync(`${outPath}.report.json`, "utf8"));
-      const failing = Object.values(report.audits as Record<string, any>)
+      const report = extJsonParse<{ audits?: Record<string, { score: number | null; id: string; details?: { items?: unknown[] } }>; finalDisplayedUrl?: string; categories?: { accessibility?: { score?: number } } }>(readFileSync(`${outPath}.report.json`, "utf8"));
+      const failing = Object.values(report.audits as Record<string, { score: number | null; id: string; details?: { items?: unknown[] } }>)
         .filter((a) => a.score !== null && a.score < 1)
         .map((a) => ({ id: a.id, items: a.details?.items?.length ?? 0 }));
       results.push({

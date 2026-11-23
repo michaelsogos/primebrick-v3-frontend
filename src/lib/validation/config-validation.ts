@@ -107,7 +107,7 @@ export function buildConfigValueSchema(
     schema = schema.refine((val) => {
       if (!val) return true;
       try {
-        extJsonParse<any>(val);
+        extJsonParse<unknown>(val);
         return true;
       } catch {
         return false;

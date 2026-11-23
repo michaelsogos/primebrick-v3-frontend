@@ -5,6 +5,7 @@
   import { get } from 'svelte/store';
   import { apiFetch } from '$lib/api';
   import { pushNotification } from '$lib/errors/app-errors';
+  import type { RFC7807Error } from '$lib/errors/rfc7807';
   import { t } from '$lib/i18n';
   import { loadPublicTranslations } from '$lib/i18n/use-module-translations.svelte';
   import { uiLang } from '$lib/i18n/store.svelte';
@@ -102,10 +103,10 @@
         body: extJsonStringify({ token: _state.token }),
       });
 
-      const data = await res.text().then((t) => extJsonParse<any>(t));
+      const data = await res.text().then((t) => extJsonParse<{ valid?: boolean; display_name?: string; expires_at?: number }>(t));
       if (res.ok && data.valid) {
-        _state.display_name = data.display_name;
-        _state.expires_at = data.expires_at;
+        _state.display_name = data.display_name ?? '';
+        _state.expires_at = data.expires_at === undefined ? '' : String(data.expires_at);
         // Automatically send OTP after token verification
         await sendOtp();
       } else {
@@ -130,7 +131,7 @@
         body: extJsonStringify({ token: _state.token }),
       });
 
-      const data = await res.text().then((t) => extJsonParse<any>(t));
+      const data = await res.text().then((t) => extJsonParse<{ sent?: boolean }>(t));
       if (res.ok && data.sent) {
         _state.step = 'otp-sent';
         startResendCooldown();
@@ -154,7 +155,7 @@
         body: extJsonStringify({ token: _state.token, otp_code: _state.otp_code }),
       });
 
-      const data = await res.text().then((t) => extJsonParse<any>(t));
+      const data = await res.text().then((t) => extJsonParse<{ verified?: boolean }>(t));
       if (res.ok && data.verified) {
         _state.step = 'otp-verified';
       } else {
@@ -184,7 +185,7 @@
       if (res.ok) {
         _state.step = 'complete';
       } else {
-        const errorData = await res.text().then((t) => extJsonParse<any>(t));
+        const errorData = await res.text().then((t) => extJsonParse<RFC7807Error>(t));
         pushNotification({ ...errorData, toast: false });
         _state.error_message = errorData.detail ?? $t('app.auth.welcome.error.complete_failed');
       }

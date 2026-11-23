@@ -45,7 +45,7 @@ export function fetchEntityMeta(basePath: string): Promise<EntityMeta> {
       const code = apiDetails.code ?? 'GET_METADATA_FAILED';
       throw new ApiListError(code, res.status, apiDetails);
     }
-    const meta = (await res.text().then((t) => extJsonParse<any>(t))) as EntityMeta;
+    const meta = (await res.text().then((t) => extJsonParse<unknown>(t))) as EntityMeta;
     entry.data = meta;
     return meta;
   })();

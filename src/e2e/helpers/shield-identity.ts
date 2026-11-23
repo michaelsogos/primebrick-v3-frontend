@@ -44,7 +44,7 @@ export async function registerShieldIdentity(request: APIRequestContext): Promis
     `/api/v1/entities/client_registry/list?filters[0][field]=ua_prefix&filters[0][op]=%3D&filters[0][value]=${encodeURIComponent(E2E_UA_PREFIX)}&deleted_records=INCLUDED`,
   );
   const existing = list.ok()
-    ? (((await list.text().then((t) => extJsonParse<any>(t))) as { rows?: Array<{ uuid: string; version?: number; deleted_at?: string | null }> }).rows ?? [])[0]
+    ? (((await list.text().then((t) => extJsonParse<unknown>(t))) as { rows?: Array<{ uuid: string; version?: number; deleted_at?: string | null }> }).rows ?? [])[0]
     : undefined;
 
   if (existing) {
@@ -63,7 +63,7 @@ export async function registerShieldIdentity(request: APIRequestContext): Promis
     if (!upd.ok()) {
       // Version drift between list and update — retry once on the fresh row.
       const fresh = await request.get(`/api/v1/entities/client_registry/${rowUuid}`);
-      const frow = (await fresh.text().then((t) => extJsonParse<any>(t))) as { version?: number };
+      const frow = (await fresh.text().then((t) => extJsonParse<unknown>(t))) as { version?: number };
       const retry = await request.put(`/api/v1/entities/client_registry/${rowUuid}`, {
         data: { entity: { client_key: clientKey, is_enabled: true, version: frow.version ?? 0 } },
       });
@@ -83,7 +83,7 @@ export async function registerShieldIdentity(request: APIRequestContext): Promis
       const body = await res.text();
       throw new Error(`client_registry create failed ${res.status()}: ${body}`);
     }
-    rowUuid = ((await res.text().then((t) => extJsonParse<any>(t))) as { uuid: string }).uuid;
+    rowUuid = ((await res.text().then((t) => extJsonParse<unknown>(t))) as { uuid: string }).uuid;
   }
   const row = { uuid: rowUuid };
   // Sanity: the presented key must hash to what the verifier will compare.
@@ -98,7 +98,7 @@ export async function registerShieldIdentity(request: APIRequestContext): Promis
       const cur = await request.get(`/api/v1/entities/client_registry/${row.uuid}`);
       let v = 0;
       if (cur.ok()) {
-        const j = (await cur.text().then((t) => extJsonParse<any>(t))) as { version?: number; row?: { version?: number } };
+        const j = (await cur.text().then((t) => extJsonParse<unknown>(t))) as { version?: number; row?: { version?: number } };
         v = j.version ?? j.row?.version ?? 0;
       }
       const del = await request.delete(`/api/v1/entities/client_registry/${row.uuid}?version=${v}`);

@@ -57,7 +57,7 @@ export async function startFakeBrevoServer(fixedPort?: number): Promise<FakeBrev
     req.on("end", () => {
       receivedRequests.push({
         headers: req.headers as Record<string, string>,
-        body: body ? extJsonParse<any>(body) : null,
+        body: body ? extJsonParse<unknown>(body) : null,
         // Host-clock stamp — comparable to NATS tap `received_at` and the
         // DB timestamps (same machine): pipeline-latency measurements.
         received_at: Date.now(),

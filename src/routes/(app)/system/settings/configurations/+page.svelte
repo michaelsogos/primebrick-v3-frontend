@@ -101,7 +101,7 @@
         deleteDialogOpen = false;
         deleteTarget = null;
       } else {
-        const errorData = await resp.text().then((t) => extJsonParse<any>(t)).catch(() => null);
+        const errorData = await resp.text().then((t) => extJsonParse<{ detail?: string }>(t)).catch(() => null);
         pushNotification({
           impact: 'HIGH',
           messageKey: 'app.common.delete_failed',
@@ -148,11 +148,11 @@
         bulkDeleteDialogOpen = false;
         bulkTargets = [];
       } else {
-        const errorData = await resp.text().then((t) => extJsonParse<any>(t)).catch(() => null);
+        const errorData = await resp.text().then((t) => extJsonParse<Record<string, unknown> & { detail?: string }>(t)).catch(() => null);
         // RFC 7807 body (type+status) → push verbatim so extra.issues reaches
         // the RfcErrorDialog; otherwise fall back to a plain notification.
         if (errorData && typeof errorData === 'object' && 'status' in errorData) {
-          pushNotification(errorData);
+          pushNotification(errorData as Parameters<typeof pushNotification>[0]);
         } else {
           pushNotification({
             impact: 'HIGH',

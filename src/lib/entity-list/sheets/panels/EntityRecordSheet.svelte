@@ -336,7 +336,7 @@
           failed = true;
           return;
         }
-        const listBody = (await listRes.text().then((t) => extJsonParse<any>(t))) as { rows?: Record<string, unknown>[] };
+        const listBody = (await listRes.text().then((t) => extJsonParse<unknown>(t))) as { rows?: Record<string, unknown>[] };
         const hit = listBody.rows?.[0];
         if (!hit?.[uid]) {
           notFound = true;
@@ -354,7 +354,7 @@
         failed = true;
         return;
       }
-      record = (await res.text().then((t) => extJsonParse<any>(t))) as Record<string, unknown>;
+      record = (await res.text().then((t) => extJsonParse<unknown>(t))) as Record<string, unknown>;
     } catch (e) {
       // ApiUnreachableError = the owning service (or the BE itself for
       // unmapped entities) can't be reached — proxy 502/503-scoped or a

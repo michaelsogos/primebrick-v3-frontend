@@ -177,7 +177,7 @@ test.describe("service unreachable watermark", () => {
     // Strip BEFORE the first census — set prior to login.
     await page.route("**/api/v1/modules**", async (route) => {
       const res = await route.fetch();
-      const body = (await res.text().then((t) => extJsonParse<any>(t))) as { modules?: { id?: string }[] };
+      const body = (await res.text().then((t) => extJsonParse<unknown>(t))) as { modules?: { id?: string }[] };
       body.modules = (body.modules ?? []).filter((m) => m.id !== "emailsender");
       await route.fulfill({ response: res, json: body });
     });

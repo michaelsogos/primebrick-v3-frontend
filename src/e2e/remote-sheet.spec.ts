@@ -56,7 +56,7 @@ test('remote sheet job.runDetail mounts and loads its run', async ({ page }) => 
   // time; a hardcoded uuid rots with it).
   const run = await page.request
     .get('/svc/job/api/v1/entities/job_run/list?page=1&page_size=1')
-    .then((r) => r.text().then((t) => extJsonParse<any>(t)))
+    .then((r) => r.text().then((t) => extJsonParse<{ rows?: Array<{ uuid?: string; trigger?: string }> }>(t)))
     .then((b) => (b.rows?.[0] ?? null) as { uuid?: string; trigger?: string } | null);
   expect(run?.uuid, 'at least one job_run row exists').toBeTruthy();
 

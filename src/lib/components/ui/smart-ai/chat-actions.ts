@@ -149,7 +149,7 @@ export function parseClassification(
 
   let parsed: unknown;
   try {
-    parsed = extJsonParse<any>(text);
+    parsed = extJsonParse<unknown>(text);
   } catch {
     return null;
   }

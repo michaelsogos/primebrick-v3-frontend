@@ -507,7 +507,7 @@ function parseJson<T>(raw: string): T | null {
       .replace(/^```(?:json)?\s*\n?/i, '')
       .replace(/\n?```\s*$/i, '')
       .trim();
-    return extJsonParse<any>(cleaned) as T;
+    return extJsonParse<unknown>(cleaned) as T;
   } catch {
     return null;
   }

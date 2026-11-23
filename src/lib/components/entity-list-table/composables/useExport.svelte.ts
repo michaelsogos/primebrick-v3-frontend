@@ -166,7 +166,7 @@ export function useExport(options: ExportOptions) {
       const response = await apiFetch(`${exportBase(entity)}?${params.toString()}`);
 
       if (!response.ok) {
-        const errorData = await response.text().then((t) => extJsonParse<any>(t));
+        const errorData = await response.text().then((t) => extJsonParse<unknown>(t));
         throw errorData;
       }
 
@@ -271,7 +271,7 @@ export function useExport(options: ExportOptions) {
       const response = await apiFetch(`${exportBase(entity)}?${params.toString()}`);
 
       if (!response.ok) {
-        const errorData = await response.text().then((t) => extJsonParse<any>(t));
+        const errorData = await response.text().then((t) => extJsonParse<unknown>(t));
         throw errorData;
       }
 
