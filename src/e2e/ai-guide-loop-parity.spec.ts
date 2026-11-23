@@ -168,7 +168,7 @@ test.describe("Guide agentic loop — WebGPU parity vs CPU baseline", () => {
         if (url.includes("/svc/ai/api/v1/system/docs/search")) {
           w.__loop_debug!.docs_search_calls++;
           try {
-            const body = extJsonParse<Record<string, unknown>>((init?.body as string) ?? "{}");
+            const body = JSON.parse((init?.body as string) ?? "{}") as { keywords?: string[] };
             w.__loop_debug!.docs_search_keywords.push(body.keywords as string[] | undefined);
           } catch { w.__loop_debug!.docs_search_keywords.push(undefined); }
         }

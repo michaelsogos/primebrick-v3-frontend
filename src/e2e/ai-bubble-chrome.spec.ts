@@ -83,10 +83,11 @@ test.describe("bubble chrome — empirical DOM verification", () => {
       await page.goto(BASE_URL);
     }
 
-    const me = await page.evaluate(async () => {
+    const meRes = await page.evaluate(async () => {
       const r = await fetch("/api/v1/auth/me", { credentials: "include" });
-      return r.ok ? await r.text().then((t) => extJsonParse<{ profile?: { avatar_color?: string; avatar_initials?: string } }>(t)) : null;
+      return r.ok ? await r.text() : null;
     });
+    const me = meRes === null ? null : extJsonParse<{ profile?: { avatar_color?: string; avatar_initials?: string } }>(meRes);
     log(`[auth/me] avatar_color=${me?.profile?.avatar_color} initials=${me?.profile?.avatar_initials}`);
 
     const enforcerDismiss = page.getByTestId("auth-method-enforcer-dismiss-button");

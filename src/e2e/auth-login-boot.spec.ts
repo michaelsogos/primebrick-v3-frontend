@@ -19,7 +19,8 @@ import { loginAsTestAdmin, E2E_ADMIN_USERNAME, E2E_ADMIN_PASSWORD } from "./help
 import { extJsonStringify, extJsonParse } from '@primebrick/core/ext-json';
 /** Read the mirrored session user from sessionStorage. */
 async function sessionUser(page: Page) {
-  return page.evaluate(() => extJsonParse<Record<string, unknown>>(sessionStorage.getItem("user") ?? "null"));
+  const raw = await page.evaluate(() => sessionStorage.getItem("user"));
+  return extJsonParse<Record<string, unknown>>(raw ?? "null");
 }
 
 /** Cookie names present in the browser context. */
@@ -49,11 +50,10 @@ test.describe.serial("Login boot, redirect & logout", () => {
 
   test("expired token → refresh → redirect_path honored", async () => {
     // Force expires_at into the past — boot must take the refresh branch.
-    await page.evaluate(() => {
-      const u = extJsonParse<Record<string, unknown>>(sessionStorage.getItem("user")!);
-      u.expires_at = Date.now() - 1000;
-      sessionStorage.setItem("user", extJsonStringify(u));
-    });
+    const rawUser = await page.evaluate(() => sessionStorage.getItem("user")!);
+    const u = extJsonParse<Record<string, unknown>>(rawUser);
+    u.expires_at = Date.now() - 1000;
+    await page.evaluate((v) => sessionStorage.setItem("user", v), extJsonStringify(u));
     await page.goto("/login?redirect_path=%2Fsystem%2Fsettings", { waitUntil: "domcontentloaded" });
     // Refresh succeeds via the HttpOnly cookie → lands on the sanitized path
     // (/system/settings → load redirect → /profile).
@@ -105,9 +105,9 @@ test.describe.serial("Login boot, redirect & logout", () => {
     // Cookies are already cleared by the logout test. Forge an expired
     // session mirror so apiFetch takes the refresh path, which now fails →
     // the SessionExpiredDialog opens.
-    await page.evaluate(() => {
-      sessionStorage.setItem("user", extJsonStringify({ username: "e2e_test_admin", expires_at: Date.now() - 1000 }));
-    });
+    await page.evaluate((v) => {
+      sessionStorage.setItem("user", v);
+    }, extJsonStringify({ username: "e2e_test_admin", expires_at: Date.now() - 1000 }));
     await page.goto("/system/settings/profile", { waitUntil: "domcontentloaded" });
 
     // The layout's apiFetch('/auth/me') → 401 → expired → refresh → 401 →

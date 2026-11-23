@@ -90,20 +90,19 @@ test.describe("ELT columns/filter UX — job_schedule", () => {
     // Poison BOTH legacy-readable media — bogus field (never existed) +
     // schedule_spec (served filterable:false). Under the strict wire both
     // would 400 every call without the bootstrap sanitize.
-    await page.addInitScript((sk) => {
-      const poison = {
-        [`${sk}columnOrder:filterValues`]: extJsonStringify({ bogus_field: "x", schedule_spec: "y" }),
-        [`${sk}columnOrder:advancedFilters`]: extJsonStringify([
-          { id: "p1", field: "bogus_field", operator: "=", value: 1 },
-          { id: "p2", field: "status", operator: "=", value: "ACTIVE" }
-        ]),
-        [`${sk}searchInKeys`]: extJsonStringify(["version", "bogus_key"])
-      };
+    await page.addInitScript((poison) => {
       for (const [k, v] of Object.entries(poison)) {
         window.sessionStorage.setItem(k, v);
         window.localStorage.setItem(k, v);
       }
-    }, SK);
+    }, {
+      [`${SK}columnOrder:filterValues`]: extJsonStringify({ bogus_field: "x", schedule_spec: "y" }),
+      [`${SK}columnOrder:advancedFilters`]: extJsonStringify([
+        { id: "p1", field: "bogus_field", operator: "=", value: 1 },
+        { id: "p2", field: "status", operator: "=", value: "ACTIVE" }
+      ]),
+      [`${SK}searchInKeys`]: extJsonStringify(["version", "bogus_key"])
+    });
 
     const listFields: string[] = [];
     const listSearchIn: string[] = [];

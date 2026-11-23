@@ -226,10 +226,8 @@ test.describe("collaborative update surface (job_trigger detail)", () => {
       // Same user proof: the "other" avatar carries MY user uuid (from
       // /auth/me) and its tooltip labels it as my other tab
       // (en "other tab" / it "scheda").
-      const selfUuid = await pageA.evaluate(async () => {
-        const me = await fetch("/api/v1/auth/me").then((r) => r.text().then((t) => extJsonParse<{ uuid?: string }>(t)));
-        return me.uuid as string;
-      });
+      const meText = await pageA.evaluate(async () => (await fetch("/api/v1/auth/me")).text());
+      const selfUuid = extJsonParse<{ uuid?: string }>(meText).uuid as string;
       await expect(otherTabAvatar).toHaveAttribute("data-presence-user", selfUuid!);
       await expect(otherTabAvatar).toHaveAttribute("title", /tab|scheda/i);
 
