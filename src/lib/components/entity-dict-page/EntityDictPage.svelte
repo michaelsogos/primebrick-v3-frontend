@@ -230,8 +230,10 @@
    *  only the required decision (`nullable===false`, minus
    *  suggestion-eligible columns) — identical to the form's
    *  `placement.required ?? nullable===false`. Schemas are immutable per
-   *  column — cache by key+required. */
-  const dictFieldSchemas = new SvelteMap<string, z.ZodTypeAny>();
+   *  column — cache by key+required. Plain Map: a memo of immutable
+   *  schemas is not UI state — a reactive map would make every
+   *  lazily-missed lookup a state mutation inside derivations. */
+  const dictFieldSchemas = new Map<string, z.ZodTypeAny>();
   function dictFieldSchema(col: MetaColumn, required: boolean): z.ZodTypeAny {
     const k = `${col.key}:${required ? 1 : 0}`;
     let s = dictFieldSchemas.get(k);
