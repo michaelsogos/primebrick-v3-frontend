@@ -68,7 +68,7 @@
 	import { ruleJsonCompletions } from './rule-schema-completions';
 	import RuleFilterEditor from './RuleFilterEditor.svelte';
 	import { CircleCheck, CircleX } from '@primebrick/ui/vendor/lucide';
-	import { getResolvedIanaTimeZone } from '@primebrick/ui';
+	import { getIanaTimeZones, getResolvedIanaTimeZone } from '@primebrick/ui';
 	import { calendarDateToUtcIso, isoToCalendarDate } from './date-wire';
 	import type { CalendarDate, CalendarDateTime } from '@internationalized/date';
 	import { extJsonParse } from '$lib/api-ext';
@@ -230,6 +230,7 @@
 		'avatar',
 		'sequence',
 		'sequence_pattern',
+		'iana_tz',
 	]);
 
 	/** Filter-surface map — the DIFFERENCES from form (everything else is
@@ -250,6 +251,7 @@
 		'url',
 		'phone',
 		'text',
+		'iana_tz_multi',
 	]);
 
 	function resolveFormControl(): string {
@@ -298,6 +300,7 @@
 			column.options_source === 'census.callables'
 		)
 			return 'subject_combo_multi';
+		if (column.options_source === 'iana.tzones') return 'iana_tz_multi';
 		// Avatar columns filter as contains-text on the stored initials —
 		// the preview renderer is a form/list surface, never a filter control.
 		if (column.type === 'avatar') return 'text';
@@ -319,6 +322,9 @@
 		// `roles` array still renders the roles multi-combo, never the JSON
 		// editor (same precedence `resolveFilterControl` already declares).
 		if (column.options_source === 'system.roles') return 'role_multi';
+		// `iana.tzones` — the client-side IANA vocabulary (closed; the same
+		// `Intl.supportedValuesOf("timeZone")` list the date dropper feeds).
+		if (column.options_source === 'iana.tzones') return 'iana_tz';
 		// `type:"avatar"` — preview renderer, not an input (initials from the
 		// column value, color from the `avatar.color_field` sibling).
 		if (column.type === 'avatar') return 'avatar';
@@ -605,6 +611,11 @@
 	const systemRoles = useActiveRoles({
 		enabled: () => column.options_source === 'system.roles',
 	});
+
+	/** `options_source:"iana.tzones"` — closed client-side vocabulary;
+	 *  no fetch, no state — the same list `getIanaTimeZones` feeds the
+	 *  date dropper's zone selector. */
+	const ianaTzOptions = getIanaTimeZones().map((tz) => ({ value: tz, label: tz }));
 
 	// Restore display labels for `entity_ref` selections that pre-date the
 	// loaded option pages (draft state, URL-restored filters, edit-form
@@ -920,6 +931,18 @@
 			— {$t('app.widgets.payload_map.permissions_warn.tail')}
 		</p>
 	{/if}
+{:else if control === 'iana_tz'}
+	<!-- `options_source:"iana.tzones"` — closed IANA vocabulary, single pick. -->
+	<ComboSelect
+		mode="single"
+		bind:value={stringValue.value}
+		options={ianaTzOptions}
+		valueField="value"
+		labelField="label"
+		{placeholder}
+		disabled={effectiveLocked}
+		{...controlProps}
+	/>
 {:else if control === 'role_multi'}
 	<ComboSelect
 		mode="multi"
@@ -1026,6 +1049,18 @@
 		iconColorField="_icon_color"
 		display="detailed"
 		allowCreate={column.allow_create === true}
+		{placeholder}
+		disabled={effectiveLocked}
+		{...controlProps}
+	/>
+{:else if control === 'iana_tz_multi'}
+	<!-- `iana.tzones` on the filter surface — IN semantics, multi pick. -->
+	<ComboSelect
+		mode="multi"
+		bind:value={arrayValue.value}
+		options={ianaTzOptions}
+		valueField="value"
+		labelField="label"
 		{placeholder}
 		disabled={effectiveLocked}
 		{...controlProps}

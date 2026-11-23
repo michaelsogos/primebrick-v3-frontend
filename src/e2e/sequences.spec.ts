@@ -62,6 +62,12 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     expect(byKey.get("description_key")?.format).toBe("i18n_key");
     expect(byKey.get("description_key")?.default_visible).toBe(false);
     expect(byKey.get("description_key")?.hidden).not.toBe(true);
+    // `tz` is a governed IANA vocabulary — combobox over the closed
+    // `iana.tzones` source, never free text; `defaultSql:"'UTC'"` derives
+    // the served prefill (constant literal — same channel as step/start).
+    expect(byKey.get("tz")?.options_source).toBe("iana.tzones");
+    expect(byKey.get("tz")?.default).toBe("UTC");
+    expect(byKey.get("tz")?.allow_create).not.toBe(true);
     // The audit group owns the allocation attribution columns.
     expect(byKey.get("last_alloc_at")?.audited).toBe(true);
     expect(byKey.get("last_alloc_by")?.audited).toBe(true);
@@ -157,6 +163,9 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     const created = extJsonParse<SeqRow>(await cr.text());
     const uuid = created?.entity?.uuid ?? created?.uuid;
     expect(uuid).toBeTruthy();
+    // `tz` omitted on the wire → `defaultSql:"'UTC'"` fills the gap —
+    // NOT NULL column, the served value is never null.
+    expect(created?.entity?.tz ?? created?.tz).toBe("UTC");
 
     const row = extJsonParse<SeqRow>(await (await page.request.get(`${CRM_BASE}/sequence/${uuid}`)).text());
     const del = await page.request.delete(
