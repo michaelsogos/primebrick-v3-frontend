@@ -214,6 +214,7 @@
           {...actionChromeButtonProps(bulkExportChrome, 'outline')}
           size="xs"
           onclick={onBulkExport}
+          data-testid="entity-bulk-export"
         >
           <Download class="size-3.5" />
           {$t('system.entities.list.bulk_actions.export')}
@@ -224,6 +225,7 @@
           {...actionChromeButtonProps(bulkExportChrome, 'outline')}
           size="xs"
           onclick={onHtmlExport}
+          data-testid="entity-bulk-export-html"
         >
           <Download class="size-3.5" />
           {$t('system.entities.list.bulk_actions.export_html')}
