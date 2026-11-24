@@ -24,7 +24,8 @@
    `taskkill /T`, `status`/`stop`/`restart`/`reap` subcommands;
    `reap` kills untracked primebrick dev processes — zombies — while a
    chain that reaches an IDE terminal is classified USER-STARTED and
-   never touched. Logs to `primebrick-workspace/temp/logs/`). If a
+   never touched. Logs to `temp/logs/` at the multi-repo checkout root
+   (`D:\git\primebrick\temp\logs\` — NOT under primebrick-workspace). If a
    turn finds a service down, restart it detached — never leave the only
    copy of the stack inside an ephemeral shell.
 5. **Releases and branch churn kill the stack — restart it after**:
