@@ -81,6 +81,7 @@ the [ELT case study: job_schedule](./elt-case-study-job-schedules).
 | `display_name` | response | `${field}` display template (dot-paths allowed) — titles, chips, ref labels, related-object labels. `assembleMeta` materializes `"${display_field}"` when unauthored. |
 | `actions_overrides` | no | Per-op overrides — `enabled` toggles route-backed ops; `label_key`/`icon`/`color`/`confirm_key`/`busy_key` restyle the standard CTA chrome. Never invents ops. |
 | `create` | no | Create surface: `"form"` (default) → census `kind:"create"` route → `EntityFormPage`; `"sheet"` → no route needed, the list CTA opens `entity.record` in `mode:"create"` (empty draft, POST on commit). |
+| `form` | no | `{validators?: string[]}` — closed-vocab cross-field validator keys attached to the **synthesized** form (the record-sheet fallback). For entities with no authored `page_props.form` route — builtin/platform entities have no route decl to author against. An authored route decl always wins. Applies to create AND update (the merged-row contract is one rule). |
 | `columns` | yes | Root-level field dictionary shared by **every** surface (table, forms, filters, pickers, dict pages). See below. |
 | `table` | no | `EntityListTable` options — absent on form-only metas (`auth/me`). |
 | `actions` | response | Derived capability contract — see below. |
@@ -133,7 +134,7 @@ never authored by hand). Authored entries are presentation overrides.
 | `max_length` | From `@Column({length})` → `maxlength` attribute + `z.string().max()`. |
 | `pg_type` | Physical PG type (`varchar`, `int8`, `timestamptz`, `jsonb`, …) — informs control pick when `format` is absent; `numericKindOf` maps it to `bigint`/`number`/`decimal` for every numeric surface. |
 | `managed` | DB fills the value (`@Key` identity generation). Never client-supplied, never required — excluded from form widgets and write payloads. |
-| `default` | Create-form **initial value** — derived from `@Column({defaultSql})` constant literals (typed per `pg_type`: int8 → `bigint`, numeric → `Decimal`), or AUTHORED here as the legal column-level override (covers values not expressible in SQL — e.g. `{seq:{…}}` directives). Volatile expressions (`now()`, `uuidv7()`) are never served. A `placement.default_value` outranks it per-surface; update forms ignore it. |
+| `default` | Create-form **initial value** — derived from `@Column({defaultSql})` constant literals (typed per `pg_type`: int8 → `bigint`, numeric → `Decimal`), or AUTHORED here as the legal column-level override (covers values not expressible in SQL — e.g. `{seq:{…}}` directives). May also be a `ColumnDefaultSpec` computed spec — closed union, currently `{kind:"next_day_start_local"}` (the form seeds tomorrow 00:00 browser-local; `sequence.default_from` uses it). Volatile expressions (`now()`, `uuidv7()`) are never served. A `placement.default_value` outranks it per-surface; update forms ignore it. |
 
 ### Lifecycle
 
@@ -168,7 +169,7 @@ declared once, shared by forms. `withColumnConstraints` enforces legality
 |----------|------------------------------|
 | `field` | Sibling column key — the pivot. |
 | `filter_field` | `type:"ref"` only: the TARGET column the options `/list` filters on, fed by the pivot's stored value (`country → legal_form` scoped options). Control disabled until the pivot has a value. |
-| `disabled_when` | `{equals\|not\|values\|set}` condition — disables the whole control while it matches (`company_dimension` off when `customer_type.code = private`). `set` reads a NON-form sibling via the served row. |
+| `disabled_when` | `{equals\|not\|values\|set}` condition — disables the whole control while it matches (`company_dimension` off when `customer_type.code = private`). `set` reads a NON-form sibling via the served row; `set:false` disables while the pivot carries **no** value — the gated-axis pattern (`sequence.default_from`/`revive_slot`/`revive_grace` stay disabled until `revive_every` is filled). |
 | `control_prop` | Pivot ROW prop resolving this column's `format` at render time (`contact.value` → `email`/`phone`/`text` from `contact_type.value_kind`). |
 
 `filter_field`/`control_prop` both reset the value on pivot change — a
@@ -214,6 +215,7 @@ a compile error. Absent → falls back to `type`.
 | `snake_key` / `dotted_key` / `dotted_glob` / `slug` / `no_space` | Key-shaped text inputs with grammar validation. |
 | `rule_filter` | Rule-filter builder. |
 | `lang` | Language picker. |
+| `revive_interval` | `ReviveIntervalInput` — composite `'N unit'` editor: `NumericInput` (bigint, unsigned) + closed 5-unit dropdown (`day`/`week`/`month`/`quarter`/`year` — exactly `UOM_DROPDOWN_MAX_OPTIONS`, so the dropdown stays in-input, no host picker). Emits/round-trips the varchar canonical (`"1 year"`, `"3 months"`) — the same numeric+uom→text anatomy as `schedule_spec`. Used by the `sequence` entity revive axis (`revive_every`/`revive_grace`). |
 | `sequence` | Sequence widget — `modes`/`default_mode`/`allow_create` from `seq`. |
 | `sequence_pattern` | Pattern-builder input (`SequencePatternInput`): free literal typing, interpreter-strip preview under the input (schedule-spec convention — `CircleCheck`/`CircleAlert` + rendered example), in-input `Tags` CTA opens the `entity.sequencePattern` token sheet (catalog from `sequenceTokenCatalog`, used-slot `Tags` badge + `-` remove via `removeSequenceToken`, counter padding form, insert-at-caret, borderless token list + display-only preview); validated by `parseSequencePattern` via `checkFieldValue` — same verdict as the wire. |
 | `i18n_key` | Translation-key pick — the canonical ComboSelect every key field shares (`i18nKeyOptions`): `*.entities.<translation_key>.rows.*`-scoped vocabulary (broader `.entities.` when `translation_key` is absent), `languages`/`sky-500` icon per option, `custom.*` convention suggestion in `defaultSearch` tracking the row's `code`/`name`, `allowCreate` with `coerceI18nKeyChange` verbatim/scoping rules — the same anatomy as the dict-page `TranslationKeyCell` and the config-builder key selectors. The suggestion is **baseline-seeded**: `EntityFormSurface.buildInitial` computes it via `i18nKeySuggestionFor` so an empty i18n field opens pre-filled WITHOUT tainting the form (the suggestion is the initial value, not a post-mount write). List cells render the resolved-translation badge (icon + `$t`, raw-key tooltip); filter surface maps to contains-text. |
@@ -257,6 +259,14 @@ Each entry carries:
 placement list (only declared keys render). A placement positions a field
 the entity owns; it never redefines type/validation (those come from
 `meta.columns`).
+
+Without an authored form the record sheet rides the **synthesized**
+fallback — every served column minus the never-a-field flags: `hidden`
+(not served), `audited` (accordion-only), `managed`, `kind` virtuals,
+uid/`version`. `default_visible:false` governs the **list** only — a
+computed column that must stay out of the form carries `audited` or
+`hidden`, never just `default_visible` (the `sequence` revive-axis leak
+this rule exists for). Cross-field rules attach via `meta.form.validators`.
 
 | Prop | What it does → enables on FE |
 |------|------------------------------|
