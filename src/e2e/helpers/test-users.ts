@@ -72,7 +72,7 @@ interface IdpConfig {
 
 async function loadIdpConfig(): Promise<IdpConfig> {
   const res = await getPool().query(
-    `SELECT key, value FROM public.config_entries
+    `SELECT key, value FROM system.config_entries
      WHERE key IN ('idp_endpoint', 'idp_client_id', 'idp_client_secret', 'idp_organization')`,
   );
   const map = Object.fromEntries(res.rows.map((r) => [r.key, r.value]));
@@ -192,7 +192,7 @@ async function deleteCasdoorRole(cfg: IdpConfig, roleName: string): Promise<void
  */
 async function invalidateRoleMappingsCache(): Promise<void> {
   const res = await getPool().query(
-    `SELECT value FROM public.config_entries WHERE key = 'redis_url'`,
+    `SELECT value FROM system.config_entries WHERE key = 'redis_url'`,
   );
   const redisUrl = res.rows[0]?.value as string | undefined;
   if (!redisUrl) return;

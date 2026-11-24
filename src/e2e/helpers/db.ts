@@ -175,7 +175,7 @@ export async function upsertFakeBrevoProvider(
         created_by, updated_by, version)
      VALUES (uuidv7(), 'brevo', $1, $2, $3, 'Primebrick E2E', NULL,
         'system', 'system', 1)
-     ON CONFLICT (provider) DO UPDATE SET
+     ON CONFLICT (provider) WHERE deleted_at IS NULL DO UPDATE SET
        api_key = EXCLUDED.api_key,
        api_endpoint = EXCLUDED.api_endpoint,
        from_email = EXCLUDED.from_email,
