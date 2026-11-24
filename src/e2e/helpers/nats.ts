@@ -92,6 +92,26 @@ export async function publish(
   });
 }
 
+/**
+ * Request-reply on a callable subject (`<svc>.<name>`) — shield headers
+ * carry the L1 client identity; the reply is ext-json decoded. Throws on
+ * timeout (no responders = the callable isn't mounted).
+ */
+export async function request(
+  subject: string,
+  data: unknown,
+  shield: ShieldIdentity,
+  extra?: Record<string, string>,
+  timeoutMs = 10_000,
+): Promise<unknown> {
+  const conn = await getNats();
+  const r = await conn.request(subject, new TextEncoder().encode(extJsonStringify(data)), {
+    headers: buildHeaders(shieldHeaders(shield, extra)),
+    timeout: timeoutMs,
+  });
+  return extJsonParse(new TextDecoder().decode(r.data));
+}
+
 /** JetStream publish with PubAck — returns the stream sequence. */
 export async function jsPublish(
   subject: string,

@@ -58,7 +58,9 @@ export async function registerShieldIdentity(request: APIRequestContext): Promis
       version += 1; // restore bumps the row version
     }
     const upd = await request.put(`/api/v1/entities/client_registry/${rowUuid}`, {
-      data: { entity: { client_key: clientKey, is_enabled: true, version } },
+      // extJsonParse returns bigint for int8 leaves — playwright's request
+      // serializer can't carry it; the wire needs a plain number.
+      data: { entity: { client_key: clientKey, is_enabled: true, version: Number(version) } },
     });
     if (!upd.ok()) {
       // Version drift between list and update — retry once on the fresh row.
