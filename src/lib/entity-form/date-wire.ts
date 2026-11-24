@@ -97,6 +97,19 @@ export function calendarDateToUtcIso(
 	return utcDate.toISOString();
 }
 
+/** `ColumnDefaultSpec.kind:"next_day_start_local"` — the computed
+ *  create-prefill for "starts from" `datetime` columns: tomorrow at
+ *  00:00 in the USER's local zone, serialized to the wire type (UTC
+ *  ISO). `new Date` local semantics = the same zone the picker edits
+ *  in, so the seeded value round-trips through `isoToCalendarDate`
+ *  showing exactly "tomorrow, 00:00". */
+export function nextDayStartLocalIso(): string {
+	const d = new Date();
+	d.setDate(d.getDate() + 1);
+	d.setHours(0, 0, 0, 0);
+	return d.toISOString();
+}
+
 export function getTimezoneOffset(timezone: string): number {
 	const date = new Date();
 	const utcDate = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));

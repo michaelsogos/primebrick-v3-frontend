@@ -60,6 +60,7 @@
 	import { useCensusSubjectOptions } from './use-census-subject-options.svelte';
 	import { setMetaUidContext } from '$lib/components/entity-list-table/context';
 	import { userProfileState } from '$lib/user-profile-store.svelte';
+	import { nextDayStartLocalIso } from './date-wire';
 	import { computeInitials } from '$lib/utils/avatar-initials';
 	import type { EntityMeta, MetaColumn } from '$lib/entity-list/types';
 	import { i18nKeySuggestionFor } from '$lib/i18n/dict-suggestion';
@@ -211,6 +212,19 @@
 			? i18nKeySuggestionFor(meta.translation_key, servedRecord?.code ?? servedRecord?.name)
 			: '';
 
+	/** `MetaColumn.default` may carry a `ColumnDefaultSpec` (closed vocab —
+	 *  `{kind:"next_day_start_local"}`) instead of a literal: the prefill
+	 *  is computed client-side, same authored channel. Object defaults are
+	 *  matched by `kind` membership ONLY — a literal jsonb object default
+	 *  passes through verbatim. */
+	const resolveColumnDefault = (dv: unknown): unknown =>
+		typeof dv === 'object' &&
+		dv !== null &&
+		!Array.isArray(dv) &&
+		(dv as { kind?: unknown }).kind === 'next_day_start_local'
+			? nextDayStartLocalIso()
+			: dv;
+
 	function buildInitial(): Record<string, unknown> {
 		const initial: Record<string, unknown> = {};
 		for (const placement of formDecl.fields) {
@@ -227,7 +241,7 @@
 				else initial[placement.key] = v ?? '';
 			} else {
 				const dv = placement.default_value ?? col?.default;
-				if (dv !== undefined) initial[placement.key] = dv;
+				if (dv !== undefined) initial[placement.key] = resolveColumnDefault(dv);
 				else if (col?.type === 'boolean') initial[placement.key] = false;
 				else if (col?.format === 'i18n_key') initial[placement.key] = i18nKeyInitial(col);
 				else initial[placement.key] = '';

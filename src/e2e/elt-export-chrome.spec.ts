@@ -41,8 +41,8 @@ test.describe("ELT export chrome — CTA & dialog wired to meta", () => {
 		);
 		const exportAction = (meta.actions ?? []).find((a: { op?: string }) => a.op === "export");
 		expect(exportAction, "served meta.actions['export']").toBeTruthy();
-		expect(exportAction.color).toBe("primary");
-		expect(exportAction.variant).toBe("outline");
+		expect(exportAction?.color).toBe("primary");
+		expect(exportAction?.variant).toBe("outline");
 
 		// Flip the toolbar to bulk mode — the click can race hydration on a
 		// reused shared-session tab, so retry inside the poll until the

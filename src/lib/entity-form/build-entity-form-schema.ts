@@ -25,6 +25,7 @@ import {
 	isValidScheduleSpec,
 	jsonSchemaCheck,
 	jobTriggerShapeIssues,
+	sequenceReviveShapeIssues,
 	payloadMapConformance,
 } from '@primebrick/ui';
 
@@ -88,6 +89,25 @@ const CROSS_FIELD_VALIDATORS: Record<
 				path: ['target_subject'],
 				message: `target subject must start with ${prefix}`,
 			});
+		}
+	},
+	/** `sequence` revive contract — `revive_slot` must name a `{sezN}`
+	 *  token the pattern interpolates AND the row-owned value of that
+	 *  slot must parse under `derivePeriodLabel` (a TEXT-only sezionale
+	 *  can never be advanced). Shares the core `sequenceReviveShapeIssues`
+	 *  predicate with the dal wire validator (`assertReviveCoherence`) —
+	 *  one rule, two surfaces. Attached via `meta.form.validators` (the
+	 *  builtin entity has no route decl to author a form against). */
+	sequence_revive_shape: (data, ctx) => {
+		for (const i of sequenceReviveShapeIssues({
+			pattern: typeof data.pattern === 'string' ? data.pattern : '',
+			sez: data.sez as string | null | undefined,
+			sez2: data.sez2 as string | null | undefined,
+			sez3: data.sez3 as string | null | undefined,
+			revive_every: data.revive_every as string | null | undefined,
+			revive_slot: data.revive_slot as string | null | undefined,
+		})) {
+			ctx.addIssue({ code: 'custom', path: [i.path], message: i.message });
 		}
 	},
 	/** `job_trigger` shape — `event_subject`/`schedule_spec` are mutually
@@ -210,5 +230,9 @@ export function synthesizeFormDecl(meta: EntityMeta): FormPageDecl {
 					c.key !== 'version',
 			)
 			.map((c) => ({ key: c.key })),
+		// Entity-level form policy (`meta.form.validators`) — the surface
+		// a builtin entity declares for synthesized forms; an authored
+		// route `page_props.form` always wins (caller precedence).
+		validators: meta.form?.validators,
 	};
 }

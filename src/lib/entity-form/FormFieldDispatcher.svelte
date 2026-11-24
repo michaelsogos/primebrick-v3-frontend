@@ -36,6 +36,7 @@
 		JsonValueEditor,
 		PayloadMapEditor,
 		ScheduleSpecInput,
+		ReviveIntervalInput,
 		SequenceInput,
 		SequencePatternInput,
 		DateWheelPicker,
@@ -227,6 +228,7 @@
 	 */
 	const FORM_CONTROLS = new Set([
 		'schedule_spec',
+		'revive_interval',
 		'json',
 		'rule_filter',
 		'subject_combo',
@@ -321,7 +323,7 @@
 		// the preview renderer is a form/list surface, never a filter control.
 		if (column.type === 'avatar') return 'text';
 		const resolved = deriveControl();
-		if (resolved === 'subject_combo' || resolved === 'json' || resolved === 'rule_filter' || resolved === 'payload_map' || resolved === 'schedule_spec' || resolved === 'sequence' || resolved === 'sequence_pattern' || resolved === 'i18n_key')
+		if (resolved === 'subject_combo' || resolved === 'json' || resolved === 'rule_filter' || resolved === 'payload_map' || resolved === 'schedule_spec' || resolved === 'revive_interval' || resolved === 'sequence' || resolved === 'sequence_pattern' || resolved === 'i18n_key')
 			return 'text';
 		if (FILTER_CONTROLS.has(resolved)) return resolved;
 		throw new Error(
@@ -345,6 +347,7 @@
 		// column value, color from the `avatar.color_field` sibling).
 		if (column.type === 'avatar') return 'avatar';
 		if (format === 'schedule_spec') return 'schedule_spec';
+		if (format === 'revive_interval') return 'revive_interval';
 		if (format === 'sequence') return 'sequence';
 		if (format === 'sequence_pattern') return 'sequence_pattern';
 		if (format === 'i18n_key') return 'i18n_key';
@@ -827,7 +830,12 @@
 	};
 </script>
 
-{#if control === 'schedule_spec'}
+{#if control === 'revive_interval'}
+	<!-- `format:"revive_interval"` — the closed `'N unit'` varchar canonical
+	     (sequence revive cadence/grace): NumericInput + 5-unit internal
+	     dropdown, emits the text verbatim. -->
+	<ReviveIntervalInput bind:value={stringValue.value} readonly={effectiveReadonly} disabled={effectiveDisabled} {placeholder} {...controlProps} />
+{:else if control === 'schedule_spec'}
 	<ScheduleSpecInput bind:value={stringValue.value} readonly={effectiveReadonly} disabled={effectiveDisabled} {placeholder} {...controlProps} />
 {:else if control === 'sequence'}
 	<!-- `format:"sequence"` — the bound value is the wire slot: a
