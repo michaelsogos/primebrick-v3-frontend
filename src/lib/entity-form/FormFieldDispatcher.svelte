@@ -229,6 +229,7 @@
 	const FORM_CONTROLS = new Set([
 		'schedule_spec',
 		'revive_interval',
+		'revive_offset',
 		'json',
 		'rule_filter',
 		'subject_combo',
@@ -323,7 +324,7 @@
 		// the preview renderer is a form/list surface, never a filter control.
 		if (column.type === 'avatar') return 'text';
 		const resolved = deriveControl();
-		if (resolved === 'subject_combo' || resolved === 'json' || resolved === 'rule_filter' || resolved === 'payload_map' || resolved === 'schedule_spec' || resolved === 'revive_interval' || resolved === 'sequence' || resolved === 'sequence_pattern' || resolved === 'i18n_key')
+		if (resolved === 'subject_combo' || resolved === 'json' || resolved === 'rule_filter' || resolved === 'payload_map' || resolved === 'schedule_spec' || resolved === 'revive_interval' || resolved === 'revive_offset' || resolved === 'sequence' || resolved === 'sequence_pattern' || resolved === 'i18n_key')
 			return 'text';
 		if (FILTER_CONTROLS.has(resolved)) return resolved;
 		throw new Error(
@@ -348,6 +349,7 @@
 		if (column.type === 'avatar') return 'avatar';
 		if (format === 'schedule_spec') return 'schedule_spec';
 		if (format === 'revive_interval') return 'revive_interval';
+		if (format === 'revive_offset') return 'revive_offset';
 		if (format === 'sequence') return 'sequence';
 		if (format === 'sequence_pattern') return 'sequence_pattern';
 		if (format === 'i18n_key') return 'i18n_key';
@@ -831,10 +833,14 @@
 </script>
 
 {#if control === 'revive_interval'}
-	<!-- `format:"revive_interval"` — the closed `'N unit'` varchar canonical
-	     (sequence revive cadence/grace): NumericInput + 5-unit internal
-	     dropdown, emits the text verbatim. -->
-	<ReviveIntervalInput bind:value={stringValue.value} readonly={effectiveReadonly} disabled={effectiveDisabled} {placeholder} {...controlProps} />
+	<!-- `format:"revive_interval"` — the revive spec canonical `'N unit' |
+	     'at <RFC3339>'`: the composite renders the interval pair or the
+	     instant picker, emits the text verbatim. -->
+	<ReviveIntervalInput bind:value={stringValue.value} literal="at" readonly={effectiveReadonly} disabled={effectiveDisabled} {placeholder} {...controlProps} />
+{:else if control === 'revive_offset'}
+	<!-- `format:"revive_offset"` — the grace spec canonical `'N unit' |
+	     'until <RFC3339>'` — same composite, `until` axis keyword. -->
+	<ReviveIntervalInput bind:value={stringValue.value} literal="until" readonly={effectiveReadonly} disabled={effectiveDisabled} {placeholder} {...controlProps} />
 {:else if control === 'schedule_spec'}
 	<ScheduleSpecInput bind:value={stringValue.value} readonly={effectiveReadonly} disabled={effectiveDisabled} {placeholder} {...controlProps} />
 {:else if control === 'sequence'}
