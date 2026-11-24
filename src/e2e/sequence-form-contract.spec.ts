@@ -91,8 +91,10 @@ test.describe("sequence create sheet — field contract", () => {
 		//    Controls differ in anatomy: text/datetime render <input>/
 		//    <button>, the badge enum renders div[role=combobox] with
 		//    aria-disabled — the locator covers all three. ─────────────
+		// (the tooltip Help trigger is also a <button> in the field
+		// container — exclude it from the control locator)
 		const ctl = (k: string) =>
-			field(k).locator("input,button,[role='combobox']").first();
+			field(k).locator("input,button:not([data-tooltip-trigger]),[role='combobox']").first();
 		for (const k of ["default_from", "revive_slot", "revive_grace"]) {
 			await expect(
 				ctl(k),
@@ -218,28 +220,61 @@ test.describe("sequence create sheet — field contract", () => {
 		await expect(sheet).toBeVisible({ timeout: 5_000 });
 		const field = (k: string) => sheet.getByTestId(`entity-form-field-${k}`);
 		const ctl = (k: string) =>
-			field(k).locator("input,button,[role='combobox']").first();
+			field(k).locator("input,button:not([data-tooltip-trigger]),[role='combobox']").first();
 
-		// immutable-on-update — the revive axis identity is frozen
-		for (const k of ["revive_every", "default_from", "revive_slot", "sez", "sez2", "sez3"]) {
+		// immutable-on-update — the series identity is frozen (slot,
+		// anchor, sez values). `revive_every` is NOT in this set: the axes
+		// are editable while in tempo (fixture expire ~1y out).
+		for (const k of ["default_from", "revive_slot", "sez", "sez2", "sez3"]) {
 			await expect(
 				ctl(k),
 				`${k} must be immutable-disabled on update`,
 			).toBeDisabled({ timeout: 5_000 });
 		}
-		// revive_grace stays editable — it is operational slack, not identity
-		await expect(
-			field("revive_grace").locator("input").first(),
-		).toBeEnabled({ timeout: 5_000 });
+		// both axes editable — the guarded update owns the tempo check
+		for (const k of ["revive_every", "revive_grace"]) {
+			await expect(
+				field(k).locator("input").first(),
+				`${k} must be editable while in tempo`,
+			).toBeEnabled({ timeout: 5_000 });
+		}
 		// editable columns still editable
 		await expect(field("name").locator("input").first()).toBeEnabled({ timeout: 5_000 });
+
+		// in-tempo edit: 1 year → 2 years — the stored row re-anchors
+		// `expire_at` at the next boundary (verified on the wire).
+		// NumericInput commits on BLUR (typing is a draft) — Tab to commit
+		// before asserting dirt.
+		await field("revive_every").locator("input").first().fill("2");
+		await field("revive_every").locator("input").first().press("Tab");
+		// the form may submit via the governed `update.single` action
+		// endpoint (path != /entities/sequence/{uuid}) — match any
+		// sequence write, not the fallback URL shape.
+		const patched = page.waitForResponse(
+			(r) =>
+				r.url().includes("sequence") &&
+				(r.request().method() === "PUT" || r.request().method() === "PATCH") &&
+				r.status() === 200,
+			{ timeout: 5_000 },
+		);
+		await page.getByTestId("entity-form-submit").click();
+		const patchRes = await patched;
+		const patchRow = extJsonParse<Record<string, unknown>>(await patchRes.text());
+		const updated = (patchRow.entity ?? patchRow) as Record<string, unknown>;
+		expect(updated.revive_every).toBe("2 years");
+		expect(typeof updated.expire_at).toBe("string");
+		expect(new Date(updated.expire_at as string).getUTCFullYear()).toBe(
+			new Date().getUTCFullYear() + 2,
+		);
 
 		// audited columns live in the audit accordion — never as fields.
 		// The accordion mounts collapsed; expand it via the Audit trigger.
 		await sheet.getByRole("button", { name: /^audit$/i }).click();
 		const audit = sheet.getByTestId("entity-record-sheet-audit-section");
 		await expect(audit).toBeVisible({ timeout: 5_000 });
-		for (const label of [/expires|scade/i, /switches|cambia/i, /cloned|clone/i, /revived|rinnov/i]) {
+		// wave-2 labels: expire_at "Renews On"/"Rinnovo Il", switch_at
+		// "Activated On"/"Attivato Il" — the moment/mode pair.
+		for (const label of [/renews|rinnovo il/i, /activated|attivato/i, /cloned|clone/i, /revived|rinnovat/i]) {
 			await expect(
 				audit.locator("dt", { hasText: label }).first(),
 				String(label),
@@ -249,7 +284,80 @@ test.describe("sequence create sheet — field contract", () => {
 			await expect(field(k), `audited ${k} must not be a form field`).toHaveCount(0);
 		}
 
+		// residue-free — the in-tempo edit bumped version; use the live one
+		await page.request.delete(
+			`${CRM}/${created.uuid}?version=${(updated.version as number | undefined) ?? created.version}`,
+		);
+	});
+
+	test("literal 'at' mode: explicit instant pins expire_at verbatim", async ({ page }) => {
+		await loginAsTestAdmin(page);
+		await page.goto("/crm/settings/sequences", { waitUntil: "domcontentloaded" });
+		await page.getByTestId("entity-create-cta").click();
+		const sheet = page.getByTestId("entity-record-sheet");
+		await expect(sheet).toBeVisible({ timeout: 5_000 });
+		const field = (k: string) => sheet.getByTestId(`entity-form-field-${k}`);
+
+		const name = `e2e_at_${TS}`;
+		await field("name").locator("input").fill(name);
+		// 'at' requires a pattern date part ({yyyy} → period_kind 'year')
+		// — the successor's sez advances by the pattern's own grain.
+		await field("pattern").locator("input").fill(`AT-{seq:5}/{yyyy}/{sez}`);
+		await field("step").locator("input").fill("1");
+		await field("start").locator("input").fill("1");
+		await field("sez").locator("input").fill("26");
+
+		// flip to literal mode — the leading mode toggle swaps the
+		// composite for the DateWheelPicker instant field.
+		const revive = field("revive_every");
+		await revive.locator("[data-testid$='-mode']").click();
+		const atCta = revive.locator("[data-testid$='-at']");
+		await expect(atCta).toBeVisible({ timeout: 5_000 });
+		await atCta.click();
+		// wheel pick: a year clearly in the future, day/month stay today.
+		// The wheel commits when the snap settles — wait for the trigger
+		// text to carry the year BEFORE closing (Escape mid-snap drops
+		// the uncommitted pick).
+		const year = String(new Date().getFullYear() + 2);
+		await page.getByRole("option", { name: year, exact: true }).click();
+		await expect(atCta).toContainText(year, { timeout: 5_000 });
+		await page.keyboard.press("Escape");
+
+		// the gate must have released once the spec holds a value — assert
+		// enabled so a lost pick fails fast instead of hanging on a
+		// disabled combobox
+		const ctl = (k: string) =>
+			field(k).locator("input,button:not([data-tooltip-trigger]),[role='combobox']").first();
+		await expect(ctl("revive_slot")).toBeEnabled({ timeout: 5_000 });
+		await ctl("revive_slot").click();
+		await page.getByRole("option", { name: /sezionale 1/i }).first().click();
+
+		const posted = page.waitForResponse(
+			(r) =>
+				r.url().includes("/entities/sequence") &&
+				r.request().method() === "POST" &&
+				r.status() === 201,
+			{ timeout: 5_000 },
+		);
+		await page.getByTestId("entity-form-submit").click();
+		await posted;
+
+		// wire truth: 'at <ISO>' canonical + expire_at is the literal
+		// verbatim (never re-anchored, never boundary-snapped).
+		const list = await page.request.get(`${CRM}/list?search=${encodeURIComponent(name)}`);
+		const parsed = extJsonParse<{ rows?: Record<string, unknown>[]; items?: Record<string, unknown>[] }>(
+			await list.text(),
+		);
+		const row = (parsed.rows ?? parsed.items ?? [])[0];
+		expect(row, "created row on the list").toBeTruthy();
+		expect(String(row?.revive_every)).toMatch(/^at \d{4}-\d{2}-\d{2}T/);
+		// same instant — serialize formats may differ (Z vs +00:00)
+		expect(new Date(row?.expire_at as string).getTime()).toBe(
+			new Date(String(row?.revive_every).slice(3)).getTime(),
+		);
+		expect(row?.revive_slot).toBe("sez");
+
 		// residue-free
-		await page.request.delete(`${CRM}/${created.uuid}?version=${created.version}`);
+		await page.request.delete(`${CRM}/${row?.uuid}?version=${row?.version}`);
 	});
 });
