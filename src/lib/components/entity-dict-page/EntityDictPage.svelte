@@ -233,6 +233,7 @@
    *  column — cache by key+required. Plain Map: a memo of immutable
    *  schemas is not UI state — a reactive map would make every
    *  lazily-missed lookup a state mutation inside derivations. */
+  // eslint-disable-next-line svelte/prefer-svelte-reactivity -- memo of immutable schemas, not UI state (see comment above)
   const dictFieldSchemas = new Map<string, z.ZodTypeAny>();
   function dictFieldSchema(col: MetaColumn, required: boolean): z.ZodTypeAny {
     const k = `${col.key}:${required ? 1 : 0}`;

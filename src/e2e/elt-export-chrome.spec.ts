@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { extJsonParse } from "@primebrick/core/ext-json";
 import { loginAsTestAdmin } from "./helpers/admin-login";
 
 /* ELT export chrome — the CTA↔dialog semantic contract:
@@ -35,7 +36,9 @@ test.describe("ELT export chrome — CTA & dialog wired to meta", () => {
 
 		// Completeness assertion — served meta.actions['export'] must carry
 		// the primary+outline default chrome.
-		const meta = await (await metaWait).json();
+		const meta = extJsonParse<{ actions?: Array<{ op?: string; color?: string; variant?: string }> }>(
+			await (await metaWait).text(),
+		);
 		const exportAction = (meta.actions ?? []).find((a: { op?: string }) => a.op === "export");
 		expect(exportAction, "served meta.actions['export']").toBeTruthy();
 		expect(exportAction.color).toBe("primary");
