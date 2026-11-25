@@ -50,7 +50,7 @@
     idp_name?: string;
     display_name?: string;
     website_url?: string;
-    version: number;
+    version: bigint;
     created_at?: string;
     created_by?: string;
     created_by_name?: string;

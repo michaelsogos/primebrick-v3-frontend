@@ -4,7 +4,7 @@
  * prop), control-format resolution, reset coupling. Component-free by
  * design — the dispatcher wires these against `record`/`usePivotRow`.
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
 	depControlFormat,
 	depDisabled,
@@ -137,6 +137,76 @@ describe('pivot-row need + reset coupling', () => {
 		expect(depPivotSignature(dep, { country: 'IT' })).toBe('IT');
 		expect(depPivotSignature(dep, { country: 'DE' })).toBe('DE');
 		expect(depPivotSignature(dep, {})).toBe('');
+	});
+
+	it('depPivotSignature tracks bigint pivots — the wire-integer regression', () => {
+		// Wire integers decode as bigint (ext-json strict contract). A numeric
+		// pivot MUST produce a changing signature or the dependent never
+		// resets — the silent integrity leak the mechanism exists to close.
+		const dep = { field: 'year' };
+		expect(depPivotSignature(dep, { year: 2024n })).toBe('2024');
+		expect(depPivotSignature(dep, { year: 2025n })).toBe('2025');
+		expect(depPivotSignature(dep, { year: 2024n })).not.toBe(
+			depPivotSignature(dep, { year: 2025n }),
+		);
+		// number and bigint encodings of the same value share one signature —
+		// the signature tracks the VALUE, not the wire type
+		expect(depPivotSignature(dep, { year: 2024 })).toBe(depPivotSignature(dep, { year: 2024n }));
+	});
+
+	it('depPivotSignature dev-console-errors on non-scalar pivot values (semi-silent failure)', () => {
+		const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+		const dep = { field: 'meta' };
+		expect(depPivotSignature(dep, { meta: { nested: 1 } })).toBe('');
+		expect(spy).toHaveBeenCalledOnce();
+		expect(spy.mock.calls[0][0]).toContain('unmanaged type');
+		expect(spy.mock.calls[0][0]).toContain("pivot 'meta'");
+		spy.mockRestore();
+	});
+
+	it('depPivotSignature stays silent on the legitimate unset states', () => {
+		const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+		const dep = { field: 'country' };
+		for (const empty of [undefined, null, '']) {
+			expect(depPivotSignature(dep, { country: empty })).toBe('');
+		}
+		expect(spy).not.toHaveBeenCalled();
+		spy.mockRestore();
+	});
+});
+
+describe('disabled_when cross-type equality — wire bigint vs authored literals', () => {
+	it('equals matches across number/bigint encodings of the same value', () => {
+		// meta-authored int literals decode as bigint; form-entered numerics
+		// can be number — the comparison is about VALUE, never wire type.
+		const dep = { field: 'threshold', disabled_when: { equals: 5n } };
+		expect(depDisabled(dep, { threshold: 5 }, undefined)).toBe(true);
+		expect(depDisabled(dep, { threshold: 5n }, undefined)).toBe(true);
+		expect(depDisabled(dep, { threshold: 6 }, undefined)).toBe(false);
+	});
+
+	it('not inverts cross-type — same value does NOT disable', () => {
+		const dep = { field: 'threshold', disabled_when: { not: 5n } };
+		expect(depDisabled(dep, { threshold: 5 }, undefined)).toBe(false);
+		expect(depDisabled(dep, { threshold: 7n }, undefined)).toBe(true);
+	});
+
+	it('values matches any entry cross-type', () => {
+		const dep = { field: 'threshold', disabled_when: { values: [1n, 2, 3n] } };
+		expect(depDisabled(dep, { threshold: 2n }, undefined)).toBe(true);
+		expect(depDisabled(dep, { threshold: 3 }, undefined)).toBe(true);
+		expect(depDisabled(dep, { threshold: 4 }, undefined)).toBe(false);
+	});
+
+	it('non-integer numbers never equal a bigint', () => {
+		const dep = { field: 'threshold', disabled_when: { equals: 5n } };
+		expect(depDisabled(dep, { threshold: 5.5 }, undefined)).toBe(false);
+	});
+
+	it('strings never cross-equal numbers — type distance is real', () => {
+		const dep = { field: 'code', disabled_when: { equals: '5' } };
+		expect(depDisabled(dep, { code: 5n }, undefined)).toBe(false);
+		expect(depDisabled(dep, { code: '5' }, undefined)).toBe(true);
 	});
 });
 

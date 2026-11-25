@@ -34,7 +34,7 @@ export interface UserProfile {
   deleted_at?: string;
   deleted_by?: string;
   deleted_by_name?: string;
-  version?: number;
+  version?: bigint;
   last_synced_at?: string;
   has_passkey?: boolean;
   auth_method_enforcer_dismissed?: boolean;

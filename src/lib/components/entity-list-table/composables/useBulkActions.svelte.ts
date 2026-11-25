@@ -97,9 +97,9 @@ export function useBulkActions(options: BulkActionsOptions) {
    */
   async function enumerateMatchingItems(
     deletedRecords: 'EXCLUDED' | 'ONLY',
-  ): Promise<Array<{ uuid: string; version: number }>> {
+  ): Promise<Array<{ uuid: string; version: bigint }>> {
     const uid = uidFn?.() ?? 'uuid';
-    const items: Array<{ uuid: string; version: number }> = [];
+    const items: Array<{ uuid: string; version: bigint }> = [];
     for (let page = 1; ; page++) {
       const params = new SvelteURLSearchParams();
       params.set('page', String(page));
@@ -121,7 +121,7 @@ export function useBulkActions(options: BulkActionsOptions) {
       }
       const data = (await res.text().then((t) => extJsonParse<unknown>(t))) as { rows?: Array<Record<string, unknown>>; total?: number | bigint };
       const rows = data.rows ?? [];
-      for (const row of rows) items.push({ uuid: toDisplayString(row[uid]), version: row.version as number });
+      for (const row of rows) items.push({ uuid: toDisplayString(row[uid]), version: row.version as bigint });
       if (rows.length === 0 || items.length >= Number(data.total ?? 0)) break;
     }
     return items;

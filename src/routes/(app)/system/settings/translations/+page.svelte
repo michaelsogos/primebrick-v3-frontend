@@ -25,7 +25,7 @@
     language: string;
     value: string;
     updated_at?: string;
-    version: number;
+    version: bigint;
   };
 
   let modules = $state<string[]>([]);

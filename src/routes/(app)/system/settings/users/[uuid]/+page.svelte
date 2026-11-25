@@ -84,7 +84,7 @@
     suspended_at?: string;
     suspended_by?: string;
     auth_method_enforcer_dismissed?: boolean;
-    version: number;
+    version: bigint;
     created_at?: string;
     created_by?: string;
     created_by_name?: string;

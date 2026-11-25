@@ -27,7 +27,7 @@ describe('flushPendingTranslations', () => {
   it('drains only the given owner and splits create vs update', async () => {
     addPendingTranslation(OWNER, 'custom.entities.t.rows.a', {
       'en-GB': { value: 'new' },
-      'it-IT': { value: 'upd', uuid: 'u-1', version: 4 },
+      'it-IT': { value: 'upd', uuid: 'u-1', version: 4n },
     });
     addPendingTranslation(OTHER, 'custom.entities.t.rows.b', { 'en-GB': { value: 'other' } });
 
@@ -56,7 +56,7 @@ describe('flushPendingTranslations', () => {
     );
     addPendingTranslation(OWNER, 'custom.entities.t.rows.a', {
       'en-GB': { value: 'new' },
-      'it-IT': { value: 'upd', uuid: 'u-1', version: 4 },
+      'it-IT': { value: 'upd', uuid: 'u-1', version: 4n },
     });
 
     const failed = await flushPendingTranslations(OWNER);

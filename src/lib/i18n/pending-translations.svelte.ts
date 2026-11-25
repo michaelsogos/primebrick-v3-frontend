@@ -30,7 +30,7 @@ export type PendingTranslationEntry = {
   value: string;
   /** Present → update of an existing row; requires `version` (CAS). */
   uuid?: string;
-  version?: number;
+  version?: bigint;
 };
 
 /** language → entry */

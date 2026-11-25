@@ -33,6 +33,7 @@ import { apiFetchWithTimeout, entityApiBase } from '$lib/api';
 import { extJsonParse, extJsonStringify } from '$lib/api-ext';
 import { fetchEntityMeta } from '$lib/entity-list/meta-cache';
 import { defaultSearchGate } from '$lib/entity-list/search-gate';
+import { scalarKeyString } from './depends-on';
 import type {
 	EntityMeta,
 	FilterCondition,
@@ -99,21 +100,16 @@ export function useEntityRefOptions(
 		const labelKey = meta.display_field;
 		return rows.map((row) => {
 			const raw = row[uidKey];
-			const value =
-				typeof raw === 'string' || typeof raw === 'number' || typeof raw === 'boolean'
-					? String(raw)
-					: '';
+			const value = scalarKeyString(raw, `ref option uid '${uidKey}'`);
 			// relation entities serve no display_field — the ref option falls
 			// back to the uid (the only uniform label an edge row has).
 			const label = labelKey !== undefined ? row[labelKey] : undefined;
 			return {
 				value,
 				label:
-					typeof label === 'string' ||
-					typeof label === 'number' ||
-					typeof label === 'boolean'
-						? String(label)
-						: value,
+					label === undefined || label === null
+						? value
+						: scalarKeyString(label, `ref option label '${labelKey}'`),
 				_sub: value,
 			};
 		});

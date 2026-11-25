@@ -166,7 +166,9 @@ import { extJsonStringify, extJsonParse } from '$lib/api-ext';
       const next = extJsonParse<Record<string, unknown>>(argsText || '{}');
       next.uuid = uuid;
       const version = resolvedEntity.version;
-      if (version !== undefined && next.version === undefined) next.version = Number(version);
+      // version rides verbatim — bigint by wire construction; the argsText
+      // round-trip (extJsonStringify → extJsonParse) preserves it exactly.
+      if (version !== undefined && next.version === undefined) next.version = version;
       argsText = extJsonStringify(next, 2);
       phase = 'confirm';
     } else {

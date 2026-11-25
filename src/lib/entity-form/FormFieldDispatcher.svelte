@@ -432,6 +432,20 @@
 	/** Numeric kind from the column contract — ONE resolver (`numericKindOf`)
 	 *  shared with the zod binding and every numeric surface. */
 	const numKind = $derived(numericKindOf(column) ?? 'number');
+	/** Per-row uom codes are TEXT by domain semantics — `kg`, `ms`, `EUR`.
+	 *  Empty (`''`/`null`/`undefined`) is the legitimate unset state and
+	 *  stays silent. A non-empty non-string value is a modeling error — a
+	 *  numeric or boolean unit code makes no sense — so the failure is
+	 *  SEMI-silent by design: the suffix degrades to empty and the dev
+	 *  console carries the trace. */
+	function uomCodeString(v: unknown, context: string): string {
+		if (v === undefined || v === null || v === '') return '';
+		if (typeof v === 'string') return v;
+		if (import.meta.env.DEV) {
+			console.error(`[uom] per-row unit code on non-string type (${typeof v}) — ${context}:`, v);
+		}
+		return '';
+	}
 	/** Resolved uom spec for the numeric control — `MetaColumn.uom` is the
 	 *  contract; the sibling `uom.field` value rides `record` (form surface
 	 *  only — filters render the adornment display-only). */
@@ -452,12 +466,7 @@
 				return { kind: 'custom', code: u.unit, symbol: uomUnitSymbol(u.unit, $uiLang) };
 			}
 			const rawUnit = surface === 'form' && record ? record[u.field] : undefined;
-			const unit =
-				typeof rawUnit === 'string' ||
-				typeof rawUnit === 'number' ||
-				typeof rawUnit === 'boolean'
-					? String(rawUnit)
-					: '';
+			const unit = uomCodeString(rawUnit, `uom field '${u.field}'`);
 			return {
 				kind: 'custom',
 				code: unit,
@@ -480,12 +489,7 @@
 		// Remaining union: currency | custom{field,source} — both carry the
 		// per-row code on the `u.field` sibling.
 		const rawCode = surface === 'form' && record ? record[u.field] : undefined;
-		const code =
-			typeof rawCode === 'string' ||
-			typeof rawCode === 'number' ||
-			typeof rawCode === 'boolean'
-				? String(rawCode)
-				: '';
+		const code = uomCodeString(rawCode, `uom field '${u.field}'`);
 		if (u.kind === 'currency') {
 			return {
 				kind: 'currency',

@@ -55,7 +55,7 @@
     key_generation?: number;
     key_rotated_at?: string | null;
     is_enabled: boolean;
-    version: number;
+    version: bigint;
     created_at?: string;
     created_by?: string;
     created_by_name?: string;

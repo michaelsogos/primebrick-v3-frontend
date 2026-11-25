@@ -18,6 +18,7 @@ import { apiFetchWithTimeout, entityApiBase } from '$lib/api';
 import { extJsonParse } from '$lib/api-ext';
 import { fetchEntityMeta } from '$lib/entity-list/meta-cache';
 import type { EntityMeta, ListResponse, MetaColumn } from '$lib/entity-list/types';
+import { scalarKeyString } from './depends-on';
 import type { DeepReadonly } from '@primebrick/ui';
 import { SvelteURLSearchParams } from 'svelte/reactivity';
 
@@ -62,9 +63,7 @@ export function usePivotRow(
 			qs.set('filters[0][op]', '=');
 			qs.set(
 				'filters[0][value]',
-				typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean'
-					? String(value)
-					: '',
+				scalarKeyString(value, `pivot-row lookup on ${valueField ?? meta.uid}`),
 			);
 			qs.set('filters[0][connector]', 'AND');
 			const res = await apiFetchWithTimeout(

@@ -507,7 +507,7 @@ export async function fetchModuleConfig(code: string): Promise<ModuleConfigEntry
   return data.config_entries;
 }
 
-export async function updateModuleConfigKey(code: string, uuid: string, value: string | bigint | number, version?: number): Promise<void> {
+export async function updateModuleConfigKey(code: string, uuid: string, value: string | bigint | number, version?: bigint): Promise<void> {
   const res = await apiFetch(`/svc/${encodeURIComponent(code)}/api/v1/entities/config_entry/${encodeURIComponent(uuid)}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
@@ -751,7 +751,7 @@ export async function createConfigEntry(params: {
 export async function updateConfigEntry(
   uuid: string,
   patch: { value?: string | bigint | number; type?: string; type_config?: string | null },
-  version: number,
+  version: bigint,
 ): Promise<void> {
   const res = await apiFetch(`/api/v1/entities/config_entry/${encodeURIComponent(uuid)}`, {
     method: 'PUT',
@@ -767,7 +767,7 @@ export async function bulkUpdateConfigEntries(
     value?: string | bigint | number;
     type?: string;
     type_config?: string | null;
-    version: number;
+    version: bigint;
   }>,
 ): Promise<number> {
   const res = await apiFetch('/api/v1/entities/config_entry/bulk-update', {
@@ -786,14 +786,14 @@ export async function bulkUpdateConfigEntries(
   return data.updated;
 }
 
-export async function deleteConfigEntry(uuid: string, version: number, mfaActionAuthorization: string | null): Promise<Response> {
+export async function deleteConfigEntry(uuid: string, version: bigint, mfaActionAuthorization: string | null): Promise<Response> {
   return apiFetch(`/api/v1/entities/config_entry/${encodeURIComponent(uuid)}?version=${version}`, {
     method: 'DELETE',
     headers: mfaActionAuthorization ? { 'x-mfa-action-authorization': mfaActionAuthorization } : {},
   });
 }
 
-export async function bulkDeleteConfigEntries(items: Array<{ uuid: string; version: number }>, mfaActionAuthorization: string | null): Promise<Response> {
+export async function bulkDeleteConfigEntries(items: Array<{ uuid: string; version: bigint }>, mfaActionAuthorization: string | null): Promise<Response> {
   return apiFetch('/api/v1/entities/config_entry/bulk-delete', {
     method: 'POST',
     headers: {
@@ -804,7 +804,7 @@ export async function bulkDeleteConfigEntries(items: Array<{ uuid: string; versi
   });
 }
 
-export async function restoreConfigEntry(uuid: string, version: number): Promise<void> {
+export async function restoreConfigEntry(uuid: string, version: bigint): Promise<void> {
   const res = await apiFetch(`/api/v1/entities/config_entry/${encodeURIComponent(uuid)}/restore?version=${version}`, {
     method: 'POST',
   });
@@ -899,7 +899,7 @@ export async function updateTranslation(moduleCode: string, uuid: string, data: 
   key?: string;
   language?: string;
   value?: string;
-  version: number;
+  version: bigint;
 }): Promise<unknown> {
   const res = await apiFetch(`/api/v1/entities/translation/${encodeURIComponent(uuid)}?module=${encodeURIComponent(moduleCode)}`, {
     method: 'PUT',
@@ -911,7 +911,7 @@ export async function updateTranslation(moduleCode: string, uuid: string, data: 
 }
 
 /** Admin: soft-delete a translation row. */
-export async function deleteTranslation(moduleCode: string, uuid: string, version: number): Promise<void> {
+export async function deleteTranslation(moduleCode: string, uuid: string, version: bigint): Promise<void> {
   const res = await apiFetch(`/api/v1/entities/translation/${encodeURIComponent(uuid)}?module=${encodeURIComponent(moduleCode)}&version=${version}`, {
     method: 'DELETE',
   });
@@ -919,7 +919,7 @@ export async function deleteTranslation(moduleCode: string, uuid: string, versio
 }
 
 /** Admin: restore a soft-deleted translation row. */
-export async function restoreTranslation(moduleCode: string, uuid: string, version: number): Promise<void> {
+export async function restoreTranslation(moduleCode: string, uuid: string, version: bigint): Promise<void> {
   const res = await apiFetch(`/api/v1/entities/translation/${encodeURIComponent(uuid)}/restore?module=${encodeURIComponent(moduleCode)}&version=${version}`, {
     method: 'POST',
   });

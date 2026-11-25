@@ -32,7 +32,7 @@ export interface FormDraftDoc {
 	v: number;
 	data: Record<string, unknown>;
 	tainted: Record<string, boolean>;
-	base_version: number | null;
+	base_version: bigint | null;
 	saved_at: number;
 }
 
@@ -47,7 +47,7 @@ export interface UseFormDraftOpts {
 	/** Declared form field keys — stale draft keys outside this set die silently. */
 	fieldKeys: () => string[];
 	/** Record version the form was loaded against (detail only; 0 on create). */
-	baseVersion: () => number | bigint;
+	baseVersion: () => bigint;
 	data: () => Record<string, unknown>;
 	tainted: () => Record<string, boolean>;
 	hasTainted: () => boolean;
@@ -163,7 +163,7 @@ export function useFormDraft(opts: UseFormDraftOpts): FormDraftApi {
 					v: DRAFT_VERSION,
 					data,
 					tainted,
-					base_version: Number(opts.baseVersion()) || null,
+					base_version: opts.baseVersion() || null,
 					saved_at: Date.now(),
 				};
 				localStorage.setItem(key, extJsonStringify(doc));

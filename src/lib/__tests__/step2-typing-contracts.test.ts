@@ -153,7 +153,7 @@ describe('buildAuditData — three-path contract', () => {
   });
 
   it('entity maps the standard audit fields', () => {
-    const d = buildAuditData({ uuid: 'u1', version: 3, created_by_name: 'Ann' });
+    const d = buildAuditData({ uuid: 'u1', version: 3n, created_by_name: 'Ann' });
     expect(d.uuid).toBe('u1');
     expect(d.version).toBe(3);
     expect(d.created_by_name).toBe('Ann');

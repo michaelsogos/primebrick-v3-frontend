@@ -31,7 +31,7 @@ export interface RoleMapping {
   permissions: string[];
   is_admin: boolean;
   last_synced_at?: string;
-  version: number;
+  version: bigint;
   created_at: string;
   created_by: string;
   updated_at: string;
@@ -50,7 +50,7 @@ export interface UpdateRoleInput {
   label_key?: string;
   is_admin?: boolean;
   permissions?: string[];
-  version: number;
+  version: bigint;
 }
 
 export function useRoleMappings() {

@@ -79,14 +79,54 @@ export function depDisabled(
 	return conditionMatches(pivot, w);
 }
 
+/**
+ * Scalar stringification for the pivot/ref machinery — string/number/
+ * boolean/bigint convert (wire integers are bigint by codec contract;
+ * form-emitted values can be number — both are legitimate scalars).
+ * `''`/`null`/`undefined` are the legitimate unset states and stay silent.
+ * A non-empty value of any other type (object, array) is a declaration or
+ * data anomaly — the failure is SEMI-silent by design: the form keeps
+ * working (fail-closed empty), and the dev console carries the trace.
+ */
+export function scalarKeyString(v: unknown, context: string): string {
+	if (v === undefined || v === null || v === '') return '';
+	if (
+		typeof v === 'string' ||
+		typeof v === 'number' ||
+		typeof v === 'boolean' ||
+		typeof v === 'bigint'
+	) {
+		return String(v);
+	}
+	if (import.meta.env.DEV) {
+		console.error(`[depends-on] scalar key on unmanaged type (${typeof v}) — ${context}:`, v);
+	}
+	return '';
+}
+
+/** Cross-numeric-type equality — wire integers decode as bigint while
+ *  form-emitted and meta-authored literals can be number: `5n` and `5`
+ *  are the same value. Non-integer numbers can never equal a bigint
+ *  (BigInt() throws on them — caught, the values differ by construction). */
+function scalarEquals(a: unknown, b: unknown): boolean {
+	if (a === b) return true;
+	const numeric = (t: unknown) => typeof t === 'number' || typeof t === 'bigint';
+	if (!numeric(a) || !numeric(b)) return false;
+	try {
+		return BigInt(a as number) === BigInt(b as number);
+	} catch {
+		return false;
+	}
+}
+
 function conditionMatches(
 	actual: unknown,
 	w: { equals?: unknown; not?: unknown; values?: readonly unknown[]; set?: boolean },
 ): boolean {
 	if (w.set !== undefined) return w.set ? !isEmptyPivot(actual) : isEmptyPivot(actual);
-	if (w.equals !== undefined) return actual === w.equals;
-	if (w.not !== undefined) return actual !== w.not;
-	if (w.values !== undefined) return w.values.some((v) => v === actual);
+	if (w.equals !== undefined) return scalarEquals(actual, w.equals);
+	if (w.not !== undefined) return !scalarEquals(actual, w.not);
+	if (w.values !== undefined) return w.values.some((v) => scalarEquals(actual, v));
 	return false;
 }
 
@@ -131,10 +171,7 @@ export function depPivotSignature(
 	dep: DependsOn,
 	record: Record<string, unknown> | undefined,
 ): string {
-	const v = depPivotValue(dep, record);
-	return typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean'
-		? String(v)
-		: '';
+	return scalarKeyString(depPivotValue(dep, record), `pivot '${dep.field}'`);
 }
 
 /** Whether a pivot change must clear the dependent's value — the two

@@ -45,6 +45,7 @@
 	import EntityFormField from './EntityFormField.svelte';
 	import EntityRecordUid from '../entity-list/sheets/EntityRecordUid.svelte';
 	import { buildEntityFormSchema, synthesizeFormDecl } from './build-entity-form-schema';
+	import { wireVersion } from './wire-version';
 	import { entityApiBase, serviceApiPrefix, apiFetch, type ModuleInfo } from '$lib/api';
 	import { serviceCodeOf } from '$lib/composables/use-service-availability.svelte';
 	import { findActionEndpoint, fillActionPath } from '$lib/entity-list/action-endpoints';
@@ -124,12 +125,8 @@
 	 * a successful update re-baselines on the RETURNING row internally.
 	 */
 	let servedRecord = $state<Record<string, unknown> | null>(untrack(() => recordProp ?? null));
-	let recordVersion = $state<number | bigint>(
-		untrack(() =>
-			typeof recordProp?.version === 'number' || typeof recordProp?.version === 'bigint'
-				? recordProp.version
-				: 0,
-		),
+	let recordVersion = $state<bigint>(
+		untrack(() => wireVersion(recordProp?.version, `form baseline for '${entity}'`)),
 	);
 
 	// Prop-driven rebaseline — the sheet's create→update morph re-GETs the
@@ -138,10 +135,7 @@
 	$effect(() => {
 		if (recordProp !== undefined && recordProp !== servedRecord) {
 			servedRecord = recordProp;
-			recordVersion =
-				typeof recordProp?.version === 'number' || typeof recordProp?.version === 'bigint'
-					? recordProp.version
-					: 0;
+			recordVersion = wireVersion(recordProp?.version, `form rebaseline for '${entity}'`);
 			if (formObj) {
 				draft.clear();
 				seededFor = null;
@@ -353,12 +347,9 @@
 						// RETURNING row is authoritative — realign the optimistic
 						// lock to the new version, rebaseline, stay open.
 						const updated = (body?.entity ?? body) as Record<string, unknown> | null;
-						if (
-							updated &&
-							(typeof updated.version === 'number' || typeof updated.version === 'bigint')
-						) {
+						if (updated) {
 							servedRecord = updated;
-							recordVersion = updated.version;
+							recordVersion = wireVersion(updated.version, `save response for '${entity}'`);
 						}
 						draft.clear();
 						reset({ newState: $form });
@@ -558,8 +549,7 @@
 					`${basePath}/${encodeURIComponent(String(recordUuid))}`,
 				);
 				servedRecord = row;
-				recordVersion =
-					typeof row.version === 'number' || typeof row.version === 'bigint' ? row.version : 0;
+				recordVersion = wireVersion(row.version, `fresh fetch for '${entity}'`);
 			} catch {
 				pushNotification({
 					impact: 'HIGH',
