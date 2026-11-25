@@ -156,6 +156,11 @@
         "lib/entity-list/sheets/panels/",
         "lib/shell/sheets/panels/"
       ]
+    },
+    "ext-json": {
+      "allowPaths": [
+        "lib/components/ui/smart-ai/llm-control-parse.ts"
+      ]
     }
   },
   "i18n_namespaces": [
