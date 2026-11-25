@@ -148,14 +148,14 @@ describe('buildAuditData — three-path contract', () => {
   it('no-arg call returns the create-page shell', () => {
     const d = buildAuditData();
     expect(d.uuid).toBe('');
-    expect(d.version).toBe(0);
+    expect(d.version).toBe(0n);
     expect('created_at' in d).toBe(true);
   });
 
   it('entity maps the standard audit fields', () => {
     const d = buildAuditData({ uuid: 'u1', version: 3n, created_by_name: 'Ann' });
     expect(d.uuid).toBe('u1');
-    expect(d.version).toBe(3);
+    expect(d.version).toBe(3n);
     expect(d.created_by_name).toBe('Ann');
   });
 

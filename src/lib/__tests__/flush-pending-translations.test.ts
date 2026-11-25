@@ -43,7 +43,7 @@ describe('flushPendingTranslations', () => {
     // update path — PUT with uuid + observed version (CAS).
     expect(updateTranslation).toHaveBeenCalledWith('custom', 'u-1', {
       value: 'upd',
-      version: 4,
+      version: 4n,
     });
     // The other owner is untouched.
     expect(pendingTranslationCount(OTHER)).toBe(1);
@@ -62,7 +62,7 @@ describe('flushPendingTranslations', () => {
     const failed = await flushPendingTranslations(OWNER);
 
     expect(failed).toHaveLength(1);
-    expect(failed[0]).toMatchObject({ uuid: 'u-1', version: 4 });
+    expect(failed[0]).toMatchObject({ uuid: 'u-1', version: 4n });
     // The failed row went back into the queue — user text preserved.
     const requeued = takePendingTranslations(OWNER);
     expect(requeued).toContainEqual({
@@ -70,7 +70,7 @@ describe('flushPendingTranslations', () => {
       language: 'it-IT',
       value: 'upd',
       uuid: 'u-1',
-      version: 4,
+      version: 4n,
     });
   });
 

@@ -39,7 +39,7 @@ describe('pending-translations queue', () => {
       language: 'it-IT',
       value: 'Privato',
       uuid: 'u-1',
-      version: 3,
+      version: 3n,
     });
   });
 
