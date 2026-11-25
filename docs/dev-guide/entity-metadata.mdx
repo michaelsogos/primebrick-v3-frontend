@@ -159,6 +159,14 @@ never authored by hand). Authored entries are presentation overrides.
 | `options_source` | Dynamic option vocabulary for combos — closed union: `"census.emits"` (union of modules' `events.emits`), `"census.callables"` (LISTEN subjects), `"audit.actors"` (the table's own audit actors — auto-injected on `*_by` columns), `"system.roles"`. |
 | `allow_create` | ComboSelect free-entry flag. `options_source:"census.*"` + `allow_create:true` is a construction error — census sources are closed vocabularies. |
 
+**`uom` sibling-code contract.** A `{kind, field}` uom reads the unit code
+from a sibling column — and that code is **always text** (`'kg'`, `'ms'`,
+`'EUR'`): no legitimate data model carries a numeric or boolean unit code.
+The display narrowing is therefore strict string-only. `''`/`null`/`undefined`
+is the legitimate "unit not yet chosen" state (no suffix rendered, no error);
+any other non-string value is a modeling mistake and emits a dev-console
+error in DEV while rendering no suffix — traced and safe, never silent.
+
 ### Dependencies — `depends_on`
 
 ONE declared edge to a sibling column (the pivot) drives this column —
@@ -174,6 +182,18 @@ declared once, shared by forms. `withColumnConstraints` enforces legality
 
 `filter_field`/`control_prop` both reset the value on pivot change — a
 stale dependent value is a silent integrity leak.
+
+**Pivot scalar contract.** Pivot values are compared and hashed as scalars:
+`string`/`number`/`boolean`/`bigint` are the supported pivot types — `bigint`
+included because every integer arriving over the wire is bigint by codec
+contract (an int pivot, e.g. a year or a numeric enum, is a legitimate
+depends_on target). `null`/`undefined`/objects are **not** valid pivot keys:
+the dependent treats them as "no pivot value". When a non-scalar pivot value
+is detected at runtime, the form degrades safely (no reset cascade) AND a
+dev-console error is emitted in DEV — semi-silent by design: the form never
+crashes, the console tells you exactly which pivot declaration is wrong, and
+the trace leads straight to the metadata authoring mistake. The same contract
+applies to `disabled_when` equality tests, which compare cross-type-safely.
 
 ### Tooltips
 
