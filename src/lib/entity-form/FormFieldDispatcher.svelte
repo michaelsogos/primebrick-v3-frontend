@@ -628,7 +628,10 @@
 	 *  audit writers (single fetch, full vocabulary — client search inside
 	 *  the combo is truthful here). `filterEntity` is required; without it
 	 *  the delegate stays empty rather than fetching the wrong service. */
-	const auditActors = useAuditActorOptions(() => filterEntity);
+	const auditActors = useAuditActorOptions(
+		() => filterEntity,
+		() => service,
+	);
 
 	/** `options_source:"system.roles"` — the shared `/system/roles/active`
 	 *  vocabulary (same feed the custom user pages feed their ComboSelect).

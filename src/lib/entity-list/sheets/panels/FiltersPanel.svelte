@@ -61,6 +61,9 @@
     /** Entity being filtered — feeds `options_source:"audit.actors"`
      *  columns through `{entity}/audit-actors`. */
     entity?: string;
+    /** Owning service — threaded into audit-actor resolution; required
+     *  for builtin entities (the census map is last-wins ambiguous). */
+    service?: string;
     filterableColumns?: MetaColumn[];
     filterValues?: Record<string, unknown>;
     onFilterValuesChange?: (values: Record<string, unknown>) => void;
@@ -71,6 +74,7 @@
 
   let {
     entity,
+    service,
     filterableColumns = [],
     filterValues = {},
     onFilterValuesChange,
@@ -423,6 +427,7 @@
             surface="filter"
             column={col}
             filterEntity={entity}
+            {service}
             bind:value={tempFilterValues[col.key]}
             bind:timezone={timezoneValues[col.key]}
             emitsOptions={census.emitsOptions}
@@ -519,6 +524,7 @@
                     surface="filter"
                     column={selectedColumn}
                     filterEntity={entity}
+            {service}
                     bind:value={newFilterStart}
                     bind:timezone={advancedTimezone}
                     controlProps={{ id }}
@@ -527,6 +533,7 @@
                     surface="filter"
                     column={selectedColumn}
                     filterEntity={entity}
+            {service}
                     bind:value={newFilterEnd}
                     bind:timezone={advancedTimezone}
                   />
@@ -536,6 +543,7 @@
                   surface="filter"
                   column={selectedColumn}
                   filterEntity={entity}
+            {service}
                   bind:value={newFilterValue}
                   bind:timezone={advancedTimezone}
                   emitsOptions={census.emitsOptions}

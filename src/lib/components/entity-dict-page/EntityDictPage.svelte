@@ -886,6 +886,7 @@
       }),
       'entity.filters': () => ({
         entity,
+        service: moduleCode,
         filterableColumns,
         filterValues: list.filterValues ?? {},
         onFilterValuesChange: list.onFilterValuesChange,

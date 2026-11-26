@@ -90,6 +90,10 @@ export type SheetPanelPropsMap = {
   'entity.filters': {
     /** Entity name — FiltersPanel resolves audit-actor options for audited columns. */
     entity?: string;
+    /** Owning service — required for builtin entities (census map is
+     *  last-wins ambiguous; without it audit-actor reads throw by
+     *  construction rather than hitting the wrong schema). */
+    service?: string;
     filterableColumns?: import('$lib/entity-list/types').MetaColumn[];
     filterValues?: Record<string, unknown>;
     onFilterValuesChange?: (values: Record<string, unknown>) => void;

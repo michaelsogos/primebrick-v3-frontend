@@ -321,6 +321,7 @@
     onVisibleKeysChange: () => onVisibleKeysChange,
     onResetColumnVisibility: () => onResetColumnVisibility,
     entity: () => entity,
+    service: () => service,
     filterableColumns: () => filterableColumns,
     searchableColumns: () => searchableColumns,
     nonAuditingColumns: () => nonAuditingColumns,
