@@ -311,15 +311,37 @@
     }
   });
 
+  // Sorting handlers — created BEFORE useSheetPanels so the columns-sheet
+  // factory can wire the composed full reset (visibility + order + sort);
+  // the sync effect re-assigns sheet props from the factory on every tick,
+  // so the factory is the ONLY wiring that survives.
+  const sortingHandlers = createSortingHandlers(
+    columnOrder,
+    () => defaultSort,
+    () => defaultSortDir,
+    () => onResetColumnVisibility,
+    () => onSortChange,
+    () => rowsLoading,
+    () => sortKey,
+    () => sortDir,
+    () => nonAuditingColumns,
+    () => auditingColumnsGroup,
+    () => nonAuditingColumns,
+    () => onFilterValuesChange,
+    () => onAdvancedFiltersChange,
+    () => onResetFilters
+  );
+  const { resetColumnsAndSorting, resetFilters, handleSortClick } = sortingHandlers;
+
   // Sheet panel management composable
   const sheetPanels = useSheetPanels({
     columnOrder,
+    onResetColumnsAndSorting: () => resetColumnsAndSorting,
     columns: () => columns,
     visibleKeys: () => visibleKeys,
     searchInKeys: () => searchInKeys,
     onSearchInKeysChange: () => onSearchInKeysChange,
     onVisibleKeysChange: () => onVisibleKeysChange,
-    onResetColumnVisibility: () => onResetColumnVisibility,
     entity: () => entity,
     service: () => service,
     filterableColumns: () => filterableColumns,
@@ -654,25 +676,6 @@
     toggleRowSelect,
     tableRef: () => tableRef
   });
-
-  // Sorting handlers
-  const sortingHandlers = createSortingHandlers(
-    columnOrder,
-    () => defaultSort,
-    () => defaultSortDir,
-    () => onResetColumnVisibility,
-    () => onSortChange,
-    () => rowsLoading,
-    () => sortKey,
-    () => sortDir,
-    () => nonAuditingColumns,
-    () => auditingColumnsGroup,
-    () => nonAuditingColumns,
-    () => onFilterValuesChange,
-    () => onAdvancedFiltersChange,
-    () => onResetFilters
-  );
-  const { resetColumnsAndSorting, resetFilters, handleSortClick } = sortingHandlers;
 
   // Record detail route — `kind:"detail"` census decl owns the `[param]`
   // template (same resolution `EntityTablePage` uses for the row edit

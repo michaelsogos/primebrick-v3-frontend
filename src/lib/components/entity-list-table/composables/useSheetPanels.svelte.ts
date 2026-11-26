@@ -7,12 +7,18 @@ export interface UseSheetPanelsOptions {
   columnOrder: {
     applyColumnVisibility: (group: 'sticky' | 'data' | 'auditing', keys: string[]) => void;
   };
+  /** The composed full reset (visibility + column order + sort) — REQUIRED
+   *  for the columns sheet: the sync effect re-assigns `sheetState.props`
+   *  from this factory on every reactive tick, so any open-time payload is
+   *  overwritten and the factory is the only wiring that survives. Wiring
+   *  the raw visibility-only reset here silently drops the order/sort part
+   *  (user report 2026-11-26: sheet reset left the dragged order in place). */
+  onResetColumnsAndSorting: () => () => void;
   columns: () => MetaColumn[];
   visibleKeys: () => string[];
   searchInKeys: () => string[] | null;
   onSearchInKeysChange: () => (keys: string[] | null) => void;
   onVisibleKeysChange: () => (keys: string[]) => void;
-  onResetColumnVisibility: () => (view: ViewName) => void;
   entity: () => string;
   /** Owning service — REQUIRED for builtin entities (they mount on every
    *  service, so the census map is last-wins ambiguous). Same contract as
@@ -91,7 +97,7 @@ export function useSheetPanels(options: UseSheetPanelsOptions) {
             }
             options.columnOrder.applyColumnVisibility(group, dedup);
           },
-          onResetColumnVisibility: () => options.onResetColumnVisibility()('table'),
+          onResetColumnVisibility: () => options.onResetColumnsAndSorting()(),
           onSelectAll: () =>
             options.onVisibleKeysChange()(
               [...stickyColumnsGroup, ...nonAuditingColumns, ...auditingColumnsGroup].map((c) => c.key)

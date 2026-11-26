@@ -739,6 +739,52 @@ test.describe("builtin sequence registry — mounted by construction", () => {
       .toBe("3:0");
   });
 
+  test("columns sheet reset restores the governed ORDER — dragged columnOrder state wiped", async ({ page }) => {
+    // Seed a dragged order: `step` pulled to the front of the data group.
+    // The sheet factory is the only wiring that survives the sync effect —
+    // its reset MUST be the composed one (visibility + order + sort), not
+    // the visibility-only one (user report 2026-11-26).
+    const draggedBlob = extJsonStringify({ data: ["step"] });
+    await page.addInitScript(
+      ([key, val]) => window.sessionStorage.setItem(key, val),
+      ["pb:crm-sequence:list:columnOrder", draggedBlob] as const,
+    );
+    const listReq = page.waitForResponse(
+      (r) => r.url().includes("/entities/sequence/list") && r.status() === 200,
+      { timeout: 5_000 },
+    );
+    await page.goto("/crm/settings/sequences");
+    await listReq;
+    await expect(page.locator("table")).toBeVisible({ timeout: 5_000 });
+    const headOrder = async () =>
+      (await page.locator("table thead th").allTextContents())
+        .map((t) => t.replace(/\s+/g, " ").trim())
+        .filter(Boolean);
+    // The dragged order wins on render — Increment jumps ahead of Sezionale.
+    const dragged = await headOrder();
+    expect(dragged.indexOf("Increment")).toBeLessThan(dragged.indexOf("Sezionale"));
+
+    // Open the columns sheet and hit the eraser — the sheet-header reset.
+    // Scoped to the sheet dialog: the filter bar carries its own disabled
+    // Reset button earlier in DOM order.
+    await page.getByTestId("elt-column-selector").click();
+    await page.getByRole("dialog").getByRole("button", { name: "Reset" }).click();
+
+    // The governed authored order is restored verbatim.
+    await expect
+      .poll(async () => (await headOrder()).slice(0, 6).join("|"), { timeout: 5_000 })
+      .toBe("Name|Sezionale|Sezionale 2|Sezionale 3|Increment|Start");
+    // The persisted order state is wiped — no group arrays survive.
+    const wiped = await page.evaluate(() =>
+      window.sessionStorage.getItem("pb:crm-sequence:list:columnOrder"),
+    );
+    const parsed = extJsonParse<{ data?: string[]; sticky?: string[]; auditing?: string[] }>(wiped ?? "{}");
+    expect(parsed.data).toBeUndefined();
+    expect(parsed.sticky).toBeUndefined();
+    expect(parsed.auditing).toBeUndefined();
+    await page.keyboard.press("Escape");
+  });
+
   /**
    * `format:"i18n_key"` cells render the governed translation badge —
    * the same source/destination anatomy `nats_subject` owns: languages
