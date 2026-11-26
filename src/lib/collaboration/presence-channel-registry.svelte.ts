@@ -23,6 +23,7 @@ import type {
 	PresenceSnapshot,
 	EntityChangedMarker,
 } from '@primebrick/ui';
+import { extJsonStringify } from '$lib/api-ext';
 
 /**
  * Fallback heartbeat cadence — only sent while the SSE stream is DOWN. When
@@ -83,7 +84,7 @@ function createChannel(
 			await apiFetch(base, {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
-				body: JSON.stringify({ ...signal, session_id: sessionId }),
+				body: extJsonStringify({ ...signal, session_id: sessionId }),
 				keepalive,
 			});
 		} catch {
@@ -128,7 +129,7 @@ function createChannel(
 		try {
 			navigator.sendBeacon(
 				base,
-				new Blob([JSON.stringify({ action: 'LEAVE', session_id: sessionId })], {
+				new Blob([extJsonStringify({ action: 'LEAVE', session_id: sessionId })], {
 					type: 'application/json',
 				}),
 			);

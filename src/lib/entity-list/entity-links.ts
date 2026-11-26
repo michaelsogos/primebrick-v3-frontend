@@ -96,9 +96,9 @@ export function appendListFilterTerm(
 		params.set(`filters[${i}][value][start]`, v.start);
 		params.set(`filters[${i}][value][end]`, v.end);
 	} else if (Array.isArray(v)) {
-		for (const item of v) params.append(`filters[${i}][value][]`, String(item));
+		for (const item of v) params.append(`filters[${i}][value][]`, toDisplayString(item));
 	} else {
-		params.set(`filters[${i}][value]`, String(v));
+		params.set(`filters[${i}][value]`, toDisplayString(v));
 	}
 	params.set(`filters[${i}][connector]`, term.connector ?? 'AND');
 }

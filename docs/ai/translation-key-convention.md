@@ -105,6 +105,37 @@ $t('entities.user_profiles.fields.is_admin')
 - AI agent MUST NOT use snake_case plural in translation key entity segments.
 - When reviewing existing code, flag any camelCase or plural entity segments in translation keys as violations.
 
+## Dict `label_key` — the convention-suggestion contract
+
+`TranslationKeyCell` (entity-dict-page) offers the computed key
+`custom.entities.<translation_key>.rows.<slug(code)>` — `custom.*` is the
+only user-writable namespace. The cell MUST mirror the config-entry-create
+pattern (`create/+page.svelte`, `ValidationRulesSection`) exactly:
+
+- **`placeholder` / `searchPlaceholder`** — the FULL computed leaf key
+  `custom.entities.<tk>.rows.<code>`, with `my_custom_code` as the sample
+  leaf while code is empty (same idiom as `my_custom_setting`).
+- **`defaultSearch`** — the prefix INCLUDING the key segment:
+  `entities.<tk>.rows.<code|sample>` — pre-filters to THIS code's keys and
+  the Create row offers that same scoped path.
+- **The suggestion is the ASSIGNED value, not a placeholder** — while the
+  composer has no explicit `label_key`, the computed key is committed via
+  `onchange` (tracking the code: a previous suggestion is replaced on
+  change, an explicit pick or manual clear is respected). The real value
+  renders the created-value chip with the `app.common.new` marker and
+  activates the translate CTA; the suggestion never enters `options`.
+- **`handleChange`** — namespaced `*.entities.*` keys pass verbatim; the
+  namespace-less seed `entities.<tk>.rows.<leaf>` maps to `custom.` + the
+  path; free text maps to `custom.entities.<tk>.rows.<slug>`.
+- **Save-time** — `EntityDictPage.saveAll` commits `suggestedKey` when
+  `label_key` is left empty (real code only — never the sample).
+
+`defaultSearch` must NEVER carry the bare `rows.` prefix: a non-empty
+seeded search feeds the `allowCreate` row verbatim, producing a bogus
+`Create "…rows."` offer that would commit the prefix as a key — and
+`truncateFrom="start"` renders only the unreadable `…rows.` tail.
+(See the ComboSelect `defaultSearch` contract in `@primebrick/ui`.)
+
 ## Deep dive
 
 The normative rules live here; the full mechanics and rationale are in `docs/dev-guide/i18n.mdx` — link, do not duplicate.

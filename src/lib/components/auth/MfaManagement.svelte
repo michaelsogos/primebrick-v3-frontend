@@ -19,6 +19,8 @@
   import { QrCode } from '@primebrick/ui/vendor/lucide';
   import { ShieldCheck } from '@primebrick/ui/vendor/lucide';
   import LoadingWatermark from "./LoadingWatermark.svelte";
+  import { extJsonParse, extJsonStringify } from '$lib/api-ext';
+  import type { RFC7807Error } from '$lib/errors/rfc7807';
 
   // Trigger the auth config fetch to check if MFA is enabled.
   void loadAuthConfig();
@@ -59,7 +61,7 @@
     try {
       const resp = await apiFetch("/api/v1/auth/mfa/factors");
       if (resp.ok) {
-        const data = await resp.json();
+        const data = await resp.text().then((t) => extJsonParse<{ factors?: MfaFactorInfo[] }>(t));
         factors = (data.factors ?? []) as MfaFactorInfo[];
       }
     } catch (error) {
@@ -77,11 +79,11 @@
     try {
       const resp = await apiFetch("/api/v1/auth/mfa/enroll/begin", { method: "POST" });
       if (!resp.ok) {
-        const err = await resp.json();
+        const err = await resp.text().then((t) => extJsonParse<RFC7807Error>(t));
         pushNotification({ ...err, toast: false });
         return;
       }
-      const data = await resp.json();
+      const data = await resp.text().then((t) => extJsonParse<{ enrollment_token: string; secret: string; qr_code_url: string; recovery_codes?: string[] }>(t));
       enrollmentToken = data.enrollment_token;
       secret = data.secret;
       qrCodeUrl = data.qr_code_url;
@@ -111,14 +113,14 @@
       const resp = await apiFetch("/api/v1/auth/mfa/enroll/finish", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+        body: extJsonStringify({
           enrollment_token: enrollmentToken,
           passcode: otp.code,
           label: enrollLabel || undefined,
         }),
       });
       if (!resp.ok) {
-        const err = await resp.json();
+        const err = await resp.text().then((t) => extJsonParse<RFC7807Error>(t));
         enrollError = err.detail || $t("app.auth.mfa.invalid_code");
         otp.reset();
         return;
@@ -157,7 +159,7 @@
         method: "DELETE",
       });
       if (!resp.ok) {
-        const err = await resp.json();
+        const err = await resp.text().then((t) => extJsonParse<RFC7807Error>(t));
         pushNotification({ ...err, toast: false });
         return;
       }

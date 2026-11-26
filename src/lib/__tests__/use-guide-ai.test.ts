@@ -74,6 +74,7 @@ vi.mock('$lib/components/ui/smart-ai/use-ai-assistant.svelte', () => ({
 
 import { useGuideAi } from '$lib/components/ui/smart-guide/use-guide-ai.svelte';
 
+import { extJsonStringify } from '$lib/api-ext';
 function getTransform() {
   return (mocks.hooks as {
     transform_user_content: (
@@ -214,12 +215,12 @@ describe('useGuideAi RAG preflight', () => {
   it('selects actions from the census via the regenerate stage', async () => {
     const guide = useGuideAi('model#q4f16');
     await getTransform()('come rendo admin un utente?', makeCtx(stubAgent(SUCCESS_SCRIPT)));
-    const raw = JSON.stringify({
+    const raw = extJsonStringify({
       answer_markdown: 'Open **Users** and assign the administrators role.',
       actions: [],
     });
     const regenerate = vi.fn(async () =>
-      JSON.stringify({
+      extJsonStringify({
         actions: [
           { kind: 'navigate', route: '/system/settings/users', label: 'Apri Utenti' },
           { kind: 'navigate', route: '/not-in-census', label: 'fake' },

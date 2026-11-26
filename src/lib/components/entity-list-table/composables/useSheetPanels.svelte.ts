@@ -14,6 +14,11 @@ export interface UseSheetPanelsOptions {
   onVisibleKeysChange: () => (keys: string[]) => void;
   onResetColumnVisibility: () => (view: ViewName) => void;
   entity: () => string;
+  /** Owning service — REQUIRED for builtin entities (they mount on every
+   *  service, so the census map is last-wins ambiguous). Same contract as
+   *  the ELT root prop; threaded into the `entity.filters` sheet so
+   *  audit-actor vocabularies read the owning schema. */
+  service?: () => string | undefined;
   filterableColumns: () => MetaColumn[];
   searchableColumns: () => MetaColumn[];
   nonAuditingColumns: () => MetaColumn[];
@@ -104,6 +109,7 @@ export function useSheetPanels(options: UseSheetPanelsOptions) {
       }),
       'entity.filters': () => ({
         entity: options.entity(),
+        service: options.service?.(),
         filterableColumns: options.filterableColumns(),
         filterValues: options.filterValues() ?? {},
         onFilterValuesChange: options.onFilterValuesChange?.(),

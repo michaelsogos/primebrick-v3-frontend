@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { loginAsTestAdmin } from "./helpers/admin-login";
 
+import { extJsonParse } from '@primebrick/core/ext-json';
 /**
  * /system/job/job-schedules — `:filled` icon qualifier on lifecycle CTAs.
  *
@@ -35,17 +36,19 @@ test.describe("job_schedule lifecycle CTAs — :filled icons", () => {
     await page.goto("/system/job/job-schedules", {
       waitUntil: "domcontentloaded",
     });
-    await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
+    await expect(page.locator("table")).toBeVisible({ timeout: 5_000 });
 
     // Wire contract — synthesized row/bulk custom actions in served meta.
-    const meta = await page.evaluate(async () => {
-      const res = await fetch("/svc/job/api/v1/entities/job_schedule/meta");
-      const body = await res.json();
-      return {
-        row: (body.table?.row_custom_actions ?? []) as CtaRow[],
-        bulk: (body.table?.bulk_custom_actions ?? []) as CtaRow[],
-      };
-    });
+    const meta = await page.request
+      .get("/svc/job/api/v1/entities/job_schedule/meta")
+      .then((r) => r.text())
+      .then((t) => {
+        const body = extJsonParse<{ table?: { row_custom_actions?: unknown; bulk_custom_actions?: unknown } }>(t);
+        return {
+          row: (body.table?.row_custom_actions ?? []) as CtaRow[],
+          bulk: (body.table?.bulk_custom_actions ?? []) as CtaRow[],
+        };
+      });
     expect(meta.row).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ action_name: "stop", icon: "square:filled", color: "warning" }),
@@ -93,7 +96,7 @@ test.describe("job_schedule lifecycle CTAs — :filled icons", () => {
     await page.goto("/system/job/job-schedules", {
       waitUntil: "domcontentloaded",
     });
-    await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
+    await expect(page.locator("table")).toBeVisible({ timeout: 5_000 });
 
     // Row kebab — the actions cell is the row's last cell; state decides
     // which lifecycle ops are visible_on-gated in (stop/pause on armed,

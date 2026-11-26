@@ -154,9 +154,9 @@
   }
 
   $effect(() => {
-    focusedRowIndex;
-    viewRows;
-    shownColumns;
+    void focusedRowIndex;
+    void viewRows;
+    void shownColumns;
     measureFocusFrame();
   });
 

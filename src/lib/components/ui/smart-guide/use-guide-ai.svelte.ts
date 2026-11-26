@@ -32,6 +32,7 @@ import {
   type GuideLoopResult,
 } from './guide-loop';
 
+import { extJsonStringify } from '$lib/api-ext';
 /** Default min cosine similarity for a chunk to be injected as context —
  *  overridable per cerebellum tuning via execution_config.min_similarity.
  *  Calibrated on multilingual-e5-large-instruct: real hits score ≥0.82,
@@ -155,7 +156,7 @@ export function useGuideAi(model_id: string) {
             };
           }
         }
-        console.debug('[guide-ctx]', JSON.stringify({ block_len: pendingDocs.block.length }));
+        console.debug('[guide-ctx]', extJsonStringify({ block_len: pendingDocs.block.length }));
         return {
           kind: 'content',
           content: `${pendingDocs.block}\n\nUSER QUESTION: ${text}`,
@@ -186,7 +187,7 @@ export function useGuideAi(model_id: string) {
           } catch { /* repair is best-effort — fall through to raw */ }
         }
         const answer = response?.answer_markdown ?? raw;
-        console.debug('[guide-resp]', `raw_len=${raw.length}`, `parsed=${response !== null}`, `answer_len=${answer.length}`, JSON.stringify(answer.slice(-80)));
+        console.debug('[guide-resp]', `raw_len=${raw.length}`, `parsed=${response !== null}`, `answer_len=${answer.length}`, extJsonStringify(answer.slice(-80)));
         // S4 — action selection as a bounded second generation round. The
         // model picks routes from the runtime census; every emitted action
         // is validated against that same census (selection, not generation).

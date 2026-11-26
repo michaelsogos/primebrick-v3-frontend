@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { loginAsTestAdmin } from "./helpers/admin-login";
 
+import { extJsonParse } from '@primebrick/core/ext-json';
 /**
  * Page-chrome enforcement — the mandatory header cannot be evaded.
  *
@@ -47,7 +48,7 @@ test.describe("page chrome enforcement (mandatory header)", () => {
     test(`${surface.name}: exactly one PageHeader + one h1 + presence slot`, async ({ page }) => {
       await page.goto(surface.route, { waitUntil: "domcontentloaded" });
 
-      await expect(page.locator(HEADER)).toHaveCount(1, { timeout: 30000 });
+      await expect(page.locator(HEADER)).toHaveCount(1, { timeout: 5_000 });
       await expect(page.locator("h1")).toHaveCount(1);
       await expect(page.locator(PRESENCE)).toHaveCount(1);
     });
@@ -58,7 +59,7 @@ test.describe("page chrome enforcement (mandatory header)", () => {
     // `chrome:'remote'` — the sanctioned opt-out — and assert the host
     // honors it. Vacuous pass today if no decl uses the flag.
     const modsRes = await page.request.get("/api/v1/modules");
-    const { modules } = (await modsRes.json()) as {
+    const { modules } = (await modsRes.text().then((t) => extJsonParse<unknown>(t))) as {
       modules: Array<{
         id: string;
         nav?: { routes?: Array<{ path?: string; chrome?: string; label_key?: string }> };
@@ -75,7 +76,7 @@ test.describe("page chrome enforcement (mandatory header)", () => {
 
     for (const route of remoteChromeRoutes.slice(0, 3)) {
       await page.goto(route, { waitUntil: "domcontentloaded" });
-      await expect(page.locator(HEADER)).toHaveCount(0, { timeout: 30000 });
+      await expect(page.locator(HEADER)).toHaveCount(0, { timeout: 5_000 });
     }
   });
 });

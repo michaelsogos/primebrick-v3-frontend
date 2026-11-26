@@ -31,7 +31,7 @@ describe('pending-translations queue', () => {
 
   it('carries uuid+version through to the drained row (update CAS identity)', () => {
     addPendingTranslation(A, 'crm.entities.customer_type.rows.private', {
-      'it-IT': { value: 'Privato', uuid: 'u-1', version: 3 },
+      'it-IT': { value: 'Privato', uuid: 'u-1', version: 3n },
     });
     const rows = takePendingTranslations(A);
     expect(rows).toContainEqual({
@@ -39,7 +39,7 @@ describe('pending-translations queue', () => {
       language: 'it-IT',
       value: 'Privato',
       uuid: 'u-1',
-      version: 3,
+      version: 3n,
     });
   });
 

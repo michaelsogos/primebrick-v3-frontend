@@ -77,6 +77,12 @@ changes state/data shown, it is a selector → `ComboSelect`.
   most cases — check them first).
 
 ## Notes
+- **Created/out-of-vocabulary values are real values** — a `value` not
+  present in `options` renders the created-value chip (single mode) or a
+  badge (multi mode), always with the `app.common.new` suffix. It is NOT a
+  placeholder: consumers that compute a suggestion (e.g. dict `label_key`)
+  should ASSIGN it as the real value — enabling dependent CTAs (translate,
+  validation) — never leave it as ghost placeholder text.
 - Toolbar value selectors (e.g. the cerebellum assistant selector on /ai) use
   `ComboSelect` like any other input — toolbars are not an exception.
 - Create/CTA actions live OUTSIDE selectors as their own `Button` — never as a

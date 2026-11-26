@@ -34,6 +34,7 @@ import {
   setAuthMethodEnforcerDismissed,
 } from "./helpers/db";
 
+import { extJsonStringify, extJsonParse } from '@primebrick/core/ext-json';
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:5173";
 const OUT_DIR = join(process.cwd(), "public", "vpat", "lighthouse");
 const LH_TIMEOUT_MS = 150_000;
@@ -149,14 +150,14 @@ test.describe("lighthouse accessibility audit", () => {
     const res = await fetch(`${BASE_URL}/api/v1/auth/login`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ username: E2E_ADMIN_USERNAME, password: E2E_ADMIN_PASSWORD }),
+      body: extJsonStringify({ username: E2E_ADMIN_USERNAME, password: E2E_ADMIN_PASSWORD }),
     });
     if (!res.ok) {
       throw new Error(`[lighthouse] actor login failed ${res.status}: ${await res.text()}`);
     }
     const cookieHeader = res.headers.getSetCookie().map((c) => c.split(";")[0]).join("; ");
     if (!cookieHeader) throw new Error("[lighthouse] login returned no Set-Cookie");
-    writeFileSync(HEADERS_FILE, JSON.stringify({ Cookie: cookieHeader }));
+    writeFileSync(HEADERS_FILE, extJsonStringify({ Cookie: cookieHeader }));
     console.log("[lighthouse] session cookie acquired via /api/v1/auth/login");
   });
 
@@ -176,8 +177,8 @@ test.describe("lighthouse accessibility audit", () => {
       }
       await sweepLhTabs();
 
-      const report = JSON.parse(readFileSync(`${outPath}.report.json`, "utf8"));
-      const failing = Object.values(report.audits as Record<string, any>)
+      const report = extJsonParse<{ audits?: Record<string, { score: number | null; id: string; details?: { items?: unknown[] } }>; finalDisplayedUrl?: string; categories?: { accessibility?: { score?: number } } }>(readFileSync(`${outPath}.report.json`, "utf8"));
+      const failing = Object.values(report.audits as Record<string, { score: number | null; id: string; details?: { items?: unknown[] } }>)
         .filter((a) => a.score !== null && a.score < 1)
         .map((a) => ({ id: a.id, items: a.details?.items?.length ?? 0 }));
       results.push({
@@ -204,7 +205,7 @@ test.describe("lighthouse accessibility audit", () => {
       mean_score: scored.reduce((s, r) => s + (r.score ?? 0), 0) / (scored.length || 1),
       routes: results,
     };
-    writeFileSync(join(OUT_DIR, "summary.json"), JSON.stringify(summary, null, 2));
+    writeFileSync(join(OUT_DIR, "summary.json"), extJsonStringify(summary,2));
     console.log(`[lighthouse] summary → ${join(OUT_DIR, "summary.json")}`);
   });
 });

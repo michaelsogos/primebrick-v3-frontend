@@ -4,6 +4,7 @@
     closeSheet,
     sheetState,
     shouldSuppressSheetDialogClose,
+    getSheetCloseGuard,
     type SheetPanelId
   } from '$lib/shell/sheets/sheet-manager.svelte';
   import { resolveRemoteSheetDecl } from '$lib/shell/modules-shell.svelte';
@@ -34,6 +35,10 @@
   import DocsPanel from '$lib/shell/sheets/panels/DocsPanel.svelte';
   import ServiceRecordPanel from '$lib/shell/sheets/panels/ServiceRecordPanel.svelte';
   import TranslationEditorPanel from '$lib/shell/sheets/panels/TranslationEditorPanel.svelte';
+  import SequencePatternPanel from '$lib/shell/sheets/panels/SequencePatternPanel.svelte';
+  import DictExtrasPanel from '$lib/components/entity-dict-page/DictExtrasPanel.svelte';
+  import BulkEditorPanel from '$lib/entity-list/sheets/panels/BulkEditorPanel.svelte';
+  import BulkEditRowsPanel from '$lib/entity-list/sheets/panels/BulkEditRowsPanel.svelte';
   /**
    * Heterogeneous panel registry — each panel declares its own props contract,
    * so a static `Component<Props>` union cannot type the dispatch. The
@@ -53,6 +58,9 @@
     'entity.jsonViewer': JsonViewerPanel,
     'entity.mapperViewer': MapperViewerPanel,
     'entity.record': EntityRecordSheet,
+    'entity.dictExtras': DictExtrasPanel,
+    'entity.bulkEditor': BulkEditorPanel,
+    'entity.bulkEditRows': BulkEditRowsPanel,
     'service.record': ServiceRecordPanel,
     'config.currencySelect': CurrencySelectPanel,
     'config.protocolSelect': ProtocolSelectPanel,
@@ -64,7 +72,8 @@
     'shell.aiGuide': GuideAiChatPanel,
     'config.badgeValueEdit': BadgeValuePanel,
     'shell.docs': DocsPanel,
-    'i18n.translationEditor': TranslationEditorPanel
+    'i18n.translationEditor': TranslationEditorPanel,
+    'entity.sequencePattern': SequencePatternPanel
   };
 
   const panelId = $derived(sheetState.panelId);
@@ -114,7 +123,7 @@
    *  first. While stacked the close plays the shrink animation for the
    *  standard close duration, then mutates — the record lands exactly
    *  where the solo pane should be. */
-  function routeDialogClose() {
+  async function routeDialogClose() {
     if (popping) return;
     if (sheetState.secondary && !sheetState.expanded) {
       popping = true;
@@ -124,6 +133,13 @@
         // A re-stack during the pop abandons the deferred close.
         if (sheetState.secondary === slot) closeSheet();
       }, 300);
+      return;
+    }
+    // Dirty-close guard — a form-surface panel in edit mode may veto the
+    // close while its unsaved-changes confirm is open.
+    const g = getSheetCloseGuard();
+    if (g && !(await g())) {
+      sheetState.open = true;
       return;
     }
     closeSheet();
@@ -182,7 +198,7 @@
         </div>
       {/if}
       <div class={cn("relative h-full", sheetState.secondary && !sheetState.expanded ? "w-96 shrink-0" : "min-w-0 flex-1")} data-testid="sheet-primary-pane">
-        {#key sheetState.panelId}
+        {#key `${sheetState.panelId}:${sheetState.mountNonce}`}
           <div class="h-full">
             {#if Panel}
               <Panel {...panelProps} modal={sheetState.modal} />

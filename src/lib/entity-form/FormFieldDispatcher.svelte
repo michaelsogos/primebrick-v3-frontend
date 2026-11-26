@@ -24,6 +24,7 @@
 		FormFieldPlacement,
 		MetaColumn,
 		PayloadOptionsSource,
+		SequenceDirective,
 	} from '@primebrick/ui';
 	import { flagCodeForBcp47, toDisplayString, numericKindOf, uomUnitSymbol, UNIT_CATEGORIES, type MetaColumnUomKind } from '@primebrick/ui';
 	import type { NumericUomSpec } from '@primebrick/ui';
@@ -35,6 +36,9 @@
 		JsonValueEditor,
 		PayloadMapEditor,
 		ScheduleSpecInput,
+		ReviveIntervalInput,
+		SequenceInput,
+		SequencePatternInput,
 		DateWheelPicker,
 		Button,
 		ButtonGroup,
@@ -46,11 +50,15 @@
 	import { PhoneInput } from '$lib/components/ui/phone-input';
 	import { ColorSelector } from '$lib/components/ui/color-selector';
 	import { MetaAvatar } from '$lib/components/ui/avatar-preview';
-	import { t } from '$lib/i18n';
+	import { t, dict } from '$lib/i18n';
+	import { i18nKeyOptions, coerceI18nKeyChange, I18N_KEY_OPTION_ICON, I18N_KEY_OPTION_COLOR } from '$lib/i18n/i18n-key-options';
+	import { i18nKeySuggestionFor, slugifyKey } from '$lib/i18n/dict-suggestion';
 	import { UI_LANGS } from '$lib/i18n/languages';
 	import { uiLang } from '$lib/i18n/store.svelte';
 	import { apiFetch } from '$lib/api';
 	import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
+	import { Badge } from '@primebrick/ui';
+	import { getPendingTranslation } from '$lib/i18n/pending-translations.svelte';
 	import { useEntityRefOptions } from './use-entity-ref-options.svelte';
 	import { useAuditActorOptions } from './use-audit-actor-options.svelte';
 	import { useActiveRoles } from '$lib/composables/useActiveRoles.svelte';
@@ -65,9 +73,10 @@
 	import { ruleJsonCompletions } from './rule-schema-completions';
 	import RuleFilterEditor from './RuleFilterEditor.svelte';
 	import { CircleCheck, CircleX } from '@primebrick/ui/vendor/lucide';
-	import { getResolvedIanaTimeZone } from '@primebrick/ui';
+	import { getPinnedIanaTimeZones, getPrioritizedIanaTimeZones, getResolvedIanaTimeZone } from '@primebrick/ui';
 	import { calendarDateToUtcIso, isoToCalendarDate } from './date-wire';
 	import type { CalendarDate, CalendarDateTime } from '@internationalized/date';
+	import { extJsonParse } from '$lib/api-ext';
 
 	interface Props {
 		column: MetaColumn;
@@ -140,6 +149,21 @@
 		 *  the edge is form-scope by contract and filter columns never
 		 *  declare it. */
 		columns?: ReadonlyMap<string, MetaColumn>;
+		/** The OWNING module code (`crm`) — the builtin `sequence` registry
+		 *  is module-local, so `format:"sequence"` widgets resolve their
+		 *  option vocabulary + forecast through `/svc/<code>` explicitly
+		 *  (the census map is ambiguous for builtin entities — same
+		 *  reason `entityApiBase` takes the explicit override). */
+		service?: string;
+		/** The entity's `translation_key` from served meta — scopes the
+		 *  `format:"i18n_key"` vocabulary to `*.entities.<tk>.rows.*` and
+		 *  derives the `custom.entities.<tk>.rows.<slug>` suggestion.
+		 *  Absent (fallback surfaces) → the broader `.entities.` family. */
+		translation_key?: string;
+		/** The pending-translations queue owner (the entity's API base
+		 *  path) — the languages CTA + pending-badge of `i18n_key`
+		 *  controls read it; absent → badge hidden, CTA still opens. */
+		pending_owner?: string;
 	}
 
 	let {
@@ -161,6 +185,9 @@
 		record = $bindable(),
 		served_record,
 		columns,
+		service,
+		translation_key,
+		pending_owner,
 	}: Props = $props();
 
 	const control = $derived(
@@ -201,6 +228,8 @@
 	 */
 	const FORM_CONTROLS = new Set([
 		'schedule_spec',
+		'revive_interval',
+		'revive_offset',
 		'json',
 		'rule_filter',
 		'subject_combo',
@@ -217,6 +246,10 @@
 		'date',
 		'text',
 		'avatar',
+		'sequence',
+		'sequence_pattern',
+		'iana_tz',
+		'i18n_key',
 	]);
 
 	/** Filter-surface map — the DIFFERENCES from form (everything else is
@@ -237,6 +270,7 @@
 		'url',
 		'phone',
 		'text',
+		'iana_tz_multi',
 	]);
 
 	function resolveFormControl(): string {
@@ -285,11 +319,12 @@
 			column.options_source === 'census.callables'
 		)
 			return 'subject_combo_multi';
+		if (column.options_source === 'iana.tzones') return 'iana_tz_multi';
 		// Avatar columns filter as contains-text on the stored initials —
 		// the preview renderer is a form/list surface, never a filter control.
 		if (column.type === 'avatar') return 'text';
 		const resolved = deriveControl();
-		if (resolved === 'subject_combo' || resolved === 'json' || resolved === 'rule_filter' || resolved === 'payload_map' || resolved === 'schedule_spec')
+		if (resolved === 'subject_combo' || resolved === 'json' || resolved === 'rule_filter' || resolved === 'payload_map' || resolved === 'schedule_spec' || resolved === 'revive_interval' || resolved === 'revive_offset' || resolved === 'sequence' || resolved === 'sequence_pattern' || resolved === 'i18n_key')
 			return 'text';
 		if (FILTER_CONTROLS.has(resolved)) return resolved;
 		throw new Error(
@@ -306,10 +341,18 @@
 		// `roles` array still renders the roles multi-combo, never the JSON
 		// editor (same precedence `resolveFilterControl` already declares).
 		if (column.options_source === 'system.roles') return 'role_multi';
+		// `iana.tzones` — the client-side IANA vocabulary (closed; the same
+		// `Intl.supportedValuesOf("timeZone")` list the date dropper feeds).
+		if (column.options_source === 'iana.tzones') return 'iana_tz';
 		// `type:"avatar"` — preview renderer, not an input (initials from the
 		// column value, color from the `avatar.color_field` sibling).
 		if (column.type === 'avatar') return 'avatar';
 		if (format === 'schedule_spec') return 'schedule_spec';
+		if (format === 'revive_interval') return 'revive_interval';
+		if (format === 'revive_offset') return 'revive_offset';
+		if (format === 'sequence') return 'sequence';
+		if (format === 'sequence_pattern') return 'sequence_pattern';
+		if (format === 'i18n_key') return 'i18n_key';
 		// `rule_filter` wins over the jsonb fallback — a RuleFilter[]
 		// column renders the guided composer, never raw JSON first.
 		if (format === 'rule_filter') return 'rule_filter';
@@ -362,6 +405,17 @@
 			value = v;
 		},
 	};
+	/** seq-bound slot — `unknown` (the form's wire value) narrowed to the
+	 *  directive union: '' / undefined pass through, objects are directive
+	 *  literals by construction (the widget is the only writer). */
+	const seqValue = {
+		get value(): SequenceDirective | '' | undefined {
+			return (value ?? '') as SequenceDirective | '' | undefined;
+		},
+		set value(v: SequenceDirective | '' | undefined) {
+			value = v;
+		},
+	};
 	const numValue = {
 		get value(): string | bigint | number | Decimal {
 			return typeof value === 'number' ||
@@ -378,6 +432,20 @@
 	/** Numeric kind from the column contract — ONE resolver (`numericKindOf`)
 	 *  shared with the zod binding and every numeric surface. */
 	const numKind = $derived(numericKindOf(column) ?? 'number');
+	/** Per-row uom codes are TEXT by domain semantics — `kg`, `ms`, `EUR`.
+	 *  Empty (`''`/`null`/`undefined`) is the legitimate unset state and
+	 *  stays silent. A non-empty non-string value is a modeling error — a
+	 *  numeric or boolean unit code makes no sense — so the failure is
+	 *  SEMI-silent by design: the suffix degrades to empty and the dev
+	 *  console carries the trace. */
+	function uomCodeString(v: unknown, context: string): string {
+		if (v === undefined || v === null || v === '') return '';
+		if (typeof v === 'string') return v;
+		if (import.meta.env.DEV) {
+			console.error(`[uom] per-row unit code on non-string type (${typeof v}) — ${context}:`, v);
+		}
+		return '';
+	}
 	/** Resolved uom spec for the numeric control — `MetaColumn.uom` is the
 	 *  contract; the sibling `uom.field` value rides `record` (form surface
 	 *  only — filters render the adornment display-only). */
@@ -398,12 +466,7 @@
 				return { kind: 'custom', code: u.unit, symbol: uomUnitSymbol(u.unit, $uiLang) };
 			}
 			const rawUnit = surface === 'form' && record ? record[u.field] : undefined;
-			const unit =
-				typeof rawUnit === 'string' ||
-				typeof rawUnit === 'number' ||
-				typeof rawUnit === 'boolean'
-					? String(rawUnit)
-					: '';
+			const unit = uomCodeString(rawUnit, `uom field '${u.field}'`);
 			return {
 				kind: 'custom',
 				code: unit,
@@ -426,12 +489,7 @@
 		// Remaining union: currency | custom{field,source} — both carry the
 		// per-row code on the `u.field` sibling.
 		const rawCode = surface === 'form' && record ? record[u.field] : undefined;
-		const code =
-			typeof rawCode === 'string' ||
-			typeof rawCode === 'number' ||
-			typeof rawCode === 'boolean'
-				? String(rawCode)
-				: '';
+		const code = uomCodeString(rawCode, `uom field '${u.field}'`);
 		if (u.kind === 'currency') {
 			return {
 				kind: 'currency',
@@ -526,8 +584,8 @@
 	 *  `disabled_when` — fail-closed while a prop comparison can't
 	 *  evaluate yet. */
 	const depOff = $derived(dep ? depDisabled(dep, depRecord, pivotRow.state.row) : false);
-	/** Two distinct states, two distinct chromes: `readonly` (placement
-	 *  policy — grey border + white bg) vs `disabled` (surface /
+	/** Two distinct states, two distinct chromes: `readonly` (collab
+	 *  conflict lock — grey border + white bg) vs `disabled` (surface /
 	 *  dependency gating — grey border + muted bg). `effectiveLocked`
 	 *  feeds controls that expose no readonly prop — a locked combo
 	 *  renders the disabled chrome by contract. */
@@ -570,7 +628,10 @@
 	 *  audit writers (single fetch, full vocabulary — client search inside
 	 *  the combo is truthful here). `filterEntity` is required; without it
 	 *  the delegate stays empty rather than fetching the wrong service. */
-	const auditActors = useAuditActorOptions(() => filterEntity);
+	const auditActors = useAuditActorOptions(
+		() => filterEntity,
+		() => service,
+	);
 
 	/** `options_source:"system.roles"` — the shared `/system/roles/active`
 	 *  vocabulary (same feed the custom user pages feed their ComboSelect).
@@ -579,6 +640,89 @@
 	const systemRoles = useActiveRoles({
 		enabled: () => column.options_source === 'system.roles',
 	});
+
+	/** `options_source:"iana.tzones"` — closed client-side vocabulary;
+	 *  no fetch, no state. Picker order: browser zone → UTC → primary
+	 *  zones of the supported UI locales → the sorted rest. */
+	const ianaPinnedCount = getPinnedIanaTimeZones({ locales: UI_LANGS }).length;
+	const ianaTzOptions = getPrioritizedIanaTimeZones({ locales: UI_LANGS }).map(
+		// `_icon`/`_icon_color` — the option-row anatomy, same contract as
+		// the census vocabularies (globe tinted like `send`/sky-500);
+		// `_sep` marks the divider row: first zone past the pinned group.
+		(tz, i) => ({
+			value: tz,
+			label: tz,
+			_icon: 'globe',
+			_icon_color: 'sky-500',
+			...(i === ianaPinnedCount ? { _sep: true } : {}),
+		}),
+	);
+
+	/**
+	 * `format:"i18n_key"` — the SAME contract `TranslationKeyCell` owns,
+	 * never a diluted variant: the shared `i18nKeyOptions` vocabulary
+	 * scoped to `*.entities.<tk>.rows.*` (`.entities.` broad when the
+	 * served meta carries no `translation_key`), `languages`/`sky-500`
+	 * option icons, the `custom.*` convention suggestion assigned as a
+	 * real value (tracks `code`/`name`, respects an explicit pick/clear
+	 * until the source moves), `defaultSearch`/`placeholder` ALWAYS a
+	 * full pre-built key (`<scope><slug|my_custom_code>` — a bare
+	 * namespace ending with a dot is never seeded), `allowCreate` with
+	 * `coerceI18nKeyChange` verbatim/scoping rules, and the languages
+	 * CTA opening `i18n.translationEditor` for the picked key.
+	 */
+	const i18nKeyScope = $derived(
+		translation_key ? `entities.${translation_key}.rows.` : 'entities.',
+	);
+	const i18nKeyLeaf = $derived(
+		slugifyKey(toDisplayString(record?.code ?? record?.name ?? '')) || 'my_custom_code',
+	);
+	const i18nKeyPlaceholder = $derived(`custom.${i18nKeyScope}${i18nKeyLeaf}`);
+	const i18nKeyDefaultSearch = $derived(`${i18nKeyScope}${i18nKeyLeaf}`);
+	const i18nKeySuggestion = $derived(
+		i18nKeySuggestionFor(translation_key, record?.code ?? record?.name),
+	);
+	const i18nKeyFieldOptions = $derived(
+		i18nKeyOptions(
+			$dict as Record<string, string>,
+			{ contains: i18nKeyScope },
+			typeof stringValue.value === 'string' &&
+			stringValue.value &&
+			stringValue.value !== i18nKeySuggestion
+				? [stringValue.value]
+				: [],
+		),
+	);
+	// The suggestion is the ASSIGNED value — a previous suggestion is
+	// replaced when its source moves; an explicit user pick or clear is
+	// respected until the source changes (TranslationKeyCell semantics).
+	let i18nKeyLastSuggested = '';
+	$effect(() => {
+		if (control !== 'i18n_key') return;
+		const s = i18nKeySuggestion;
+		const prev = i18nKeyLastSuggested;
+		i18nKeyLastSuggested = s;
+		if (!s || s === prev) return;
+		if (!stringValue.value || stringValue.value === prev) stringValue.value = s;
+	});
+	const i18nKeyPendingLangs = $derived(
+		pending_owner && typeof stringValue.value === 'string' && stringValue.value
+			? Object.keys(getPendingTranslation(pending_owner, stringValue.value) ?? {})
+			: [],
+	);
+	const i18nKeyLangsCta = $derived([
+		{
+			icon: 'languages',
+			label: $t('system.settings.translations.title'),
+			onclick: () =>
+				openSheet('i18n.translationEditor', {
+					i18n_key: stringValue.value,
+					pending_owner: pending_owner ?? '',
+				}),
+			disabled: !stringValue.value || effectiveReadonly || effectiveDisabled,
+			'data-testid': 'i18n-key-translations',
+		},
+	]);
 
 	// Restore display labels for `entity_ref` selections that pre-date the
 	// loaded option pages (draft state, URL-restored filters, edit-form
@@ -671,7 +815,7 @@
 		if (src.api_url && src.api_verb && src.value_field && src.label_field) {
 			const res = await apiFetch(src.api_url, { method: src.api_verb });
 			if (!res.ok) return [];
-			const data = (await res.json()) as { rows?: Record<string, unknown>[] };
+			const data = (await res.text().then((t) => extJsonParse<unknown>(t))) as { rows?: Record<string, unknown>[] };
 			const vf = src.value_field;
 			const lf = src.label_field;
 			return (data.rows ?? []).map((row) => ({
@@ -695,8 +839,164 @@
 	};
 </script>
 
-{#if control === 'schedule_spec'}
+{#if control === 'revive_interval'}
+	<!-- `format:"revive_interval"` — the revive spec canonical `'N unit' |
+	     'at <RFC3339>'`: the composite renders the interval pair or the
+	     instant picker, emits the text verbatim. -->
+	<ReviveIntervalInput bind:value={stringValue.value} literal="at" readonly={effectiveReadonly} disabled={effectiveDisabled} {placeholder} {...controlProps} />
+{:else if control === 'revive_offset'}
+	<!-- `format:"revive_offset"` — the grace spec canonical `'N unit' |
+	     'until <RFC3339>'` — same composite, `until` axis keyword. -->
+	<ReviveIntervalInput bind:value={stringValue.value} literal="until" readonly={effectiveReadonly} disabled={effectiveDisabled} {placeholder} {...controlProps} />
+{:else if control === 'schedule_spec'}
 	<ScheduleSpecInput bind:value={stringValue.value} readonly={effectiveReadonly} disabled={effectiveDisabled} {placeholder} {...controlProps} />
+{:else if control === 'sequence'}
+	<!-- `format:"sequence"` — the bound value is the wire slot: a
+	     SequenceDirective once the user applies one, '' while untouched
+	     (auto/default allocation on create, untouched on update). The
+	     stored literal renders through `existing` from the served row —
+	     never through `value` (the submit path must keep it omitted). -->
+	<SequenceInput
+		bind:value={seqValue.value}
+		existing={(served_record?.[column.key] ?? undefined) as string | undefined}
+		seq={column.seq}
+		{service}
+		readonly={effectiveReadonly}
+		disabled={effectiveDisabled}
+		{placeholder}
+		{...controlProps}
+	/>
+{:else if control === 'sequence_pattern'}
+	<!-- `format:"sequence_pattern"` — the bound value is the AUTHORED
+	     pattern string (persisted verbatim, gated by parseSequencePattern
+	     in checkFieldValue). The {} CTA opens the token sheet — helpers
+	     (live getter + caret splice) come from the widget, the sheet id
+	     is the host wiring (uom.on_pick contract). `record` feeds the
+	     preview's example context (step/start/tz when authored). -->
+	<SequencePatternInput
+		bind:value={stringValue.value}
+		context={record ?? undefined}
+		readonly={effectiveReadonly}
+		disabled={effectiveDisabled}
+		on_pick={(pick) => {
+			// Sheet-lifetime caret memory — the widget's own tracked caret
+			// (`pick.get_caret`) freezes the moment the stack remount kills
+			// the widget instance, and a fresh DOM input reports `{0,0}`.
+			// Recording REAL user selection events on the live element keeps
+			// the last honest caret alive across remounts — a click at
+			// position 0 post-open must still land at 0, not append.
+			let liveCaret: { start: number; end: number } | null = null;
+			openSheet(
+				'entity.sequencePattern',
+				{
+					// The live input IS the value channel: sheet stacking
+					// remounts the record pane (a fresh $form rehydrated from
+					// the draft slot), so component-level bindings captured
+					// in the pick orphan instantly. Writing el.value +
+					// dispatching `input` rides the real bind chain — widget →
+					// dispatcher → $form → draft — exactly like keystrokes.
+					get_value: () =>
+						document.querySelector<HTMLInputElement>(
+							`[data-testid=entity-form-field-${column.key}] input`,
+						)?.value ?? '',
+					on_change: (cb: (v: string) => void) => {
+						// The record pane remounts async (meta fetch), so the input
+						// may not exist at subscribe time — attach lazily via an
+						// observer, re-attach on any future remount, and push the
+						// current snapshot each time the element lands.
+						const sel = `[data-testid=entity-form-field-${column.key}] input`;
+						let el: HTMLInputElement | null = null;
+						let detach: (() => void) | null = null;
+						const attach = () => {
+							const cur = document.querySelector<HTMLInputElement>(sel);
+							if (cur === el) return;
+							detach?.();
+							el = cur;
+							detach = null;
+							if (el) {
+								const track = () => {
+									liveCaret = {
+										start: el!.selectionStart ?? 0,
+										end: el!.selectionEnd ?? 0,
+									};
+								};
+								const handler = () => {
+									track();
+									cb(el!.value);
+								};
+								el.addEventListener('input', handler);
+								// `select` covers user clicks/drags, keyup covers
+								// caret keys (arrows/Home/End), focus the tab-in.
+								el.addEventListener('select', track);
+								el.addEventListener('keyup', track);
+								el.addEventListener('mouseup', track);
+								el.addEventListener('focus', track);
+								detach = () => {
+									el!.removeEventListener('input', handler);
+									el!.removeEventListener('select', track);
+									el!.removeEventListener('keyup', track);
+									el!.removeEventListener('mouseup', track);
+									el!.removeEventListener('focus', track);
+								};
+								cb(el.value);
+							}
+						};
+						attach();
+						const mo = new MutationObserver(attach);
+						mo.observe(document.body, { childList: true, subtree: true });
+						return () => {
+							mo.disconnect();
+							detach?.();
+						};
+					},
+					context: record ?? undefined,
+					insert: (tok: string) => {
+						const el = document.querySelector<HTMLInputElement>(
+							`[data-testid=entity-form-field-${column.key}] input`,
+						);
+						if (!el) return;
+						const v = el.value;
+						// The LIVE DOM selection is authoritative — it mirrors the
+						// tracked caret, post-open caret moves, and our own
+						// setSelectionRange. A `{0,0}` (fresh remount, or a blur-
+						// cleared selection on some engines) falls back to the
+						// live-tracked caret, then the widget's open-time
+						// caret; `null` all the way = untouched → append.
+						let s = el.selectionStart ?? v.length;
+						let e = el.selectionEnd ?? v.length;
+						if (s === 0 && e === 0) {
+							const lc = liveCaret ?? pick.get_caret?.();
+							s = lc?.start ?? v.length;
+							e = lc?.end ?? v.length;
+						}
+						s = Math.max(0, Math.min(s, v.length));
+						e = Math.max(0, Math.min(e, v.length));
+						el.value = v.slice(0, s) + tok + v.slice(e);
+						const pos = s + tok.length;
+						el.setSelectionRange(pos, pos);
+						liveCaret = { start: pos, end: pos };
+						el.dispatchEvent(new InputEvent('input', { bubbles: true }));
+					},
+					// Whole-value write (the used-token `-` CTA removes a span,
+					// it does not splice at the caret) — same live channel:
+					// el.value + `input` event → bind chain → $form → draft.
+					on_write: (next: string) => {
+						const el = document.querySelector<HTMLInputElement>(
+							`[data-testid=entity-form-field-${column.key}] input`,
+						);
+						if (!el) return;
+						el.value = next;
+						el.setSelectionRange(next.length, next.length);
+						liveCaret = { start: next.length, end: next.length };
+						el.dispatchEvent(new InputEvent('input', { bubbles: true }));
+					},
+				},
+				{ stack: true },
+			);
+		}}
+		{placeholder}
+		{...controlProps}
+	/>
 {:else if control === 'json'}
 	<JsonValueEditor
 		bind:value={stringValue.value}
@@ -747,6 +1047,62 @@
 			— {$t('app.widgets.payload_map.permissions_warn.tail')}
 		</p>
 	{/if}
+{:else if control === 'iana_tz'}
+	<!-- `options_source:"iana.tzones"` — closed IANA vocabulary, single pick. -->
+	<ComboSelect
+		mode="single"
+		bind:value={stringValue.value}
+		options={ianaTzOptions}
+		valueField="value"
+		labelField="label"
+		iconField="_icon"
+		iconColorField="_icon_color"
+		separatorBeforeField="_sep"
+		{placeholder}
+		disabled={effectiveLocked}
+		{...controlProps}
+	/>
+{:else if control === 'i18n_key'}
+	<!-- `format:"i18n_key"` — translation-key pick/create; the shared
+	     `i18nKeyOptions` vocabulary + `custom.*` suggestion, same ComboSelect
+	     contract as the dict-page TranslationKeyCell. -->
+	<ComboSelect
+		mode="single"
+		value={stringValue.value}
+		onChange={(v) => {
+			const raw = Array.isArray(v) ? (v[0] ?? '') : v;
+			stringValue.value = coerceI18nKeyChange(raw, i18nKeyScope, slugifyKey);
+		}}
+		options={i18nKeyFieldOptions}
+		valueField="key"
+		labelField="key"
+		isLabelTranslated={true}
+		iconField="_icon"
+		iconColorField="_icon_color"
+		allowCreate={true}
+		createdIcon={I18N_KEY_OPTION_ICON}
+		createdIconColor={I18N_KEY_OPTION_COLOR}
+		defaultSearch={i18nKeyDefaultSearch}
+		placeholder={i18nKeyPlaceholder}
+		searchPlaceholder={i18nKeyPlaceholder}
+		truncateFrom="start"
+		display="detailed"
+		disabled={effectiveLocked}
+		trailing_ctas={i18nKeyLangsCta}
+		{...controlProps}
+	>
+		{#snippet trailing()}
+			{#if i18nKeyPendingLangs.length}
+				<Badge
+					variant="outline"
+					class="border-primary/50 px-1 text-[10px]"
+					title={i18nKeyPendingLangs.join(', ')}
+				>
+					+{i18nKeyPendingLangs.length}
+				</Badge>
+			{/if}
+		{/snippet}
+	</ComboSelect>
 {:else if control === 'role_multi'}
 	<ComboSelect
 		mode="multi"
@@ -853,6 +1209,20 @@
 		iconColorField="_icon_color"
 		display="detailed"
 		allowCreate={column.allow_create === true}
+		{placeholder}
+		disabled={effectiveLocked}
+		{...controlProps}
+	/>
+{:else if control === 'iana_tz_multi'}
+	<!-- `iana.tzones` on the filter surface — IN semantics, multi pick. -->
+	<ComboSelect
+		mode="multi"
+		bind:value={arrayValue.value}
+		options={ianaTzOptions}
+		valueField="value"
+		labelField="label"
+		iconField="_icon"
+		iconColorField="_icon_color"
 		{placeholder}
 		disabled={effectiveLocked}
 		{...controlProps}

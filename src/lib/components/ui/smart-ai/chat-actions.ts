@@ -20,6 +20,8 @@
  */
 import type { ChatMessage } from './ai-assistant.types';
 
+import { extJsonStringify } from '$lib/api-ext';
+import { llmControlParse } from './llm-control-parse';
 /** A validated action returned by the classifier. `index` is 0-based. */
 export interface ChatAction {
   action: 'apply' | 'discard' | 'pick' | 'revise';
@@ -81,7 +83,7 @@ export function buildClassifierUser(
   );
   const langsSpec = specs.find((s) => s.id === 'apply' && s.langs?.length);
   const langsHint = langsSpec
-    ? `\nIf applying only some languages, output {"apply":true,"langs":[...]} with values from ${JSON.stringify(langsSpec.langs)}.`
+    ? `\nIf applying only some languages, output {"apply":true,"langs":[...]} with values from ${extJsonStringify(langsSpec.langs)}.`
     : '';
   const q = question?.trim().replace(/\s+/g, ' ').slice(0, 240);
   return [
@@ -122,33 +124,14 @@ export function parseClassification(
   raw: string,
   specs: PendingActionSpec[],
 ): ChatAction | null {
-  let text = raw.trim();
-  text = text.replace(/^```(?:json)?\s*\n?/i, '');
-  text = text.replace(/\n?```\s*$/i, '').trim();
-
-  // Small models often wrap the verdict in prose — extract the first
-  // balanced {...} object instead of requiring the whole output to be JSON.
-  if (!text.startsWith('{')) {
-    const start = text.indexOf('{');
-    if (start < 0) return null;
-    let depth = 0;
-    let end = -1;
-    for (let i = start; i < text.length; i++) {
-      if (text[i] === '{') depth++;
-      else if (text[i] === '}') {
-        depth--;
-        if (depth === 0) { end = i; break; }
-      }
-    }
-    if (end < 0) return null;
-    text = text.slice(start, end + 1);
-  } else if (!text.endsWith('}')) {
-    return null;
-  }
-
+  // The classification verdict is ORCHESTRATION JSON — engine signaling,
+  // not wire domain data: it parses through the LLM control boundary
+  // (plain JSON semantics — a `select` index must stay a number, or the
+  // pick guards below can never match). extJsonParse is for the
+  // domain-destined half of the boundary, never for verdicts.
   let parsed: unknown;
   try {
-    parsed = JSON.parse(text);
+    parsed = llmControlParse<unknown>(raw);
   } catch {
     return null;
   }

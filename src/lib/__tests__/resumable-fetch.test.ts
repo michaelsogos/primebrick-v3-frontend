@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { extJsonStringify, extJsonParse } from '$lib/api-ext';
 // SHARD_SIZE is 64MB — too big to cross in a test with real data.
 // We re-mock the module constant by testing behavior with small buffers via
 // a tiny internal seam: the module reads SHARD_SIZE at call time, so we
@@ -140,8 +141,8 @@ describe("resumableFetch", () => {
     await reader.cancel();
 
     const cache = cachesRegistry.get("hf-resumable")!;
-    const manifest = await (await cache.match(`${FILE_URL}?__resume_manifest`))!.json();
-    expect(manifest.done_count).toBe(1);
+    const manifest = await (await cache.match(`${FILE_URL}?__resume_manifest`))!.text().then((t) => extJsonParse<{ done_count: bigint }>(t));
+    expect(manifest.done_count).toBe(1n);
     expect(await cache.match(`${FILE_URL}?__resume_shard=0`)).toBeTruthy();
     releaseSecondChunk!();
   });
@@ -153,13 +154,13 @@ describe("resumableFetch", () => {
     const cache = cachesRegistry.get("hf-resumable") ?? new MemCache();
     cachesRegistry.set("hf-resumable", cache);
     await cache.put(`${FILE_URL}?__resume_shard=0`, new Response(new Uint8Array(SHARD_SIZE)));
-    await cache.put(`${FILE_URL}?__resume_manifest`, new Response(JSON.stringify({
+    await cache.put(`${FILE_URL}?__resume_manifest`, new Response(extJsonStringify({
       etag: '"v1"', size, done_count: 1,
     })));
 
     let seenRange = "";
-    vi.stubGlobal("fetch", async (_u: any, init: any) => {
-      seenRange = init?.headers?.Range ?? "";
+    vi.stubGlobal("fetch", async (_u: RequestInfo | URL, init?: RequestInit) => {
+      seenRange = (init?.headers as Record<string, string> | undefined)?.Range ?? "";
       return resp206(size, SHARD_SIZE, 100);
     });
 
@@ -178,12 +179,12 @@ describe("resumableFetch", () => {
     const cache = new MemCache();
     cachesRegistry.set("hf-resumable", cache);
     await cache.put(`${FILE_URL}?__resume_shard=0`, new Response(new Uint8Array(SHARD_SIZE)));
-    await cache.put(`${FILE_URL}?__resume_manifest`, new Response(JSON.stringify({
+    await cache.put(`${FILE_URL}?__resume_manifest`, new Response(extJsonStringify({
       etag: '"old"', size, done_count: 1,
     })));
 
-    vi.stubGlobal("fetch", async (_u: any, init: any) => {
-      if (init?.headers?.Range) return resp206(size, SHARD_SIZE, 100, '"new"');
+    vi.stubGlobal("fetch", async (_u: RequestInfo | URL, init?: RequestInit) => {
+      if ((init?.headers as Record<string, string> | undefined)?.Range) return resp206(size, SHARD_SIZE, 100, '"new"');
       return new Response(new ReadableStream({
         start(c) { c.enqueue(new Uint8Array(size)); c.close(); },
       }), { status: 200, headers: { "content-length": String(size), etag: '"new"' } });
@@ -201,7 +202,7 @@ describe("resumableFetch", () => {
     const cache = new MemCache();
     cachesRegistry.set("hf-resumable", cache);
     await cache.put(`${FILE_URL}?__resume_shard=0`, new Response(new Uint8Array(SHARD_SIZE)));
-    await cache.put(`${FILE_URL}?__resume_manifest`, new Response(JSON.stringify({
+    await cache.put(`${FILE_URL}?__resume_manifest`, new Response(extJsonStringify({
       etag: '"v1"', size, done_count: 1,
     })));
 

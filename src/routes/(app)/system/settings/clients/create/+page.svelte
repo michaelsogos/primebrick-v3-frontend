@@ -16,7 +16,7 @@
   import { zod4 } from 'sveltekit-superforms/adapters';
   import { z } from 'zod';
   import { apiFetch } from '$lib/api';
-  import { extJsonStringify } from '$lib/api-ext';
+  import { extJsonParse, extJsonStringify } from '$lib/api-ext';
   import { useFormGuard } from '$lib/composables/useFormGuard.svelte';
   import { useSyncChannel } from '$lib/composables/useSyncChannel.svelte';
   import { useUnsavedChangesGuard } from '$lib/composables/useUnsavedChangesGuard.svelte';
@@ -94,7 +94,7 @@
           body: extJsonStringify({ entity }),
         });
         if (!res.ok) throw new Error(`client_registry create failed (${res.status})`);
-        const created = (await res.json()) as { client_key?: string };
+        const created = (await res.text().then((t) => extJsonParse<unknown>(t))) as { client_key?: string };
 
         notifyParentRefresh();
         reset({ data: $form });

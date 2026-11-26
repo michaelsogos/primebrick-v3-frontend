@@ -4,12 +4,14 @@
   import { t } from '$lib/i18n';
   import { apiFetch } from '$lib/api';
   import { pushNotification } from '$lib/errors/app-errors';
+  import type { RFC7807Error } from '$lib/errors/rfc7807';
   import { userProfileStore } from '$lib/user-profile-store.svelte';
   import { decodeCredentialCreationOptions, encodeAuthenticatorAttestation } from '$lib/webauthn/codec';
   import { getPlatformVersion } from '$lib/webauthn/platform-info';
   import { ShieldCheck } from '@primebrick/ui/vendor/lucide';
   import { KeyRound } from '@primebrick/ui/vendor/lucide';
   import { Fingerprint } from '@primebrick/ui/vendor/lucide';
+  import { extJsonParse, extJsonStringify } from '$lib/api-ext';
 
   // ─── Props ─────────────────────────────────────────────────────────────────
   let { oncomplete }: { oncomplete: () => void } = $props();
@@ -29,16 +31,16 @@
       const beginResp = await apiFetch('/api/v1/auth/webauthn/signup/begin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
+        body: extJsonStringify({}),
       });
 
       if (!beginResp.ok) {
-        const err = await beginResp.json();
+        const err = await beginResp.text().then((t) => extJsonParse<RFC7807Error>(t));
         pushNotification({ ...err, toast: false });
         return;
       }
 
-      const { nonce, options } = await beginResp.json();
+      const { nonce, options } = await beginResp.text().then((t) => extJsonParse<{ nonce: string; options: Record<string, unknown> }>(t));
 
       // Step 2: browser ceremony
       const decoded = decodeCredentialCreationOptions(options);
@@ -54,7 +56,7 @@
       const finishResp = await apiFetch('/api/v1/auth/webauthn/signup/finish', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: extJsonStringify({
           nonce,
           credential: encodeAuthenticatorAttestation(credential as PublicKeyCredential),
           ...(platformVersion ? { platform_version: platformVersion } : {}),
@@ -62,7 +64,7 @@
       });
 
       if (!finishResp.ok) {
-        const err = await finishResp.json();
+        const err = await finishResp.text().then((t) => extJsonParse<RFC7807Error>(t));
         pushNotification({ ...err, toast: false });
         return;
       }

@@ -20,6 +20,7 @@ import { isSupportedCountry, parsePhoneNumber } from 'libphonenumber-js';
 import type { ConfigEntry, ConfigEntryType } from '$lib/api-types';
 import { extractValidation, parseTypeConfig } from '$lib/config/type-config-schema';
 
+import { extJsonParse } from '$lib/api-ext';
 /**
  * Basic email regex — RFC 5322 simplified. Same as SDK.
  */
@@ -106,7 +107,7 @@ export function buildConfigValueSchema(
     schema = schema.refine((val) => {
       if (!val) return true;
       try {
-        JSON.parse(val);
+        extJsonParse<unknown>(val);
         return true;
       } catch {
         return false;
@@ -141,7 +142,7 @@ export function buildConfigValueSchema(
           return Number(val) >= minVal;
         }, { message: minMsg });
       } else if (isStringDerived) {
-        schema = schema.min(minVal, { message: minMsg });
+        schema = schema.min(Number(minVal), { message: minMsg });
       }
     } else if (isUnsigned && (type === 'bigint' || type === 'number' || type === 'money')) {
       // No explicit min rule, but unsigned → default min=0
@@ -173,7 +174,7 @@ export function buildConfigValueSchema(
           return Number(val) <= maxVal;
         }, { message: maxMsg });
       } else if (isStringDerived) {
-        schema = schema.max(maxVal, { message: maxMsg });
+        schema = schema.max(Number(maxVal), { message: maxMsg });
       }
     }
 

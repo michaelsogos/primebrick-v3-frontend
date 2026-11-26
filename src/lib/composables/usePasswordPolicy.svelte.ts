@@ -20,6 +20,7 @@ import {
   DEFAULT_PASSWORD_POLICY,
   PASSWORD_SPECIAL_CHARS,
 } from "$lib/types/password-policy";
+import { extJsonParse } from '$lib/api-ext';
 
 const DEFAULT_RESPONSE: PasswordPolicyResponse = {
   policy: DEFAULT_PASSWORD_POLICY,
@@ -45,7 +46,7 @@ export function usePasswordPolicy() {
     try {
       const res = await apiFetch("/api/v1/system/password-policy");
       if (res.ok) {
-        const data = (await res.json()) as PasswordPolicyResponse;
+        const data = (await res.text().then((t) => extJsonParse<unknown>(t))) as PasswordPolicyResponse;
         _state.policy = data.policy;
         _state.errorLabelKey = data.errorLabelKey;
         _state.checklistRules = [...data.checklistRules];

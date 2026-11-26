@@ -68,6 +68,12 @@ It returns `Promise<boolean>` — `true` iff the request ran and
 succeeded; cancel is a silent `false` (zero requests leave the gate).
 Severity comes from the op's `chrome?.color`: `destructive` for
 delete/purge, `warning` for restore — callers never choose it.
+The same `chrome` prop contract covers ELT-mounted dialogs
+(`ExportDialog`, `HtmlExportDialog`, `ExportPreviewDialog` — default
+`primary`; `ChangePasswordDialog` — default `warning`): the CTA and its
+dialog share ONE `meta.actions[op]` source. `chrome.variant`
+(`'default'|'outline'`) shapes the CTA only — dialogs never read it;
+`tone="soft"` is the reserved security family, not a metadata pick.
 
 ### Single record — `/system/ai` (canonical, remote `ai` module page)
 
@@ -154,6 +160,10 @@ the second line of `DeleteDialog` — keep it alive.
 - **Never use `DialogBordered` directly** for entity delete/restore.
 - **Native `confirm()`/`alert()`/`prompt()` are lint-banned**
   (`no-native-dialog`, non-exempt) — notices use `pushNotification`.
+  The ONLY exemption is `useUnsavedChangesGuard.svelte.ts`: the
+  unsaved-changes guard uses `window.confirm` BY DECISION — the
+  synchronous lock prevents the race window an in-app dialog would open
+  (the user could keep interacting while a confirm is pending).
 - Non-entity destructive dialogs (model cache files, MFA reset, sessions) MAY
   keep custom titles via `DialogBordered` — they are not entity records.
 

@@ -10,6 +10,7 @@ import {
   ApiUnreachableError
 } from '$lib/api';
 import type { AppErrorTag } from '$lib/errors/app-errors';
+import { extJsonParse } from '$lib/api-ext';
 
 /** Fetch-level error carrying the BE error code + HTTP status + RFC 7807 extras. */
 export class ApiListError extends Error {
@@ -47,7 +48,7 @@ export interface ApiErrorDetails {
 /** Parse the response body for RFC 7807 / legacy `error` fields (best-effort). */
 export async function readApiErrorDetails(res: Response): Promise<ApiErrorDetails> {
   try {
-    const data = (await res.json()) as {
+    const data = (await res.text().then((t) => extJsonParse<unknown>(t))) as {
       error?: unknown;
       title?: unknown;
       internal_code?: unknown;
@@ -72,6 +73,26 @@ export async function readApiErrorDetails(res: Response): Promise<ApiErrorDetail
   } catch {
     return { code: null, internalCode: null, instance: null, status: res.status, detail: null, severity: null, extra: null };
   }
+}
+
+/**
+ * Stale-meta signature for `/list` failures — the wire rejected a FIELD
+ * reference the served meta no longer describes: `sort_key`, `search_in`,
+ * `filters[i][field]`, or field-typed criteria (op/value/BETWEEN) whose
+ * validity follows the column's type. `internal_code` carries the DAL
+ * code; `detail` carries the fail-closed message.
+ *
+ * Narrow by contract: envelope-param rejections (`page`, `page_size`,
+ * `deleted_records`, "no searchable fields") never match — a meta refresh
+ * cannot fix those, so healing on them would only waste a fetch + retry.
+ */
+const STALE_FIELD_REJECTION_RE = /^(?:Invalid (?:sort_key|search_in|filter\b)|BETWEEN on )/;
+
+export function isStaleFieldRejection(apiDetails: Pick<ApiErrorDetails, 'internalCode' | 'code' | 'detail'>): boolean {
+  const wireCode = apiDetails.internalCode ?? apiDetails.code;
+  if (wireCode === 'UNKNOWN_COLUMN') return true;
+  if (wireCode !== 'VALIDATION') return false;
+  return STALE_FIELD_REJECTION_RE.test(apiDetails.detail ?? '');
 }
 
 export function isAbortError(e: unknown): boolean {

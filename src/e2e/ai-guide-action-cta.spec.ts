@@ -22,6 +22,7 @@ import { deleteMfaFactorsByUsername, setAuthMethodEnforcerDismissed } from "./he
 import { E2E_ADMIN_USERNAME, E2E_ADMIN_PASSWORD } from "./helpers/admin-login";
 import { getSharedContext, focusedPage } from "./helpers/edge-context";
 
+import { extJsonStringify, extJsonParse } from '@primebrick/core/ext-json';
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:5173";
 const PREFIX = "smart-guide-ai";
 
@@ -123,7 +124,7 @@ test.describe("Guide action CTAs — tool path (transport intercepted)", () => {
         return route.fulfill({
           status: 200,
           contentType: "application/json",
-          body: JSON.stringify({
+          body: extJsonStringify({
             ok: true,
             result: { fields: [{ name: "email", required: true }, { name: "name", required: false }] },
           }),
@@ -133,20 +134,20 @@ test.describe("Guide action CTAs — tool path (transport intercepted)", () => {
         return route.fulfill({
           status: 200,
           contentType: "application/json",
-          body: JSON.stringify({ ok: true, result: { user: [{ uuid: "u-1", email: "a@b.c" }] } }),
+          body: extJsonStringify({ ok: true, result: { user: [{ uuid: "u-1", email: "a@b.c" }] } }),
         });
       }
       if (body.tool === "create_entity") {
         return route.fulfill({
           status: 200,
           contentType: "application/json",
-          body: JSON.stringify({ ok: true, result: { uuid: "new-uuid-1" } }),
+          body: extJsonStringify({ ok: true, result: { uuid: "new-uuid-1" } }),
         });
       }
       return route.fulfill({
         status: 404,
         contentType: "application/json",
-        body: JSON.stringify({ ok: false, error: `Unknown tool ${body.tool}` }),
+        body: extJsonStringify({ ok: false, error: `Unknown tool ${body.tool}` }),
       });
     });
 
@@ -207,7 +208,7 @@ test.describe("Guide action CTAs — tool path (transport intercepted)", () => {
     await argsArea.waitFor({ state: "visible", timeout: 10_000 });
     // Args are editable JSON — model's payload pre-fills the textarea.
     const argsValue = await argsArea.inputValue();
-    expect(JSON.parse(argsValue)).toMatchObject({ entity: "user" });
+    expect(extJsonParse<unknown>(argsValue)).toMatchObject({ entity: "user" });
     await page.getByTestId("guide-action-execute").click();
     await expect
       .poll(() => mcpCalls.filter((c) => c.tool === "create_entity").length, { timeout: 10_000 })
@@ -240,7 +241,7 @@ test.describe("Guide action CTAs — tool path (transport intercepted)", () => {
     expect(mcpCalls.filter((c) => c.tool === "delete_entity").length).toBe(0);
     log(`cancel path clean (${mcpCalls.length - callsBeforeCancel} non-destructive preloads)`);
 
-    console.log("[act-cta-calls]", JSON.stringify(mcpCalls.map((c) => c.tool)));
+    console.log("[act-cta-calls]", extJsonStringify(mcpCalls.map((c) => c.tool)));
   });
 
   test("client-registry admin surface — list renders live registry rows", async () => {

@@ -30,7 +30,7 @@
  * Callers with no declared endpoint (e.g. dict `restore.bulk` = per-row
  * loop — the entity-router exposes no bulk restore) pass an explicit
  * `execute` executor; the gate still applies. Local-only drops
- * (`dict-pending-undo`) never call this — there is no request to guard.
+ * (`dict-pending-delete`) never call this — there is no request to guard.
  */
 import { get } from 'svelte/store';
 import { t } from '$lib/i18n';
@@ -40,6 +40,7 @@ import { useMfaStepUp } from '$lib/composables/useMfaStepUp.svelte';
 import { pushNotification } from '$lib/errors/app-errors';
 import { findActionEndpoint, fillActionPath } from './action-endpoints';
 import type { EntityAction, EntityActionEndpoint, EntityMeta } from './types';
+import { toDisplayString } from '@primebrick/ui';
 
 /** Chrome fields an op may override via `meta.actions[op]` — the shape
  *  the confirm dialogs already consume (ELT's `ActionChrome`). */
@@ -56,6 +57,14 @@ export interface EntityOpConfirmRequest {
   recordName?: string;
   count?: number;
   chrome?: EntityOpChrome;
+  /** Bulk scope choicebox — when present the bulk dialogs render the
+   *  selected/all Choicebox bound to the caller's scope state. */
+  scopeChoice?: {
+    readonly value: 'selected' | 'all';
+    onChange: (v: 'selected' | 'all') => void;
+  };
+  /** Rows matching the current filters — the 'all' scope count. */
+  totalCount?: bigint;
   resolve: (confirmed: boolean) => void;
 }
 
@@ -110,6 +119,20 @@ export interface RunEntityOpArgs {
    *  names (`delete`, `bulk_delete`, `restore`, `bulk_restore`, `purge`)
    *  and the raw op name for custom ops (`action_name` convention). */
   mfaAction?: string;
+  /** Bulk scope choicebox — bound to the caller's scope state; the bulk
+   *  dialog's Choicebox reads `value` and writes through `onChange`. */
+  scopeChoice?: {
+    readonly value: 'selected' | 'all';
+    onChange: (v: 'selected' | 'all') => void;
+  };
+  /** Rows matching the current filters — the 'all' scope count shown by
+   *  the bulk dialogs' Choicebox. */
+  totalCount?: bigint;
+  /** Owning service for builtin entities — they mount on EVERY service
+   *  and the census map is last-wins ambiguous, so surfaces carrying
+   *  route context (`decl.module`) must pass it through or the write
+   *  lands on the wrong schema. Absent → census resolution. */
+  service?: string;
 }
 
 const DELETE_FAMILY = /^(?:delete|purge)\./;
@@ -136,7 +159,7 @@ function chromeOf(action?: EntityAction): EntityOpChrome | undefined {
 
 function defaultRecordName(row: Record<string, unknown>, meta?: EntityMeta | null, uid = 'uuid'): string | undefined {
   const candidate = row['code'] ?? (meta?.display_field ? row[meta.display_field] : undefined) ?? row[uid];
-  return candidate === undefined || candidate === null ? undefined : String(candidate);
+  return candidate === undefined || candidate === null ? undefined : toDisplayString(candidate);
 }
 
 /** Custom executors may return a boolean — normalize to a Response so
@@ -188,6 +211,8 @@ export async function runEntityOp(args: RunEntityOpArgs): Promise<boolean> {
       recordName: args.recordName ?? (args.row ? defaultRecordName(args.row, meta, uid) : undefined),
       count: args.rows?.length,
       chrome: chromeOf(action),
+      scopeChoice: args.scopeChoice,
+      totalCount: args.totalCount,
     });
     if (!confirmed) return false;
   }
@@ -248,7 +273,7 @@ function defaultRequest(
   uid: string,
 ): ((token: string | null) => Promise<Response>) | null {
   const { op, entity, row, rows } = args;
-  const base = entityApiBase(entity);
+  const base = entityApiBase(entity, args.service);
   // `version` is a native bigint on every ext-json row — the codec
   // forces ALL integers to bigint (ext-json.ts). Presence is the only
   // check needed: the template prints the integral token regardless of
@@ -256,7 +281,7 @@ function defaultRequest(
   // only come from client-built rows, never from the wire).
   const versionQs = (r?: Record<string, unknown>) => {
     const v = r?.version;
-    return v === undefined || v === null || v === '' ? '' : `?version=${v}`;
+    return v === undefined || v === null || v === '' ? '' : `?version=${toDisplayString(v)}`;
   };
   const auth = (token: string | null): Record<string, string> =>
     token ? { 'x-mfa-action-authorization': token } : {};
@@ -266,8 +291,8 @@ function defaultRequest(
     case 'purge.single': {
       if (!row) return null;
       const url = ep
-        ? serviceApiPrefix(entity) + fillActionPath(ep.path, row, uid)
-        : `${base}/${encodeURIComponent(String(row[uid]))}${op === 'purge.single' ? '/purge' : ''}`;
+        ? serviceApiPrefix(entity, args.service) + fillActionPath(ep.path, row, uid)
+        : `${toDisplayString(base)}/${encodeURIComponent(toDisplayString(row[uid]))}${toDisplayString(op === 'purge.single' ? '/purge' : '')}`;
       return (token) =>
         apiFetch(`${url}${versionQs(row)}`, {
           method: ep?.method || 'DELETE',
@@ -277,8 +302,8 @@ function defaultRequest(
     case 'restore.single': {
       if (!row) return null;
       const url = ep
-        ? serviceApiPrefix(entity) + fillActionPath(ep.path, row, uid)
-        : `${base}/${encodeURIComponent(String(row[uid]))}/restore`;
+        ? serviceApiPrefix(entity, args.service) + fillActionPath(ep.path, row, uid)
+        : `${toDisplayString(base)}/${encodeURIComponent(toDisplayString(row[uid]))}/restore`;
       return (token) =>
         apiFetch(`${url}${versionQs(row)}`, {
           method: ep?.method || 'POST',
@@ -286,9 +311,9 @@ function defaultRequest(
         });
     }
     case 'delete.bulk': {
-      const items = (rows ?? []).map((r) => ({ uuid: String(r[uid]), version: r.version }));
+      const items = (rows ?? []).map((r) => ({ uuid: toDisplayString(r[uid]), version: r.version }));
       if (items.length === 0) return null;
-      const url = ep ? serviceApiPrefix(entity) + ep.path : `${base}/bulk-delete`;
+      const url = ep ? serviceApiPrefix(entity, args.service) + ep.path : `${base}/bulk-delete`;
       return (token) =>
         apiFetch(url, {
           method: ep?.method || 'POST',
@@ -302,7 +327,7 @@ function defaultRequest(
       return async (token) => {
         for (const r of targets) {
           const res = await apiFetch(
-            `${base}/${encodeURIComponent(String(r[uid]))}/restore${versionQs(r)}`,
+            `${toDisplayString(base)}/${encodeURIComponent(toDisplayString(r[uid]))}/restore${toDisplayString(versionQs(r))}`,
             { method: 'POST', headers: auth(token) },
           );
           if (!res.ok) return res;

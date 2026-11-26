@@ -37,6 +37,10 @@
     entities_ns?: string;
     rowUuid: string;
     columns?: MetaColumn[];
+    /** Owning service — required for builtin entities (census map is
+     *  last-wins ambiguous; route context threads through or audit
+     *  reads the wrong schema). */
+    service?: string;
   }
 
   /** One field's old/new pair inside an audit `delta` object. */
@@ -65,6 +69,7 @@
     entities_ns = 'system',
     rowUuid,
     columns = [],
+    service,
   }: Props = $props();
 
   // translationKey is snake_case singular (e.g. "user_profile") for i18n keys.
@@ -94,7 +99,7 @@
   /** The audit fetch failed because the OWNING SERVICE can't be reached
    *  (proxy 502/503-scoped or network failure) — the watermark names the
    *  service instead of the generic error. */
-  const ownerUnreachableMessage = $derived.by(() =>
+  const ownerUnreachableMessage = $derived(
     ownerServiceName
       ? $t('app.service.entity_owner_unreachable', { service: ownerServiceName, entity: entitySingular })
       : $t('app.service.entity_owner_unreachable_generic'),
@@ -129,7 +134,7 @@
     versionHistoryData = [];
 
     try {
-      const res = await apiFetch(`${entityApiBase(entity)}/${rowUuid}/audit?page=${versionHistoryPage}&limit=${versionHistoryLimit}`);
+      const res = await apiFetch(`${entityApiBase(entity, service)}/${rowUuid}/audit?page=${versionHistoryPage}&limit=${versionHistoryLimit}`);
 
       if (!res.ok) {
         throw new Error('Failed to load version history');
@@ -156,7 +161,7 @@
     versionHistoryPage += 1;
 
     try {
-      const res = await apiFetch(`${entityApiBase(entity)}/${rowUuid}/audit?page=${versionHistoryPage}&limit=${versionHistoryLimit}`);
+      const res = await apiFetch(`${entityApiBase(entity, service)}/${rowUuid}/audit?page=${versionHistoryPage}&limit=${versionHistoryLimit}`);
 
       if (!res.ok) {
         throw new Error('Failed to load version history');
@@ -481,7 +486,7 @@
   // falls through to `loadVersionHistory()` so the real error watermark
   // (unreachable-service path included) still surfaces.
   $effect(() => {
-    fetchEntityMeta(entityApiBase(entity))
+    fetchEntityMeta(entityApiBase(entity, service))
       .then((meta) => {
         auditEnabled = isEntityOpEnabled(meta.actions, 'read.audit');
         if (auditEnabled) void loadVersionHistory();
@@ -565,7 +570,7 @@
                        and the actor link stay neutral. -->
                   <span class={colorClass}>{getAuditActionLabel(entry.action)}</span>
                   {#if entry.changed_by}
-                    {' '}<span class="font-normal text-foreground">{$t('system.entities.version_history.by')}</span>{' '}
+                    &nbsp;<span class="font-normal text-foreground">{$t('system.entities.version_history.by')}</span>&nbsp;
                     <button
                       type="button"
                       class="font-normal text-foreground underline-offset-2 rounded-sm px-0.5 hover:bg-accent hover:underline cursor-pointer"
@@ -606,7 +611,7 @@
                                     class="shadow-none text-xs"
                                     style="background-color: {oldBadgeColors.bgColor}; color: {oldBadgeColors.textColor}; border-color: {oldBadgeColors.borderColor};"
                                   >
-                                    {delta.oldBadgeLabelText || (delta.oldBadgeLabelKey ? $t(delta.oldBadgeLabelKey) : String(delta.oldValue))}
+                                    {delta.oldBadgeLabelText || (delta.oldBadgeLabelKey ? $t(delta.oldBadgeLabelKey) : toDisplayString(delta.oldValue))}
                                   </Badge>
                                 {:else if delta.isColor && delta.oldColorValue}
                                   <Tooltip.Root>
@@ -641,7 +646,7 @@
                                     class="shadow-none text-xs"
                                     style="background-color: {newBadgeColors.bgColor}; color: {newBadgeColors.textColor}; border-color: {newBadgeColors.borderColor};"
                                   >
-                                    {delta.badgeLabelText || (delta.badgeLabelKey ? $t(delta.badgeLabelKey) : String(delta.newValue))}
+                                    {delta.badgeLabelText || (delta.badgeLabelKey ? $t(delta.badgeLabelKey) : toDisplayString(delta.newValue))}
                                   </Badge>
                                 {:else if delta.isColor && delta.colorValue}
                                   <Tooltip.Root>

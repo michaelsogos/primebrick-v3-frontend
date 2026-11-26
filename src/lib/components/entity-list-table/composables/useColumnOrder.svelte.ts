@@ -2,6 +2,7 @@ import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 import { onMount } from 'svelte';
 import type { MetaColumn } from '$lib/entity-list/types';
 import type { DeepReadonly } from '@primebrick/ui';
+import { extJsonParse, extJsonStringify } from '$lib/api-ext';
 
 export type ColumnOrderState = {
   sticky?: string[];
@@ -17,7 +18,7 @@ const STRING_LIST = (v: unknown): string[] | undefined =>
 export function parseColumnOrderState(raw: string | null): ColumnOrderState {
   if (!raw) return {};
   try {
-    const parsed = JSON.parse(raw) as unknown;
+    const parsed = extJsonParse(raw) as unknown;
     if (!parsed || typeof parsed !== 'object') return {};
     const obj = parsed as { sticky?: unknown; data?: unknown; auditing?: unknown };
     return {
@@ -59,7 +60,7 @@ export function useColumnOrder(getColumnOrderStorageKey: () => string | undefine
     if (!columnOrderStorageKey) return;
     if (typeof window === 'undefined') return;
     try {
-      window.sessionStorage.setItem(columnOrderStorageKey, JSON.stringify(next));
+      window.sessionStorage.setItem(columnOrderStorageKey, extJsonStringify(next));
     } catch {
       // ignore quota / blocked storage
     }

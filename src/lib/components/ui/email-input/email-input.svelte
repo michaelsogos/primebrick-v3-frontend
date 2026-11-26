@@ -8,6 +8,7 @@
   import { Check } from '@primebrick/ui/vendor/lucide';
   import { inputTrailingIconButtonClasses } from "@primebrick/ui";
 
+import { extJsonParse } from '$lib/api-ext';
   type Props = WithElementRef<
     Omit<HTMLInputAttributes, "type" | "files"> & {
       /** Bindable value — the email string. */
@@ -60,7 +61,7 @@
     if (!error.includes("|")) return $t(error);
     const [key, jsonParams] = error.split("|", 2);
     try {
-      const params = JSON.parse(jsonParams);
+      const params = extJsonParse<Record<string, unknown>>(jsonParams);
       return $t(key, params);
     } catch {
       return $t(key);

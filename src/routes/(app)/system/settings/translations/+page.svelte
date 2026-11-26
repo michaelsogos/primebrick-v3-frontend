@@ -11,8 +11,9 @@
     fetchTranslationList,
     createTranslation,
     updateTranslation,
-    deleteTranslation,
   } from '$lib/api';
+  import { apiFetch } from '$lib/api';
+  import { runEntityOp } from '$lib/entity-list';
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
   import { ComboSelect } from '@primebrick/ui';
   import { TextInput } from '@primebrick/ui';
@@ -24,7 +25,7 @@
     language: string;
     value: string;
     updated_at?: string;
-    version: number;
+    version: bigint;
   };
 
   let modules = $state<string[]>([]);
@@ -124,14 +125,22 @@
   }
 
   async function remove(row: TranslationRow) {
-    if (!confirm(`Delete translation "${row.key}" (${row.language})?`)) return;
-    try {
-      await deleteTranslation(selectedModule, row.uuid, row.version);
-      pushNotification({ impact: 'NONE', message: 'Translation deleted', scope: 'translations' });
-      await loadRows();
-    } catch (e) {
-      pushNotification({ impact: 'HIGH', message: 'Failed to delete translation', scope: 'translations', detail: String(e) });
-    }
+    // Governed invoker — anatomy confirm + step-up; `?module=` rides the
+    // custom executor (not part of the entity convention URL).
+    await runEntityOp({
+      op: 'delete.single',
+      entity: 'translation',
+      row,
+      recordName: `${row.key} (${row.language})`,
+      execute: (token) =>
+        apiFetch(`/api/v1/entities/translation/${encodeURIComponent(row.uuid)}?module=${encodeURIComponent(selectedModule)}&version=${row.version}`, {
+          method: 'DELETE',
+          headers: token ? { 'x-mfa-action-authorization': token } : {},
+        }),
+      onDone: async () => {
+        await loadRows();
+      },
+    });
   }
 
   onMount(async () => {

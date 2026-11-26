@@ -44,6 +44,7 @@ import { E2E_ADMIN_USERNAME, E2E_ADMIN_PASSWORD } from "./helpers/admin-login";
 import { mergeTestScoreTurns, type E2ETurn } from "./helpers/test-scores";
 import { getSharedContext, focusedPage } from "./helpers/edge-context";
 
+import { extJsonParse } from '@primebrick/core/ext-json';
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:5173";
 const PAGE_URL = `${BASE_URL}/system/settings/configurations/create`;
 const PREFIX = "smart-json-ai";
@@ -310,7 +311,7 @@ function scoreTurn(
     return { score: 0, verdict: "fail", reason: "no JSON candidate produced" };
   let parsed: Record<string, unknown>;
   try {
-    parsed = JSON.parse(json);
+    parsed = extJsonParse<Record<string, unknown>>(json);
   } catch {
     return { score: 0, verdict: "fail", reason: "invalid JSON syntax" };
   }

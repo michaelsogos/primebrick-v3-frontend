@@ -20,6 +20,7 @@
  */
 import { goto } from '$app/navigation';
 import { resolve } from '$app/paths';
+import { toDisplayString } from '@primebrick/ui';
 
 /** Arguments for the `navigate` client tool. */
 export interface NavigateToolArgs {
@@ -71,7 +72,7 @@ export async function invokeClientTool<TResult = unknown>(
   } catch (err) {
     return {
       ok: false,
-      error: err instanceof Error ? err.message : String(err),
+      error: err instanceof Error ? err.message : toDisplayString(err),
     };
   }
 }

@@ -11,6 +11,7 @@
  */
 import { Marked, type Tokens } from 'marked';
 import { createHighlighter, type Highlighter } from 'shiki';
+import { toDisplayString } from '@primebrick/ui';
 
 export type DocsTocItem = { id: string; text: string; depth: 2 | 3 };
 
@@ -56,7 +57,7 @@ function slugify(text: string): string {
 function mdxComponentsToMarkdown(md: string): string {
   return md
     .replace(/<Mermaid\s+chart=\{`([\s\S]*?)`\}\s*\/?>/g, '\n\n```mermaid\n$1\n```\n\n')
-    .replace(/<Mermaid[^>]*>\s*(?:\{`([\s\S]*?)`\}|([\s\S]*?))\s*<\/Mermaid>/g, (_m, attr, body) => `\n\n\`\`\`mermaid\n${attr ?? body}\n\`\`\`\n\n`);
+    .replace(/<Mermaid[^>]*>\s*(?:\{`([\s\S]*?)`\}|([\s\S]*?))\s*<\/Mermaid>/g, (_m, attr, body) => `\n\n\`\`\`mermaid\n${toDisplayString(attr ?? body)}\n\`\`\`\n\n`);
 }
 
 /** Strip MDX-only syntax the KB docs may carry: import/export lines and

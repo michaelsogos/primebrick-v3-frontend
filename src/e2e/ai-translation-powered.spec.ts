@@ -35,6 +35,7 @@ import {
 import { mergeTestScoreTurns, type E2ETurn } from "./helpers/test-scores";
 import { getSharedContext, focusedPage } from "./helpers/edge-context";
 
+import { extJsonStringify } from '@primebrick/core/ext-json';
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:5173";
 const DICT_URL = `${BASE_URL}/crm/settings/customer_types`;
 // MUST match POWERED_MODEL_ID in
@@ -262,7 +263,7 @@ test.describe("AI evidence — translation_test_score (powered)", () => {
     }, 300_000, "powered model ready");
     const load_s = (Date.now() - tSheet) / 1000;
     log(`powered model ready: ${load_s.toFixed(1)}s from sheet open (${ready})`);
-    if (!ready) log(`worker console tail: ${JSON.stringify(workerLogs.slice(-15))}`);
+    if (!ready) log(`worker console tail: ${extJsonStringify(workerLogs.slice(-15))}`);
     expect(ready).toBeTruthy();
 
     // 5. Timed suggest per language — the response_s IS the evidence.
@@ -298,7 +299,7 @@ test.describe("AI evidence — translation_test_score (powered)", () => {
     log(
       `[translation_test_score] ${POWERED_MODEL_ID}: score=${res.score.toFixed(2)} rank=${res.rank} (load_s=${load_s.toFixed(1)})`,
     );
-    log(`TURNS_JSON ${JSON.stringify(turns)}`);
+    log(`TURNS_JSON ${extJsonStringify(turns)}`);
 
     // 7. MEANING disambiguation — the hint must drive the output, not the
     //    literal label (granite probe: only the re-framed prompt shape

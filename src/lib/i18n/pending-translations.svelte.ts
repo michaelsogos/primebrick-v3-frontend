@@ -30,14 +30,14 @@ export type PendingTranslationEntry = {
   value: string;
   /** Present → update of an existing row; requires `version` (CAS). */
   uuid?: string;
-  version?: number;
+  version?: bigint;
 };
 
 /** language → entry */
 type LangMap = Record<string, PendingTranslationEntry>;
 /** key → LangMap — plain object replaced wholesale on every write so the
  *  outer SvelteMap stays the only mutation point (reactivity). */
-type KeyMap = Record<string, LangMap>;
+export type KeyMap = Record<string, LangMap>;
 
 const pending = new SvelteMap<string, KeyMap>();
 
@@ -108,4 +108,11 @@ export function pendingTranslationCount(owner?: string): number {
 /** Drop `owner`'s whole queue — on page destroy/cancel (nothing reaches the DB). */
 export function clearPendingTranslations(owner: string): void {
   pending.delete(owner);
+}
+
+/** Peek `owner`'s whole queue WITHOUT draining (draft persistence
+ *  snapshots; the map is replaced wholesale on every write so it is
+ *  safe to hold — callers treat it as read-only). */
+export function getPendingTranslations(owner: string): KeyMap | undefined {
+  return pending.get(owner);
 }

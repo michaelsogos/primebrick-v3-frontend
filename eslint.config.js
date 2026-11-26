@@ -1,5 +1,15 @@
 import svelteConfig from './svelte.config.js';
 import js from '@eslint/js';
+
+/**
+ * Serializable clone for svelte-eslint-parser — svelte.config.js holds
+ * functions (onwarn, vitePreprocess, kit.adapter) that break ESLint's
+ * `--cache` key serialization. The parser only reads declarative fields
+ * (compilerOptions / extensions / features), which this project does not
+ * set, so a JSON round-trip is lossless for lint purposes.
+ */
+const svelteConfigForLint = JSON.parse(JSON.stringify(svelteConfig));
+
 import ts from 'typescript-eslint';
 import svelte from 'eslint-plugin-svelte';
 import globals from 'globals';
@@ -128,41 +138,42 @@ export default ts.config(
         ...globals.node,
       },
     },
-  },
-  {
-    files: ['**/*.svelte', '**/*.svelte.ts', '**/*.svelte.js'],
-    languageOptions: {
-      parserOptions: {
-        projectService: true,
-        extraFileExtensions: ['.svelte'],
-        parser: ts.parser,
-        svelteConfig,
-      },
+    rules: {
+      /**
+       * `_`-prefixed names declare INTENTIONALLY-unused: params kept for
+       * interface conformance (`argsIgnorePattern`), destructure-to-omit
+       * siblings (`ignoreRestSiblings` — `const { [k]: _drop, ...rest }`),
+       * array destructure holes (`destructuredArrayIgnorePattern`) and
+       * unused catch params. The convention is documented once here —
+       * underscore is the marker, not a suppression.
+       */
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          destructuredArrayIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+          ignoreRestSiblings: true,
+        },
+      ],
     },
   },
   {
     /**
-     * Wire-value display safety — `extJsonParse` (json-bigint strict) emits
-     * null-prototype objects; `String(obj)` throws `Cannot convert object to
-     * primitive value` on them. Display coercion of unknown/record values
-     * MUST go through `toDisplayString` (@primebrick/ui) — type-aware lint
-     * enforces it. `*.svelte*` files inherit type info from the projectService
-     * block above; plain `.ts` files get it here.
+     * Svelte parsing — `svelteConfig` feeds the parser's runes/features
+     * detection. Display-coercion safety (`String(x)`/`${x}` on wire
+     * values) is enforced WITHOUT type-aware lint: the syntactic rule
+     * `display-coerce` lives in check-standards (dev gate), the typed
+     * semantic pass in tools/check-stringify.ts (check/test boundary).
+     * projectService type-aware lint made `eslint .` a 45min+ run —
+     * removed, not weakened: the same check runs faster elsewhere.
      */
-    files: ['src/**/*.ts'],
-    ignores: ['src/**/*.svelte.ts'],
+    files: ['**/*.svelte', '**/*.svelte.ts', '**/*.svelte.js'],
     languageOptions: {
-      parser: ts.parser,
-      parserOptions: { projectService: true },
-    },
-    rules: {
-      '@typescript-eslint/no-base-to-string': 'error',
-    },
-  },
-  {
-    files: ['src/**/*.svelte', 'src/**/*.svelte.ts', 'src/**/*.svelte.js'],
-    rules: {
-      '@typescript-eslint/no-base-to-string': 'error',
+      parserOptions: {
+        parser: ts.parser,
+        svelteConfig: svelteConfigForLint,
+      },
     },
   },
   {

@@ -12,6 +12,7 @@
 import { apiFetchWithTimeout } from '$lib/api';
 import { ApiListError, readApiErrorDetails } from './api-list-error';
 import type { EntityMeta } from './types';
+import { extJsonParse } from '$lib/api-ext';
 
 interface MetaCacheEntry {
   data?: EntityMeta;
@@ -44,7 +45,7 @@ export function fetchEntityMeta(basePath: string): Promise<EntityMeta> {
       const code = apiDetails.code ?? 'GET_METADATA_FAILED';
       throw new ApiListError(code, res.status, apiDetails);
     }
-    const meta = (await res.json()) as EntityMeta;
+    const meta = (await res.text().then((t) => extJsonParse<unknown>(t))) as EntityMeta;
     entry.data = meta;
     return meta;
   })();
@@ -62,4 +63,19 @@ export function fetchEntityMeta(basePath: string): Promise<EntityMeta> {
 /** Test/debug helper — drop every cached meta + in-flight slot. */
 export function clearEntityMetaCache(): void {
   store().clear();
+}
+
+/**
+ * Drop one cached meta — a list call that fails closed on stale field
+ * keys means the META we sanitized against is itself stale: the next
+ * `fetchEntityMeta` re-downloads before the list retries (self-healing
+ * when a deploy renames columns mid-session).
+ */
+export function invalidateEntityMeta(basePath: string): void {
+  const entry = store().get(basePath);
+  if (!entry) return;
+  // An in-flight fetch may carry the same stale meta — drop it too so the
+  // healer's re-fetch never dedupes onto the very response that poisoned us.
+  entry.data = undefined;
+  entry.inFlight = undefined;
 }

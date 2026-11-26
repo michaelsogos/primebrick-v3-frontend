@@ -26,9 +26,9 @@ import {
 	type MountSheetFn,
 	type RemoteDepsManifest,
 	type VendorManifest,
-	type VendorMismatch,
-} from '@primebrick/ui';
+	type VendorMismatch, toDisplayString } from '@primebrick/ui';
 import HostMountShell from './HostMountShell.svelte';
+import { extJsonParse } from '$lib/api-ext';
 
 /** The `esm-mount` chunk shape: preferred self-mount export, default fallback. */
 export type RemoteModule = {
@@ -84,7 +84,7 @@ export type RemoteLoadDeps = {
 export const VENDOR_MANIFEST_URL = '/vendor/vendor-manifest.json';
 
 function errorMessage(e: unknown): string {
-	return e instanceof Error ? e.message : String(e);
+	return e instanceof Error ? e.message : toDisplayString(e);
 }
 
 /** sha256 of `buf` as lowercase hex (Web Crypto — works in browser + Node 24). */
@@ -210,7 +210,7 @@ async function verifyVendorDeps(
 	}
 	let deps_manifest: RemoteDepsManifest;
 	try {
-		deps_manifest = (await res.json()) as RemoteDepsManifest;
+		deps_manifest = (await res.text().then((t) => extJsonParse<unknown>(t))) as RemoteDepsManifest;
 	} catch {
 		throw new RemoteLoadError('vendor', 'unreadable deps manifest (invalid JSON)');
 	}
@@ -232,7 +232,7 @@ async function verifyVendorDeps(
 	}
 	let host_manifest: VendorManifest;
 	try {
-		host_manifest = (await host_res.json()) as VendorManifest;
+		host_manifest = (await host_res.text().then((t) => extJsonParse<unknown>(t))) as VendorManifest;
 	} catch {
 		throw new RemoteLoadError('vendor', 'unreadable host vendor manifest (invalid JSON)');
 	}

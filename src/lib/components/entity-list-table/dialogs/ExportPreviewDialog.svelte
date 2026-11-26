@@ -11,6 +11,7 @@
   import BsFiletypeHtml from '~icons/bi/filetype-html';
   import BsFiletypePdf from '~icons/bi/filetype-pdf';
   import BsEnvelopeAt from '~icons/bi/envelope-at';
+  import type { ActionChrome } from '../types';
 
   interface ExportPreviewDialogProps {
     open: boolean;
@@ -27,6 +28,9 @@
     onCopyHtmlToClipboard: () => void;
     onCopyEmailHtmlToClipboard: () => void;
     onClose: () => void;
+    /** `meta.actions["export"]` chrome — same action flow as the export
+     *  confirms; the op's `color` IS the severity (default `primary`). */
+    chrome?: ActionChrome;
   }
 
   let {
@@ -43,11 +47,14 @@
     onPrepareEmailHtml,
     onCopyHtmlToClipboard,
     onCopyEmailHtmlToClipboard,
-    onClose
+    onClose,
+    chrome
   }: ExportPreviewDialogProps = $props();
+
+  let severity = $derived(chrome?.color ?? 'primary');
 </script>
 
-<BorderedDialog bind:open={open} {onOpenChange} severity="primary" class="!w-[95vw] !h-[95vh] !max-w-none !max-h-none !p-0 flex flex-col [&>div:nth-child(2)]:flex [&>div:nth-child(2)]:flex-col [&>div:nth-child(2)]:flex-1 [&>div:nth-child(2)]:min-h-0 [&>div:nth-child(2)]:!p-4" showCloseButton={false}>
+<BorderedDialog bind:open={open} {onOpenChange} {severity} class="!w-[95vw] !h-[95vh] !max-w-none !max-h-none !p-0 flex flex-col [&>div:nth-child(2)]:flex [&>div:nth-child(2)]:flex-col [&>div:nth-child(2)]:flex-1 [&>div:nth-child(2)]:min-h-0 [&>div:nth-child(2)]:!p-4" showCloseButton={false}>
   <Dialog.Header class="pb-4 shrink-0">
     <Dialog.Title>{$t('app.common.html_preview_title')}</Dialog.Title>
   </Dialog.Header>

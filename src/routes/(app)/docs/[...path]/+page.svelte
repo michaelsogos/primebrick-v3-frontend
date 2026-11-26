@@ -66,7 +66,7 @@
     if (docpath) {
       e.preventDefault();
       const target = hrefFor(docrepo ?? docRef?.repo ?? index?.[0]?.repo ?? 'backend', docpath);
-      void goto(target).then(() => {
+      void goto(resolve(target as '/')).then(() => {
         if (anchor) tick().then(() => contentEl?.querySelector(`#${CSS.escape(anchor)}`)?.scrollIntoView());
       });
       return;
@@ -89,7 +89,7 @@
       index = await fetchDocsIndex();
       if (!docRef && index.length) {
         const first = index.flatMap((r) => r.entries.map((e) => ({ repo: r.repo, path: e.path })))[0];
-        if (first) void goto(hrefFor(first.repo, first.path), { replaceState: true });
+        if (first) void goto(resolve(hrefFor(first.repo, first.path) as '/'), { replaceState: true });
       }
     } catch (e) {
       error = e instanceof Error ? e.message : String(e);
@@ -120,7 +120,7 @@
                 {@const active = doc?.repo === repo.repo && doc?.path === entry.path}
                 <li>
                   <a
-                    href={href}
+                    href={resolve(href as '/')}
                     class={cn(
                       'flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm hover:bg-accent',
                       active && 'bg-accent font-medium'

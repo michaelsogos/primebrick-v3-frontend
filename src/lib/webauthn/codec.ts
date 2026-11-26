@@ -101,6 +101,13 @@ function deepDecodeBuffers(obj: unknown): unknown {
         }
       } else if (value && typeof value === "object") {
         result[key] = deepDecodeBuffers(value);
+      } else if (typeof value === "bigint") {
+        // ext-json parses every wire integer as bigint (strict codec); the
+        // CredentialsContainer API requires plain numbers — `timeout` ms,
+        // `pubKeyCredParams[].alg` COSE ids. bigint is not browser-native
+        // here, so convert at the boundary exactly like base64url→ArrayBuffer.
+        // Every WebAuthn integer field fits well within 2^53.
+        result[key] = Number(value);
       } else {
         result[key] = value;
       }

@@ -83,14 +83,14 @@ async function loginAs(page: Page, username: string, password: string): Promise<
 
   // Wait for the LoginForm to hydrate — the username input is always visible
   // (form auth is an invariant, not gated by any config flag).
-  await page.getByTestId("login-username-input").waitFor({ state: "visible", timeout: 10000 });
+  await page.getByTestId("login-username-input").waitFor({ state: "visible", timeout: 5_000 });
 
   await page.getByTestId("login-username-input").fill(username);
   await page.getByTestId("login-password-input").fill(password);
   await page.getByTestId("login-submit-button").click();
 
   // Wait for redirect away from /login (success → / or the redirect URL).
-  await page.waitForURL((url) => !url.pathname.startsWith("/login"), { timeout: 15000 });
+  await page.waitForURL((url) => !url.pathname.startsWith("/login"), { timeout: 5_000 });
 
   // The auth-method enforcer dialog may overlay the app ("Secure your
   // account"). Dismiss it so it never intercepts pointer events in tests.

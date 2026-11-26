@@ -5,10 +5,11 @@
   import { get } from 'svelte/store';
   import { apiFetch } from '$lib/api';
   import { pushNotification } from '$lib/errors/app-errors';
+  import type { RFC7807Error } from '$lib/errors/rfc7807';
   import { t } from '$lib/i18n';
   import { loadPublicTranslations } from '$lib/i18n/use-module-translations.svelte';
   import { uiLang } from '$lib/i18n/store.svelte';
-  import { Button } from '@primebrick/ui';
+  import { Button, toDisplayString } from '@primebrick/ui';
   import { OtpInput } from '@primebrick/ui';
   import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
   import { Alert, AlertDescription } from '$lib/components/ui/alert';
@@ -28,6 +29,7 @@
   import { AlertCircle } from '@primebrick/ui/vendor/lucide';
   import { ArrowLeft } from '@primebrick/ui/vendor/lucide';
   import { ArrowRight } from '@primebrick/ui/vendor/lucide';
+  import { extJsonParse, extJsonStringify } from '$lib/api-ext';
 
   // ─── Password policy ────────────────────────────────────────────────────────
   const passwordPolicy = usePasswordPolicy();
@@ -98,13 +100,13 @@
       const res = await apiFetch('/api/v1/auth/welcome/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: _state.token }),
+        body: extJsonStringify({ token: _state.token }),
       });
 
-      const data = await res.json();
+      const data = await res.text().then((t) => extJsonParse<{ valid?: boolean; display_name?: string; expires_at?: number }>(t));
       if (res.ok && data.valid) {
-        _state.display_name = data.display_name;
-        _state.expires_at = data.expires_at;
+        _state.display_name = data.display_name ?? '';
+        _state.expires_at = data.expires_at === undefined ? '' : toDisplayString(data.expires_at);
         // Automatically send OTP after token verification
         await sendOtp();
       } else {
@@ -126,10 +128,10 @@
       const res = await apiFetch('/api/v1/auth/welcome/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: _state.token }),
+        body: extJsonStringify({ token: _state.token }),
       });
 
-      const data = await res.json();
+      const data = await res.text().then((t) => extJsonParse<{ sent?: boolean }>(t));
       if (res.ok && data.sent) {
         _state.step = 'otp-sent';
         startResendCooldown();
@@ -150,10 +152,10 @@
       const res = await apiFetch('/api/v1/auth/welcome/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: _state.token, otp_code: _state.otp_code }),
+        body: extJsonStringify({ token: _state.token, otp_code: _state.otp_code }),
       });
 
-      const data = await res.json();
+      const data = await res.text().then((t) => extJsonParse<{ verified?: boolean }>(t));
       if (res.ok && data.verified) {
         _state.step = 'otp-verified';
       } else {
@@ -173,7 +175,7 @@
       const res = await apiFetch('/api/v1/auth/welcome/complete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: extJsonStringify({
           token: _state.token,
           otp_code: _state.otp_code,
           new_password: _state.new_password,
@@ -183,7 +185,7 @@
       if (res.ok) {
         _state.step = 'complete';
       } else {
-        const errorData = await res.json();
+        const errorData = await res.text().then((t) => extJsonParse<RFC7807Error>(t));
         pushNotification({ ...errorData, toast: false });
         _state.error_message = errorData.detail ?? $t('app.auth.welcome.error.complete_failed');
       }

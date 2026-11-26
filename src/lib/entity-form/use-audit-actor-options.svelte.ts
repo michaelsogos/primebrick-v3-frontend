@@ -31,6 +31,7 @@
 import { apiFetchWithTimeout, entityApiBase } from '$lib/api';
 import { extJsonParse } from '$lib/api-ext';
 import type { DeepReadonly } from '@primebrick/ui';
+import { SvelteMap } from 'svelte/reactivity';
 
 export type AuditActorOption = {
 	value: string;
@@ -41,22 +42,23 @@ export type AuditActorOption = {
  *  reopen) while still refetching on the next panel open. */
 const CACHE_TTL_MS = 30_000;
 
-const _cache = new Map<string, { at: number; promise: Promise<AuditActorOption[]> }>();
+const _cache = new SvelteMap<string, { at: number; promise: Promise<AuditActorOption[]> }>();
 
-function fetchActors(entity: string): Promise<AuditActorOption[]> {
-	const hit = _cache.get(entity);
+function fetchActors(entity: string, service?: string): Promise<AuditActorOption[]> {
+	const cacheKey = `${service ?? ''}:${entity}`;
+	const hit = _cache.get(cacheKey);
 	if (hit && Date.now() - hit.at < CACHE_TTL_MS) return hit.promise;
-	const promise = apiFetchWithTimeout(`${entityApiBase(entity)}/audit-actors`, undefined, 15_000)
+	const promise = apiFetchWithTimeout(`${entityApiBase(entity, service)}/audit-actors`, undefined, 15_000)
 		.then(async (res) => {
 			if (!res.ok) return [] as AuditActorOption[];
 			const data = extJsonParse<{ items?: AuditActorOption[] }>(await res.text());
 			return (data.items ?? []).map((i) => ({
-				value: String(i.value),
-				label: String(i.label ?? i.value),
+				value: i.value,
+				label: i.label ?? i.value,
 			}));
 		})
 		.catch(() => [] as AuditActorOption[]);
-	_cache.set(entity, { at: Date.now(), promise });
+	_cache.set(cacheKey, { at: Date.now(), promise });
 	return promise;
 }
 
@@ -69,6 +71,7 @@ export interface AuditActorOptionsApi {
 
 export function useAuditActorOptions(
 	entity: () => string | undefined,
+	service: () => string | undefined = () => undefined,
 ): AuditActorOptionsApi {
 	const _state = $state({
 		options: [] as AuditActorOption[],
@@ -79,11 +82,13 @@ export function useAuditActorOptions(
 
 	$effect(() => {
 		const e = entity();
-		if (!e || e === loadedFor) return;
-		loadedFor = e;
+		const svc = service();
+		const loadKey = `${svc ?? ''}:${e ?? ''}`;
+		if (!e || loadKey === loadedFor) return;
+		loadedFor = loadKey;
 		let cancelled = false;
 		_state.loading = true;
-		fetchActors(e)
+		fetchActors(e, svc)
 			.then((items) => {
 				if (!cancelled) _state.options = items;
 			})

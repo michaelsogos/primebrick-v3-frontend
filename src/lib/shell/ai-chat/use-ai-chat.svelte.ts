@@ -17,6 +17,7 @@ import { SvelteDate } from 'svelte/reactivity';
 import { apiFetch, callMcpTool, listMcpTools, type McpToolDef } from '$lib/api';
 import { createSsePostStream, parseSseData } from '$lib/sse/create-sse-connection';
 import { invokeClientTool, type ClientToolResult } from './client-tool-registry';
+import { extJsonParse, extJsonStringify } from '$lib/api-ext';
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -444,7 +445,7 @@ export const aiChatStore = {
     try {
       const res = await apiFetch('/api/v1/ai/conversations');
       if (!res.ok) return;
-      const data = await res.json() as { conversations: AiConversation[] };
+      const data = await res.text().then((t) => extJsonParse<unknown>(t)) as { conversations: AiConversation[] };
       state.conversations = data.conversations ?? [];
     } catch (err) {
       console.error('[ai-chat] Failed to load conversations:', err);
@@ -456,7 +457,7 @@ export const aiChatStore = {
     try {
       const res = await apiFetch(`/api/v1/ai/conversations/${uuid}`);
       if (!res.ok) return;
-      const data = await res.json() as { conversation: AiConversation; messages: AiMessage[] };
+      const data = await res.text().then((t) => extJsonParse<unknown>(t)) as { conversation: AiConversation; messages: AiMessage[] };
       state.currentConversationUuid = uuid;
       state.messages = data.messages ?? [];
       state.error = null;
@@ -629,7 +630,7 @@ export const aiChatStore = {
       await apiFetch('/api/v1/ai/feedback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: extJsonStringify({
           message_uuid: messageUuid,
           conversation_uuid: state.currentConversationUuid,
           rating,

@@ -1,4 +1,4 @@
-<script lang="ts" generics="TRow extends Record<string, unknown>">
+<script lang="ts">
   import { t } from '$lib/i18n';
   import { ArrowUpDown } from '@primebrick/ui/vendor/lucide'
   import { ArrowUp } from '@primebrick/ui/vendor/lucide'

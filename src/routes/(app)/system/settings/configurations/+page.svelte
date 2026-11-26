@@ -17,6 +17,7 @@
   import BulkDeleteDialog from '$lib/components/entity-list-table/dialogs/BulkDeleteDialog.svelte';
   import MfaStepUpDialog from '$lib/components/auth/MfaStepUpDialog.svelte';
   import type { ConfigEntry } from '$lib/api-types';
+  import { extJsonParse } from '$lib/api-ext';
 
   let entries = $state<ConfigEntry[]>([]);
   let loading = $state(true);
@@ -100,7 +101,7 @@
         deleteDialogOpen = false;
         deleteTarget = null;
       } else {
-        const errorData = await resp.json().catch(() => null);
+        const errorData = await resp.text().then((t) => extJsonParse<{ detail?: string }>(t)).catch(() => null);
         pushNotification({
           impact: 'HIGH',
           messageKey: 'app.common.delete_failed',
@@ -147,11 +148,11 @@
         bulkDeleteDialogOpen = false;
         bulkTargets = [];
       } else {
-        const errorData = await resp.json().catch(() => null);
+        const errorData = await resp.text().then((t) => extJsonParse<Record<string, unknown> & { detail?: string }>(t)).catch(() => null);
         // RFC 7807 body (type+status) → push verbatim so extra.issues reaches
         // the RfcErrorDialog; otherwise fall back to a plain notification.
         if (errorData && typeof errorData === 'object' && 'status' in errorData) {
-          pushNotification(errorData);
+          pushNotification(errorData as Parameters<typeof pushNotification>[0]);
         } else {
           pushNotification({
             impact: 'HIGH',

@@ -5,7 +5,7 @@
   import SortBuilder from './SortBuilder.svelte';
   import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import { fly } from 'svelte/transition';
-  import { DynamicIcon, actionColorButtonVariant } from '@primebrick/ui';
+  import { DynamicIcon, actionChromeButtonProps } from '@primebrick/ui';
   import type { Snippet } from 'svelte';
   import type { MetaColumn, AdvancedFilter, BulkCustomAction, SortDir } from '$lib/entity-list/types';
   import type { ActionChrome } from '../types';
@@ -13,6 +13,7 @@
   import { Funnel } from '@primebrick/ui/vendor/lucide'
   import { Download } from '@primebrick/ui/vendor/lucide'
   import { Copy } from '@primebrick/ui/vendor/lucide'
+  import { Pencil } from '@primebrick/ui/vendor/lucide'
   import { Trash2 } from '@primebrick/ui/vendor/lucide'
 
   let {
@@ -33,12 +34,15 @@
     onBulkDuplicate,
     onBulkDelete,
     onBulkRestore,
+    onBulkEdit,
+    bulkEditChrome,
     bulkCapabilities = { export: true, htmlExport: true, duplicate: true, delete: true, restore: true },
     bulkCustomActions = [],
     onBulkCustomAction,
     bulkDeleteChrome,
     bulkRestoreChrome,
     bulkDuplicateChrome,
+    bulkExportChrome,
     bulkExtraActions,
     selectAll,
     sort,
@@ -61,8 +65,11 @@
     onBulkDuplicate: () => void;
     onBulkDelete: () => void;
     onBulkRestore: () => void;
+    onBulkEdit?: () => void;
     /** Capability + permission gate per bulk CTA (from `meta.actions`). */
-    bulkCapabilities?: { export: boolean; htmlExport: boolean; duplicate: boolean; delete: boolean; restore: boolean };
+    bulkCapabilities?: { export: boolean; htmlExport: boolean; duplicate: boolean; delete: boolean; restore: boolean; edit?: boolean };
+    /** `meta.actions["update.bulk"]` chrome — primary edit affordance. */
+    bulkEditChrome?: ActionChrome;
     /** `meta.table.bulk_custom_actions` CTAs (permission-filtered upstream). */
     bulkCustomActions?: BulkCustomAction[];
     onBulkCustomAction?: (action: BulkCustomAction) => void;
@@ -73,6 +80,9 @@
     /** `meta.actions["duplicate.bulk"]` chrome — violet by contract
      *  (`ActionColor`: violet IS the clone semantic). */
     bulkDuplicateChrome?: ActionChrome;
+    /** `meta.actions["export"]` chrome — primary+outline by served
+     *  default (secondary affordance); both export CTAs share the op. */
+    bulkExportChrome?: ActionChrome;
     /** Host-specific bulk CTAs rendered after the standard + meta-declared
      *  set (e.g. the dict page's local revert — a page-state op, not an
      *  `entity_op` route, so it cannot ride `bulkCustomActions`). */
@@ -112,6 +122,7 @@
       bulkCapabilities.duplicate ||
       bulkCapabilities.delete ||
       bulkCapabilities.restore ||
+      bulkCapabilities.edit ||
       bulkCustomActions.length > 0
   );
   const showBulkPanel = $derived(hasAnyBulkCapability && toolbarMode === 'bulk');
@@ -200,9 +211,10 @@
     <div in:fly={{ y: 20, duration: 200 }} class="flex flex-wrap items-center gap-2">
       {#if bulkCapabilities.export}
         <Button
-          variant="default"
+          {...actionChromeButtonProps(bulkExportChrome, 'outline')}
           size="xs"
           onclick={onBulkExport}
+          data-testid="entity-bulk-export"
         >
           <Download class="size-3.5" />
           {$t('system.entities.list.bulk_actions.export')}
@@ -210,17 +222,34 @@
       {/if}
       {#if bulkCapabilities.htmlExport}
         <Button
-          variant="default"
+          {...actionChromeButtonProps(bulkExportChrome, 'outline')}
           size="xs"
           onclick={onHtmlExport}
+          data-testid="entity-bulk-export-html"
         >
           <Download class="size-3.5" />
           {$t('system.entities.list.bulk_actions.export_html')}
         </Button>
       {/if}
+      {#if bulkCapabilities.edit && onBulkEdit}
+        <Button
+          {...actionChromeButtonProps(bulkEditChrome)}
+          size="xs"
+          onclick={onBulkEdit}
+          disabled={selectedKeys.length < 1 || selectedKeys.length > 100 || hasDeletedSelected}
+          data-testid="entity-bulk-edit"
+        >
+          {#if bulkEditChrome?.icon}
+            <DynamicIcon name={bulkEditChrome.icon} size={14} />
+          {:else}
+            <Pencil class="size-3.5" />
+          {/if}
+          {$t(bulkEditChrome?.label_key ?? 'system.entities.list.bulk_actions.edit')}
+        </Button>
+      {/if}
       {#if bulkCapabilities.duplicate}
         <Button
-          variant={bulkDuplicateChrome?.color ? actionColorButtonVariant(bulkDuplicateChrome.color) : 'violet'}
+          {...actionChromeButtonProps(bulkDuplicateChrome, 'violet')}
           size="xs"
           onclick={onBulkDuplicate}
           disabled={selectedKeys.length < 2}
@@ -235,7 +264,7 @@
       {/if}
       {#if bulkCapabilities.delete}
         <Button
-          variant={bulkDeleteChrome?.color ? actionColorButtonVariant(bulkDeleteChrome.color) : 'destructive'}
+          {...actionChromeButtonProps(bulkDeleteChrome, 'destructive')}
           size="xs"
           onclick={onBulkDelete}
           disabled={selectedKeys.length < 1 || hasDeletedSelected}
@@ -251,7 +280,7 @@
       {/if}
       {#if hasDeletedSelected && bulkCapabilities.restore}
         <Button
-          variant={bulkRestoreChrome?.color ? actionColorButtonVariant(bulkRestoreChrome.color) : 'warning'}
+          {...actionChromeButtonProps(bulkRestoreChrome, 'warning')}
           size="xs"
           onclick={onBulkRestore}
           disabled={!allSelectedDeleted}
@@ -267,7 +296,7 @@
       {/if}
       {#each bulkCustomActions as action (action.action_name)}
         <Button
-          variant={actionColorButtonVariant(action.color)}
+          {...actionChromeButtonProps(action)}
           size="xs"
           onclick={() => onBulkCustomAction?.(action)}
           disabled={action.requires_selection !== false && selectedKeys.length === 0}

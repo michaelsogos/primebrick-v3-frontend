@@ -18,7 +18,7 @@
 
 export interface AuditData {
   uuid: string;
-  version: number;
+  version: bigint;
   created_at?: string | null;
   created_by?: string | null;
   created_by_name?: string | null;
@@ -33,7 +33,7 @@ export interface AuditData {
 
 export interface AuditableEntity {
   uuid?: string;
-  version?: number;
+  version?: bigint;
   created_at?: string | null;
   created_by?: string | null;
   created_by_name?: string | null;
@@ -67,7 +67,7 @@ export function buildAuditData(
     if (arguments.length === 0) {
       return {
         uuid: "",
-        version: 0,
+        version: 0n,
         created_at: undefined,
         created_by: undefined,
         created_by_name: undefined,
@@ -84,7 +84,7 @@ export function buildAuditData(
   }
   return {
     uuid: entity.uuid ?? '',
-    version: entity.version ?? 0,
+    version: entity.version ?? 0n,
     created_at: entity.created_at,
     created_by: entity.created_by,
     created_by_name: entity.created_by_name,

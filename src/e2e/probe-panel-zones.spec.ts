@@ -1,14 +1,15 @@
 import { test, expect } from "@playwright/test";
 import { loginAsTestAdmin } from "./helpers/admin-login";
 
+import { extJsonStringify } from '@primebrick/core/ext-json';
 const TRIGGERS = "/system/job/triggers";
 
 test("probe — panel zones: toolbar border + footer anatomy", async ({ page }) => {
   await loginAsTestAdmin(page);
   await page.goto(TRIGGERS, { waitUntil: "domcontentloaded" });
-  await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 5_000 });
   await page.getByRole("button", { name: "Filters", exact: true }).first().click();
-  await expect(page.getByTestId("filters-apply")).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByTestId("filters-apply")).toBeVisible({ timeout: 5_000 });
 
   const zones = await page.evaluate(() => {
     const panel = document.querySelector('[data-testid="filters-apply"]')?.closest(".flex.h-full.flex-col");
@@ -29,7 +30,7 @@ test("probe — panel zones: toolbar border + footer anatomy", async ({ page }) 
     return regions;
   });
   console.log("[probe] PANEL ZONES (standard tab):");
-  console.log(JSON.stringify(zones, null, 1));
+  console.log(extJsonStringify(zones,1));
 
   // Standard tab: the field-search SearchInput must live in the toolbar band.
   // Toolbar = the band that contains the mode group (filters-mode-standard).
@@ -46,7 +47,7 @@ test("probe — panel zones: toolbar border + footer anatomy", async ({ page }) 
       toolbarBottomBorder: toolbarEl ? getComputedStyle(toolbarEl).borderBottomWidth : null,
     };
   });
-  console.log("[probe] STD TOOLS:", JSON.stringify(stdTools));
+  console.log("[probe] STD TOOLS:", extJsonStringify(stdTools));
 
   // Switch to advanced — where does the AND/OR group sit relative to borders?
   await page.getByTestId("filters-mode-advanced").click();
@@ -67,7 +68,7 @@ test("probe — panel zones: toolbar border + footer anatomy", async ({ page }) 
         : null,
     };
   });
-  console.log("[probe] ADVANCED:", JSON.stringify(advZones));
+  console.log("[probe] ADVANCED:", extJsonStringify(advZones));
 
   // Footer anatomy: layout-owned muted strip + SheetPanelFooter + natural-width CTA
   const foot = await page.evaluate(() => {
@@ -97,7 +98,7 @@ test("probe — panel zones: toolbar border + footer anatomy", async ({ page }) 
       btnText: btn.textContent?.trim(),
     };
   });
-  console.log("[probe] FOOT:", JSON.stringify(foot, null, 1));
+  console.log("[probe] FOOT:", extJsonStringify(foot,1));
 
   // (std tool placement was already probed above, before the advanced switch)
 

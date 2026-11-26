@@ -24,6 +24,10 @@ export const SHEET_PANEL_IDS = [
   'entity.jsonViewer',
   'entity.mapperViewer',
   'entity.record',
+  'entity.dictExtras',
+  'entity.sequencePattern',
+  'entity.bulkEditor',
+  'entity.bulkEditRows',
   'service.record',
   'config.currencySelect',
   'config.protocolSelect',
@@ -86,6 +90,10 @@ export type SheetPanelPropsMap = {
   'entity.filters': {
     /** Entity name — FiltersPanel resolves audit-actor options for audited columns. */
     entity?: string;
+    /** Owning service — required for builtin entities (census map is
+     *  last-wins ambiguous; without it audit-actor reads throw by
+     *  construction rather than hitting the wrong schema). */
+    service?: string;
     filterableColumns?: import('$lib/entity-list/types').MetaColumn[];
     filterValues?: Record<string, unknown>;
     onFilterValuesChange?: (values: Record<string, unknown>) => void;
@@ -103,6 +111,10 @@ export type SheetPanelPropsMap = {
     entities_ns?: string;
     rowUuid: string;
     columns?: MetaColumn[];
+    /** Owning service — required for builtin entities (census map is
+     *  last-wins ambiguous; route context threads through or audit
+     *  reads the wrong schema). */
+    service?: string;
   };
   'entity.jsonViewer': {
     /** The cell's parsed JSON value (null-prototype safe — read-only). */
@@ -119,10 +131,71 @@ export type SheetPanelPropsMap = {
   'entity.record': {
     /** Target entity API name (from `column.ref.entity`). */
     entity: string;
-    /** The cell's raw value — the target uid for uuid refs. */
-    value: unknown;
+    /** The cell's raw value — the target uid for uuid refs. Absent in
+     *  `mode:"create"`. */
+    value?: unknown;
     /** The column's ref contract — drives business-key resolution. */
     ref?: import('$lib/entity-list/types').MetaColumn['ref'];
+    /** Owning service — required for builtin entities (census map is
+     *  last-wins ambiguous; route context threads through or the sheet
+     *  fetches the wrong schema). */
+    service?: string;
+    /** Open straight into edit mode (skips the view→pencil step) — the
+     *  ELT Modifica fallback for entities without a `kind:"detail"`
+     *  route. Gated on `update.single` by the sheet itself. */
+    edit?: boolean;
+    /** `create` → the meta-driven sheet surface (`meta.create.surface ===
+     *  "sheet"`): no record fetch, empty draft, POST commit, then morphs
+     *  into update. Default `update`. */
+    mode?: 'create' | 'update';
+  };
+  /**
+   * Dict-row extras — the update-editable columns beyond the inline
+   * code+label anatomy, edited in the sheet on saved and pending rows.
+   * Values/errors arrive as LIVE getters (the page replaces the row map
+   * on every commit — a snapshot goes stale while the sheet is open).
+   */
+  'entity.dictExtras': {
+    values: () => Record<string, unknown>;
+    errors: () => Record<string, string[]>;
+    onchange: (key: string, value: unknown) => void;
+    columns: MetaColumn[];
+    columns_map: ReadonlyMap<string, MetaColumn>;
+    translation_key: string;
+    pending_owner: string;
+    title?: string;
+    readonly?: boolean;
+  };
+  /**
+   * Bulk editor — the apply-to-all patch sheet for `update.bulk`.
+   * `rows` is a frozen SNAPSHOT taken at open time (the "source of
+   * truth" the distribution forecast reads — intentionally NOT synced:
+   * the editor shows what you selected, refresh lands via onApplied).
+   */
+  'entity.bulkEditor': {
+    entity: string;
+    /** Owning service — required for builtin entities (census map is
+     *  last-wins ambiguous; route context threads through or the patch
+     *  lands on the wrong schema). */
+    service?: string;
+    /** Served meta — actions gate the submit, columns derive the
+     *  editable/immutable/audited partition. */
+    meta: import('$lib/entity-list/types').EntityMeta;
+    /** The selected rows with their full column projection + `version`. */
+    rows: Record<string, unknown>[];
+    onApplied?: () => void;
+  };
+  /**
+   * Bulk-editor drill-down — the stacked second pane listing the rows
+   * that share one field value (or the immutable/mixed field's rows).
+   */
+  'entity.bulkEditRows': {
+    entity: string;
+    uid?: string;
+    title: string;
+    rows: Record<string, unknown>[];
+    /** Display columns for the row summary line (a few, not all). */
+    columns: import('$lib/entity-list/types').MetaColumn[];
   };
   'service.record': {
     /** `service_registry` business key — the service code. */
@@ -133,6 +206,22 @@ export type SheetPanelPropsMap = {
      * `schedule_spec`, `run_as`) when present.
      */
     context_row?: Record<string, unknown>;
+  };
+  'entity.sequencePattern': {
+    /** Pattern snapshot — the panel's initial mirror value. */
+    get_value: () => string;
+    /**
+     * Live value feed — subscribes a callback to the input's real `input`
+     * events (survives sheet-stack remounts). Returns the unsubscribe.
+     */
+    on_change?: (cb: (value: string) => void) => () => void;
+    /** Splice `insert` at the input's saved caret/selection. */
+    insert: (token: string) => void;
+    /** Replace the WHOLE pattern — the used-token `-` CTA writes the
+     *  token-stripped source through the same live channel. */
+    on_write?: (next: string) => void;
+    /** Form record — `step`/`start`/`tz` example context when carried. */
+    context?: Record<string, unknown>;
   };
   'config.currencySelect': {
     currentCurrency: string;
@@ -241,6 +330,12 @@ type SheetState = {
   keepMountedState: boolean;
   modal: boolean;
   expanded: boolean;
+  /** Remount nonce — bumped on EVERY `openSheet`/`replaceSheet` call so
+   *  `SheetHost`'s `{#key}` remounts the panel even when a second open
+   *  targets the SAME panelId (props swap on the live component would
+   *  otherwise leave mount-captured state — record, editing, heroes —
+   *  stale: the panel's "remount per open" invariant). */
+  mountNonce: number;
 };
 
 export const sheetState = $state<SheetState>({
@@ -252,7 +347,8 @@ export const sheetState = $state<SheetState>({
   contentClass: 'p-0',
   keepMountedState: false,
   modal: true,
-  expanded: false
+  expanded: false,
+  mountNonce: 0
 });
 
 /**
@@ -320,6 +416,7 @@ export function openSheet(
   sheetState.keepMountedState = Boolean(options?.keepMountedState);
   sheetState.modal = options?.modal ?? defaults?.modal ?? true;
   sheetState.expanded = false;
+  sheetState.mountNonce++;
   suppressDialogCloseFromHost = true;
   sheetState.open = true;
   requestAnimationFrame(() => {
@@ -346,6 +443,22 @@ export function replaceSheet(
 ) {
   // For now `replace` is identical to `open` (keeps sheet open while switching content).
   openSheet(panelId as SheetPanelId, props as AnyPanelProps, options);
+}
+
+/**
+ * Dirty-close guard — ONE active registration: the panel hosting a form
+ * surface (entity.record in edit mode) sets it on mount and clears it on
+ * destroy. `SheetHost`'s close funnel consults it before `closeSheet`:
+ * returns `false` → the close vetoes (the surface's confirm dialog is
+ * already open). Programmatic `closeSheet()` calls bypass it — a code
+ * path reaching it has already settled the discard decision.
+ */
+let sheetCloseGuard: (() => boolean | Promise<boolean>) | null = null;
+export function setSheetCloseGuard(fn: (() => boolean | Promise<boolean>) | null): void {
+  sheetCloseGuard = fn;
+}
+export function getSheetCloseGuard(): (() => boolean | Promise<boolean>) | null {
+  return sheetCloseGuard;
 }
 
 export function closeSheet() {

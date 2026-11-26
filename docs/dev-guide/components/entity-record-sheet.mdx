@@ -60,7 +60,10 @@ openSheet('entity.record', {
 
 ## Surface anatomy
 
-Top to bottom, `EntityRecordSheetBody` renders:
+Top to bottom, the panel mounts `EntityFormSurface` — the same engine
+`EntityFormPage` runs (ONE `page_props.form` declaration drives both):
+zod schema + superform + per-field errors + Reset eraser + draft +
+collaboration. It renders:
 
 1. **uid badge** — `meta.uid` value as a `secondary` pill: `file-key`
    icon (amber-500), mono value, inner copy CTA (transient check swap,
@@ -79,7 +82,10 @@ Top to bottom, `EntityRecordSheetBody` renders:
    canonical audit formatter (`useAuditBox.formatValue` — datetime
    localized, ref actors resolved to display names, `-` for nulls),
    `label: value` definition-list rows. Audit facts can never reach a
-   widget — `EntityFormField` rejects `audited` columns by construction.
+   widget — the surface's schema/placement layer drops `audited`
+   columns, and SDK `validateFormPage` rejects `audited` (plus
+   `kind`/`managed`/`uid`/`hidden`) as an authored placement key at
+   declaration time.
 5. **Version badge** (footer, left) — `v{version}` outline badge; click
    opens the `entity.versionHistory` sheet stacked on top. Excluded
    from both form and audit surfaces.
@@ -87,12 +93,50 @@ Top to bottom, `EntityRecordSheetBody` renders:
 ## Edit flow
 
 The pencil toggle (header CTA, gated on `meta.actions` update
-permission) flips `editing` — the same widgets re-render editable.
+permission) flips `editing` — the same widgets re-render editable. The
+toggle icon is `Pencil` while readonly and **`PencilOff`** while editing
+(never a bare `X` — that glyph is reserved for the sheet close, which
+carries the dirty guard instead). Pencil-off is the silent-discard path
+by contract: pending edits drop without a confirm.
+
 Save dispatches `PUT /entities/{entity}/{uuid}` with the canonical
-`{ entity: {...}, version }` envelope; the record then refetches and
-widgets return to readonly. `immutable` columns stay disabled even in
-edit mode; `avatar` columns with `avatar.initials_field` derive their
-draft from the sibling field live while editing.
+`{ entity: {...}, version }` envelope; the surface rebaselines and
+widgets return to readonly. Submit is gated by the zod schema —
+required fields left empty block the request and surface per-field
+errors (no POST leaves the page). `immutable` columns stay disabled
+even in edit mode; `avatar` columns with `avatar.initials_field` derive
+their draft from the sibling field live while editing.
+
+Footer CTAs: **Reset** (eraser — `disabled` while pristine) and
+**Save**/Create (mode-driven label, plain text — no leading icon).
+There is no Cancel button: pencil-off already is the exit path on
+update, and the sheet's own ✕ is the abort on create.
+
+Dirty-close guard: while `editing && hasChanges`, ✕ / Escape /
+outside-click consult `window.confirm` — native, synchronous, locks
+the browser until answered (a soft in-app dialog left a race window
+between the HTTP resolution and the surface continuation). Confirmed
+discard clears the draft and resets before closing.
+
+## Create mode — `mode:"create"`
+
+The SAME panel is the meta-driven create surface: an entity declaring
+`meta.create.surface === "sheet"` wires the list create CTA to
+`openSheet('entity.record', { entity, service, mode: 'create' })` — no
+census `kind:"create"` route is required (a sheet is never a nav leaf).
+
+Create anatomy differs by construction, not by branches:
+
+- no record fetch — only `/meta` loads; the draft is empty (no `value`)
+- no pencil toggle (born editable), no uid/version badges, no lifecycle
+  chip, no audit accordion — record-only sections are absent
+- `immutable` columns ARE editable (set-once semantics live on create)
+- commit POSTs `create.single` (no `version`), then the panel morphs
+  into update mode on the created row — canonical re-GET, pencil +
+  version badge + audit return
+- footer = Reset + **Create** (same surface CTAs as update, mode-driven
+  label); the sheet's own ✕ is the abort — dirty fields trip the same
+  native dirty-close confirm as update mode
 
 ## Meta-driven behavior
 
@@ -101,9 +145,9 @@ Every section is vocabulary-driven — no sheet-specific branching:
 | Column flag | Effect on the sheet |
 |-------------|---------------------|
 | `hidden:true` | Dropped from served meta — never rendered (e.g. `auth_method_enforcer_dismissed`) |
-| `immutable:true` | Disabled in edit mode, excluded from PUT payload |
-| `audited:true` | Audit accordion only — never a widget |
-| `kind:"calculated"` | Readonly always (e.g. `suspended`) |
+| `immutable:true` | Disabled in edit mode, excluded from PUT payload (editable in create) |
+| `audited:true` | Audit accordion only — never a widget (accordion absent in create) |
+| `kind:"calculated"`/`kind:"virtual"` | NEVER a form widget on any surface — read-only projections (core contract: "never belongs in `page_props.form`"); excluded from the field grid and from PUT/POST payloads |
 | `type:"avatar"` + `avatar.color_field` | MetaAvatar hex, initials derived live in edit |
 | `options_source:"system.roles"` | Role badges; in list cells each badge drills into `entity.record` for `role_mapping` |
 

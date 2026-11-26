@@ -30,8 +30,7 @@
     DynamicIcon,
     formatListCellValue,
     getResolvedIanaTimeZone,
-    numericKindOf,
-  } from '@primebrick/ui';
+    numericKindOf, toDisplayString } from '@primebrick/ui';
   import SheetHeaderAction from '$lib/shell/sheets/SheetHeaderAction.svelte';
   import FormFieldDispatcher from '$lib/entity-form/FormFieldDispatcher.svelte';
   import { useCensusSubjectOptions } from '$lib/entity-form/use-census-subject-options.svelte';
@@ -62,6 +61,9 @@
     /** Entity being filtered — feeds `options_source:"audit.actors"`
      *  columns through `{entity}/audit-actors`. */
     entity?: string;
+    /** Owning service — threaded into audit-actor resolution; required
+     *  for builtin entities (the census map is last-wins ambiguous). */
+    service?: string;
     filterableColumns?: MetaColumn[];
     filterValues?: Record<string, unknown>;
     onFilterValuesChange?: (values: Record<string, unknown>) => void;
@@ -72,6 +74,7 @@
 
   let {
     entity,
+    service,
     filterableColumns = [],
     filterValues = {},
     onFilterValuesChange,
@@ -334,7 +337,7 @@
     ) {
       return col
         ? `${formatListCellValue(col, v.start, $uiLang)} – ${formatListCellValue(col, v.end, $uiLang)}`
-        : `${String(v.start)} – ${String(v.end)}`;
+        : `${toDisplayString(v.start)} – ${toDisplayString(v.end)}`;
     }
     return col ? formatListCellValue(col, v, $uiLang) : String(v);
   }
@@ -424,6 +427,7 @@
             surface="filter"
             column={col}
             filterEntity={entity}
+            {service}
             bind:value={tempFilterValues[col.key]}
             bind:timezone={timezoneValues[col.key]}
             emitsOptions={census.emitsOptions}
@@ -520,6 +524,7 @@
                     surface="filter"
                     column={selectedColumn}
                     filterEntity={entity}
+            {service}
                     bind:value={newFilterStart}
                     bind:timezone={advancedTimezone}
                     controlProps={{ id }}
@@ -528,6 +533,7 @@
                     surface="filter"
                     column={selectedColumn}
                     filterEntity={entity}
+            {service}
                     bind:value={newFilterEnd}
                     bind:timezone={advancedTimezone}
                   />
@@ -537,6 +543,7 @@
                   surface="filter"
                   column={selectedColumn}
                   filterEntity={entity}
+            {service}
                   bind:value={newFilterValue}
                   bind:timezone={advancedTimezone}
                   emitsOptions={census.emitsOptions}

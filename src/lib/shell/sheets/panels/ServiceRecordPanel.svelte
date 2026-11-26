@@ -75,8 +75,6 @@
     return { trigger, schedule_spec, run_as };
   });
 
-  const moduleHref = $derived(resolve('/(app)/system/settings/modules/[code]', { code }));
-
   /** Badge `class=` is layout-only by contract — authored colors ride
    *  `style` through the token resolver (same contract as table cells). */
   function badgeStyle(token: string | null): string {
@@ -130,7 +128,7 @@
   {/snippet}
   {#snippet actions()}
     <a
-      href={moduleHref}
+      href={resolve('/(app)/system/settings/modules/[code]', { code })}
       target="_blank"
       rel="noopener noreferrer"
       class="inline-flex items-center gap-1 text-muted-foreground transition-colors hover:text-foreground"

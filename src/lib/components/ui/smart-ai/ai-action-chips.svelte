@@ -21,6 +21,7 @@
   import { Button } from '@primebrick/ui';
   import type { AiAction } from './ai-assistant.types';
 
+import { extJsonStringify } from '$lib/api-ext';
   const NS = 'app.smart.guide.ai.action';
   const READ_TOOLS = new Set(['list_entities', 'get_entity', 'get_entity_meta', 'get_entity_audit', 'list_available_entities']);
 
@@ -56,7 +57,7 @@
         doneStates = { ...doneStates, [idx]: res.ok ? 'ok' : 'error' };
         onResult?.(
           res.ok
-            ? `${action.label}: ${JSON.stringify(res.result).slice(0, 800)}`
+            ? `${action.label}: ${extJsonStringify(res.result).slice(0, 800)}`
             : $t(`${NS}.result_error`, { label: action.label, error: res.error ?? 'unknown' }),
         );
         return;

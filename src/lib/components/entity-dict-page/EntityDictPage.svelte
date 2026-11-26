@@ -29,29 +29,44 @@
    *     to the standard translation gateway route.
    *   - reorder: chevrons mutate the order_field, mark rows tainted, and
    *     persist in the SAME bulk save (no dedicated endpoint).
+   *   - validation: ONE shared predicate — per-column `fieldSpecToZod`
+   *     delegates every rule to core `checkFieldValue` (the
+   *     `entityFieldValidator` predicate). The page owns only the
+   *     required decision (`nullable===false`, minus suggestion-eligible
+   *     label_key/display_field on create) and the dict `code` charset
+   *     (`isSnakeKey`); errors render as display text via
+   *     `translateFieldError` (`key|jsonParams` wire vocabulary).
    */
   import { onMount, untrack } from 'svelte';
-  import { SvelteMap, SvelteSet } from 'svelte/reactivity';
+  import { SvelteMap, SvelteSet, SvelteURLSearchParams } from 'svelte/reactivity';
   import { t } from '$lib/i18n';
   import { apiFetch, entityApiBase } from '$lib/api';
+  import { useSyncChannel } from '$lib/composables/useSyncChannel.svelte';
   import { useEntityList } from '$lib/composables/useEntityList.svelte';
-  import { useSelection, Button, Badge, Toolbar, RefreshButton } from '@primebrick/ui';
+  import { useSelection, Button, Badge, Toolbar, RefreshButton, DynamicIcon, toDisplayString } from '@primebrick/ui';
   import { SelectableFieldset, DeletionFilterToggle } from '@primebrick/ui';
   import { LoadingBar } from '$lib/components/ui/loading-bar';
-  import { SearchBar, BulkActionsToolbar, PaginationControls, RangeLabel, useToolbarMode } from '$lib/components/entity-list-table';
+  import * as Sortable from '$lib/components/ui/sortable';
+  import { SearchBar, BulkActionsToolbar, PaginationControls, RangeLabel, SelectionCounter, useToolbarMode, useClientSelection } from '$lib/components/entity-list-table';
   import { isColumnFilterable, searchableTextColumns, useEntitySheetSync } from '$lib/entity-list';
   import { Plus, Undo2, LoaderCircle, Funnel } from '@primebrick/ui/vendor/lucide';
   import { type MetaColumn, type EntityMeta } from '$lib/entity-list/types';
   import { entitiesNs } from '$lib/utils/entity-meta';
   import { isEntityOpAllowed } from '$lib/permissions.svelte';
-  import { extJsonStringify } from '$lib/api-ext';
-  import FormFieldDispatcher from '$lib/entity-form/FormFieldDispatcher.svelte';
+  import { extJsonParse, extJsonStringify } from '$lib/api-ext';
+
+  import { fieldSpecToZod, translateFieldError } from '@primebrick/ui';
+  import { z } from 'zod';
   import DictDraftRow from './DictDraftRow.svelte';
   import { pushNotification } from '$lib/errors/app-errors';
-  import { clearPendingTranslations } from '$lib/i18n/pending-translations.svelte';
+  import { clearPendingTranslations, dropPendingTranslation, getPendingTranslations, addPendingTranslation } from '$lib/i18n/pending-translations.svelte';
   import { flushPendingTranslations } from '$lib/i18n/flush-pending-translations';
+  import { useDictDraft } from './use-dict-draft.svelte';
+  import { userProfileState } from '$lib/user-profile-store.svelte';
   import { runEntityOp } from '$lib/entity-list/use-entity-op.svelte';
   import DictRow from './DictRow.svelte';
+  import { isSnakeKey } from '@primebrick/ui';
+  import { suggestedKeyFor } from '$lib/i18n/dict-suggestion';
   import type { CensusRoute } from '$lib/api';
 
   let { decl }: { decl: CensusRoute } = $props();
@@ -59,7 +74,11 @@
   // decl is stable within a mount — the caller {#key pathname} remounts
   // the page per route change; untrack marks the intentional one-time read.
   const entity = untrack(() => decl.entity ?? '');
-  const basePath = entityApiBase(entity);
+  // Route context disambiguates multi-service entities (builtins mount on
+  // every service): decl.module is the owning module id — sibling ids
+  // strip to the parent service (`crm-settings` → `crm`).
+  const moduleCode = untrack(() => decl.module)?.split('-')[0];
+  const basePath = entityApiBase(entity, moduleCode);
   /** Translation writes resolve their module PER KEY (prefix == module
    *  code) — `custom.*` keys land in custom.translations. */
 
@@ -70,11 +89,17 @@
     t: (k, p) => $t(k, p),
   });
 
+  // Sender channel — the dict page IS the writer surface for registry
+  // entities (sequences); sibling consumers refresh on 'refresh'.
+  const { notifyParentRefresh } = useSyncChannel(`primebrick_${entity}_sync`, {
+    mode: 'sender',
+  });
+
   const skSelectedKeys = `pb:dict:${entity}:selectedKeys`;
   onMount(() => {
     try {
       const raw = sessionStorage.getItem(skSelectedKeys);
-      const parsed = raw ? (JSON.parse(raw) as unknown) : null;
+      const parsed = raw ? (extJsonParse(raw) as unknown) : null;
       if (Array.isArray(parsed)) {
         const ids = parsed.filter((k): k is string => typeof k === 'string');
         if (ids.length) selection.toggleSelectAll(ids, true);
@@ -91,7 +116,7 @@
 
   $effect(() => {
     try {
-      sessionStorage.setItem(skSelectedKeys, JSON.stringify([...selection.state.selected_ids]));
+      sessionStorage.setItem(skSelectedKeys, extJsonStringify([...selection.state.selected_ids]));
     } catch {
       // ignore quota / blocked storage
     }
@@ -138,6 +163,15 @@
   );
   const groupField = $derived(dictFacet?.group_field);
 
+  /** Extras — update-editable columns outside the inline anatomy: the
+   *  `entity.dictExtras` sheet's field set (value column stays inline;
+   *  `order_field` is seeded + reorder-managed, never hand-edited). */
+  const extrasColumns = $derived(
+    updateEditableColumns.filter(
+      (c) => c.key !== displayField && c.key !== 'label_key' && c.key !== orderField,
+    ),
+  );
+
   /**
    * The dict label convention — `label_key` is rendered by the dedicated
    * TranslationKeyCell (key pick/create over `*.entities.<tk>.rows.*`,
@@ -172,29 +206,191 @@
   const canRestore = $derived(isEntityOpAllowed(meta?.actions, 'restore.single'));
   const canBulkDelete = $derived(isEntityOpAllowed(meta?.actions, 'delete.bulk'));
 
-  // ─── Drafts (add-row) — local rows not yet persisted ──────────────────
+  // ─── Drafts (composer) + pendings — the create-flow state machine ────
+  // NEW → ONE composer (`drafts`, ≤1 — single-composer gate) → ✓ confirm
+  // pushes a `pending[]` row (client-only, renders as a DictRow appended
+  // after the saved stream) → bulk save POSTs every pending → real rows.
   type Draft = { __draft: string; values: Record<string, unknown> };
   let drafts = $state<Draft[]>([]);
+  let pendings = $state<Draft[]>([]);
   let draftSeq = 0;
 
-  function requiredColumns(): MetaColumn[] {
-    return editableColumns.filter((c) => c.nullable === false);
+  /** Composer-rendered fields — `code` + the value column (display_field
+   *  or label_key). The ✓ gate is scoped to THESE fields only (D1):
+   *  extras the composer cannot render gate the SAVE, not confirm. */
+  const composerKeys = $derived(
+    new SvelteSet(
+      [displayField, 'code', 'label_key'].filter((k): k is string => typeof k === 'string'),
+    ),
+  );
+
+  /** Per-column zod schemas — `fieldSpecToZod` delegates every rule to
+   *  core `checkFieldValue`, the SAME predicate `entityFieldValidator`
+   *  runs server-side: bounds, patterns, formats, types. The dict owns
+   *  only the required decision (`nullable===false`, minus
+   *  suggestion-eligible columns) — identical to the form's
+   *  `placement.required ?? nullable===false`. Schemas are immutable per
+   *  column — cache by key+required. Plain Map: a memo of immutable
+   *  schemas is not UI state — a reactive map would make every
+   *  lazily-missed lookup a state mutation inside derivations. */
+  // eslint-disable-next-line svelte/prefer-svelte-reactivity -- memo of immutable schemas, not UI state (see comment above)
+  const dictFieldSchemas = new Map<string, z.ZodTypeAny>();
+  function dictFieldSchema(col: MetaColumn, required: boolean): z.ZodTypeAny {
+    const k = `${col.key}:${required ? 1 : 0}`;
+    let s = dictFieldSchemas.get(k);
+    if (!s) {
+      const inner = fieldSpecToZod(col, { required });
+      // Optional controls bind ''/null — normalize to `undefined` so the
+      // inner chain only sees real values (the form's own preprocess).
+      s = required
+        ? inner
+        : z.preprocess((v) => (v === '' || v === null ? undefined : v), inner.optional());
+      dictFieldSchemas.set(k, s);
+    }
+    return s;
+  }
+
+  /** Meta-derived cell validation — `checkFieldValue` per column plus
+   *  the dict `code` charset (`isSnakeKey` — the seeded vocabulary is
+   *  lowercase snake; the column carries no format/pattern covering it).
+   *  `suggestion_eligible` names the columns whose empty value commits a
+   *  convention suggestion at write — `label_key`/display_field on
+   *  create; never on update (saved rows keep the hard-required gate).
+   *  Errors are translated at produce-time so every consumer (cells,
+   *  gates, extras sheet) receives display text. */
+  function columnErrors(
+    v: Record<string, unknown>,
+    cols: MetaColumn[],
+    suggestion_eligible?: ReadonlySet<string>,
+  ): Record<string, string[]> {
+    const errs: Record<string, string[]> = {};
+    for (const c of cols) {
+      const required = c.nullable === false && !suggestion_eligible?.has(c.key);
+      const r = dictFieldSchema(c, required).safeParse(v[c.key]);
+      if (!r.success) errs[c.key] = r.error.issues.map((i) => translateFieldError(i.message, $t));
+      const raw = v[c.key];
+      if (c.key === 'code' && typeof raw === 'string' && raw.trim() && !isSnakeKey(raw.trim())) {
+        (errs[c.key] ??= []).push($t('app.common.validation.snake_key'));
+      }
+    }
+    return errs;
+  }
+
+  /** Composer errors — scoped to the fields the composer actually renders
+   *  (D1); `label_key` is suggestion-eligible (empty → convention commit
+   *  at save), `code` additionally carries the debounced unique probe. */
+  function composerErrors(d: Draft): Record<string, string[]> {
+    const errs = columnErrors(
+      d.values,
+      editableColumns.filter((c) => composerKeys.has(c.key)),
+      new SvelteSet([displayField ?? 'label_key']),
+    );
+    if (codeProbe.exists) (errs['code'] ??= []).push($t('system.entities.dict.code_exists'));
+    return errs;
+  }
+
+  function composerValid(d: Draft): boolean {
+    return Object.keys(composerErrors(d)).length === 0 && !codeProbe.checking;
+  }
+
+  /** Code uniqueness probe (task 6) — debounced `/list` equality filter
+   *  on the composer code; `exists` feeds the inline error, `checking`
+   *  gates confirm (config-create `handleKeyInput` precedent, filters
+   *  bracket-notation on the canonical wire format). */
+  let codeProbe = $state({ checking: false, exists: false });
+  let codeProbeTimer: ReturnType<typeof setTimeout> | null = null;
+  const composerCode = $derived(toDisplayString(drafts[0]?.values['code'] ?? '').trim());
+  $effect(() => {
+    const code = composerCode;
+    if (codeProbeTimer) clearTimeout(codeProbeTimer);
+    codeProbe.checking = false;
+    codeProbe.exists = false;
+    if (!code || !isSnakeKey(code)) return;
+    codeProbe.checking = true;
+    codeProbeTimer = setTimeout(() => {
+      void (async () => {
+        try {
+          const qs = new SvelteURLSearchParams();
+          qs.set('filters[0][field]', 'code');
+          qs.set('filters[0][op]', '=');
+          qs.set('filters[0][value]', code);
+          qs.set('page_size', '1');
+          const res = await apiFetch(`${basePath}/list?${qs}`);
+          if (res.ok) {
+            const data = (await res.text().then((t) => extJsonParse(t))) as { rows?: unknown[] };
+            // Still the live composer value — a stale probe never sticks.
+            if (toDisplayString(drafts[0]?.values['code'] ?? '').trim() === code) {
+              codeProbe.exists = (data.rows?.length ?? 0) > 0;
+            }
+          }
+        } catch {
+          // probe failure never blocks — the server unique constraint
+          // still catches a duplicate at save (409 surfaces as error).
+        } finally {
+          codeProbe.checking = false;
+        }
+      })();
+    }, 500);
+  });
+
+  /** Translations queued for a dying row's `*_key` values must die with
+   *  it — otherwise they flush at the next save onto orphan keys (G3). */
+  function dropQueuedTranslations(v: Record<string, unknown>) {
+    for (const [k, val] of Object.entries(v)) {
+      if (k.endsWith('_key') && typeof val === 'string' && val) {
+        dropPendingTranslation(basePath, val);
+      }
+    }
   }
 
   function handleAddRow() {
+    if (drafts.length > 0) return; // single-composer gate — one at a time
     const values: Record<string, unknown> = {};
-    for (const c of editableColumns) values[c.key] = c.nullable === true ? null : '';
+    // seq-bound draft slots start '' (directive slot, never null — a
+    // null literal would cross the POST as a rejected non-directive).
+    // `col.default` (meta-authored or defaultSql-derived) wins when
+    // present — the create-prefill contract of the form surfaces.
+    for (const c of editableColumns)
+      values[c.key] =
+        c.default !== undefined
+          ? c.default
+          : c.format === 'sequence'
+            ? ''
+            : c.nullable === true
+              ? null
+              : '';
     if (orderField) {
       const maxSort = Math.max(
         0,
         ...list.rows.map((r) => Number(r[orderField] ?? 0)),
-        ...drafts.map((d) => Number(d.values[orderField] ?? 0)),
+        ...pendings.map((d) => Number(d.values[orderField] ?? 0)),
       );
       // Seed convention is a ×10 step (10/20/30…) so later reorders have
-      // integer room between neighbours — drafts continue the convention.
+      // integer room between neighbours — pendings continue the convention.
       values[orderField] = maxSort + 10;
     }
     drafts = [...drafts, { __draft: `d${++draftSeq}`, values }];
+  }
+
+  /** ✓ confirm — composer → pending[] (client move, zero server). */
+  function handleConfirmDraft(d: Draft) {
+    if (!composerValid(d)) return;
+    pendings = [...pendings, d];
+    drafts = drafts.filter((x) => x !== d);
+  }
+
+  /** ✕ discard — the composer dies; its queued translations die with it. */
+  function handleDiscardDraft(d: Draft) {
+    dropQueuedTranslations(d.values);
+    drafts = drafts.filter((x) => x !== d);
+  }
+
+  /** Pending drop — "morte definitiva" (never persisted, zero server):
+   *  drop the row, its selection entry and queued translations. */
+  function handleDropPending(d: Draft) {
+    dropQueuedTranslations(d.values);
+    pendings = pendings.filter((x) => x !== d);
+    if (selection.isSelected(d.__draft)) selection.toggleSelect(d.__draft, false);
   }
 
   // ─── Taint tracking — per-row value maps over the served rows ─────────
@@ -208,24 +404,29 @@
       const next: Record<string, Record<string, unknown>> = {};
       for (const r of list.rows) {
         const v: Record<string, unknown> = {};
-        for (const c of editableColumns) v[c.key] = r[c.key];
-        next[String(r[uid])] = v;
+        for (const c of editableColumns) {
+          // seq-bound columns hold the DIRECTIVE slot — '' seeds untouched
+          // (the widget displays the served literal via `existing`).
+          v[c.key] = c.format === 'sequence' ? '' : r[c.key];
+        }
+        next[toDisplayString(r[uid])] = v;
       }
       values = next;
       originals = $state.snapshot(next);
       lastRowsKey = key;
+      baselined = true;
     }
   });
 
   const taintedUids = $derived.by<ReadonlySet<string>>(() => {
     const tainted = new SvelteSet<string>();
     for (const r of list.rows) {
-      const id = String(r[uid]);
+      const id = toDisplayString(r[uid]);
       const curr = values[id];
       const orig = originals[id];
       if (!curr || !orig) continue;
-      for (const c of editableColumns) {
-        if (String(curr[c.key] ?? '') !== String(orig[c.key] ?? '')) {
+      for (const c of updateEditableColumns) {
+        if (toDisplayString(curr[c.key] ?? '') !== toDisplayString(orig[c.key] ?? '')) {
           tainted.add(id);
           break;
         }
@@ -234,38 +435,38 @@
     return tainted;
   });
 
-  const hasChanges = $derived(taintedUids.size > 0 || drafts.length > 0);
+  const hasChanges = $derived(taintedUids.size > 0 || pendings.length > 0);
   let saving = $state(false);
 
   /** Required-empty errors for one values map — same shape as the row
    *  `errors` prop so the failing cell carries the reason inline, never
    *  a silent save gate. */
-  function missingRequired(v: Record<string, unknown>): Record<string, string[]> {
-    const errs: Record<string, string[]> = {};
-    for (const c of requiredColumns()) {
-      const val = v[c.key];
-      if (val === null || val === undefined || String(val).trim() === '') {
-        errs[c.key] = [$t('app.common.errors.required')];
-      }
-    }
-    return errs;
+  /** Pending save-gate — full meta validation over the create-editable
+   *  set; `label_key` stays suggestion-eligible (empty commits the
+   *  convention suggestion in `saveAll`, same promise the cell makes). */
+  function pendingValid(d: Draft): boolean {
+    return (
+      Object.keys(
+        columnErrors(d.values, editableColumns, new SvelteSet([displayField ?? 'label_key'])),
+      ).length === 0
+    );
   }
 
-  function draftValid(d: Draft): boolean {
-    return Object.keys(missingRequired(d.values)).length === 0;
-  }
-
-  /** Tainted rows whose required columns went empty — same gate as drafts. */
+  /** Tainted rows whose required columns went empty or invalid — updates
+   *  carry NO suggestion eligibility: empty label_key on a saved row is
+   *  a real error. */
   const invalidRowUids = $derived.by<ReadonlySet<string>>(() => {
     const invalid = new SvelteSet<string>();
     for (const id of taintedUids) {
-      if (Object.keys(missingRequired(values[id] ?? {})).length > 0) invalid.add(id);
+      if (Object.keys(columnErrors(values[id] ?? {}, updateEditableColumns)).length > 0) {
+        invalid.add(id);
+      }
     }
     return invalid;
   });
 
   const canSave = $derived(
-    hasChanges && !saving && drafts.every(draftValid) && invalidRowUids.size === 0,
+    hasChanges && !saving && pendings.every(pendingValid) && invalidRowUids.size === 0,
   );
 
   function cellChange(id: string, key: string, value: unknown) {
@@ -288,43 +489,349 @@
     }
   }
 
-  // ─── Reorder — swap order_field values on adjacent rows, mark tainted ──
-  const displayRows = $derived(
-    orderField
-      ? [...list.rows].sort(
-          (a, b) => Number(a[orderField] ?? 0) - Number(b[orderField] ?? 0),
-        )
-      : list.rows,
+  // ─── Draft persistence — refresh-surviving working state. Same
+  //     useFormDraft contract (scoped key, debounced write, self-delete
+  //     on pristine, replay tainted-keys-only) on the dict's three legs:
+  //     taints + pendings + open composer. The translation queue rides
+  //     along so restored label_keys never flush orphan keys. ──────────
+  let baselined = $state(false);
+  let draftRestored = $state(false);
+
+  const taintMap = $derived.by<Record<string, Record<string, unknown>>>(() => {
+    const m: Record<string, Record<string, unknown>> = {};
+    for (const id of taintedUids) {
+      const curr = values[id];
+      const orig = originals[id];
+      if (!curr || !orig) continue;
+      const d: Record<string, unknown> = {};
+      for (const c of updateEditableColumns) {
+        if (toDisplayString(curr[c.key] ?? '') !== toDisplayString(orig[c.key] ?? '')) d[c.key] = curr[c.key];
+      }
+      if (Object.keys(d).length > 0) m[id] = d;
+    }
+    return m;
+  });
+
+  /** Composer worth persisting — any authored value (the seeded skeleton
+   *  of nulls/empties is not work). */
+  const composerHasContent = $derived(
+    drafts.some((d) => Object.values(d.values).some((v) => v !== null && String(v ?? '') !== '')),
   );
+
+  const dictDraft = useDictDraft({
+    storageKey: () => {
+      const org = userProfileState.current?.organization ?? userProfileState.current?.idp_org;
+      const actor = userProfileState.current?.uuid;
+      if (!actor || !entity) return null;
+      return `pb:dict-draft:${org ?? 'local'}:${actor}:${entity}`;
+    },
+    // Writes gate until restore has RUN — a mount-time pristine read
+    // must never delete the slot before it is read.
+    ready: () => baselined && draftRestored,
+    taints: () => taintMap,
+    rowVersions: () => {
+      const m: Record<string, number> = {};
+      for (const id of Object.keys(taintMap)) {
+        const r = list.rows.find((row) => toDisplayString(row[uid]) === id);
+        if (r) m[id] = Number(r['version'] ?? 0);
+      }
+      return m;
+    },
+    pendings: () => pendings.map((p) => ({ id: p.__draft, values: $state.snapshot(p.values) })),
+    composer: () => {
+      const d = drafts[0];
+      return d && composerHasContent ? { values: $state.snapshot(d.values) } : null;
+    },
+    draftSeq: () => draftSeq,
+    translations: () => {
+      const m = getPendingTranslations(basePath);
+      return m ? $state.snapshot(m) : undefined;
+    },
+    dirty: () => taintedUids.size > 0 || pendings.length > 0 || composerHasContent,
+    restoreTaints: (tainted, _versions) => {
+      const next = { ...values };
+      let applied = 0;
+      for (const [id, fields] of Object.entries(tainted)) {
+        const curr = next[id];
+        if (!curr || !originals[id]) continue; // row gone — anti-stale drop
+        next[id] = { ...curr, ...fields };
+        applied += Object.keys(fields).length;
+      }
+      values = next;
+      return applied;
+    },
+    restorePendings: (rows, seq) => {
+      draftSeq = Math.max(draftSeq, seq);
+      pendings = [...pendings, ...rows.map((r) => ({ __draft: r.id, values: r.values }))];
+    },
+    restoreComposer: (c) => {
+      if (drafts.length > 0) return; // single-composer gate
+      drafts = [{ __draft: `d${++draftSeq}`, values: c.values }];
+    },
+    restoreTranslation: (key, langs) => addPendingTranslation(basePath, key, langs),
+  });
+
+  /** One-shot replay — after the rows baseline exists AND the actor has
+   *  resolved (the storage key needs it); the composable's `restored`
+   *  flag keeps it single-fire. */
+  $effect(() => {
+    if (!baselined || draftRestored || !userProfileState.current?.uuid) return;
+    const n = dictDraft.restore();
+    draftRestored = true;
+    if (n > 0) {
+      pushNotification({
+        impact: 'NONE',
+        toastImpact: 'LOW',
+        message: $t('app.common.draft_restored', { count: n }),
+        scopeKey: 'app.common.draft_restored_title',
+        tags: [{ label: entity, tone: 'info' }],
+      });
+    }
+  });
+
+  /** RESET — the FormPageLayout footer contract: discard ALL unsaved work
+   *  (tainted rows re-baseline, pendings + composer die with their queued
+   *  translations, the draft slot clears) and the page returns pristine. */
+  function handleReset() {
+    values = $state.snapshot(originals);
+    for (const p of [...pendings]) handleDropPending(p);
+    for (const d of [...drafts]) handleDiscardDraft(d);
+    clearPendingTranslations(basePath);
+    dictDraft.clear();
+  }
+
+  // ─── Reorder — swap order_field values on adjacent rows, mark tainted ──
+  /** Effective order value of a saved row — `values[uid]` taints shadow
+   *  the server row, so an unsaved move is visible immediately and the
+   *  rendered order equals the post-save order. */
+  function effectiveOrderOf(r: Record<string, unknown>): number {
+    return orderField
+      ? Number(values[toDisplayString(r[uid])]?.[orderField] ?? r[orderField] ?? 0)
+      : 0;
+  }
+
+  /** Saved rows sorted by effective order. */
+  const displayRows = $derived(
+    orderField ? [...list.rows].sort((a, b) => effectiveOrderOf(a) - effectiveOrderOf(b)) : list.rows,
+  );
+
+  /** The full reorder chain — one interleaved list of saved rows and
+   *  pendings sorted by effective `order_field` (ties keep source order:
+   *  saved first, then pending insertion order — D2 append semantics).
+   *  Swaps cross the saved/pending boundary: saved endpoints write
+   *  `values[uid]` (taint), pending endpoints write `d.values` directly. */
+  const renderEntries = $derived.by(() => {
+    const saved = displayRows.map((r, i) => ({
+      id: toDisplayString(r[uid]),
+      kind: 'saved' as const,
+      row: r,
+      sort: orderField
+        ? Number(values[toDisplayString(r[uid])]?.[orderField] ?? r[orderField] ?? 0)
+        : 0,
+      seq: i,
+    }));
+    const pend = pendings.map((p, i) => ({
+      id: p.__draft,
+      kind: 'pending' as const,
+      draft: p,
+      sort: orderField ? Number(p.values[orderField] ?? 0) : 0,
+      seq: displayRows.length + i,
+    }));
+    const all = [...saved, ...pend];
+    if (orderField) all.sort((a, b) => a.sort - b.sort || a.seq - b.seq);
+    return all;
+  });
+  const renderChain = $derived(renderEntries.map((e) => e.id));
+  const sortableItems = $derived(renderChain.map((id) => ({ id })));
+
+  function orderValueOf(chainId: string): unknown {
+    const p = pendings.find((x) => x.__draft === chainId);
+    if (p) return p.values[orderField!];
+    const row = list.rows.find((r) => toDisplayString(r[uid]) === chainId);
+    return values[chainId]?.[orderField!] ?? row?.[orderField!];
+  }
+
+  function setOrderValue(chainId: string, v: unknown) {
+    const p = pendings.find((x) => x.__draft === chainId);
+    if (p) {
+      p.values[orderField!] = v;
+      return;
+    }
+    cellChange(chainId, orderField!, v);
+  }
 
   function move(id: string, dir: -1 | 1) {
     if (!orderField) return;
-    const idx = displayRows.findIndex((r) => String(r[uid]) === id);
-    const other = displayRows[idx + dir];
-    if (idx < 0 || !other) return;
-    const a = displayRows[idx];
-    const aId = String(a[uid]);
-    const bId = String(other[uid]);
-    const aSort = values[aId]?.[orderField] ?? a[orderField];
-    const bSort = values[bId]?.[orderField] ?? other[orderField];
-    cellChange(aId, orderField, bSort);
-    cellChange(bId, orderField, aSort);
+    const idx = renderChain.indexOf(id);
+    const other = renderChain[idx + dir];
+    if (idx < 0 || other === undefined) return;
+    // Swap positions, then let applyDragOrder assign the values — the
+    // strict-rank pass is what makes a chevron cross work inside a
+    // duplicate-sort tie block (a plain value-swap would keep the tie
+    // and the row would bounce back to its seq position).
+    const next = renderChain.map((c) => ({ id: c }));
+    const tmp = next[idx]!;
+    next[idx] = next[idx + dir]!;
+    next[idx + dir] = tmp;
+    applyDragOrder(next);
   }
+
+  /** Reorder write — each position in `next` keeps its rank from the
+   *  current sort multiset where ranks are already strictly increasing;
+   *  on a tie the value bumps forward by +10 so the chain ends up
+   *  strictly ordered. Ties are the real data shape (seeded dicts share
+   *  one sort value), and a shared value has no defined order — without
+   *  the bump the occupant could never pass a tied neighbour (the seq
+   *  tiebreak would bounce it back), and "rendered order = post-save
+   *  order" would silently break. */
+  function applyDragOrder(next: { id: string }[]) {
+    if (!orderField) return;
+    const ranks = renderChain
+      .map((id) => Number(orderValueOf(id) ?? 0))
+      .sort((a, b) => a - b);
+    let prev = -Infinity;
+    next.forEach(({ id }, i) => {
+      let v = ranks[i] ?? prev + 10;
+      if (v <= prev) v = prev + 10;
+      prev = v;
+      if (Number.isFinite(v) && Number(orderValueOf(id) ?? 0) !== v)
+        setOrderValue(id, v);
+    });
+  }
+
+  // ─── Selection + filtered views — hoisted before grouping/render so
+  //     filteredRows can feed every downstream derivation. ──────────────
+  const selection = useSelection();
+  const selectedKeys = $derived([...selection.state.selected_ids]);
+
+  /** ELT parity: eye CTAs in the pager strip flip the list to a
+   *  client-side subset (selected-only / modified-only) with client-side
+   *  paging. `useClientSelection` owns the retained-row map (a
+   *  tainted/selected row keeps rendering even if its server page isn't
+   *  the current one), the auto-exit on reload and the page clamp on its
+   *  own subset. */
+  let showSelectedOnly = $state(false);
+  let showModifiedOnly = $state(false);
+  let clientFilterPage = $state(1);
+
+  const selClient = useClientSelection<Record<string, unknown>>({
+    selectedKeys: () => selectedKeys,
+    rows: () => list.rows,
+    rowKey: (r) => toDisplayString(r[uid]),
+    pageSize: () => list.pageSize,
+    rowsLoading: () => list.rowsLoading,
+    rowSelectionEnabled: () => true,
+    showSelectedOnly: () => showSelectedOnly,
+    clientSelectedPage: () => clientFilterPage,
+    setShowSelectedOnly: (v) => { showSelectedOnly = v; },
+    setClientSelectedPage: (p) => { clientFilterPage = p; },
+  });
+
+  /** Modified rows = tainted saved rows; pendings count as modified too. */
+  const modifiedUids = $derived([...taintedUids]);
+
+  const modClient = useClientSelection<Record<string, unknown>>({
+    selectedKeys: () => modifiedUids,
+    rows: () => list.rows,
+    rowKey: (r) => toDisplayString(r[uid]),
+    pageSize: () => list.pageSize,
+    rowsLoading: () => list.rowsLoading,
+    rowSelectionEnabled: () => true,
+    showSelectedOnly: () => showModifiedOnly,
+    clientSelectedPage: () => clientFilterPage,
+    setShowSelectedOnly: (v) => { showModifiedOnly = v; },
+    setClientSelectedPage: (p) => { clientFilterPage = p; },
+  });
+
+  const filterActive = $derived(showModifiedOnly || showSelectedOnly);
+
+  /** Saved rows under the active filters — the pool merges the current
+   *  page with the retained maps so off-page tainted/selected rows still
+   *  render. Both filters on → intersection. */
+  const filteredRows = $derived.by(() => {
+    if (!filterActive) return displayRows;
+    const pool = new SvelteMap<string, Record<string, unknown>>();
+    for (const r of displayRows) pool.set(toDisplayString(r[uid]), r);
+    for (const r of selClient.orderedSelectedRows) pool.set(toDisplayString(r[uid]), r);
+    for (const r of modClient.orderedSelectedRows) pool.set(toDisplayString(r[uid]), r);
+    const mod = new SvelteSet(modifiedUids);
+    const sel = new SvelteSet(selectedKeys);
+    const out = [...pool.values()].filter((r) => {
+      const k = toDisplayString(r[uid]);
+      return (!showModifiedOnly || mod.has(k)) && (!showSelectedOnly || sel.has(k));
+    });
+    if (orderField) out.sort((a, b) => effectiveOrderOf(a) - effectiveOrderOf(b));
+    return out;
+  });
+
+  /** Pendings are modified by nature — under the selection filter they
+   *  stay only when their draft is selected. */
+  const filteredPendings = $derived(
+    !filterActive
+      ? pendings
+      : showSelectedOnly
+        ? pendings.filter((p) => selection.isSelected(p.__draft))
+        : pendings,
+  );
+
+  /** Filtered render chain — same entry shape + effective-order sort as
+   *  renderEntries, built on the filtered sets. */
+  const filteredEntries = $derived.by(() => {
+    if (!filterActive) return renderEntries;
+    const saved = filteredRows.map((r, i) => ({
+      id: toDisplayString(r[uid]),
+      kind: 'saved' as const,
+      row: r,
+      sort: effectiveOrderOf(r),
+      seq: i,
+    }));
+    const pend = filteredPendings.map((p, i) => ({
+      id: p.__draft,
+      kind: 'pending' as const,
+      draft: p,
+      sort: orderField ? Number(p.values[orderField] ?? 0) : 0,
+      seq: filteredRows.length + i,
+    }));
+    const all = [...saved, ...pend];
+    if (orderField) all.sort((a, b) => a.sort - b.sort || a.seq - b.seq);
+    return all;
+  });
+
+  /** Client-side paging while a filter is on — the server pager never
+   *  fires (a filtered page is a slice of the local subset). The shared
+   *  page clamps against the FILTERED total (each client-selection
+   *  instance can only clamp against its own count, not the
+   *  intersection). */
+  const clientTotalPages = $derived(
+    Math.max(1, Math.ceil(filteredEntries.length / Math.max(1, list.pageSize))),
+  );
+  $effect(() => {
+    if (filterActive && clientFilterPage > clientTotalPages) clientFilterPage = clientTotalPages;
+  });
+
+  const visibleEntries = $derived(
+    filterActive
+      ? filteredEntries.slice(
+          (clientFilterPage - 1) * list.pageSize,
+          clientFilterPage * list.pageSize,
+        )
+      : renderEntries,
+  );
 
   // ─── Grouping — flat unless meta.dict.group_field is declared ─────────
   const ungrouped = $derived(
     groupField
-      ? displayRows.filter((r) => {
+      ? filteredRows.filter((r) => {
           const g = r[groupField];
           return g === null || g === undefined || String(g).trim() === '';
         })
-      : displayRows,
+      : filteredRows,
   );
 
   const grouped = $derived.by<ReadonlyMap<string, Record<string, unknown>[]>>(() => {
     const map = new SvelteMap<string, Record<string, unknown>[]>();
     if (!groupField) return map;
-    for (const r of displayRows) {
+    for (const r of filteredRows) {
       const g = r[groupField];
       if (g === null || g === undefined || String(g).trim() === '') continue;
       const k = String(g);
@@ -334,9 +841,12 @@
     return map;
   });
 
-  // ─── Selection + bulk actions ────────────────────────────────────────
-  const selection = useSelection();
-  const selectableUids = $derived(displayRows.map((r) => String(r[uid])));
+  // ─── Selection + bulk actions (selection/selectedKeys hoisted above
+  //     — filteredRows feeds grouping and this block) ──────────────────
+  /** Selectable ids — saved rows + pendings (select-all parity, D3). */
+  const selectableUids = $derived(
+    filterActive ? visibleEntries.map((e) => e.id) : renderChain,
+  );
   const allSelected = $derived(
     selectableUids.length > 0 && selectableUids.every((id) => selection.isSelected(id)),
   );
@@ -345,9 +855,8 @@
     [...selection.state.selected_ids].filter((id) => taintedUids.has(id)).length,
   );
   const selectedRows = $derived(
-    displayRows.filter((r) => selection.isSelected(String(r[uid]))),
+    displayRows.filter((r) => selection.isSelected(toDisplayString(r[uid]))),
   );
-  const selectedKeys = $derived([...selection.state.selected_ids]);
   const hasDeletedSelected = $derived(
     selectedRows.some((r) => r['deleted_at'] !== null && r['deleted_at'] !== undefined),
   );
@@ -377,6 +886,7 @@
       }),
       'entity.filters': () => ({
         entity,
+        service: moduleCode,
         filterableColumns,
         filterValues: list.filterValues ?? {},
         onFilterValuesChange: list.onFilterValuesChange,
@@ -401,16 +911,19 @@
    *  keyed on the row's human identity instead). */
   const taintedRowTitles = $derived(
     displayRows
-      .filter((r) => taintedUids.has(String(r[uid])))
+      .filter((r) => taintedUids.has(toDisplayString(r[uid])))
       .map((r) => rowTitle(r)),
   );
+
+  /** Pending titles — same identity resolution as saved rows. */
+  const pendingTitles = $derived(pendings.map((p) => rowTitle(p.values)));
 
   function rowTitle(r: Record<string, unknown>): string {
     if (displayField) {
       const v = r[displayField];
-      if (typeof v === 'string' && v) return $t(v) === v ? String(r['code'] ?? v) : $t(v);
+      if (typeof v === 'string' && v) return $t(v) === v ? toDisplayString(r['code'] ?? v) : $t(v);
     }
-    return String(r['code'] ?? r[uid] ?? '');
+    return toDisplayString(r['code'] ?? r[uid] ?? '');
   }
 
   // ─── Writes — standard {entity} envelopes on the entity-router ────────
@@ -423,26 +936,49 @@
     saving = true;
     try {
       for (const id of taintedUids) {
-        const row = list.rows.find((r) => String(r[uid]) === id);
+        const row = list.rows.find((r) => toDisplayString(r[uid]) === id);
         if (!row) continue;
+        // Update envelope = the update-mode editable set only — `immutable`
+        // columns (create-set, e.g. `code`) never ride a PUT payload
+        // (entity-metadata.mdx contract); the update schema .strict()-rejects
+        // them server-side.
+        const entityBody: Record<string, unknown> = { version: row['version'] };
+        for (const c of updateEditableColumns) {
+          // seq-bound untouched = directive slot empty — OMIT the column
+          // (the resolver rejects non-directive writes).
+          if (c.format === 'sequence' && (values[id]?.[c.key] === '' || values[id]?.[c.key] == null))
+            continue;
+          entityBody[c.key] = values[id]?.[c.key];
+        }
         const res = await apiFetch(`${basePath}/${encodeURIComponent(id)}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: extJsonStringify({
-            entity: { ...values[id], version: row['version'] },
-          }),
+          body: extJsonStringify({ entity: entityBody }),
         });
-        if (!res.ok) throw await res.json().catch(() => new Error(`update failed (${res.status})`));
+        if (!res.ok) throw await res.text().then((t) => extJsonParse<unknown>(t)).catch(() => new Error(`update failed (${res.status})`));
         originals = { ...originals, [id]: $state.snapshot(values[id]) };
       }
-      for (const d of drafts) {
+      for (const d of pendings) {
+        // Empty label_key commits the convention suggestion — the
+        // "(optional)" chip's promise (task 7, config-create parity).
+        if (displayField && !toDisplayString(d.values[displayField] ?? '').trim()) {
+          const suggested = suggestedKeyFor(translationKey, d.values['code']);
+          if (suggested) d.values[displayField] = suggested;
+        }
+        // seq-bound untouched = directive slot empty — the column is
+        // OMITTED (a `''`/null literal is a rejected non-directive).
+        const postBody = { ...d.values };
+        for (const c of editableColumns) {
+          if (c.format === 'sequence' && (postBody[c.key] === '' || postBody[c.key] == null))
+            delete postBody[c.key];
+        }
         const res = await apiFetch(basePath, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: extJsonStringify({ entity: d.values }),
+          body: extJsonStringify({ entity: postBody }),
         });
-        if (!res.ok) throw await res.json().catch(() => new Error(`create failed (${res.status})`));
-        drafts = drafts.filter((x) => x !== d);
+        if (!res.ok) throw await res.text().then((t) => extJsonParse<unknown>(t)).catch(() => new Error(`create failed (${res.status})`));
+        pendings = pendings.filter((x) => x !== d);
       }
       // Pending translations → the standard translation gateway route —
       // the module is resolved PER KEY (prefix == module code: `custom.*`
@@ -452,7 +988,8 @@
       // below — never silently dropped, never auto-retried.
       const failedTranslations = await flushPendingTranslations(basePath);
       originals = $state.snapshot(values);
-      drafts = [];
+      pendings = [];
+      dictDraft.clear();
       if (failedTranslations.length > 0) {
         pushNotification({
           impact: 'HIGH',
@@ -463,6 +1000,10 @@
         pushNotification({ impact: 'NONE', messageKey: 'app.common.save_success' });
       }
       await list.refreshRows();
+      // Seq-registry consumers (the `format:"sequence"` widget's select
+      // combobox) listen on `primebrick_<entity>_sync` — the same sender
+      // channel the form page posts on successful writes.
+      notifyParentRefresh();
     } catch (err) {
       if (err && typeof err === 'object' && 'status' in err && 'type' in err) {
         pushNotification(err as never);
@@ -520,63 +1061,126 @@
     void ok;
   }
 
+  /** Bulk delete partitions the selection (D3): saved rows ride the
+   *  governed `delete.bulk` path (confirm + soft-delete); selected
+   *  pendings drop locally on confirm — "morte definitiva", they were
+   *  never persisted (zero server work). A pending-only selection drops
+   *  immediately — no request exists to confirm. */
   async function bulkDelete() {
-    if (selectedRows.length === 0) return;
-    await runEntityOp({
-      op: 'delete.bulk',
-      entity,
-      meta,
-      rows: selectedRows,
-      onDone: () => {
-        selection.clearSelection();
-        void list.refreshRows();
-      },
-    });
+    const pendingIds = new SvelteSet(
+      [...selection.state.selected_ids].filter((id) =>
+        pendings.some((p) => p.__draft === id),
+      ),
+    );
+    if (selectedRows.length === 0 && pendingIds.size === 0) return;
+    if (selectedRows.length > 0) {
+      const ok = await runEntityOp({
+        op: 'delete.bulk',
+        entity,
+        meta,
+        rows: selectedRows,
+        onDone: () => {
+          selection.clearSelection();
+          void list.refreshRows();
+        },
+      });
+      if (!ok) return;
+    }
+    for (const p of pendings.filter((x) => pendingIds.has(x.__draft))) {
+      handleDropPending(p);
+    }
   }
 
   // ─── Pagination — bounded: meta.table.page_size_options ───────────────
   const totalPages = $derived(Math.max(1, Math.ceil(Number(list.total) / list.pageSize)));
   const pageSizeOptions = $derived(meta?.table?.page_size_options ?? [10, 25, 50]);
-  const rangeStart = $derived(
-    Number(list.total) === 0 ? 0 : (list.page - 1) * list.pageSize + 1,
+
+  /** Filtered-view pager values — ELT's footerUsesClientPaging contract:
+   *  while an eye filter is on, range/pages/total describe the local
+   *  subset and the pager never hits the server. */
+  const pagerPage = $derived(filterActive ? clientFilterPage : list.page);
+  const pagerTotalPages = $derived(filterActive ? clientTotalPages : totalPages);
+  const pagerTotal = $derived(filterActive ? filteredEntries.length : Number(list.total));
+  const pagerRangeStart = $derived(
+    pagerTotal === 0 ? 0 : (pagerPage - 1) * list.pageSize + 1,
   );
-  const rangeEnd = $derived(
-    Number(list.total) === 0
-      ? 0
-      : Math.min(list.page * list.pageSize, Number(list.total)),
+  const pagerRangeEnd = $derived(
+    pagerTotal === 0 ? 0 : Math.min(pagerPage * list.pageSize, pagerTotal),
   );
 
-  const rowProps = (r: Record<string, unknown>, idx: number) => ({
+  const rowProps = (r: Record<string, unknown>) => ({
     row: r,
     uid,
     entity,
+    service: moduleCode,
     title_text: rowTitle(r),
     translation_key: translationKey,
     entities_ns,
     pending_owner: basePath,
     display_field: displayField,
     editable_columns: updateEditableColumns,
+    extras_columns: extrasColumns,
     columns_map: columnMap,
-    values: values[String(r[uid])] ?? {},
-    errors: invalidRowUids.has(String(r[uid]))
-      ? missingRequired(values[String(r[uid])] ?? {})
+    values: values[toDisplayString(r[uid])] ?? {},
+    errors: invalidRowUids.has(toDisplayString(r[uid]))
+      ? columnErrors(values[toDisplayString(r[uid])] ?? {}, updateEditableColumns)
       : {},
-    tainted: taintedUids.has(String(r[uid])),
-    selected: selection.isSelected(String(r[uid])),
+    tainted: taintedUids.has(toDisplayString(r[uid])),
+    selected: selection.isSelected(toDisplayString(r[uid])),
     deleted: r['deleted_at'] !== null && r['deleted_at'] !== undefined,
     can_update: canUpdate,
     can_delete: canDelete,
     can_restore: canRestore,
-    orderable: orderField !== undefined,
-    reorder_first: idx === 0,
-    reorder_last: idx === displayRows.length - 1,
-    onchange: (key: string, v: unknown) => cellChange(String(r[uid]), key, v),
-    onrevert: () => revertRow(String(r[uid])),
-    ontoggle: (checked: boolean) => selection.toggleSelect(String(r[uid]), checked),
+    orderable: orderField !== undefined && !filterActive,
+    sortable: orderField !== undefined && !groupField && !filterActive,
+    reorder_first: renderChain[0] === toDisplayString(r[uid]),
+    reorder_last: renderChain[renderChain.length - 1] === toDisplayString(r[uid]),
+    onchange: (key: string, v: unknown) => cellChange(toDisplayString(r[uid]), key, v),
+    onrevert: () => revertRow(toDisplayString(r[uid])),
+    ontoggle: (checked: boolean) => selection.toggleSelect(toDisplayString(r[uid]), checked),
     ondelete: () => void deleteRow(r),
     onrestore: () => void restoreRow(r),
-    onmoveup: () => move(String(r[uid]), -1),
-    onmovedown: () => move(String(r[uid]), 1),
+    onmoveup: () => move(toDisplayString(r[uid]), -1),
+    onmovedown: () => move(toDisplayString(r[uid]), 1),
+  });
+
+  /** Pending rows — a confirmed-not-yet-saved `Draft` rendered through
+   *  DictRow with the `pending` variant (D2 appended after the saved
+   *  stream, D3 shared selection, D4 info accent). The row record is
+   *  synthesized from `d.values` + the client `__draft` id under `uid`
+   *  (`"d1"` never collides with a real uuid); no version/audit fields →
+   *  L3 stays empty by construction. */
+  const pendingProps = (p: Draft) => ({
+    row: { ...p.values, [uid]: p.__draft },
+    uid,
+    entity,
+    service: moduleCode,
+    title_text: rowTitle({ ...p.values, [uid]: p.__draft }),
+    translation_key: translationKey,
+    entities_ns,
+    pending_owner: basePath,
+    display_field: displayField,
+    editable_columns: updateEditableColumns,
+    extras_columns: extrasColumns,
+    columns_map: columnMap,
+    values: p.values,
+    errors: columnErrors(p.values, editableColumns, new SvelteSet([displayField ?? 'label_key'])),
+    pending: true as const,
+    selected: selection.isSelected(p.__draft),
+    can_update: canUpdate,
+    can_delete: false,
+    can_restore: false,
+    orderable: orderField !== undefined && !filterActive,
+    sortable: orderField !== undefined && !groupField && !filterActive,
+    reorder_first: renderChain[0] === p.__draft,
+    reorder_last: renderChain[renderChain.length - 1] === p.__draft,
+    onchange: (key: string, v: unknown) => {
+      p.values[key] = v;
+    },
+    ontoggle: (checked: boolean) => selection.toggleSelect(p.__draft, checked),
+    onpendingdelete: () => handleDropPending(p),
+    onmoveup: () => move(p.__draft, -1),
+    onmovedown: () => move(p.__draft, 1),
   });
 </script>
 
@@ -586,10 +1190,13 @@
        the shared lower bar's leading zone).
        Level 2 is the shared ELT FILTER | BULK ACTIONS bar below — it owns
        the bottom border, so this wrapper stays borderless. -->
-  <div class="shrink-0 bg-background/90 backdrop-blur-sm supports-backdrop-filter:bg-background/70">
-    <div class="flex flex-wrap items-center justify-between gap-3 px-4 py-2">
-      <div class="flex min-w-0 flex-1 items-center gap-2">
-        <div class="min-w-0 flex-1 basis-0 sm:min-w-[200px] sm:max-w-[520px]">
+  <div class="shrink-0">
+    <!-- Level 1 — the canonical `Toolbar card={false}` strip (task-19
+         locked contract: muted/30 like every toolbar strip). Same ELT
+         composition: left=search | CTA children | refresh | primary. -->
+    <Toolbar card={false} class="rounded-none">
+      {#snippet left()}
+        <div class="min-w-0 flex-1 basis-0 sm:min-w-[260px] sm:max-w-[520px]">
           <SearchBar
             search={list.search}
             onSearchInput={list.onSearchInput}
@@ -600,49 +1207,49 @@
             data_testid="dict-search"
           />
         </div>
-      </div>
-
-      <!-- Right cluster — the ELT divider contract: a gradient divider
-           AFTER every button group (the deletion view group here), single
-           CTAs (filters, refresh) flow free, divider before the primary
-           New CTA. -->
-      <div class="flex items-center justify-end gap-2">
-        {#if hasSoftDelete}
-          <DeletionFilterToggle
-            deletionFilterMode={list.deletionFilterMode}
-            onDeletionFilterModeChange={list.onDeletionFilterModeChange}
-            test_id="dict-deletion-filter"
-          />
-          <div class="h-6 w-px divider-primary-gradient" aria-hidden="true"></div>
-        {/if}
-        {#if filterableColumns.length > 0}
-          <Button
-            variant="ghost"
-            size="sm"
-            type="button"
-            onclick={sheetSync.toggleFiltersSheet}
-            aria-label={$t('system.entities.list.filters')}
-            title={$t('system.entities.list.filters')}
-            data-testid="dict-filters"
-          >
-            <Funnel class="size-4" />
-            <span class="hidden lg:inline">{$t('system.entities.list.filters')}</span>
-          </Button>
-        {/if}
-        <RefreshButton
-          onclick={() => void list.refreshRows()}
-          loading={list.rowsLoading}
-          testid="dict-refresh"
+      {/snippet}
+      {#if hasSoftDelete}
+        <DeletionFilterToggle
+          deletionFilterMode={list.deletionFilterMode}
+          onDeletionFilterModeChange={list.onDeletionFilterModeChange}
+          test_id="dict-deletion-filter"
         />
         <div class="h-6 w-px divider-primary-gradient" aria-hidden="true"></div>
-        {#if canCreate}
-          <Button variant="default" size="sm" onclick={handleAddRow} data-testid="dict-toolbar-add">
-            <Plus class="size-4" />
-            {$t('app.common.new')}
-          </Button>
-        {/if}
-      </div>
-    </div>
+      {/if}
+      {#if filterableColumns.length > 0}
+        <Button
+          variant="ghost"
+          size="sm"
+          type="button"
+          onclick={sheetSync.toggleFiltersSheet}
+          aria-label={$t('system.entities.list.filters')}
+          title={$t('system.entities.list.filters')}
+          data-testid="dict-filters"
+        >
+          <Funnel class="size-4" />
+          <span class="hidden lg:inline">{$t('system.entities.list.filters')}</span>
+        </Button>
+      {/if}
+      <RefreshButton
+        onclick={() => void list.refreshRows()}
+        loading={list.rowsLoading}
+        testid="dict-refresh"
+      />
+      <div class="h-6 w-px divider-primary-gradient" aria-hidden="true"></div>
+      {#if canCreate}
+        <Button
+          variant="default"
+          size="sm"
+          disabled={drafts.length > 0}
+          title={drafts.length > 0 ? $t('system.entities.dict.composer_open') : $t('app.common.new')}
+          onclick={handleAddRow}
+          data-testid="dict-toolbar-add"
+        >
+          <Plus class="size-4" />
+          {$t('app.common.new')}
+        </Button>
+      {/if}
+    </Toolbar>
 
     <!-- Level 2 — the shared ELT lower bar. Leading zones: select-all
          only. NO `sort` here on purpose: dict ordering is semantic — the
@@ -715,25 +1322,74 @@
             columns_map={columnMap}
             translation_key={translationKey}
             pending_owner={basePath}
+            service={moduleCode}
             bind:values={d.values}
-            errors={missingRequired(d.values)}
+            errors={composerErrors(d)}
             readonly={!canCreate}
+            sortable={orderField !== undefined && !groupField && !filterActive}
+            confirm_disabled={!composerValid(d)}
+            onconfirm={() => handleConfirmDraft(d)}
+            ondiscard={() => handleDiscardDraft(d)}
           />
         {/each}
 
-        {#each ungrouped as r, i (String(r[uid]))}
-          <DictRow {...rowProps(r, i)} />
-        {/each}
+        {#if groupField}
+          <!-- Grouped mode — saved rows in group sections, pendings
+               appended after the saved stream (D2). Reorder chevrons
+               stay enabled; drag-drop is not offered here (a cross-group
+               drag would silently alter group membership). -->
+          {#each ungrouped as r (toDisplayString(r[uid]))}
+            <DictRow {...rowProps(r)} />
+          {/each}
 
-        {#each [...grouped.keys()] as gk (gk)}
-          <SelectableFieldset label={gk}>
-            {#each grouped.get(gk) ?? [] as r (String(r[uid]))}
-              <DictRow {...rowProps(r, displayRows.indexOf(r))} />
+          {#each [...grouped.keys()] as gk (gk)}
+            <SelectableFieldset label={gk}>
+              {#each grouped.get(gk) ?? [] as r (toDisplayString(r[uid]))}
+                <DictRow {...rowProps(r)} />
+              {/each}
+            </SelectableFieldset>
+          {/each}
+
+          {#each filteredPendings as p (p.__draft)}
+            <DictRow {...pendingProps(p)} />
+          {/each}
+        {:else if orderField && !filterActive}
+          <!-- Flat orderable mode — one interleaved chain of saved rows
+               and pendings sorted by the EFFECTIVE order_field value
+               (taints shadow the server row, so an unsaved move is
+               visible immediately and the rendered order equals the
+               post-save order). Drag-drop via the shared Sortable
+               primitive; chevron nudges stay for keyboard users. -->
+          <Sortable.Root
+            items={sortableItems}
+            onSort={applyDragOrder}
+            class="space-y-3"
+          >
+            {#each renderEntries as e (e.id)}
+              <Sortable.Item id={e.id}>
+                {#if e.kind === 'saved'}
+                  <DictRow {...rowProps(e.row)} />
+                {:else}
+                  <DictRow {...pendingProps(e.draft)} />
+                {/if}
+              </Sortable.Item>
             {/each}
-          </SelectableFieldset>
-        {/each}
+          </Sortable.Root>
+        {:else}
+          <!-- Filtered flat view (or no-order fallback) — client-sliced
+               subset, no sortable wrapper (drag/chevrons are gated off
+               by `filterActive` upstream: reordering a partial chain
+               would corrupt global order values). -->
+          {#each visibleEntries as e (e.id)}
+            {#if e.kind === 'saved'}
+              <DictRow {...rowProps(e.row)} />
+            {:else}
+              <DictRow {...pendingProps(e.draft)} />
+            {/if}
+          {/each}
+        {/if}
 
-        {#if list.rows.length === 0 && drafts.length === 0}
+        {#if list.rows.length === 0 && drafts.length === 0 && pendings.length === 0}
           <div class="py-8 text-center text-sm text-muted-foreground">
             {$t('app.common.no_results')}
           </div>
@@ -748,47 +1404,117 @@
        keyboard legend (no bound keys). -->
   <Toolbar card={false} class="gap-3 rounded-t-none border-t text-xs">
     {#snippet left()}
-      <RangeLabel start={rangeStart} end={rangeEnd} total={Number(list.total)} test_id="dict-range" />
+      <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <RangeLabel start={pagerRangeStart} end={pagerRangeEnd} total={pagerTotal} test_id="dict-range" />
+        <!-- ELT parity — the selected-only eye: same counter phrase
+             ({n} {plural} {selected}), same client-paging mechanics. -->
+        <SelectionCounter
+          selectionCount={selection.selected_count}
+          selectionLabelKey={entities_ns ? `${entities_ns}.entities.${entity}.plural` : undefined}
+          selectionLabelSingularKey={entities_ns ? `${entities_ns}.entities.${entity}.singular` : undefined}
+          selectionPastParticipleKey={selection.selected_count === 1
+            ? 'system.entities.list.selected_singular'
+            : 'system.entities.list.selected_plural'}
+          test_id="dict-filter-selected"
+          showSelectedOnly={showSelectedOnly}
+          onShowSelectedOnlyChange={(v) => { showSelectedOnly = v; if (v) clientFilterPage = 1; }}
+        />
+      </div>
     {/snippet}
     <PaginationControls
-      page={list.page}
-      totalPages={totalPages}
+      page={pagerPage}
+      totalPages={pagerTotalPages}
       pageSize={list.pageSize}
       pageSizeOptions={pageSizeOptions}
-      onPageChange={list.onPageChange}
+      onPageChange={filterActive ? (p) => { clientFilterPage = p; } : list.onPageChange}
       onPageSizeChange={list.onPageSizeChange}
       test_id_prefix="dict"
     />
   </Toolbar>
 
-  <!-- Footer: taint explanation left, atomic save right -->
-  <div class="shrink-0 border-t bg-muted p-4">
+  <!-- Footer: taint explanation left, atomic save right — the form-page
+       action-bar tone (bg-muted/50, FormPageLayout contract: dict is the
+       list+form hybrid — strips are list-muted/30, save footer is
+       form-muted/50). -->
+  <div class="shrink-0 border-t bg-muted/50 p-4">
     <div class="grid grid-cols-2 gap-4">
       <div class="flex flex-wrap items-center gap-2">
         {#if hasChanges}
           <span class="text-xs text-primary">
-            {$t('system.settings.configurations.changes_pending_fields')}
+            {$t('system.entities.dict.changes_pending')}
           </span>
-          {#each taintedRowTitles.slice(0, 5) as title (title)}
-            <Badge variant="outline" class="border-warning/40 bg-warning/10 text-xs font-mono text-muted-foreground">
-              {title}
+          <!-- UX guard: up to 3 individual badges per taint kind; at the
+               4th the whole group collapses into ONE "+N" badge (total
+               count, titles on the tooltip). -->
+          {#if taintedRowTitles.length > 3}
+            <Badge
+              variant="outline"
+              class="border-warning/40 bg-warning/10 text-xs font-mono text-muted-foreground"
+              title={taintedRowTitles.join(', ')}
+            >
+              +{taintedRowTitles.length}
+              <span class="ml-1 font-sans text-[10px] opacity-60">{$t('app.common.modified_plural')}</span>
             </Badge>
-          {/each}
-          {#if taintedRowTitles.length > 5}
-            <Badge variant="outline" class="border-warning/40 bg-warning/10 text-xs font-mono text-muted-foreground">
-              +{taintedRowTitles.length - 5}
-            </Badge>
+          {:else}
+            {#each taintedRowTitles as title (title)}
+              <Badge variant="outline" class="border-warning/40 bg-warning/10 text-xs font-mono text-muted-foreground">
+                {title}
+                <span class="ml-1 font-sans text-[10px] opacity-60">{$t('app.common.modified')}</span>
+              </Badge>
+            {/each}
           {/if}
-          {#if drafts.length > 0}
-            <Badge variant="outline" class="border-primary/40 bg-primary/10 text-xs font-mono text-muted-foreground">
-              +{drafts.length} {$t('app.common.new')}
+          {#if pendingTitles.length > 3}
+            <Badge
+              variant="outline"
+              class="border-primary/40 bg-primary/10 text-xs font-mono text-muted-foreground"
+              title={pendingTitles.join(', ')}
+            >
+              +{pendingTitles.length}
+              <span class="ml-1 font-sans text-[10px] opacity-60">{$t('app.common.new_plural')}</span>
             </Badge>
+          {:else}
+            {#each pendingTitles as title (title)}
+              <Badge variant="outline" class="border-primary/40 bg-primary/10 text-xs font-mono text-muted-foreground">
+                {title}
+                <span class="ml-1 font-sans text-[10px] opacity-60">{$t('app.common.new')}</span>
+              </Badge>
+            {/each}
           {/if}
+          <!-- Eye link after the badges — same affordance as the pager's
+               selected-only eye, scoped to the modified set it sits
+               next to (tainted + pending rows, client-side filter). -->
+          <Button
+            type="button"
+            variant="ghost"
+            size="xs"
+            class="shrink-0 text-warning hover:bg-warning/10 hover:text-warning"
+            aria-pressed={showModifiedOnly}
+            title={showModifiedOnly
+              ? $t('system.entities.list.view_all_rows_title')
+              : $t('system.entities.list.view_modified_only_title')}
+            aria-label={showModifiedOnly
+              ? $t('system.entities.list.view_all_rows_title')
+              : $t('system.entities.list.view_modified_only_title')}
+            onclick={() => { showModifiedOnly = !showModifiedOnly; if (showModifiedOnly) clientFilterPage = 1; }}
+            data-testid="dict-filter-modified"
+          >
+            <DynamicIcon name={showModifiedOnly ? 'eye-off' : 'eye'} size={16} />
+          </Button>
         {:else}
           <span class="text-xs text-muted-foreground/60">{$t('system.settings.configurations.no_changes')}</span>
         {/if}
       </div>
-      <div class="flex items-center justify-end">
+      <div class="flex items-center justify-end gap-2">
+        <Button
+          variant="outline"
+          disabled={(!hasChanges && drafts.length === 0) || saving}
+          onclick={handleReset}
+          title={$t('app.common.reset')}
+          data-testid="dict-reset"
+        >
+          <DynamicIcon name="eraser" size={16} />
+          {$t('app.common.reset')}
+        </Button>
         <Button onclick={() => void saveAll()} disabled={!canSave} data-testid="dict-bulk-save">
           {saving ? $t('app.common.saving') : $t('app.common.save_changes')}
         </Button>

@@ -19,7 +19,7 @@
   import { z } from 'zod';
   import { onMount } from 'svelte';
   import { apiFetch } from '$lib/api';
-  import { extJsonStringify } from '$lib/api-ext';
+  import { extJsonParse, extJsonStringify } from '$lib/api-ext';
   import { useEntityMetadata, type EntityMetadata } from '$lib/composables/useEntityMetadata.svelte';
   import { useFormGuard } from '$lib/composables/useFormGuard.svelte';
   import { useSyncChannel } from '$lib/composables/useSyncChannel.svelte';
@@ -55,7 +55,7 @@
     key_generation?: number;
     key_rotated_at?: string | null;
     is_enabled: boolean;
-    version: number;
+    version: bigint;
     created_at?: string;
     created_by?: string;
     created_by_name?: string;
@@ -130,7 +130,7 @@
         body: extJsonStringify(body),
       });
       if (!res.ok) throw new Error(`rotate failed (${res.status})`);
-      const result = (await res.json()) as { client_key?: string };
+      const result = (await res.text().then((t) => extJsonParse<unknown>(t))) as { client_key?: string };
       rotateKey = '';
       if (result.client_key) {
         issuedKey = result.client_key;
@@ -149,7 +149,7 @@
   async function showDerivedSecret() {
     const res = await apiFetch(`/api/v1/entities/client_registry/${uuid}/derive-secret`);
     if (!res.ok) return;
-    const data = (await res.json()) as { service_key_derivation_secret?: string };
+    const data = (await res.text().then((t) => extJsonParse<unknown>(t))) as { service_key_derivation_secret?: string };
     derivedSecret = data.service_key_derivation_secret ?? null;
   }
 
@@ -182,7 +182,7 @@
           cancel();
           return;
         }
-        await response.json();
+        await response.text().then((t) => extJsonParse<unknown>(t));
         await loadClient();
         notifyParentRefresh();
         if (window.opener) window.close();
@@ -206,7 +206,7 @@
     try {
       const response = await apiFetch(`/api/v1/entities/client_registry/${uuid}`);
       if (!response.ok) return;
-      const data = await response.json();
+      const data = await response.text().then((t) => extJsonParse<NonNullable<typeof client>>(t));
       client = data;
       reset({
         data: {

@@ -13,7 +13,7 @@
    */
   import { t } from '$lib/i18n';
   import { onMount } from 'svelte';
-  import { Button } from '@primebrick/ui';
+  import { Button, toDisplayString } from '@primebrick/ui';
   import { Badge } from '@primebrick/ui';
   import * as Table from '$lib/components/ui/table';
   import { Dialog } from '@primebrick/ui';
@@ -170,7 +170,7 @@
             ? 'system.migrations.approve_ok'
             : 'system.migrations.resolve_ok',
         scope: $t('system.migrations.title'),
-        detail: 'detail' in res && res.detail ? String(res.detail) : undefined,
+        detail: 'detail' in res && res.detail ? toDisplayString(res.detail) : undefined,
       });
       await loadStatus(patchDialogCode);
     } catch (e) {

@@ -13,7 +13,9 @@
  */
 import type { DeepReadonly } from '@primebrick/ui';
 import { apiFetch } from "$lib/api";
-import { onMount } from "svelte";
+
+import { extJsonParse } from '$lib/api-ext';
+import { SvelteMap } from 'svelte/reactivity';
 
 export interface ActiveRole {
   idp_role: string;
@@ -40,7 +42,7 @@ export function useActiveRoles(options?: {
       try {
         const res = await apiFetch("/api/v1/system/roles/active");
         if (res.ok) {
-          const data = await res.json();
+          const data = await res.text().then((t) => extJsonParse<{ roles?: ActiveRole[] }>(t));
           _state.roles = (data.roles ?? []) as ActiveRole[];
         }
       } catch (e) {
@@ -55,7 +57,7 @@ export function useActiveRoles(options?: {
 
   /** `idp_role` → role record — the list-cell badge resolver looks labels
    *  up here (`label_key` → `$t` at render, `idp_role` as fallback). */
-  const rolesByCode = $derived(new Map(_state.roles.map((r) => [r.idp_role, r])));
+  const rolesByCode = $derived(new SvelteMap(_state.roles.map((r) => [r.idp_role, r])));
 
   return {
     get state(): DeepReadonly<typeof _state> {

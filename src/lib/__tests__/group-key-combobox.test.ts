@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { z } from 'zod';
 import { minMsg, maxMsg } from '$lib/validation/zod-messages';
 import { isSnakeKey } from '@primebrick/ui';
+import { extJsonStringify } from '$lib/api-ext';
 // Static side-effect import: the whole @primebrick/ui dist graph gets
 // transformed+evaluated at test-file load — outside any test/hook timeout.
 // After vi.resetModules() the re-import is pure re-evaluation (transform
@@ -118,7 +119,7 @@ describe('useExistingGroupKeys composable', () => {
   });
 
   function rowsResponse(rows: unknown[]): Response {
-    return new Response(JSON.stringify({ rows }), {
+    return new Response(extJsonStringify({ rows }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });

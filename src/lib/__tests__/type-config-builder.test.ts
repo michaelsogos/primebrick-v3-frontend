@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { useTypeConfigBuilder } from '$lib/config/type-config-builder.svelte';
 import type { ConfigEntryType } from '$lib/api-types';
 
+import { extJsonParse } from '$lib/api-ext';
+import type { ParsedTypeConfig } from '$lib/config/type-config-schema';
 describe('useTypeConfigBuilder', () => {
   function createBuilder(
     type: ConfigEntryType = 'string',
@@ -45,8 +47,8 @@ describe('useTypeConfigBuilder', () => {
     const { builder, getLastJson } = createBuilder();
     builder.setRequired(true);
     expect(builder.validation?.required).toBe(true);
-    const parsed = JSON.parse(getLastJson());
-    expect(parsed.validation.required).toBe(true);
+    const parsed = extJsonParse<ParsedTypeConfig>(getLastJson());
+    expect(parsed.validation?.required).toBe(true);
   });
 
   it('setRequired(false) keeps validation object but sets required=false', () => {
@@ -59,24 +61,24 @@ describe('useTypeConfigBuilder', () => {
   it('setUnsigned adds unsigned=true', () => {
     const { builder, getLastJson } = createBuilder('bigint');
     builder.setUnsigned(true);
-    const parsed = JSON.parse(getLastJson());
-    expect(parsed.validation.unsigned).toBe(true);
+    const parsed = extJsonParse<ParsedTypeConfig>(getLastJson());
+    expect(parsed.validation?.unsigned).toBe(true);
   });
 
   it('setUnsigned(false) removes unsigned property', () => {
     const { builder, getLastJson } = createBuilder('bigint');
     builder.setUnsigned(true);
     builder.setUnsigned(false);
-    const parsed = JSON.parse(getLastJson());
-    expect(parsed.validation.unsigned).toBeUndefined();
+    const parsed = extJsonParse<ParsedTypeConfig>(getLastJson());
+    expect(parsed.validation?.unsigned).toBeUndefined();
   });
 
   it('setMin adds min rule with auto-generated error_label_key', () => {
     const { builder, getLastJson } = createBuilder('bigint', 'expiry_days');
     builder.setMin(1);
-    const parsed = JSON.parse(getLastJson());
-    expect(parsed.validation.rules.min).toEqual({
-      value: 1,
+    const parsed = extJsonParse<ParsedTypeConfig>(getLastJson());
+    expect(parsed.validation?.rules?.min).toEqual({
+      value: 1n,
       error_label_key: 'app.common.validation.too_short',
     });
   });
@@ -84,8 +86,8 @@ describe('useTypeConfigBuilder', () => {
   it('setMin with custom error_label_key', () => {
     const { builder, getLastJson } = createBuilder('bigint', 'expiry_days');
     builder.setMin(1, 'custom.error.key');
-    const parsed = JSON.parse(getLastJson());
-    expect(parsed.validation.rules.min.error_label_key).toBe('custom.error.key');
+    const parsed = extJsonParse<ParsedTypeConfig>(getLastJson());
+    expect(parsed.validation?.rules?.min?.error_label_key).toBe('custom.error.key');
   });
 
   it('setMin without custom key — state has no error_label_key, JSON has auto key', () => {
@@ -94,55 +96,55 @@ describe('useTypeConfigBuilder', () => {
     // State should NOT have error_label_key (auto-injected at serialization only)
     expect(builder.validation?.rules?.min?.error_label_key).toBeUndefined();
     // Serialized JSON should have the auto-generated key
-    const parsed = JSON.parse(getLastJson());
-    expect(parsed.validation.rules.min.error_label_key).toBe('app.common.validation.too_short');
+    const parsed = extJsonParse<ParsedTypeConfig>(getLastJson());
+    expect(parsed.validation?.rules?.min?.error_label_key).toBe('app.common.validation.too_short');
   });
 
   it('autoErrorLabelKey uses my_custom_setting fallback when key is empty', () => {
     const { builder, getLastJson } = createBuilder('string', '');
     builder.setMin(1);
-    const parsed = JSON.parse(getLastJson());
-    expect(parsed.validation.rules.min.error_label_key).toBe('app.common.validation.too_short');
+    const parsed = extJsonParse<ParsedTypeConfig>(getLastJson());
+    expect(parsed.validation?.rules?.min?.error_label_key).toBe('app.common.validation.too_short');
   });
 
   it('updating configKey reactively re-generates auto error_label_keys', () => {
     const { builder, getLastJson } = createBuilder('string', '');
     builder.setMin(1);
     builder.setMax(100);
-    let parsed = JSON.parse(getLastJson());
-    expect(parsed.validation.rules.min.error_label_key).toBe('app.common.validation.too_short');
-    expect(parsed.validation.rules.max.error_label_key).toBe('app.common.validation.too_long');
+    let parsed = extJsonParse<ParsedTypeConfig>(getLastJson());
+    expect(parsed.validation?.rules?.min?.error_label_key).toBe('app.common.validation.too_short');
+    expect(parsed.validation?.rules?.max?.error_label_key).toBe('app.common.validation.too_long');
     // Now update the key — setConfigKey re-generates auto keys
     builder.setConfigKey('session_timeout');
-    parsed = JSON.parse(getLastJson());
-    expect(parsed.validation.rules.min.error_label_key).toBe('app.common.validation.too_short');
-    expect(parsed.validation.rules.max.error_label_key).toBe('app.common.validation.too_long');
+    parsed = extJsonParse<ParsedTypeConfig>(getLastJson());
+    expect(parsed.validation?.rules?.min?.error_label_key).toBe('app.common.validation.too_short');
+    expect(parsed.validation?.rules?.max?.error_label_key).toBe('app.common.validation.too_long');
   });
 
   it('updating configKey does NOT override custom error_label_keys', () => {
     const { builder, getLastJson } = createBuilder('string', 'initial_key');
-    builder.setMin(1, 'my.custom.error.key');
-    let parsed = JSON.parse(getLastJson());
-    expect(parsed.validation.rules.min.error_label_key).toBe('my.custom.error.key');
+    builder.setMin(1, 'app.my.custom.error.key');
+    let parsed = extJsonParse<ParsedTypeConfig>(getLastJson());
+    expect(parsed.validation?.rules?.min?.error_label_key).toBe('app.my.custom.error.key');
     builder.setConfigKey('new_key');
-    parsed = JSON.parse(getLastJson());
-    expect(parsed.validation.rules.min.error_label_key).toBe('my.custom.error.key');
+    parsed = extJsonParse<ParsedTypeConfig>(getLastJson());
+    expect(parsed.validation?.rules?.min?.error_label_key).toBe('app.my.custom.error.key');
   });
 
   it('setMin(null) removes min rule', () => {
     const { builder, getLastJson } = createBuilder('bigint');
     builder.setMin(1);
     builder.setMin(null);
-    const parsed = JSON.parse(getLastJson());
+    const parsed = extJsonParse<ParsedTypeConfig>(getLastJson());
     expect(parsed.validation?.rules?.min).toBeUndefined();
   });
 
   it('setMax adds max rule', () => {
     const { builder, getLastJson } = createBuilder('bigint', 'ttl');
     builder.setMax(365);
-    const parsed = JSON.parse(getLastJson());
-    expect(parsed.validation.rules.max).toEqual({
-      value: 365,
+    const parsed = extJsonParse<ParsedTypeConfig>(getLastJson());
+    expect(parsed.validation?.rules?.max).toEqual({
+      value: 365n,
       error_label_key: 'app.common.validation.too_long',
     });
   });
@@ -150,70 +152,70 @@ describe('useTypeConfigBuilder', () => {
   it('setUrlProtocols adds url rule', () => {
     const { builder, getLastJson } = createBuilder('url', 'endpoint');
     builder.setUrlProtocols(['http', 'https']);
-    const parsed = JSON.parse(getLastJson());
-    expect(parsed.validation.rules.url.protocols).toEqual(['http', 'https']);
+    const parsed = extJsonParse<ParsedTypeConfig>(getLastJson());
+    expect(parsed.validation?.rules?.url?.protocols).toEqual(['http', 'https']);
   });
 
   it('setUrlProtocols([]) removes url rule', () => {
     const { builder, getLastJson } = createBuilder('url');
     builder.setUrlProtocols(['http']);
     builder.setUrlProtocols([]);
-    const parsed = JSON.parse(getLastJson());
+    const parsed = extJsonParse<ParsedTypeConfig>(getLastJson());
     expect(parsed.validation?.rules?.url).toBeUndefined();
   });
 
   it('setEmail(true) adds email rule', () => {
     const { builder, getLastJson } = createBuilder('string', 'contact');
     builder.setEmail(true);
-    const parsed = JSON.parse(getLastJson());
-    expect(parsed.validation.rules.email.error_label_key).toBe('app.common.validation.invalid_email');
+    const parsed = extJsonParse<ParsedTypeConfig>(getLastJson());
+    expect(parsed.validation?.rules?.email?.error_label_key).toBe('app.common.validation.invalid_email');
   });
 
   it('setEmail(false) removes email rule', () => {
     const { builder, getLastJson } = createBuilder('string');
     builder.setEmail(true);
     builder.setEmail(false);
-    const parsed = JSON.parse(getLastJson());
+    const parsed = extJsonParse<ParsedTypeConfig>(getLastJson());
     expect(parsed.validation?.rules?.email).toBeUndefined();
   });
 
   it('setRegex adds regex rule with pattern', () => {
     const { builder, getLastJson } = createBuilder('string', 'code');
     builder.setRegex('^[A-Z]{3}$');
-    const parsed = JSON.parse(getLastJson());
-    expect(parsed.validation.rules.regex.pattern).toBe('^[A-Z]{3}$');
+    const parsed = extJsonParse<ParsedTypeConfig>(getLastJson());
+    expect(parsed.validation?.rules?.regex?.pattern).toBe('^[A-Z]{3}$');
   });
 
   it('setRegex stores flags when provided', () => {
     const { builder, getLastJson } = createBuilder('string');
     builder.setRegex('^[a-z]+$', 'i');
-    const parsed = JSON.parse(getLastJson());
-    expect(parsed.validation.rules.regex.pattern).toBe('^[a-z]+$');
-    expect(parsed.validation.rules.regex.flags).toBe('i');
+    const parsed = extJsonParse<ParsedTypeConfig>(getLastJson());
+    expect(parsed.validation?.rules?.regex?.pattern).toBe('^[a-z]+$');
+    expect(parsed.validation?.rules?.regex?.flags).toBe('i');
   });
 
   it('setRegex omits flags field when empty string', () => {
     const { builder, getLastJson } = createBuilder('string');
     builder.setRegex('^[a-z]+$', '');
-    const parsed = JSON.parse(getLastJson());
-    expect(parsed.validation.rules.regex.pattern).toBe('^[a-z]+$');
-    expect(parsed.validation.rules.regex.flags).toBeUndefined();
+    const parsed = extJsonParse<ParsedTypeConfig>(getLastJson());
+    expect(parsed.validation?.rules?.regex?.pattern).toBe('^[a-z]+$');
+    expect(parsed.validation?.rules?.regex?.flags).toBeUndefined();
   });
 
   it('setRegex stores flags + error_label_key together', () => {
     const { builder, getLastJson } = createBuilder('string');
-    builder.setRegex('^[a-z]+$', 'gi', 'err.regex');
-    const parsed = JSON.parse(getLastJson());
-    expect(parsed.validation.rules.regex.pattern).toBe('^[a-z]+$');
-    expect(parsed.validation.rules.regex.flags).toBe('gi');
-    expect(parsed.validation.rules.regex.error_label_key).toBe('err.regex');
+    builder.setRegex('^[a-z]+$', 'gi', 'app.err.regex');
+    const parsed = extJsonParse<ParsedTypeConfig>(getLastJson());
+    expect(parsed.validation?.rules?.regex?.pattern).toBe('^[a-z]+$');
+    expect(parsed.validation?.rules?.regex?.flags).toBe('gi');
+    expect(parsed.validation?.rules?.regex?.error_label_key).toBe('app.err.regex');
   });
 
   it('setRegex("") removes regex rule', () => {
     const { builder, getLastJson } = createBuilder('string');
     builder.setRegex('^[A-Z]+$');
     builder.setRegex('');
-    const parsed = JSON.parse(getLastJson());
+    const parsed = extJsonParse<ParsedTypeConfig>(getLastJson());
     expect(parsed.validation?.rules?.regex).toBeUndefined();
   });
 
@@ -222,14 +224,14 @@ describe('useTypeConfigBuilder', () => {
   it('setCurrency updates currency', () => {
     const { builder, getLastJson } = createBuilder('money');
     builder.setCurrency('USD');
-    const parsed = JSON.parse(getLastJson());
+    const parsed = extJsonParse<ParsedTypeConfig>(getLastJson());
     expect(parsed.currency).toBe('USD');
   });
 
   it('setValuesSource updates values_source', () => {
     const { builder, getLastJson } = createBuilder('multi_select');
     builder.setValuesSource('currencies');
-    const parsed = JSON.parse(getLastJson());
+    const parsed = extJsonParse<ParsedTypeConfig>(getLastJson());
     expect(parsed.values_source).toBe('currencies');
   });
 
@@ -237,14 +239,14 @@ describe('useTypeConfigBuilder', () => {
     const { builder, getLastJson } = createBuilder('multi_select');
     builder.setValuesSource('currencies');
     builder.setValuesSource(null);
-    const parsed = JSON.parse(getLastJson());
+    const parsed = extJsonParse<ParsedTypeConfig>(getLastJson());
     expect(parsed.values_source).toBeUndefined();
   });
 
   it('setApiUrl updates api_url', () => {
     const { builder, getLastJson } = createBuilder('single_select');
     builder.setApiUrl('https://api.example.com/countries');
-    const parsed = JSON.parse(getLastJson());
+    const parsed = extJsonParse<ParsedTypeConfig>(getLastJson());
     expect(parsed.api_url).toBe('https://api.example.com/countries');
   });
 
@@ -252,16 +254,16 @@ describe('useTypeConfigBuilder', () => {
 
   it('setBadgeValue adds a badge value', () => {
     const { builder, getLastJson } = createBuilder('badge');
-    builder.setBadgeValue('active', 'status.active', 'green');
-    const parsed = JSON.parse(getLastJson());
-    expect(parsed.values.active).toEqual({ label_key: 'status.active', color: 'green' });
+    builder.setBadgeValue('active', 'app.status.active', 'green');
+    const parsed = extJsonParse<ParsedTypeConfig>(getLastJson());
+    expect(parsed.values?.active).toEqual({ label_key: 'app.status.active', color: 'green' });
   });
 
   it('removeBadgeValue removes a badge value', () => {
     const { builder, getLastJson } = createBuilder('badge');
-    builder.setBadgeValue('active', 'status.active', 'green');
+    builder.setBadgeValue('active', 'app.status.active', 'green');
     builder.removeBadgeValue('active');
-    const parsed = JSON.parse(getLastJson());
+    const parsed = extJsonParse<ParsedTypeConfig>(getLastJson());
     expect(parsed.values).toBeUndefined();
   });
 
@@ -303,18 +305,18 @@ describe('useTypeConfigBuilder', () => {
     const { builder, getLastJson } = createBuilder('string');
     builder.setRequired(false);
     // validation with required=false and empty rules → rules stripped by stripEmpty
-    const parsed = JSON.parse(getLastJson());
-    expect(parsed.validation.required).toBe(false);
-    expect(parsed.validation.rules).toBeUndefined(); // empty {} stripped
+    const parsed = extJsonParse<ParsedTypeConfig>(getLastJson());
+    expect(parsed.validation?.required).toBe(false);
+    expect(parsed.validation?.rules).toBeUndefined(); // empty {} stripped
   });
 
   it('does not include unsigned for non-numeric types', () => {
     const { builder, getLastJson } = createBuilder('string');
     builder.setUnsigned(true);
-    const parsed = JSON.parse(getLastJson());
+    const parsed = extJsonParse<ParsedTypeConfig>(getLastJson());
     // unsigned is set in state but it's up to the UI to not show it for non-numeric
     // The builder doesn't filter by type — the UI does
-    expect(parsed.validation.unsigned).toBe(true);
+    expect(parsed.validation?.unsigned).toBe(true);
   });
 
   // ─── Default max length ─────────────────────────────────────────
@@ -322,9 +324,9 @@ describe('useTypeConfigBuilder', () => {
   it('setMax with 65535 creates default cross-system limit rule', () => {
     const { builder, getLastJson } = createBuilder('string', 'test_key');
     builder.setMax(65535);
-    const parsed = JSON.parse(getLastJson());
-    expect(parsed.validation.rules.max).toEqual({
-      value: 65535,
+    const parsed = extJsonParse<ParsedTypeConfig>(getLastJson());
+    expect(parsed.validation?.rules?.max).toEqual({
+      value: 65535n,
       error_label_key: 'app.common.validation.too_long',
     });
   });
@@ -333,15 +335,15 @@ describe('useTypeConfigBuilder', () => {
     const { builder, getLastJson } = createBuilder('string', 'test_key');
     builder.setMax(65535);
     builder.setMax(100);
-    const parsed = JSON.parse(getLastJson());
-    expect(parsed.validation.rules.max.value).toBe(100);
+    const parsed = extJsonParse<ParsedTypeConfig>(getLastJson());
+    expect(parsed.validation?.rules?.max?.value).toBe(100n);
   });
 
   it('setMax(null) removes the default max rule', () => {
     const { builder, getLastJson } = createBuilder('string', 'test_key');
     builder.setMax(65535);
     builder.setMax(null);
-    const parsed = JSON.parse(getLastJson());
+    const parsed = extJsonParse<ParsedTypeConfig>(getLastJson());
     expect(parsed.validation?.rules?.max).toBeUndefined();
   });
 });

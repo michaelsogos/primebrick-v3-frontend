@@ -1,6 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 import { loginAsTestAdmin, loginAsTestUser } from "./helpers/admin-login";
 
+import { extJsonParse } from '@primebrick/core/ext-json';
 /**
  * Access-axis E2E — `access.{app}.{module}.{leaf}`.
  *
@@ -41,13 +42,13 @@ type ModuleInfo = {
 async function fetchModules(page: Page): Promise<ModuleInfo[]> {
   const res = await page.request.get("/api/v1/modules");
   expect(res.ok(), "GET /api/v1/modules must succeed for any authenticated user").toBeTruthy();
-  const body = await res.json();
+  const body = await res.text().then((t) => extJsonParse<Record<string, unknown>>(t));
   return (body.modules ?? body) as ModuleInfo[];
 }
 
 async function openLauncher(page: Page) {
   await page.locator(LAUNCHER_TRIGGER).first().click();
-  await page.locator(LAUNCHER_APPS).first().waitFor({ state: "visible", timeout: 10000 });
+  await page.locator(LAUNCHER_APPS).first().waitFor({ state: "visible", timeout: 5_000 });
 }
 
 async function launcherSelectApp(page: Page, root: string) {
@@ -95,7 +96,7 @@ test.describe("access axis — server-side discovery filtering", () => {
     await page
       .locator("[data-sidebar='content'] a[href='/system/job/job-schedules']")
       .first()
-      .waitFor({ state: "visible", timeout: 15000 });
+      .waitFor({ state: "visible", timeout: 5_000 });
     await openLauncher(page);
     await launcherSelectApp(page, "system");
 
@@ -103,7 +104,7 @@ test.describe("access axis — server-side discovery filtering", () => {
     await expect(
       page.locator(`${LAUNCHER_MODULES} ${LAUNCHER_OPTION}[data-module-id="job"]`).first(),
       "job must appear under the System app",
-    ).toBeVisible({ timeout: 10000 });
+    ).toBeVisible({ timeout: 5_000 });
     await expect(
       page.locator(`${LAUNCHER_MODULES} ${LAUNCHER_OPTION}[data-module-id="settings"]`),
       "settings must be hidden while the reveal switch is off",
@@ -129,7 +130,7 @@ test.describe("access axis — server-side discovery filtering", () => {
     await page
       .locator("[data-sidebar='content'] a[href]")
       .first()
-      .waitFor({ state: "visible", timeout: 15000 });
+      .waitFor({ state: "visible", timeout: 5_000 });
 
     const hrefs = await page
       .locator("[data-sidebar='content'] a[href]")
@@ -150,17 +151,17 @@ test.describe("access axis — server-side discovery filtering", () => {
     await page
       .locator("[data-sidebar='content'] a[href='/system/job/job-schedules']")
       .first()
-      .waitFor({ state: "visible", timeout: 15000 });
+      .waitFor({ state: "visible", timeout: 5_000 });
 
     await page.goto("/system/settings/profile", { waitUntil: "domcontentloaded" });
 
     // The URL guard denies: RFC7807 notification + redirect to the safe
     // page — the System root's only accessible module default leaf.
-    await page.waitForURL("**/system/job/job-schedules", { timeout: 15000 });
+    await page.waitForURL("**/system/job/job-schedules", { timeout: 5_000 });
     await expect(
       page.locator("[data-sonner-toast]").filter({ hasText: "ACCESS_DENIED" }).first(),
       "an ACCESS_DENIED notification must surface the denied page",
-    ).toBeVisible({ timeout: 10000 });
+    ).toBeVisible({ timeout: 5_000 });
 
     // And the settled page is the job default, not settings.
     const hrefs = await page
@@ -186,7 +187,7 @@ test.describe("access axis — server-side discovery filtering", () => {
     await page.goto("/system/settings/profile", { waitUntil: "domcontentloaded" });
     const bc = page.locator('nav[aria-label="breadcrumb"]');
     const items = bc.locator("li[data-slot='breadcrumb-item']");
-    await expect(items).toHaveCount(3, { timeout: 15000 });
+    await expect(items).toHaveCount(3, { timeout: 5_000 });
     const texts = (await bc.locator("li").allTextContents())
       .map((x) => x.trim())
       .filter((x) => x && x !== "/");

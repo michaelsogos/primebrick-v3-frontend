@@ -4,6 +4,7 @@
   import { zod4 } from 'sveltekit-superforms/adapters';
   import { apiFetch } from '$lib/api';
   import { mapRFC7807ToMessageKey } from '$lib/errors/rfc7807-mapper';
+  import type { RFC7807Error } from '$lib/errors/rfc7807';
   import { pushNotification } from '$lib/errors/app-errors';
   import { userProfileStore } from '$lib/user-profile-store.svelte';
   import { Button } from '@primebrick/ui';
@@ -18,6 +19,7 @@
   import MfaChallenge from './MfaChallenge.svelte';
   import { isWebauthnSupported } from '$lib/webauthn/codec';
   import { authConfigState, loadAuthConfig } from '$lib/auth-config-store.svelte';
+  import { extJsonParse, extJsonStringify } from '$lib/api-ext';
 
   // Trigger the auth config fetch during component initialization.
   void loadAuthConfig();
@@ -64,11 +66,11 @@
           const response = await apiFetch('/api/v1/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(updateForm.data),
+            body: extJsonStringify(updateForm.data),
           });
 
           if (!response.ok) {
-            const errorData = await response.json();
+            const errorData = await response.text().then((t) => extJsonParse<RFC7807Error & { issues?: Array<{ path: string[]; message: string }> }>(t));
             pushNotification({ ...errorData, toast: false });
 
             if (response.status === 401) {
@@ -88,7 +90,7 @@
               message.set(errorMsg);
             } else if (response.status === 400 && errorData.issues) {
               for (const issue of errorData.issues) {
-                const fieldName = issue.path[0];
+                const fieldName = issue.path[0] as 'username' | 'password';
                 setError(updateForm, fieldName, issue.message);
               }
               message.set(errorData.detail || 'Validation error');
@@ -100,14 +102,14 @@
             return;
           }
 
-          const data = await response.json();
+          const data = await response.text().then((t) => extJsonParse<{ success?: boolean; user?: Record<string, unknown>; mfa_required?: boolean; mfa_challenge_token?: string; available_factors?: Array<{ factor_id: string; factor_type: string; label: string | null }> }>(t));
           if (data.mfa_required) {
             // MFA challenge required — swap form for MFA challenge UI.
             // Do NOT set cookies or call onsuccess yet — the user must verify
             // a TOTP code first via the MfaChallenge component.
             mfaChallenge = {
-              mfa_challenge_token: data.mfa_challenge_token,
-              available_factors: data.available_factors,
+              mfa_challenge_token: data.mfa_challenge_token ?? '',
+              available_factors: data.available_factors ?? [],
             };
             cancel();
             return;
@@ -115,7 +117,7 @@
           if (data.success && data.user) {
             userProfileStore.setSession(data.user);
           }
-          onsuccess?.(data);
+          onsuccess?.(data as { success: boolean; user: Record<string, unknown> });
         } catch (error) {
           console.error('[Login Error]', error);
           message.set('Errore di connessione o login fallito.');

@@ -148,7 +148,7 @@ test.describe("pagination + search persistence", () => {
           el.dispatchEvent(new Event("input", { bubbles: true }));
         });
         return page.evaluate(() => sessionStorage.getItem("pb:customers:list:search"));
-      }, { timeout: 10_000 })
+      }, { timeout: 5_000 })
       .toBe("admin-seed");
     // appliedSearch is debounced — wait until the store write lands
     await expect

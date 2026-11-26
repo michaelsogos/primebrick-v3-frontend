@@ -29,6 +29,7 @@
   import { loadPublicTranslations } from '$lib/i18n/use-module-translations.svelte';
   import { uiLang } from '$lib/i18n/store.svelte';
   import { get } from 'svelte/store';
+  import { extJsonStringify } from '$lib/api-ext';
 
   const healthChip = $derived(backendState.healthChip);
 
@@ -113,7 +114,7 @@
           await apiFetch('/api/v1/auth/login-alert', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ alert_type: alertType, token: alertToken }),
+            body: extJsonStringify({ alert_type: alertType, token: alertToken }),
           });
         } catch (e) {
           console.error('[login] Failed to send login alert:', e);

@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { extJsonParse } from "@primebrick/core/ext-json";
 import { loginAsTestAdmin } from "./helpers/admin-login";
 
 /**
@@ -41,7 +42,7 @@ async function openFiltersSheet(page: Page) {
   // Some pages carry a second "Filters" affordance (e.g. filter-bar chips)
   // — the toolbar toggle is the first.
   await page.getByRole("button", { name: "Filters", exact: true }).first().click();
-  await expect(page.getByTestId("filters-apply")).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByTestId("filters-apply")).toBeVisible({ timeout: 5_000 });
 }
 
 /** The PrimeField control wired to a label's `for` — the structural id pair. */
@@ -49,7 +50,7 @@ async function labeledControl(page: Page, labelText: RegExp) {
   // The sheet content renders once entity meta resolves — under a loaded
   // suite the label can lag the footer apply button by a beat.
   const label = page.locator("label", { hasText: labelText }).first();
-  await expect(label).toBeVisible({ timeout: 30_000 });
+  await expect(label).toBeVisible({ timeout: 5_000 });
   const id = await label.getAttribute("for");
   expect(id).toBeTruthy();
   return { label, control: page.locator(`[id="${id}"]`) };
@@ -62,7 +63,7 @@ test.describe("elt filters widget parity", () => {
 
   test("standard tab — census subject column renders the governed combo", async ({ page }) => {
     await page.goto(TRIGGERS, { waitUntil: "domcontentloaded" });
-    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 5_000 });
     await openFiltersSheet(page);
 
     // event_subject ("Listening Event") — options_source:"census.emits".
@@ -76,7 +77,7 @@ test.describe("elt filters widget parity", () => {
     // Census emits carry the detailed anatomy — the raw subject is the
     // option's secondary line (dotted NATS shape).
     const popover = page.locator("[data-popover-content], [cmdk-list]").last();
-    await expect(popover).toBeVisible({ timeout: 10_000 });
+    await expect(popover).toBeVisible({ timeout: 5_000 });
     await expect(popover.getByText(/\w+\.\w+/).first()).toBeVisible();
     await page.keyboard.press("Escape");
   });
@@ -84,7 +85,7 @@ test.describe("elt filters widget parity", () => {
   test("standard tab — badge multi applies as op=IN with repeated value[]", async ({ page }) => {
     const urls = watchList(page, "job_trigger");
     await page.goto(TRIGGERS, { waitUntil: "domcontentloaded" });
-    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 5_000 });
     await openFiltersSheet(page);
 
     // run_as ("Run As") — badge multi ComboSelect.
@@ -92,7 +93,7 @@ test.describe("elt filters widget parity", () => {
     await expect(control).toHaveAttribute("role", "combobox");
     await control.click();
     const popover = page.locator("[data-popover-content], [cmdk-list]").last();
-    await expect(popover).toBeVisible({ timeout: 10_000 });
+    await expect(popover).toBeVisible({ timeout: 5_000 });
     // run_as badge vocab: system / originator / author — labels resolve to
     // System / User Event / Trigger Owner; pick two.
     await popover.getByText(/^System$/i).first().click();
@@ -115,7 +116,7 @@ test.describe("elt filters widget parity", () => {
   test("standard tab — boolean column renders tri-state and applies =true", async ({ page }) => {
     const urls = watchList(page, "user_profile");
     await page.goto(USERS, { waitUntil: "domcontentloaded" });
-    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 5_000 });
     await openFiltersSheet(page);
 
     // suspended — the boolean tri-state group.
@@ -138,7 +139,7 @@ test.describe("elt filters widget parity", () => {
       if (req.url().includes("/entities/user_profile/audit-actors")) actorUrls.push(req.url());
     });
     await page.goto(USERS, { waitUntil: "domcontentloaded" });
-    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 5_000 });
     await openFiltersSheet(page);
 
     // created_by — options_source:"audit.actors": the table's own writers,
@@ -146,12 +147,12 @@ test.describe("elt filters widget parity", () => {
     const { control } = await labeledControl(page, /created.?by/i);
     await expect(control).toHaveAttribute("role", "combobox");
     // Mounting the control fetches the governed vocabulary endpoint.
-    await expect.poll(() => actorUrls.length, { timeout: 15_000 }).toBeGreaterThan(0);
+    await expect.poll(() => actorUrls.length, { timeout: 5_000 }).toBeGreaterThan(0);
   });
 
   test("datetime columns are advanced-only — ranges live in criteria, not quick-filters", async ({ page }) => {
     await page.goto(TRIGGERS, { waitUntil: "domcontentloaded" });
-    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 5_000 });
     await openFiltersSheet(page);
 
     // last_run/next_run (datetime) — a same-instant equality quick-filter
@@ -164,13 +165,13 @@ test.describe("elt filters widget parity", () => {
     const fieldId = await fieldLabel.getAttribute("for");
     await page.locator(`[id="${fieldId}"]`).click();
     const popover = page.locator("[data-popover-content], [cmdk-list]").last();
-    await expect(popover.getByText(/last.?run/i).first()).toBeVisible({ timeout: 10_000 });
+    await expect(popover.getByText(/last.?run/i).first()).toBeVisible({ timeout: 5_000 });
     await page.keyboard.press("Escape");
   });
 
   test("numeric columns are advanced-only — `>`/`BETWEEN` live in criteria, not quick-filters", async ({ page }) => {
     await page.goto(TRIGGERS, { waitUntil: "domcontentloaded" });
-    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 5_000 });
     await openFiltersSheet(page);
 
     // runs (ref_count) — a bare `=` quick-filter is rarely the question;
@@ -185,9 +186,9 @@ test.describe("elt filters widget parity", () => {
     const fieldId = await fieldLabel.getAttribute("for");
     await page.locator(`[id="${fieldId}"]`).click();
     const popover = page.locator("[data-popover-content], [cmdk-list]").last();
-    await expect(popover.getByText(/^runs$/i).first()).toBeVisible({ timeout: 10_000 });
+    await expect(popover.getByText(/^runs$/i).first()).toBeVisible({ timeout: 5_000 });
     await popover.getByText(/^runs$/i).first().click();
-    await expect(page.locator('[role="spinbutton"]').first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('[role="spinbutton"]').first()).toBeVisible({ timeout: 5_000 });
     await page.keyboard.press("Escape");
   });
 
@@ -197,18 +198,18 @@ test.describe("elt filters widget parity", () => {
     // else the raw actor. The combo MUST render `label`.
     const respPromise = page.waitForResponse(
       (r) => r.url().includes("/entities/job_trigger/audit-actors") && r.status() === 200,
-      { timeout: 30_000 },
+      { timeout: 5_000 },
     );
     await page.goto(TRIGGERS, { waitUntil: "domcontentloaded" });
-    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 5_000 });
     await openFiltersSheet(page);
-    const items = (await (await respPromise).json()).items as { value: string; label: string }[];
+    const items = (await (await respPromise).text().then((t) => extJsonParse<Record<string, unknown>>(t))).items as { value: string; label: string }[];
     expect(items.length).toBeGreaterThan(0);
 
     const { control } = await labeledControl(page, /created.?by/i);
     await control.click();
     const popover = page.locator("[data-popover-content], [cmdk-list]").last();
-    await expect(popover).toBeVisible({ timeout: 10_000 });
+    await expect(popover).toBeVisible({ timeout: 5_000 });
 
     for (const item of items.slice(0, 5)) {
       await expect(popover.getByText(item.label, { exact: true }).first()).toBeVisible();
@@ -227,7 +228,7 @@ test.describe("elt filters widget parity", () => {
 
   test("standard tab — help icon exists only where the meta declares it", async ({ page }) => {
     await page.goto(USERS, { waitUntil: "domcontentloaded" });
-    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 5_000 });
     await openFiltersSheet(page);
 
     // suspended: no tooltip metadata → NO help control
@@ -242,7 +243,7 @@ test.describe("elt filters widget parity", () => {
   test("standard tab — entity ref column opens a paged combo fed by /list", async ({ page }) => {
     const urls = watchList(page, "job_schedule");
     await page.goto(RUNS, { waitUntil: "domcontentloaded" });
-    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 5_000 });
     await openFiltersSheet(page);
 
     // job_run.schedule (ref → job_schedule) — labeled "Scheduler"; the
@@ -257,14 +258,14 @@ test.describe("elt filters widget parity", () => {
       .toBe(true);
     await control.click();
     const popover = page.locator("[data-popover-content], [cmdk-list]").last();
-    await expect(popover).toBeVisible({ timeout: 10_000 });
+    await expect(popover).toBeVisible({ timeout: 5_000 });
     await page.keyboard.press("Escape");
   });
 
   test("advanced tab — options_source criterion applies as op= (not ILIKE)", async ({ page }) => {
     const urls = watchList(page, "job_trigger");
     await page.goto(TRIGGERS, { waitUntil: "domcontentloaded" });
-    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 5_000 });
     await openFiltersSheet(page);
 
     await page.getByTestId("filters-mode-advanced").click();

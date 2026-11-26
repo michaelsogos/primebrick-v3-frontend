@@ -30,9 +30,10 @@
  * A change in the serialized signature refetches from page 1.
  */
 import { apiFetchWithTimeout, entityApiBase } from '$lib/api';
-import { extJsonParse } from '$lib/api-ext';
+import { extJsonParse, extJsonStringify } from '$lib/api-ext';
 import { fetchEntityMeta } from '$lib/entity-list/meta-cache';
 import { defaultSearchGate } from '$lib/entity-list/search-gate';
+import { scalarKeyString } from './depends-on';
 import type {
 	EntityMeta,
 	FilterCondition,
@@ -41,6 +42,7 @@ import type {
 } from '$lib/entity-list/types';
 import type { DeepReadonly } from '@primebrick/ui';
 import { SvelteURLSearchParams } from 'svelte/reactivity';
+import { toDisplayString } from '@primebrick/ui';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -98,21 +100,16 @@ export function useEntityRefOptions(
 		const labelKey = meta.display_field;
 		return rows.map((row) => {
 			const raw = row[uidKey];
-			const value =
-				typeof raw === 'string' || typeof raw === 'number' || typeof raw === 'boolean'
-					? String(raw)
-					: '';
+			const value = scalarKeyString(raw, `ref option uid '${uidKey}'`);
 			// relation entities serve no display_field — the ref option falls
 			// back to the uid (the only uniform label an edge row has).
 			const label = labelKey !== undefined ? row[labelKey] : undefined;
 			return {
 				value,
 				label:
-					typeof label === 'string' ||
-					typeof label === 'number' ||
-					typeof label === 'boolean'
-						? String(label)
-						: value,
+					label === undefined || label === null
+						? value
+						: scalarKeyString(label, `ref option label '${labelKey}'`),
 				_sub: value,
 			};
 		});
@@ -135,9 +132,9 @@ export function useEntityRefOptions(
 				qs.set(`filters[${fi}][field]`, f.field);
 				qs.set(`filters[${fi}][op]`, f.op);
 				if (Array.isArray(f.value)) {
-					for (const v of f.value) qs.append(`filters[${fi}][value][]`, String(v));
+					for (const v of f.value) qs.append(`filters[${fi}][value][]`, toDisplayString(v));
 				} else {
-					qs.set(`filters[${fi}][value]`, String(f.value));
+					qs.set(`filters[${fi}][value]`, toDisplayString(f.value));
 				}
 				qs.set(`filters[${fi}][connector]`, 'AND');
 				fi++;
@@ -194,7 +191,7 @@ export function useEntityRefOptions(
 	// current search still applied.
 	let lastFilterSig = '';
 	$effect(() => {
-		const sig = JSON.stringify(scopeFilters);
+		const sig = extJsonStringify(scopeFilters);
 		if (!meta || sig === lastFilterSig) {
 			lastFilterSig = sig;
 			return;

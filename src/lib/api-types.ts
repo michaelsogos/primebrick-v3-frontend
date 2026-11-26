@@ -32,7 +32,7 @@ export type PendingTranslationRow = {
   language: string;
   value: string;
   uuid?: string;
-  version?: number;
+  version?: bigint;
 };
 
 export type ModuleInfo = {
@@ -194,7 +194,7 @@ export type ServiceInfo = {
   schemas?: string[];
   pkg_name?: string;
   is_default?: boolean;
-  version?: number;
+  version?: bigint;
   created_at?: string;
 };
 
@@ -204,7 +204,7 @@ export type ModuleConfigEntry = {
   value: string | null;
   label_key?: string;
   description_key?: string;
-  version: number;
+  version: bigint;
 };
 
 /**

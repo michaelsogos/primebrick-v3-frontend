@@ -2,7 +2,7 @@
   import { orderedColumns } from '$lib/entity-list';
   import { browser } from '$app/environment';
   import { t } from '$lib/i18n';
-  import { Button } from '@primebrick/ui';
+  import { Button, toDisplayString } from '@primebrick/ui';
   import { TextInput } from '@primebrick/ui';
   import { Badge } from '@primebrick/ui';
   import FormPageLayout from '$lib/components/FormPageLayout.svelte';
@@ -44,6 +44,7 @@
   import { useUnsavedChangesGuard } from '$lib/composables/useUnsavedChangesGuard.svelte';
   import { buildAuditData } from '$lib/utils/audit-data';
   import { usePasswordPolicy } from '$lib/composables/usePasswordPolicy.svelte';
+  import { extJsonParse, extJsonStringify } from '$lib/api-ext';
 
   const { notifyParentRefresh } = useSyncChannel('primebrick_users_sync', { mode: 'sender' });
 
@@ -94,11 +95,11 @@
       try {
         const res = await apiFetch('/api/v1/system/organizations/active');
         if (res.ok) {
-          const data = await res.json();
+          const data = await res.text().then((t) => extJsonParse<{ organizations?: OrgOption[] }>(t));
           // Only orgs backed by a real IdP org (idp_name) can host new users —
           // without it the bound value would serialize to "[object Object]".
           availableOrgs = (data.organizations ?? []).filter(
-            (org: Record<string, unknown>) => typeof org.idp_name === 'string' && org.idp_name,
+            (org) => typeof org.idp_name === 'string' && org.idp_name,
           );
         }
       } catch (e) {
@@ -192,17 +193,17 @@
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(body),
+          body: extJsonStringify(body),
         });
 
         if (!response.ok) {
-          const errorData = await response.json();
+          const errorData = await response.text().then((t) => extJsonParse<unknown>(t));
           console.error('Failed to create user:', errorData);
           cancel();
           return;
         }
 
-        const data = await response.json();
+        const data = await response.text().then((t) => extJsonParse<{ profile?: { email?: string; uuid?: string } }>(t));
         console.log('User created successfully');
 
         // Show toast — different message when invitation was sent
@@ -223,7 +224,7 @@
         // unsaved-changes guard sees a still-tainted form and cancels the
         // navigation with a spurious confirm() dialog.
         justSaved = true;
-        await goto(resolve(`/system/settings/users/${encodeURIComponent(String(data.profile?.uuid))}` as '/'));
+        await goto(resolve(`/system/settings/users/${encodeURIComponent(toDisplayString(data.profile?.uuid))}` as '/'));
       } catch (error) {
         console.error('Failed to create user:', error);
         cancel();
@@ -266,7 +267,7 @@
       const params = new URLSearchParams({ username, idp_org: idpOrg });
       const response = await apiFetch(`/api/v1/auth/users/check-username?${params.toString()}`);
       if (!response.ok) return ValidationResult.ERROR_API;
-      const data = await response.json();
+      const data = await response.text().then((t) => extJsonParse<{ available?: boolean }>(t));
       return data.available === true ? ValidationResult.VALID : ValidationResult.NOT_VALID;
     } catch (error) {
       console.error('Error checking username availability:', error);
@@ -647,8 +648,8 @@
         disabled={!formGuard.canSave}
         data-can-save={formGuard.canSave}
         data-has-changes={formGuard.hasChanges}
-        data-tainted={JSON.stringify($tainted ?? null)}
-        data-errors={JSON.stringify($errors ?? null)}
+        data-tainted={extJsonStringify($tainted ?? null)}
+        data-errors={extJsonStringify($errors ?? null)}
       >
         {$t('app.common.save')}
       </Button>

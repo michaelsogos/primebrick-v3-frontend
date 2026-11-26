@@ -8,6 +8,7 @@ import {
 } from "@primebrick/ui";
 import { buildTestScoreUpdate } from "../../e2e/helpers/test-scores";
 
+import { extJsonParse } from '$lib/api-ext';
 describe("E2E test-score update parameter binding", () => {
   it("uses a contiguous parameter list without a VRAM measurement", () => {
     const { query, values } = buildTestScoreUpdate("model", { regex_test_score: {} }, 4.2, "q4f16");
@@ -30,7 +31,7 @@ describe("E2E test-score update parameter binding", () => {
     expect(query).toContain("working_set_detail = $5::jsonb");
     expect(query).toContain("dtype IS NOT DISTINCT FROM $6");
     expect(values[3]).toBe(2);
-    expect(JSON.parse(values[4] as string).measured_ctx_tokens).toBe(128);
+    expect(extJsonParse<{ measured_ctx_tokens: bigint }>(values[4] as string).measured_ctx_tokens).toBe(128n);
   });
 });
 
