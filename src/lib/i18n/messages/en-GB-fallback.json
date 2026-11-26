@@ -1167,6 +1167,7 @@
   "app.widgets.sequence.select_hint": "Search sequences…",
   "app.widgets.sequence.set.ambiguous": "Some values also match other sequences: {codes}",
   "app.widgets.sequence.set.analyze_failed": "Analysis unavailable",
+  "app.widgets.sequence.set.analyze_unbound": "Usage analysis is available only for sequences bound to a field",
   "app.widgets.sequence.set.at_label": "Period reference (optional)",
   "app.widgets.sequence.set.conflicts": "{count} existing values sit above the current counter",
   "app.widgets.sequence.set.description": "Choose the next number this sequence will emit. This changes the counter state only — no existing values are rewritten.",

@@ -86,7 +86,21 @@
     return (['sez', 'sez2', 'sez3'] as const).filter((s) => pattern.includes(`{${s}}`));
   });
 
-  const rowCode = $derived(toDisplayString(row?.code ?? ''));
+  const rowCode = $derived(toDisplayString(row?.code ?? row?.name ?? ''));
+  /** Usage analysis exists only when the sequence is bound to a physical
+   *  `<table>.<field>` target. Operator rows have no scan target by
+   *  construction — calling the RPC would produce the governed 400 every
+   *  time, so the dialog explains the unavailable strip instead. */
+  const analyzeSeries = $derived.by(() => {
+    const binding = typeof row?.binding_key === 'string' && row.binding_key.trim() !== ''
+      ? row.binding_key
+      : typeof row?.name === 'string'
+        ? row.name
+        : '';
+    const target = binding.split('@', 1)[0];
+    return target.split('.').length === 2 ? target : null;
+  });
+  const canAnalyze = $derived(analyzeSeries !== null);
   const canSubmit = $derived(nextValue.trim() !== '' && !isSubmitting && meta !== null);
 
   function sezBody(): Record<string, string> {
@@ -99,7 +113,7 @@
   }
 
   async function runAnalyze() {
-    if (!row) return;
+    if (!row || !canAnalyze) return;
     analyzeFailed = false;
     try {
       const res = await apiFetch(`${svcPrefix}/api/v1/actions/sequence-analyze`, {
@@ -264,6 +278,8 @@
             {$t('app.widgets.sequence.set.ambiguous', { codes: analysis.ambiguous.join(', ') })}
           </p>
         {/if}
+      {:else if !canAnalyze}
+        <p class="text-muted-foreground">{$t('app.widgets.sequence.set.analyze_unbound')}</p>
       {:else if analyzeFailed}
         <p class="text-muted-foreground">{$t('app.widgets.sequence.set.analyze_failed')}</p>
       {:else}

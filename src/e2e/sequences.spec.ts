@@ -71,6 +71,27 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     // The audit group owns the allocation attribution columns.
     expect(byKey.get("last_alloc_at")?.audited).toBe(true);
     expect(byKey.get("last_alloc_by")?.audited).toBe(true);
+    // List anatomy: `name` is the only sticky primary column; row-owned
+    // sez slots are first-class visible data before increment/start; the
+    // cadence stays visible while downstream revive lifecycle columns are
+    // toggleable but absent by default.
+    for (const k of ["name", "sez", "sez2", "sez3", "step", "start"]) {
+      expect(keys, `primary column ${k}`).toContain(k);
+    }
+    expect(keys.indexOf("sez")).toBeGreaterThan(keys.indexOf("name"));
+    expect(keys.indexOf("sez")).toBeLessThan(keys.indexOf("step"));
+    expect(keys.indexOf("sez3")).toBeLessThan(keys.indexOf("step"));
+    expect(keys.indexOf("tz")).toBeLessThan(keys.indexOf("revive_every"));
+    expect(byKey.get("name")?.sticky).toBe(true);
+    for (const k of ["sez", "sez2", "sez3"]) {
+      expect(byKey.get(k)?.sticky).toBe(false);
+      expect(byKey.get(k)?.default_visible).not.toBe(false);
+    }
+    expect(byKey.get("revive_every")?.default_visible).not.toBe(false);
+    for (const k of ["default_from", "revive_slot", "revive_grace", "expire_at"]) {
+      expect(byKey.get(k)?.default_visible).toBe(false);
+      expect(byKey.get(k)?.hidden).not.toBe(true);
+    }
     // `name` is NOT unique — no constraint may be declared on the meta.
     expect(byKey.get("name")?.unique).not.toBe(true);
     // Counter projection — virtual machine-state columns attached
@@ -388,8 +409,11 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     const headTexts = (await page.locator("table thead th").allTextContents())
       .map((t) => t.replace(/\s+/g, " ").trim())
       .filter(Boolean);
-    expect(headTexts.slice(0, 9)).toEqual([
+    expect(headTexts.slice(0, 12)).toEqual([
       "Name",
+      "Sezionale",
+      "Sezionale 2",
+      "Sezionale 3",
       "Increment",
       "Start",
       "Current",
@@ -416,6 +440,9 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     expect(headAfter.indexOf("Last allocated at")).toBeGreaterThan(
       headAfter.indexOf("Time zone"),
     );
+    expect(headTexts).not.toContain("Default from");
+    expect(headTexts).not.toContain("Revive slot");
+    expect(headTexts).not.toContain("Expires at");
     // Restore the default view for the steps below — the toggle persists
     // per session otherwise.
     await page.getByTestId("elt-column-selector").click();
@@ -1446,6 +1473,14 @@ test.describe("builtin sequence registry — mounted by construction", () => {
       return extJsonParse<SeqRow>(await r.text());
     })();
 
+    // Unbound operator rows have no physical scan target — the dialog must
+    // explain the unavailable analysis WITHOUT calling `sequence-analyze`
+    // (the governed 400 used to be the visible symptom).
+    let analyzeFetches = 0;
+    await page.route("**/actions/sequence-analyze", (r) => {
+      analyzeFetches++;
+      return r.continue();
+    });
     await page.goto("/crm/settings/sequences");
     await page.getByTestId("entity-search").locator("input").fill(seq.name!);
     const row = page.locator("table tbody tr", { hasText: seq.name! }).first();
@@ -1463,6 +1498,12 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     const dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible({ timeout: 5_000 });
     await expect(dialog.getByTestId("sequence-set-analysis")).toBeVisible();
+    await expect(dialog.getByTestId("sequence-set-analysis")).toContainText(
+      /bound to a field|associat/i,
+      { timeout: 5_000 },
+    );
+    await page.waitForTimeout(500); // analyze debounce window — zero calls must remain zero
+    expect(analyzeFetches).toBe(0);
 
     // Canonical control anatomy — the point under test:
     //   `next`      → NumericInput (real input, bigint kind)
