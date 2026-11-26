@@ -250,6 +250,28 @@ ALWAYS appends the standard close after them — never re-declare it:
   confirmations/forms; the global sheet is for navigation-adjacent panels
   (lists, details, chats, pickers).
 
+## Dirty-close guard (native confirm — MANDATORY)
+
+A form-surface panel in edit mode registers a close veto:
+`setSheetCloseGuard(panelId, fn)` (sheet-manager) — `SheetHost` consults
+it at the ONE close funnel (`routeDialogClose`), so ✕ / Escape /
+outside-click all trip the same check. The panel's fn resolves `true`
+(close proceeds) or `false` (vetoed).
+
+While `editing && hasChanges`, `entity.record` asks
+`window.confirm()` — **native, synchronous**: it locks the browser until
+answered, so the HTTP-resolution/continuation race a soft in-app dialog
+left open cannot occur (user decision). On confirmed discard the
+surface clears the draft and resets before the close proceeds — no
+stale data on reopen. `beforeunload` stays native for tab/reload.
+
+- The `no-native-dialog` lint exempts ONLY
+  `lib/composables/useUnsavedChangesGuard.svelte.ts` via
+  `.devin/check-standards.json` `allowPaths` — every other surface
+  keeps governed dialogs.
+- Pencil-off (edit-toggle) is the silent-discard path BY CONTRACT —
+  never guarded.
+
 ## Close suppression quirk
 
 bits-ui `Dialog` can emit `onOpenChange(false)` right after a programmatic

@@ -16,7 +16,7 @@
   import { page } from '$app/state';
   import { resolve } from '$app/paths';
   import { t } from '$lib/i18n';
-  import { Button } from '@primebrick/ui';
+  import { Button, toDisplayString } from '@primebrick/ui';
   import { Input } from '@primebrick/ui';
   import { JsonEditor } from '@primebrick/ui';
   import { Dialog } from '@primebrick/ui';
@@ -25,6 +25,7 @@
   import { CircleCheck, CircleX, ExternalLink, Loader2 } from '@primebrick/ui/vendor/lucide';
   import type { AiAction } from './ai-assistant.types';
 
+import { extJsonStringify, extJsonParse } from '$lib/api-ext';
   const NS = 'app.smart.guide.ai.action';
   const READ_ONLY_TOOLS = new Set(['delete_entity', 'restore_entity', 'bulk_entity_action', 'manage_service']);
   const CREATE_UPDATE_TOOLS = new Set(['create_entity', 'update_entity']);
@@ -93,7 +94,7 @@
     if (!requiredFields.length) return [];
     let current: Record<string, unknown>;
     try {
-      current = JSON.parse(argsText);
+      current = extJsonParse<Record<string, unknown>>(argsText);
     } catch {
       return requiredFields; // unparseable → everything missing
     }
@@ -111,7 +112,7 @@
     searchText = '';
     candidates = [];
     resolvedEntity = null;
-    argsText = JSON.stringify(action?.args ?? {}, null, 2);
+    argsText = extJsonStringify(action?.args ?? {}, 2);
     requiredFields = [];
   }
 
@@ -125,7 +126,7 @@
       requiredFields = cols
         .filter((c): c is Record<string, unknown> => !!c && typeof c === 'object')
         .filter((c) => c.required === true || c.nullable === false)
-        .map((c) => String(c.name))
+        .map((c) => toDisplayString(c.name))
         .filter((n) => !['uuid', 'created_at', 'updated_at', 'deleted_at', 'version'].includes(n));
     }
   }
@@ -162,11 +163,13 @@
         ? ((res.result as Record<string, unknown>)[entityName] as Record<string, unknown>)
         : (res.result as Record<string, unknown>);
       // Merge resolved identifiers into args (uuid + version for delete/restore)
-      const next = JSON.parse(argsText || '{}');
+      const next = extJsonParse<Record<string, unknown>>(argsText || '{}');
       next.uuid = uuid;
       const version = resolvedEntity.version;
-      if (version !== undefined && next.version === undefined) next.version = Number(version);
-      argsText = JSON.stringify(next, null, 2);
+      // version rides verbatim — bigint by wire construction; the argsText
+      // round-trip (extJsonStringify → extJsonParse) preserves it exactly.
+      if (version !== undefined && next.version === undefined) next.version = version;
+      argsText = extJsonStringify(next, 2);
       phase = 'confirm';
     } else {
       resolvedEntity = c;
@@ -181,7 +184,7 @@
     let args: Record<string, unknown> = action.args;
     if (isCreateUpdate || !isReadOnlyArgs) {
       try {
-        args = JSON.parse(argsText);
+        args = extJsonParse<Record<string, unknown>>(argsText);
       } catch {
         error = 'Invalid JSON';
         executing = false;
@@ -243,7 +246,7 @@
       </div>
       {#if candidates.length > 0}
         <ul class="max-h-48 space-y-1 overflow-auto">
-          {#each candidates as c (String(c.uuid))}
+          {#each candidates as c (toDisplayString(c.uuid))}
             <li>
               <button
                 type="button"
@@ -251,7 +254,7 @@
                 onclick={() => void pickCandidate(c)}
               >
                 {(c.name ?? c.email ?? c.title ?? c.code ?? c.uuid) as string}
-                <span class="ml-1 text-muted-foreground">({String(c.uuid).slice(0, 8)}…)</span>
+                <span class="ml-1 text-muted-foreground">({toDisplayString(c.uuid).slice(0, 8)}…)</span>
               </button>
             </li>
           {/each}

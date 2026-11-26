@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import { t } from '$lib/i18n';
   import { JsonCodeBlock, JsonEditor } from '@primebrick/ui';
   import { AiIcon } from '@primebrick/ui';
@@ -9,6 +10,7 @@
   import type { ConfigEntryType } from '$lib/api-types';
   import { typeConfigJsonSchema } from '$lib/config/type-config-schema';
 
+import { extJsonStringify, extJsonParse } from '$lib/api-ext';
   let {
     type,
     builder,
@@ -25,15 +27,14 @@
   // The editor works on PRETTY JSON; the builder keeps the compact
   // storage serialization (type_config is emitted verbatim in advanced mode).
   // Seed only; kept in sync by toggleAdvanced on mode entry, never re-read
-  // upstream afterwards.
-  // svelte-ignore state_referenced_locally
+  // upstream afterwards — untrack marks the intentional one-time read.
   let rawJsonInput = $state(
-    builder.state.advancedMode ? prettyJson(builder.json) : ''
+    untrack(() => (builder.state.advancedMode ? prettyJson(builder.json) : ''))
   );
 
   function prettyJson(json: string): string {
     try {
-      return JSON.stringify(JSON.parse(json), null, 2);
+      return extJsonStringify(extJsonParse<unknown>(json), 2);
     } catch {
       return json;
     }
@@ -41,7 +42,7 @@
 
   function compactJson(json: string): string {
     try {
-      return JSON.stringify(JSON.parse(json));
+      return extJsonStringify(extJsonParse<unknown>(json));
     } catch {
       return json;
     }
@@ -74,7 +75,7 @@
   // Falls back to the raw string when the JSON can't be parsed.
   const previewJson = $derived.by(() => {
     try {
-      return JSON.parse(builder.json);
+      return extJsonParse<unknown>(builder.json);
     } catch {
       return builder.json;
     }

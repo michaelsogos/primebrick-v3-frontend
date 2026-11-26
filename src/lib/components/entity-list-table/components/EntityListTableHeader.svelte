@@ -48,12 +48,15 @@
     onBulkDuplicate,
     onBulkDelete,
     onBulkRestore,
+    onBulkEdit,
+    bulkEditChrome,
     bulkCapabilities,
     bulkCustomActions = [],
     onBulkCustomAction,
     bulkDeleteChrome,
     bulkRestoreChrome,
     bulkDuplicateChrome,
+    bulkExportChrome,
     selectAll,
     sort,
     ianaToggle
@@ -105,12 +108,15 @@
     onBulkDuplicate: () => void;
     onBulkDelete: () => void;
     onBulkRestore: () => void;
-    bulkCapabilities?: { export: boolean; htmlExport: boolean; duplicate: boolean; delete: boolean; restore: boolean };
+    onBulkEdit?: () => void;
+    bulkEditChrome?: ActionChrome;
+    bulkCapabilities?: { export: boolean; htmlExport: boolean; duplicate: boolean; delete: boolean; restore: boolean; edit?: boolean };
     bulkCustomActions?: BulkCustomAction[];
     onBulkCustomAction?: (action: BulkCustomAction) => void;
     bulkDeleteChrome?: ActionChrome;
     bulkRestoreChrome?: ActionChrome;
     bulkDuplicateChrome?: ActionChrome;
+    bulkExportChrome?: ActionChrome;
     /** Populated only for card/card_list views — the shared lower bar's
      *  leading zones (select-all | sort builder | IANA CTA). Table view
      *  passes none (its chrome lives in thead/th). */
@@ -187,12 +193,15 @@
   onBulkDuplicate={onBulkDuplicate}
   onBulkDelete={onBulkDelete}
   onBulkRestore={onBulkRestore}
+  onBulkEdit={onBulkEdit}
+  bulkEditChrome={bulkEditChrome}
   bulkCapabilities={bulkCapabilities}
   bulkCustomActions={bulkCustomActions}
   onBulkCustomAction={onBulkCustomAction}
   bulkDeleteChrome={bulkDeleteChrome}
   bulkRestoreChrome={bulkRestoreChrome}
   bulkDuplicateChrome={bulkDuplicateChrome}
+  bulkExportChrome={bulkExportChrome}
   selectAll={selectAll}
   sort={sort}
   ianaToggle={ianaToggle}

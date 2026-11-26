@@ -3,7 +3,9 @@
   import { Button } from '@primebrick/ui';
   import { Dialog } from '@primebrick/ui';
   import { BorderedDialog } from '@primebrick/ui';
+  import { actionColorButtonVariant } from '@primebrick/ui';
   import { getEntitiesNsContext } from '../context';
+  import type { ActionChrome } from '../types';
 
   interface HtmlExportDialogProps {
     open: boolean;
@@ -16,6 +18,9 @@
     isExporting: boolean;
     onConfirm: () => void;
     onCancel: () => void;
+    /** `meta.actions["export"]` chrome — the op's `color` IS the dialog
+     *  severity; export defaults `primary` by design. */
+    chrome?: ActionChrome;
   }
 
   let {
@@ -27,13 +32,15 @@
     entities_ns,
     isExporting,
     onConfirm,
-    onCancel
+    onCancel,
+    chrome
   }: HtmlExportDialogProps = $props();
 
   const ns = $derived(entities_ns ?? getEntitiesNsContext());
+  let severity = $derived(chrome?.color ?? 'primary');
 </script>
 
-<BorderedDialog bind:open={open} {onOpenChange} severity="warning" class="sm:max-w-md" showCloseButton={false}>
+<BorderedDialog bind:open={open} {onOpenChange} {severity} class="sm:max-w-md" showCloseButton={false}>
   <Dialog.Header class="pb-4">
     <Dialog.Title>{$t('app.common.export_html_confirm_title')}</Dialog.Title>
     <Dialog.Description>
@@ -54,7 +61,7 @@
       {$t('app.common.cancel')}
     </Button>
     <Button
-      variant="warning"
+      variant={actionColorButtonVariant(severity)}
       class="hover:scale-105 transition-all flex-1 sm:flex-none"
       onclick={onConfirm}
       disabled={isExporting}

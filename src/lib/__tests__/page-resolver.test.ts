@@ -74,8 +74,8 @@ const settingsModule: ModuleInfo = {
 	is_default: true,
 	route_prefixes: ['/system/settings'],
 	nav: [
-		{ id: 'profile', label_key: 'tabs.profile', href: '/system/settings/profile', default: true },
-		{ id: 'users', label_key: 'tabs.users', href: '/system/settings/users' },
+		{ id: 'profile', label_key: 'app.tabs.profile', href: '/system/settings/profile', default: true },
+		{ id: 'users', label_key: 'app.tabs.users', href: '/system/settings/users' },
 	],
 	routes: [
 		{ route: '/system/settings/profile' },
@@ -261,6 +261,48 @@ describe('resolvePageForPath — dict archetype', () => {
 			] as ModuleInfo['routes'],
 		};
 		const r = resolvePageForPath('/crm/settings/customer_types', [
+			...MODULES.filter((m) => m.id !== 'crm-settings'),
+			broken,
+		]);
+		expect(r.kind).toBe('error');
+		if (r.kind === 'error') expect(r.error_kind).toBe('contract');
+	});
+});
+
+describe('resolvePageForPath — list archetype', () => {
+	it('kind:"list" + entity resolves to the entity_list archetype', () => {
+		const withSequences: ModuleInfo = {
+			...crmSettingsModule,
+			routes: [
+				...(crmSettingsModule.routes ?? []),
+				{
+					route: '/crm/settings/sequences',
+					kind: 'list',
+					entity: 'sequence',
+					label_key: 'crm.settings.nav.sequences',
+				},
+			] as ModuleInfo['routes'],
+		};
+		const r = resolvePageForPath('/crm/settings/sequences', [
+			...MODULES.filter((m) => m.id !== 'crm-settings'),
+			withSequences,
+		]);
+		expect(r.kind).toBe('archetype');
+		if (r.kind === 'archetype') {
+			expect(r.archetype).toBe('entity_list');
+			expect(r.decl.route).toBe('/crm/settings/sequences');
+			expect(r.decl.entity).toBe('sequence');
+		}
+	});
+
+	it('list route without entity falls to the contract error', () => {
+		const broken: ModuleInfo = {
+			...crmSettingsModule,
+			routes: [
+				{ route: '/crm/settings/sequences', kind: 'list' },
+			] as ModuleInfo['routes'],
+		};
+		const r = resolvePageForPath('/crm/settings/sequences', [
 			...MODULES.filter((m) => m.id !== 'crm-settings'),
 			broken,
 		]);

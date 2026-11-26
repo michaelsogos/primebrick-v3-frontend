@@ -158,7 +158,14 @@ Full prop table: see [API reference — combo-select](/docs/dev-guide/api-refere
 Key props: `mode`, `value` (bindable), `options`, `valueField`, `labelField`,
 `isLabelTranslated`, `searchable`, `disabled`, `loading`, `display`,
 `colorField`, `secondaryField`, `itemSnippet`, `selectedSnippet` (only with
-`display="custom"`), `isOptionDisabled`, `getSearchKeywords`.
+`display="custom"`), `isOptionDisabled`, `getSearchKeywords`, `allowCreate`,
+`createdIcon`, `createdIconColor`.
+
+With `allowCreate`, a committed value outside the options vocabulary renders
+the field's own selection anatomy in single mode — `createdIcon`/
+`createdIconColor` are synthesized into `iconField`/`iconColorField`, so the
+trigger shows icon + text + a muted "New" marker (never a Badge — badges are
+the multi-mode surface, where created values stay badges).
 
 ## Next steps
 

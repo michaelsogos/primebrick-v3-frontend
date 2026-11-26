@@ -9,6 +9,7 @@
 import {
   getOperatorsForColumnType,
   isColumnFilterable,
+  isColumnSortable,
   searchableTextColumns,
   type AdvancedFilter,
   type MetaColumn
@@ -18,6 +19,10 @@ export interface SanitizableListState {
   filterValues: Record<string, unknown> | null;
   advancedFilters: AdvancedFilter[] | null;
   searchInKeys: string[] | null;
+  /** Persisted `sort_key` — a renamed/removed column poisons every call
+   *  into a 400 (`sort_key=code` after code→name). Dropped to null so
+   *  the meta `default_sort` applies. */
+  sortKey: string | null;
 }
 
 export interface SanitizeListStateResult {
@@ -27,6 +32,8 @@ export interface SanitizeListStateResult {
   droppedAdvancedIds: string[];
   /** `search_in` scope keys dropped. */
   droppedSearchInKeys: string[];
+  /** The dropped persisted sort key, if any. */
+  droppedSortKey: string | null;
 }
 
 export function sanitizeListState(
@@ -37,11 +44,20 @@ export function sanitizeListState(
     columns.filter((c) => isColumnFilterable(c)).map((c) => c.key)
   );
   const searchable = new Set(searchableTextColumns(columns).map((c) => c.key));
+  const sortable = new Set(
+    columns.filter((c) => isColumnSortable(c)).map((c) => c.key)
+  );
   const typeByKey = new Map(columns.map((c) => [c.key, c.type]));
 
   const droppedFilterFields: string[] = [];
   const droppedAdvancedIds: string[] = [];
   const droppedSearchInKeys: string[] = [];
+  let droppedSortKey: string | null = null;
+
+  if (state.sortKey !== null && !sortable.has(state.sortKey)) {
+    droppedSortKey = state.sortKey;
+    state.sortKey = null;
+  }
 
   if (state.filterValues) {
     for (const key of Object.keys(state.filterValues)) {
@@ -73,5 +89,5 @@ export function sanitizeListState(
     if (!state.searchInKeys.length) state.searchInKeys = null;
   }
 
-  return { droppedFilterFields, droppedAdvancedIds, droppedSearchInKeys };
+  return { droppedFilterFields, droppedAdvancedIds, droppedSearchInKeys, droppedSortKey };
 }

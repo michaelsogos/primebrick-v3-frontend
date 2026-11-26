@@ -3,8 +3,9 @@
   import { onMount } from 'svelte';
   import AppShell from '$lib/components/AppShell.svelte';
   import AuthMethodsPromptDialog from '$lib/components/auth/AuthMethodsPromptDialog.svelte';
+  import EntityOpConfirmHost from '$lib/entity-list/EntityOpConfirmHost.svelte';
   import { apiFetch } from '$lib/api';
-  import { userProfileStore } from '$lib/user-profile-store.svelte';
+  import { userProfileStore, type UserProfile } from '$lib/user-profile-store.svelte';
   import { authConfigState, loadAuthConfig } from '$lib/auth-config-store.svelte';
   import { shouldShowEnforcer, showEnforcer } from '$lib/auth-enforcer-store.svelte';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
@@ -17,6 +18,7 @@
   import { CORE_DICT_MODULES } from '$lib/i18n';
   import { uiLang } from '$lib/i18n/store.svelte';
   import { get } from 'svelte/store';
+  import { extJsonParse } from '$lib/api-ext';
 
   let { children }: { children: Snippet } = $props();
 
@@ -70,7 +72,7 @@
     try {
       const res = await apiFetch('/api/v1/auth/me');
       if (res.ok) {
-        const data = await res.json();
+        const data = await res.text().then((t) => extJsonParse<{ success: boolean; profile: UserProfile; is_admin?: boolean; has_passkey?: boolean; has_mfa?: boolean; auth_method_enforcer_dismissed?: boolean; permissions?: string[] }>(t));
         if (data.success && data.profile) {
           userProfileStore.set({
             uuid: data.profile.uuid,
@@ -156,4 +158,5 @@
 </AppShell>
 
 <AuthMethodsPromptDialog />
+<EntityOpConfirmHost />
 

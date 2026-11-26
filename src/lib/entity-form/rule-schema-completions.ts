@@ -28,8 +28,9 @@
  */
 import { syntaxTree } from '@codemirror/language';
 import type { EditorState } from '@codemirror/state';
-import { PAYLOAD_MAP_META_KINDS } from '@primebrick/ui';
+import { PAYLOAD_MAP_META_KINDS, toDisplayString } from '@primebrick/ui';
 
+import { extJsonStringify } from '$lib/api-ext';
 export interface JsonSchema {
 	type?: string;
 	description?: string;
@@ -99,7 +100,7 @@ export function schemaAtPath(schema: JsonSchema, path: string): JsonSchema | und
  *  type-shaped candidates for the common operators. */
 export function valueCandidates(sub: JsonSchema | undefined): { label: string; apply: unknown }[] {
 	if (!sub) return [];
-	if (Array.isArray(sub.enum)) return sub.enum.map((v) => ({ label: JSON.stringify(v), apply: v }));
+	if (Array.isArray(sub.enum)) return sub.enum.map((v) => ({ label: extJsonStringify(v), apply: v }));
 	if (sub.type === 'boolean') return ['true', 'false'].map((v) => ({ label: v, apply: v }));
 	if (sub.type === 'number' || sub.type === 'integer')
 		return [{ label: '0', apply: 0 }];
@@ -178,7 +179,7 @@ export function ruleJsonCompletions(
 		if (!obj || obj.name !== 'Object') return null;
 
 		const { from, to, inString } = replaceRange(ctx, innermost);
-		const quote = (v: unknown) => (inString ? String(v) : JSON.stringify(v));
+		const quote = (v: unknown) => (inString ? toDisplayString(v) : extJsonStringify(v));
 
 		if (propName === 'field' || propName === 'path') {
 			// Dot-paths into the selected event's payload.

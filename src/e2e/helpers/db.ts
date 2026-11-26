@@ -15,6 +15,7 @@
 import { createHash } from "crypto";
 import { Pool, type PoolClient } from "pg";
 
+import { extJsonStringify } from '@primebrick/core/ext-json';
 export const DATABASE_URL =
   process.env.DATABASE_URL ??
   "postgres://primebrick:primebrick_dev@127.0.0.1:5432/primebrick";
@@ -174,7 +175,7 @@ export async function upsertFakeBrevoProvider(
         created_by, updated_by, version)
      VALUES (uuidv7(), 'brevo', $1, $2, $3, 'Primebrick E2E', NULL,
         'system', 'system', 1)
-     ON CONFLICT (provider) DO UPDATE SET
+     ON CONFLICT (provider) WHERE deleted_at IS NULL DO UPDATE SET
        api_key = EXCLUDED.api_key,
        api_endpoint = EXCLUDED.api_endpoint,
        from_email = EXCLUDED.from_email,
@@ -210,7 +211,7 @@ export async function upsertEmailTemplateFixture(template: {
       template.code,
       template.language_iso ?? "en-GB",
       template.subject ?? template.code,
-      template.variables ? JSON.stringify(template.variables) : null,
+      template.variables ? extJsonStringify(template.variables) : null,
     ],
   );
 }

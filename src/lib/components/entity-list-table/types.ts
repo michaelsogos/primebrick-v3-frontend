@@ -47,7 +47,7 @@ export type EntityRowActions = {
   duplicate_chrome?: ActionChrome;
 };
 
-export type ActionChrome = Pick<EntityAction, 'label_key' | 'icon' | 'color' | 'confirm_key' | 'busy_key'>;
+export type ActionChrome = Pick<EntityAction, 'label_key' | 'icon' | 'color' | 'variant' | 'confirm_key' | 'busy_key'>;
 
 export type ViewMode = 'table' | 'cards' | 'cards_list';
 
@@ -63,6 +63,11 @@ export type EntityListTableProps<TRow extends Record<string, unknown>> = {
   uid: string;
   /** Entity type for API calls (e.g., 'customer', 'product') */
   entity?: string;
+  /** Owning service for builtin entities — they mount on EVERY service,
+   *  so the entity→service census map is last-wins ambiguous. The route
+   *  context (`decl.module`) threads it through or side paths (row ops,
+   *  audit, sheets, export) land on the wrong schema. */
+  service?: string;
   /**
    * Snake_case singular translation key prefix for dynamic i18n keys.
    * Used by dialogs and version history to build keys like
@@ -143,6 +148,11 @@ export type EntityListTableProps<TRow extends Record<string, unknown>> = {
    *  override the generic "New" label in the toolbar button. */
   create_cta?: { label_key?: string; icon?: string };
   onEditAction?: (row: TRow) => void;
+  /** Row dblclick override — `EntityTablePage` wires `entity.record`
+   *  (update mode) for entities whose record surface is the sheet (no
+   *  `kind:"detail"` census route). Absent → the built-in default opens
+   *  the detail route in a new tab. */
+  onRowDblClick?: (row: TRow) => void;
   filterValues?: Record<string, unknown>;
   onFilterValuesChange?: (values: Record<string, unknown>) => void;
   onResetFilters?: () => void;

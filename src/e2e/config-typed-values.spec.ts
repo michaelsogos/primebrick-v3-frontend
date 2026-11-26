@@ -33,7 +33,7 @@ test.describe("Typed configuration values", () => {
     // Wait for the config list to hydrate — at least one config row should appear.
     // The security page always has reserved rows (oidc_issuer_url, etc.).
     await expect(page.locator("[data-testid^='config-row-']").first()).toBeVisible({
-      timeout: 10000,
+      timeout: 5_000,
     });
   });
 
@@ -42,7 +42,7 @@ test.describe("Typed configuration values", () => {
 
     // Wait for hydration
     await expect(page.locator("[data-testid^='config-row-']").first()).toBeVisible({
-      timeout: 10000,
+      timeout: 5_000,
     });
 
     // At least one numeric input should be present for bigint-typed entries
@@ -59,7 +59,7 @@ test.describe("Typed configuration values", () => {
     await page.goto("/system/settings/configurations", { waitUntil: "domcontentloaded" });
 
     await expect(page.locator("[data-testid^='config-row-']").first()).toBeVisible({
-      timeout: 10000,
+      timeout: 5_000,
     });
 
     // Boolean-typed entries render as switches
@@ -74,7 +74,7 @@ test.describe("Typed configuration values", () => {
     await page.goto("/system/settings/configurations", { waitUntil: "domcontentloaded" });
 
     await expect(page.locator("[data-testid^='config-row-']").first()).toBeVisible({
-      timeout: 10000,
+      timeout: 5_000,
     });
 
     // Secret-typed entries (oidc_client_secret, service_client_shield_secret) render as password inputs
@@ -89,7 +89,7 @@ test.describe("Typed configuration values", () => {
     await page.goto("/system/settings/configurations", { waitUntil: "domcontentloaded" });
 
     await expect(page.locator("[data-testid^='config-row-']").first()).toBeVisible({
-      timeout: 10000,
+      timeout: 5_000,
     });
 
     // Reserved rows should not have a delete button (reserved = not deletable)

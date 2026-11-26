@@ -28,6 +28,7 @@
   import { onMount } from 'svelte';
   import { Bot } from '@primebrick/ui/vendor/lucide';
 
+import { extJsonStringify, extJsonParse } from '$lib/api-ext';
   let {
     config_type,
     config_key = '',
@@ -132,14 +133,14 @@
       [
         'You are a UI copywriter. Rewrite and translate the given validation',
         'error message for each requested locale: short, clear, idiomatic.',
-        `Respond with JSON ONLY, an object mapping each locale to its text: ${JSON.stringify(UI_LANGS)}.`,
+        `Respond with JSON ONLY, an object mapping each locale to its text: ${extJsonStringify(UI_LANGS)}.`,
       ].join(' '),
-      `Source message (${sourceLang}): ${JSON.stringify(message)}`,
+      `Source message (${sourceLang}): ${extJsonStringify(message)}`,
     );
     const match = raw.match(/\{[\s\S]*\}/);
     let generated: Record<string, string>;
     try {
-      generated = match ? JSON.parse(match[0]) : {};
+      generated = match ? extJsonParse<Record<string, string>>(match[0]) : {};
     } catch { generated = {}; }
     // Always seed the user's own text for their language even if the model
     // skipped it; fall back to the source text for missing locales.
@@ -184,9 +185,9 @@
     if (!ai) return;
     let merged: Record<string, unknown>;
     try {
-      merged = JSON.parse(currentJsonText() || '{}');
+      merged = extJsonParse<Record<string, unknown>>(currentJsonText() || '{}');
     } catch { merged = {}; }
-    ai.proposeCandidate(JSON.stringify(setJsonPath(merged, path, key)));
+    ai.proposeCandidate(extJsonStringify(setJsonPath(merged, path, key)));
   }
 
   /**
@@ -236,7 +237,7 @@
 
     if (target.kind === 'value') {
       void ai.sendModelMessage(
-        `Set "${target.path}" to ${JSON.stringify(target.value)} and return the complete type_config JSON.`,
+        `Set "${target.path}" to ${extJsonStringify(target.value)} and return the complete type_config JSON.`,
       );
       return;
     }
@@ -249,7 +250,7 @@
         return;
       }
       try {
-        const compact = JSON.stringify(JSON.parse(target.json));
+        const compact = extJsonStringify(extJsonParse<unknown>(target.json));
         on_apply_json(compact);
         ai.resolveChoice(message.uuid, 'applied', {
           condensed_content: $t('app.smart.json.ai.applied_summary', { json: compact }),

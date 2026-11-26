@@ -20,7 +20,7 @@ test("number cells render right-aligned, tabular digits, locale-formatted", asyn
   // — widen to "All" so the completed runs surface.
   await page.getByRole("button", { name: "All", exact: true }).click();
   const firstRow = page.locator("table tbody tr").first();
-  await expect(firstRow).toBeVisible({ timeout: 30000 });
+  await expect(firstRow).toBeVisible({ timeout: 5_000 });
 
   // The numeric anatomy: right-aligned + tabular digits on the data cell.
   const numericCells = firstRow.locator("td.text-right.tabular-nums");

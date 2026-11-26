@@ -4,6 +4,7 @@ import type { NumericUomSpec } from '@primebrick/ui';
 import { dec, isDecimal, mul, div, toPG } from '@primebrick/ui';
 import type { Decimal } from '@primebrick/ui';
 
+import { extJsonStringify } from '$lib/api-ext';
 describe('useNumericInput', () => {
   // Helper to create a composable with simple reactive getters
   function createComposable(
@@ -53,17 +54,17 @@ describe('useNumericInput', () => {
   });
 
   it('isUnsigned is false when validation.unsigned is absent', () => {
-    const { num } = createComposable('bigint', JSON.stringify({ validation: { required: true, rules: {} } }));
+    const { num } = createComposable('bigint', extJsonStringify({ validation: { required: true, rules: {} } }));
     expect(num.isUnsigned).toBe(false);
   });
 
   it('isUnsigned is false when validation.unsigned is false', () => {
-    const { num } = createComposable('bigint', JSON.stringify({ validation: { unsigned: false, required: true, rules: {} } }));
+    const { num } = createComposable('bigint', extJsonStringify({ validation: { unsigned: false, required: true, rules: {} } }));
     expect(num.isUnsigned).toBe(false);
   });
 
   it('isUnsigned is true when validation.unsigned is true', () => {
-    const { num } = createComposable('bigint', JSON.stringify({ validation: { unsigned: true, required: true, rules: {} } }));
+    const { num } = createComposable('bigint', extJsonStringify({ validation: { unsigned: true, required: true, rules: {} } }));
     expect(num.isUnsigned).toBe(true);
   });
 
@@ -75,25 +76,25 @@ describe('useNumericInput', () => {
   // ─── effectiveMin ────────────────────────────────────────────────────
 
   it('effectiveMin is null when no min rule and not unsigned', () => {
-    const { num } = createComposable('bigint', JSON.stringify({ validation: { required: true, rules: {} } }));
+    const { num } = createComposable('bigint', extJsonStringify({ validation: { required: true, rules: {} } }));
     expect(num.effectiveMin).toBe(null);
   });
 
   it('effectiveMin is "0" when unsigned and no explicit min rule', () => {
-    const { num } = createComposable('bigint', JSON.stringify({ validation: { unsigned: true, required: true, rules: {} } }));
+    const { num } = createComposable('bigint', extJsonStringify({ validation: { unsigned: true, required: true, rules: {} } }));
     expect(num.effectiveMin).toBe('0');
   });
 
   it('effectiveMin respects explicit min rule over default 0', () => {
-    const { num } = createComposable('bigint', JSON.stringify({
-      validation: { unsigned: true, required: true, rules: { min: { value: 10, error_label_key: 'err.min' } } },
+    const { num } = createComposable('bigint', extJsonStringify({
+      validation: { unsigned: true, required: true, rules: { min: { value: 10, error_label_key: 'app.err.min' } } },
     }));
     expect(num.effectiveMin).toBe('10');
   });
 
   it('effectiveMin is the explicit min value when not unsigned', () => {
-    const { num } = createComposable('number', JSON.stringify({
-      validation: { required: true, rules: { min: { value: -5, error_label_key: 'err.min' } } },
+    const { num } = createComposable('number', extJsonStringify({
+      validation: { required: true, rules: { min: { value: -5, error_label_key: 'app.err.min' } } },
     }));
     expect(num.effectiveMin).toBe('-5');
   });
@@ -173,19 +174,19 @@ describe('useNumericInput', () => {
   // ─── filterInput (unsigned bigint) ───────────────────────────────────
 
   it('filterInput strips minus for unsigned bigint', () => {
-    const { num } = createComposable('bigint', JSON.stringify({ validation: { unsigned: true, required: true, rules: {} } }));
+    const { num } = createComposable('bigint', extJsonStringify({ validation: { unsigned: true, required: true, rules: {} } }));
     num.filterInput('-42');
     expect(num.rawValue).toBe('42');
   });
 
   it('filterInput strips plus for unsigned bigint', () => {
-    const { num } = createComposable('bigint', JSON.stringify({ validation: { unsigned: true, required: true, rules: {} } }));
+    const { num } = createComposable('bigint', extJsonStringify({ validation: { unsigned: true, required: true, rules: {} } }));
     num.filterInput('+42');
     expect(num.rawValue).toBe('42');
   });
 
   it('filterInput strips all non-digits for unsigned bigint', () => {
-    const { num } = createComposable('bigint', JSON.stringify({ validation: { unsigned: true, required: true, rules: {} } }));
+    const { num } = createComposable('bigint', extJsonStringify({ validation: { unsigned: true, required: true, rules: {} } }));
     num.filterInput('--42++abc');
     expect(num.rawValue).toBe('42');
   });
@@ -219,19 +220,19 @@ describe('useNumericInput', () => {
   // ─── filterInput (unsigned number) ───────────────────────────────────
 
   it('filterInput strips minus for unsigned number', () => {
-    const { num } = createComposable('number', JSON.stringify({ validation: { unsigned: true, required: true, rules: {} } }));
+    const { num } = createComposable('number', extJsonStringify({ validation: { unsigned: true, required: true, rules: {} } }));
     num.filterInput('-3.14');
     expect(num.rawValue).toBe('3.14');
   });
 
   it('filterInput strips plus for unsigned number', () => {
-    const { num } = createComposable('number', JSON.stringify({ validation: { unsigned: true, required: true, rules: {} } }));
+    const { num } = createComposable('number', extJsonStringify({ validation: { unsigned: true, required: true, rules: {} } }));
     num.filterInput('+3.14');
     expect(num.rawValue).toBe('3.14');
   });
 
   it('filterInput keeps one decimal point for unsigned number (en-GB)', () => {
-    const { num } = createComposable('number', JSON.stringify({ validation: { unsigned: true, required: true, rules: {} } }), '', 'en-GB');
+    const { num } = createComposable('number', extJsonStringify({ validation: { unsigned: true, required: true, rules: {} } }), '', 'en-GB');
     num.filterInput('3.1.4');
     expect(num.rawValue).toBe('3.14');
   });
@@ -356,12 +357,12 @@ describe('useNumericInput', () => {
   });
 
   it('currency defaults to EUR when type_config has no currency field', () => {
-    const { num } = createComposable('decimal', JSON.stringify({ validation: { required: true, rules: {} } }));
+    const { num } = createComposable('decimal', extJsonStringify({ validation: { required: true, rules: {} } }));
     expect(num.currency).toBe('EUR');
   });
 
   it('currency reads from type_config', () => {
-    const { num } = createComposable('decimal', JSON.stringify({ currency: 'USD', validation: { required: true, rules: {} } }));
+    const { num } = createComposable('decimal', extJsonStringify({ currency: 'USD', validation: { required: true, rules: {} } }));
     expect(num.currency).toBe('USD');
   });
 
@@ -373,7 +374,7 @@ describe('useNumericInput', () => {
   // ─── filterInput (money) ─────────────────────────────────────────────
 
   it('filterInput works for money type', () => {
-    const { num } = createComposable('decimal', JSON.stringify({ currency: 'EUR', validation: { unsigned: true, required: true, rules: {} } }));
+    const { num } = createComposable('decimal', extJsonStringify({ currency: 'EUR', validation: { unsigned: true, required: true, rules: {} } }));
     num.filterInput('-99.99');
     expect(num.rawValue).toBe('99.99');
   });
@@ -557,7 +558,7 @@ describe('useNumericInput', () => {
   // ─── prop-level min/max bounds ───────────────────────────────────────
 
   it('prop min/max win over type_config rules', () => {
-    const ctx = createComposable('number', JSON.stringify({
+    const ctx = createComposable('number', extJsonStringify({
       validation: { rules: { min: { value: 1 }, max: { value: 9 } } },
     }));
     ctx.setMin(-10);
@@ -567,7 +568,7 @@ describe('useNumericInput', () => {
   });
 
   it('type_config max rule feeds effectiveMax', () => {
-    const { num } = createComposable('number', JSON.stringify({
+    const { num } = createComposable('number', extJsonStringify({
       validation: { rules: { max: { value: 9 } } },
     }));
     expect(num.effectiveMax).toBe('9');

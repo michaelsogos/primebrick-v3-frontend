@@ -120,4 +120,14 @@ describe("Ext-JSON round-trip", () => {
     const roundTrip = extJsonParse<typeof original>(extJsonStringify(original));
     expect(roundTrip.id).toBe(9007199254740993n);
   });
+
+  it("serializes the ELT bulk-delete wire shape — rows carry bigint version", () => {
+    // Regression: `body: JSON.stringify({ items })` threw TypeError when the
+    // row's `version` was a bigint (extJsonParse'd list rows always are).
+    const items = [{ uuid: "u-1", version: 7n }];
+    const wire = extJsonStringify({ items });
+    expect(wire).toBe('{"items":[{"uuid":"u-1","version":7}]}');
+    const back = extJsonParse<{ items: { uuid: string; version: bigint }[] }>(wire);
+    expect(back.items[0].version).toBe(7n);
+  });
 });

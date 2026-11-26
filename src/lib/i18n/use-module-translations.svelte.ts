@@ -24,6 +24,7 @@ import { shellNav } from '$lib/shell/modules-shell.svelte';
 import { fetchModuleTranslations, fetchPublicTranslations, fetchTranslationsFind } from '$lib/api';
 import { onConnectivityRestored } from '$lib/app-connectivity-events';
 import { pushNotification } from '$lib/errors/app-errors';
+import { toDisplayString } from '@primebrick/ui';
 
 const LOADED_TTL_MS = 60 * 60 * 1000; // 1 hour — same as i18n localStorage TTL
 const LOADED_MODULES = new SvelteMap<string, number>(); // cacheKey → loaded_at epoch
@@ -90,7 +91,7 @@ async function ensureModuleTranslations(
       impact: cached ? 'MEDIUM' : 'HIGH',
       message: `Failed to load translations for module '${moduleId}' (${lang})`,
       scope: 'i18n',
-      detail: String(e),
+      detail: (e instanceof Error ? e.message : toDisplayString(e)),
     });
   }
 }
@@ -139,14 +140,14 @@ const FIND_MATCHES_CAP = 64; // BE wire bound — larger sets are chunked.
  * the flat dict store and the matches-signature dedups for LOADED_TTL_MS.
  */
 export async function loadTranslationsByKeys(matches: string[]): Promise<void> {
-  const unique = [...new Set(matches.filter(Boolean))].sort();
+  const unique = [...new SvelteSet(matches.filter(Boolean))].sort();
   if (!unique.length) return;
   const cacheKey = `keys:${unique.join(',')}`;
   if (isLoadedFresh(cacheKey)) return;
   try {
     for (let i = 0; i < unique.length; i += FIND_MATCHES_CAP) {
       const rows = await fetchTranslationsFind(unique.slice(i, i + FIND_MATCHES_CAP));
-      const byLang = new Map<string, Record<string, string>>();
+      const byLang = new SvelteMap<string, Record<string, string>>();
       for (const row of rows) {
         const dict = byLang.get(row.language) ?? {};
         dict[row.key] = row.value;
@@ -167,7 +168,7 @@ export async function loadTranslationsByKeys(matches: string[]): Promise<void> {
       impact: 'MEDIUM',
       message: 'Failed to load module labels',
       scope: 'i18n',
-      detail: String(e),
+      detail: (e instanceof Error ? e.message : toDisplayString(e)),
     });
   }
 }

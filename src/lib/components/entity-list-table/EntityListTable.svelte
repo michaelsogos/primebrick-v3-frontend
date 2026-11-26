@@ -42,8 +42,7 @@
   import { loadModuleTranslations } from '$lib/i18n/use-module-translations.svelte';
   import { uiLang } from '$lib/i18n/store.svelte';
   import { get } from 'svelte/store';
-  import { useMfaStepUp } from '$lib/composables/useMfaStepUp.svelte';
-  import MfaStepUpDialog from '$lib/components/auth/MfaStepUpDialog.svelte';
+
   import { LoadingBar } from '$lib/components/ui/loading-bar';
 
   import type { EntityListTableProps, ActionChrome } from './types';
@@ -51,6 +50,7 @@
   let {
     uid,
     entity = 'customer',
+    service,
     translationKey,
     entities_ns,
     columns,
@@ -95,6 +95,7 @@
     onCreateAction,
     create_cta,
     onEditAction,
+    onRowDblClick: onRowDblClickProp,
     filterValues = {},
     onFilterValuesChange,
     onResetFilters,
@@ -210,7 +211,14 @@
   const censusModuleIds = $derived(
     new Set(
       shellNav.modules
-        .filter((m) => (m.callables?.callables?.length ?? 0) > 0 || (m.events?.emits?.length ?? 0) > 0)
+        // is_reserved platform rows (api gateway) carry callables/emits for
+        // vocabulary census but own no dict — their label_keys are app.*/system.*
+        // core keys already served by the core packs.
+        .filter(
+          (m) =>
+            !m.is_reserved &&
+            ((m.callables?.callables?.length ?? 0) > 0 || (m.events?.emits?.length ?? 0) > 0),
+        )
         .map((m) => m.id),
     ),
   );
@@ -313,6 +321,7 @@
     onVisibleKeysChange: () => onVisibleKeysChange,
     onResetColumnVisibility: () => onResetColumnVisibility,
     entity: () => entity,
+    service: () => service,
     filterableColumns: () => filterableColumns,
     searchableColumns: () => searchableColumns,
     nonAuditingColumns: () => nonAuditingColumns,
@@ -450,6 +459,7 @@
 
   const exportComposable = useExport({
     entity: () => entity,
+    service: () => service,
     selectedKeys: () => selectedKeys,
     uid: () => uid,
     actions: () => entityActions,
@@ -465,12 +475,9 @@
 
   const dialogs = useDialogs<TRow>();
 
-  /** Step-up MFA driver — endpoint-dispatched row/bulk custom actions ride
-   *  it; the dialog renders once at table level. */
-  const stepUp = useMfaStepUp();
-
   const bulkActions = useBulkActions({
     entity: () => entity,
+    service: () => service,
     selectedKeys: () => selectedKeys,
     actions: () => entityActions,
     uid: () => uid,
@@ -479,8 +486,9 @@
     searchInKeys: () => searchInKeys,
     filterValues: () => filterValues,
     advancedFilters: () => advancedFilters,
+    entities_ns: () => entities_ns,
+    total: () => total,
     rowByKey: (key) => (rows as TRow[] | undefined)?.find((r) => rowKey(r) === key),
-    mfaStepUp: () => stepUp,
     onSelectionChange: (keys) => {
       selectedKeys = keys;
     },
@@ -490,10 +498,6 @@
     },
     t: $t,
     dialogs: {
-      openBulkDeleteDialog: dialogs.openBulkDeleteDialog,
-      closeBulkDeleteDialog: dialogs.closeBulkDeleteDialog,
-      openBulkRestoreDialog: dialogs.openBulkRestoreDialog,
-      closeBulkRestoreDialog: dialogs.closeBulkRestoreDialog,
       openDuplicateDialog: dialogs.openDuplicateDialog,
       closeDuplicateDialog: dialogs.closeDuplicateDialog
     },
@@ -534,8 +538,8 @@
    *  carries no override → standard chrome applies. */
   function opChrome(op: string): ActionChrome | undefined {
     const action = entityActions?.find((a) => a.op === op);
-    if (!action?.label_key && !action?.icon && !action?.color && !action?.confirm_key && !action?.busy_key) return undefined;
-    return { label_key: action.label_key, icon: action.icon, color: action.color, confirm_key: action.confirm_key, busy_key: action.busy_key };
+    if (!action?.label_key && !action?.icon && !action?.color && !action?.variant && !action?.confirm_key && !action?.busy_key) return undefined;
+    return { label_key: action.label_key, icon: action.icon, color: action.color, variant: action.variant, confirm_key: action.confirm_key, busy_key: action.busy_key };
   }
 
   const effectiveRowActions = $derived(({
@@ -584,7 +588,8 @@
     htmlExport: opAllowed('export'),
     duplicate: opAllowed('duplicate.bulk'),
     delete: opAllowed('delete.bulk'),
-    restore: opAllowed('restore.bulk')
+    restore: opAllowed('restore.bulk'),
+    edit: opAllowed('update.bulk')
   });
 
   /** Bulk-CTA chrome overrides (`delete.bulk`/`restore.bulk`) — same
@@ -592,9 +597,12 @@
   const bulkDeleteChrome = $derived(opChrome('delete.bulk'));
   const bulkRestoreChrome = $derived(opChrome('restore.bulk'));
   const bulkDuplicateChrome = $derived(opChrome('duplicate.bulk'));
+  const bulkEditChrome = $derived(opChrome('update.bulk'));
+  const bulkExportChrome = $derived(opChrome('export'));
 
   const rowActionsComposable = useRowActions<TRow>({
     entity: () => entity,
+    service: () => service,
     translationKey: () => effectiveTranslationKey,
     entities_ns: () => entities_ns,
     uid: () => uid,
@@ -610,17 +618,10 @@
     closeRowDropdown: closeRowDropdown,
     t: $t,
     customActionHandlers: () => customActionHandlers,
-    mfaStepUp: () => stepUp,
     dialogs: {
-      openDeleteDialog: dialogs.openDeleteDialog,
-      closeDeleteDialog: dialogs.closeDeleteDialog,
-      openRestoreDialog: dialogs.openRestoreDialog,
-      closeRestoreDialog: dialogs.closeRestoreDialog,
       openDuplicateDialog: dialogs.openDuplicateDialog,
       closeDuplicateDialog: dialogs.closeDuplicateDialog,
       setDuplicateScope: dialogs.setDuplicateScope,
-      setRowToDelete: dialogs.setRowToDelete,
-      setRowToRestore: dialogs.setRowToRestore,
       setSingleRowToDuplicate: dialogs.setSingleRowToDuplicate
     }
   });
@@ -807,12 +808,15 @@
     onBulkDuplicate={() => bulkActions.handleBulkDuplicate()}
     onBulkDelete={() => bulkActions.handleBulkDelete()}
     onBulkRestore={() => bulkActions.handleBulkRestore()}
+    onBulkEdit={() => bulkActions.handleBulkEdit()}
+    bulkEditChrome={bulkEditChrome}
     bulkCapabilities={bulkCapabilities}
     bulkCustomActions={effectiveBulkCustomActions}
     onBulkCustomAction={(a) => bulkActions.handleBulkCustomAction(a)}
     bulkDeleteChrome={bulkDeleteChrome}
     bulkRestoreChrome={bulkRestoreChrome}
     bulkDuplicateChrome={bulkDuplicateChrome}
+    bulkExportChrome={bulkExportChrome}
     selectAll={cardSelectAllZone}
     sort={cardSortZone}
     ianaToggle={cardIanaZone}
@@ -872,7 +876,7 @@
     onCloseRowDropdown={closeRowDropdown}
     onEditRow={handleEditRow}
     rowActionsComposable={rowActionsComposable}
-    onRowDblClick={handleRowDblClick}
+    onRowDblClick={onRowDblClickProp ?? handleRowDblClick}
     bind:tableRef
     tableDensityClass={tableDensityClass}
     stickyColumnsState={stickyColumnsState}
@@ -920,19 +924,7 @@
     {entity}
     entities_ns={entities_ns}
     translationKey={effectiveTranslationKey}
-    deleteChrome={opChrome('delete.single')}
-    restoreChrome={opChrome('restore.single')}
-    {bulkDeleteChrome}
-    {bulkRestoreChrome}
     duplicateChrome={effectiveRowActions.duplicate_chrome}
-  />
-
-  <!-- Step-up MFA — row/bulk endpoint actions with a declared mfa spec on
-       the owning route land here on 403 mfa_step_up_required. -->
-  <MfaStepUpDialog
-    bind:open={stepUp.dialogOpen}
-    action={stepUp.pendingAction}
-    target_resource={stepUp.pendingTargetResource}
-    onauthorized={stepUp.handleAuthorized}
+    exportChrome={bulkExportChrome}
   />
 

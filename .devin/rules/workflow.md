@@ -14,3 +14,6 @@ pointer; the normative text lives in the canonical doc.
 
 ## Enforcement
 - Follow the normative body in the canonical doc — it is the contract; this file is only its trigger.
+- MANDATORY: every governed task runs under an open plan file in
+  `primebrick-workspace/ai-plans/` — create it in TIC if missing; follow
+  and update it every turn.

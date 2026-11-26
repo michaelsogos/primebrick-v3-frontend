@@ -25,7 +25,7 @@
  */
 import { SvelteDate } from 'svelte/reactivity';
 import type { DeepReadonly } from '@primebrick/ui';
-import { useAiModels } from '@primebrick/ui';
+import { useAiModels, toDisplayString } from '@primebrick/ui';
 import { apiFetch } from '$lib/api';
 import { useAiCerebellum } from '@primebrick/ui';
 import { resolveEffectiveParams, type EffectiveAiParams } from '@primebrick/ui';
@@ -38,6 +38,7 @@ import type {
   OneOffGenerationOptions,
   ProcessedResponse,
 } from './ai-assistant.types';
+import { extJsonParse, extJsonStringify } from '$lib/api-ext';
 
 /**
  * Maximum number of user+assistant turns to send to the model. When exceeded,
@@ -424,7 +425,7 @@ export function useAiAssistant<TChoice = unknown>(
         break;
       }
       case 'stream_error': {
-        console.debug('[ai-err]', JSON.stringify(msg.error));
+        console.debug('[ai-err]', extJsonStringify(msg.error));
         const error = new Error(msg.error);
         _state.error = msg.error;
         if (active_generation) active_generation.error = error;
@@ -494,7 +495,7 @@ export function useAiAssistant<TChoice = unknown>(
       try {
         current_worker.postMessage({ type: 'generate', messages, params });
       } catch (e) {
-        finishWorkerGeneration(e instanceof Error ? e : new Error(String(e)));
+        finishWorkerGeneration(e instanceof Error ? e : new Error((e instanceof Error ? e.message : toDisplayString(e))));
       }
     });
   }
@@ -621,7 +622,7 @@ export function useAiAssistant<TChoice = unknown>(
         // JSON round-trip: execution_config is a $state proxy — structured
         // clone (postMessage) rejects it with "could not be cloned".
         session_options: effective_params.execution_config?.ort_session_options
-          ? JSON.parse(JSON.stringify(effective_params.execution_config.ort_session_options))
+          ? extJsonParse(extJsonStringify(effective_params.execution_config.ort_session_options))
           : undefined,
         wasm_num_threads: effective_params.execution_config?.ort_num_threads,
       });
@@ -658,7 +659,7 @@ export function useAiAssistant<TChoice = unknown>(
       const res = await apiFetch(`/svc/ai/api/v1/entities/ai_model/${row.uuid}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: extJsonStringify({
           entity: {
             working_set_mb,
             working_set_source: 'e2e_measured',
@@ -1016,7 +1017,7 @@ export function useAiAssistant<TChoice = unknown>(
       _state.is_streaming = true;
       _state.streaming_text = '';
       const responseText = await runGeneration(modelMessages);
-      console.debug('[ai-resp]', responseText.length, JSON.stringify(responseText.slice(-80)));
+      console.debug('[ai-resp]', responseText.length, extJsonStringify(responseText.slice(-80)));
 
       /**
        * regenerate(): sends another generation round with an appended repair

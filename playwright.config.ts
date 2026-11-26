@@ -52,6 +52,11 @@ export default defineConfig({
     baseURL: process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:5173",
     trace: "on-first-retry",
     screenshot: "only-on-failure",
+    // MANDATORY — E2E runs are always headed (visible browser window).
+    // Headless runs are a rule violation: the suite's evidence model
+    // (shared session, mid-flight observation) requires a real window.
+    // See docs/ai/e2e-browser-session.md — do NOT add a headless carve-out.
+    headless: false,
   },
   projects: [
     {

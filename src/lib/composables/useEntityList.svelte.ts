@@ -35,9 +35,10 @@
  *   onMount(() => void list.init());
  */
 import { browser } from '$app/environment';
+import { onDestroy } from 'svelte';
 import { SvelteURLSearchParams } from 'svelte/reactivity';
 import { apiFetchWithTimeout } from '$lib/api';
-import { extJsonParse } from '$lib/api-ext';
+import { extJsonParse, extJsonStringify } from '$lib/api-ext';
 import { pushNotification } from '$lib/errors/app-errors';
 import type { AppErrorTag } from '$lib/errors/app-errors';
 import {
@@ -48,8 +49,10 @@ import {
   sanitizeVisibleKeys,
   searchableTextColumns,
   fetchEntityMeta,
+  invalidateEntityMeta,
   ApiListError,
   readApiErrorDetails,
+  isStaleFieldRejection,
   asApiListError,
   isAbortError,
   isBackendGatewayUnreachable,
@@ -68,6 +71,7 @@ import { useSyncChannel } from '$lib/composables/useSyncChannel.svelte';
 import { serviceCodeOf, useServiceAvailability } from '$lib/composables/use-service-availability.svelte';
 import { onConnectivityRestored } from '$lib/app-connectivity-events';
 import type { DeepReadonly } from '@primebrick/ui';
+import { toDisplayString } from '@primebrick/ui';
 
 export interface FixedFilter {
   field: string;
@@ -253,7 +257,7 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
     try {
       const sk = storageGet(skSort);
       if (sk) {
-        const parsed = JSON.parse(sk) as { key?: unknown; dir?: unknown };
+        const parsed = extJsonParse(sk) as { key?: unknown; dir?: unknown };
         if (
           parsed &&
           typeof parsed === 'object' &&
@@ -269,7 +273,7 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
       }
       const vk = storageGet(skVisibleKeys);
       if (vk) {
-        const parsed = JSON.parse(vk) as unknown;
+        const parsed = extJsonParse(vk) as unknown;
         if (isVisibleKeyPrefs(parsed)) {
           // v2 {shown,hidden} — intent stored, set resolved once columns land.
           pendingVisiblePrefs = parsed;
@@ -281,7 +285,7 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
       }
       const sik = storageGet(skSearchInKeys);
       if (sik) {
-        const parsed = JSON.parse(sik) as unknown;
+        const parsed = extJsonParse(sik) as unknown;
         if (parsed === null || (Array.isArray(parsed) && parsed.every((x) => typeof x === 'string'))) {
           _state.searchInKeys = parsed;
         }
@@ -291,21 +295,21 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
       // feature, silently orphaned by the Phase-10 refactor: rewired here).
       const fv = storageGet(skFilterValues);
       if (fv) {
-        const parsed = JSON.parse(fv) as unknown;
+        const parsed = extJsonParse(fv) as unknown;
         if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
           _state.filterValues = parsed as Record<string, unknown>;
         }
       }
       const af = storageGet(skAdvancedFilters);
       if (af) {
-        const parsed = JSON.parse(af) as unknown;
+        const parsed = extJsonParse(af) as unknown;
         if (Array.isArray(parsed)) {
           _state.advancedFilters = parsed as AdvancedFilter[];
         }
       }
       const fp = storageGet(skFilterPresets);
       if (fp) {
-        const parsed = JSON.parse(fp) as unknown;
+        const parsed = extJsonParse(fp) as unknown;
         if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
           _state.presetSelections = parsed as Record<string, string>;
         }
@@ -316,19 +320,19 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
       }
       const sel = storageGet(skSelectedKeys);
       if (sel) {
-        const parsed = JSON.parse(sel) as unknown;
+        const parsed = extJsonParse(sel) as unknown;
         if (Array.isArray(parsed)) {
           _state.selectedKeys = parsed.filter((k): k is string => typeof k === 'string');
         }
       }
       const pg = storageGet(skPage);
       if (pg) {
-        const n = Number(JSON.parse(pg));
+        const n = Number(extJsonParse(pg));
         if (Number.isInteger(n) && n >= 1) _state.page = n;
       }
       const psz = storageGet(skPageSize);
       if (psz) {
-        const n = Number(JSON.parse(psz));
+        const n = Number(extJsonParse(psz));
         if (Number.isInteger(n) && n >= 1) {
           _state.pageSize = Math.min(n, PAGE_SIZE_MAX);
           pageSizeRestored = true;
@@ -344,7 +348,7 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
       // URL filters WIN over persisted state — `filteredListHref` deep
       // links (ref_count / reverse_ref navigation) must land applied,
       // before the first loadRows ships them.
-      const url = parseUrlFilters(new URLSearchParams(window.location.search));
+      const url = parseUrlFilters(new SvelteURLSearchParams(window.location.search));
       if (url.hasUrlFilters) {
         _state.filterValues = { ..._state.filterValues, ...url.filterValues };
         if (url.advancedFilters.length) _state.advancedFilters = [..._state.advancedFilters, ...url.advancedFilters];
@@ -360,16 +364,16 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
   }
 
   function persistState() {
-    storageSet(skSort, JSON.stringify({ key: _state.sortKey, dir: _state.sortDir }));
-    storageSet(skVisibleKeys, JSON.stringify(deriveVisibleKeyPrefs(_state.visibleKeys, columns)));
-    storageSet(skSearchInKeys, JSON.stringify(_state.searchInKeys));
-    storageSet(skFilterValues, JSON.stringify(_state.filterValues));
-    storageSet(skAdvancedFilters, JSON.stringify(_state.advancedFilters));
-    storageSet(skFilterPresets, JSON.stringify(_state.presetSelections));
+    storageSet(skSort, extJsonStringify({ key: _state.sortKey, dir: _state.sortDir }));
+    storageSet(skVisibleKeys, extJsonStringify(deriveVisibleKeyPrefs(_state.visibleKeys, columns)));
+    storageSet(skSearchInKeys, extJsonStringify(_state.searchInKeys));
+    storageSet(skFilterValues, extJsonStringify(_state.filterValues));
+    storageSet(skAdvancedFilters, extJsonStringify(_state.advancedFilters));
+    storageSet(skFilterPresets, extJsonStringify(_state.presetSelections));
     storageSet(skDeletionFilter, _state.deletionFilterMode);
-    storageSet(skSelectedKeys, JSON.stringify(_state.selectedKeys));
-    storageSet(skPage, JSON.stringify(_state.page));
-    storageSet(skPageSize, JSON.stringify(_state.pageSize));
+    storageSet(skSelectedKeys, extJsonStringify(_state.selectedKeys));
+    storageSet(skPage, extJsonStringify(_state.page));
+    storageSet(skPageSize, extJsonStringify(_state.pageSize));
     storageSet(skGlobalConnector, _state.globalConnector);
     storageSet(skSearch, _state.appliedSearch);
   }
@@ -398,6 +402,34 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
 
   let searchTimer: ReturnType<typeof setTimeout> | null = null;
   let activeListController: AbortController | null = null;
+  /** Set when the owning component is destroyed — async continuations
+   *  (init/loadMeta/loadRows/loadSparklines chains outlive navigation)
+   *  MUST bail before touching `$derived` values: those belong to the
+   *  dead effect tree and reads would warn `derived_inert` (and return
+   *  stale data). Also aborts the in-flight list fetch and clears the
+   *  search debounce so no work at all continues for a dead instance. */
+  let destroyed = false;
+  onDestroy(() => {
+    destroyed = true;
+    activeListController?.abort();
+    if (searchTimer) clearTimeout(searchTimer);
+  });
+  /** Recursion guard for the stale-meta heal — one meta re-download per
+   *  failure chain, never a retry loop. */
+  let healing = false;
+
+  /** The META we validated persisted state against is itself stale when
+   *  a list call 400s on field keys — drop the cache entry, re-fetch,
+   *  and re-sanitize every persisted criterion (sort/filters/search_in/
+   *  visible keys) against the fresh meta. The healed state persists
+   *  through the metaLoaded-gated persist effect. */
+  async function healStaleMeta() {
+    if (destroyed) return;
+    invalidateEntityMeta(opts.basePath);
+    await loadMeta(true);
+    if (destroyed) return;
+    sanitizeListState(columns, _state);
+  }
 
   function ensureVisibleKeys() {
     if (!columns.length) return;
@@ -420,14 +452,17 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
       _state.sortDir = defSort?.dir ?? 'asc';
     }
     if (!pageSizeRestored) {
-      _state.pageSize = Math.min(_state.meta?.table?.default_page_size ?? _state.pageSize, PAGE_SIZE_MAX);
+      _state.pageSize = Math.min(Number(_state.meta?.table?.default_page_size ?? _state.pageSize), PAGE_SIZE_MAX);
     }
     ensureVisibleKeys();
   }
 
-  async function loadMeta() {
-    if (_state.meta) return;
-    _state.meta = await fetchEntityMeta(opts.basePath);
+  async function loadMeta(force = false) {
+    if (destroyed) return;
+    if (_state.meta && !force) return;
+    const meta = await fetchEntityMeta(opts.basePath);
+    if (destroyed) return;
+    _state.meta = meta;
     applyMetaDefaults();
     // Sanitize persisted selections against the served meta: unknown preset
     // ids are dropped, missing/invalid ones fall back to default_option —
@@ -441,6 +476,7 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
   }
 
   async function loadRows() {
+    if (destroyed) return;
     activeListController?.abort();
     const controller = new AbortController();
     activeListController = controller;
@@ -478,10 +514,10 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
       qs.set(`filters[${fi}][op]`, f.op);
       if (Array.isArray(f.value)) {
         for (const v of f.value) {
-          qs.append(`filters[${fi}][value][]`, String(v));
+          qs.append(`filters[${fi}][value][]`, toDisplayString(v));
         }
       } else {
-        qs.set(`filters[${fi}][value]`, String(f.value));
+        qs.set(`filters[${fi}][value]`, toDisplayString(f.value));
       }
       qs.set(`filters[${fi}][connector]`, 'AND');
       fi++;
@@ -511,11 +547,30 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
     }
 
     const res = await apiFetchWithTimeout(`${opts.basePath}/list?${qs.toString()}`, { signal: controller.signal }, 30_000);
+    if (destroyed) return;
     if (!res.ok) {
       const apiDetails = await readApiErrorDetails(res);
+      // Stale-meta self-heal — the wire fails closed on unresolvable
+      // field keys (VALIDATION / UNKNOWN_COLUMN 400). That signature
+      // means the meta this query was built from is stale: invalidate
+      // the meta cache, re-download, re-sanitize persisted state, and
+      // retry ONCE (`healing` guards recursion — a second failure
+      // surfaces normally). Any other error never heals — unrelated
+      // VALIDATION 400s (page/page_size/deleted_records/value rejects)
+      // fall straight to the error path, or the retry would loop.
+      if (!healing && res.status === 400 && isStaleFieldRejection(apiDetails)) {
+        healing = true;
+        try {
+          await healStaleMeta();
+          return await loadRows();
+        } finally {
+          healing = false;
+        }
+      }
       throw new ApiListError(apiDetails.code ?? 'LIST_FAILED', res.status, apiDetails);
     }
     const data = extJsonParse<ListResponse<TRow>>(await res.text());
+    if (destroyed) return;
     _state.rows = data.rows;
     _state.total = data.total;
     // Apply the echoed page/page_size — the BE may clamp out-of-range pages.
@@ -531,8 +586,10 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
    * load; failures are best-effort (cells render the empty placeholder).
    */
   async function loadSparklines() {
+    if (destroyed) return;
     const cols = (columns ?? []).filter((c) => c.type === 'sparkline' && c.sparkline);
     for (const col of cols) {
+      if (destroyed) return;
       const cfg = col.sparkline!;
       const keys = _state.rows
         .map((r) => r[cfg.row_key])
@@ -547,12 +604,12 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
           {
             method: 'POST',
             headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ [cfg.request_field]: keys })
+            body: extJsonStringify({ [cfg.request_field]: keys })
           },
           15_000
         );
         if (!res.ok) continue;
-        const data = (await res.json()) as Record<string, unknown>;
+        const data = (await res.text().then((t) => extJsonParse<unknown>(t))) as Record<string, unknown>;
         const map = data[cfg.response_field ?? 'stats'];
         _state.sparklineData[col.key] = {
           by_key: (map ?? {}) as Record<string, unknown[]>,
@@ -665,6 +722,7 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
     try {
       // Sequential: if meta fails (gateway/offline), loadRows never runs.
       await loadMeta();
+      if (destroyed) return;
       // Drop persisted criteria that no longer resolve under the served
       // meta — a stale key would poison every list call into a 400 loop
       // (the wire now fails closed on unknown fields). Silent for the
@@ -672,16 +730,17 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
       {
         const dropped = sanitizeListState(columns, _state);
         if (import.meta.env.DEV) {
-          const { droppedFilterFields, droppedAdvancedIds, droppedSearchInKeys } = dropped;
-          if (droppedFilterFields.length || droppedAdvancedIds.length || droppedSearchInKeys.length) {
+          const { droppedFilterFields, droppedAdvancedIds, droppedSearchInKeys, droppedSortKey } = dropped;
+          if (droppedFilterFields.length || droppedAdvancedIds.length || droppedSearchInKeys.length || droppedSortKey !== null) {
             console.warn(
               `[useEntityList] dropped stale persisted list criteria for "${opts.basePath}": ` +
-              `filters=[${droppedFilterFields.join(',')}] advanced=[${droppedAdvancedIds.join(',')}] search_in=[${droppedSearchInKeys.join(',')}]`
+              `filters=[${droppedFilterFields.join(',')}] advanced=[${droppedAdvancedIds.join(',')}] search_in=[${droppedSearchInKeys.join(',')}] sort=[${droppedSortKey ?? ''}]`
             );
           }
         }
       }
       await loadRows();
+      if (destroyed) return;
       const maxPages = Math.max(1, Math.ceil(Number(_state.total) / _state.pageSize));
       if (_state.page > maxPages) {
         _state.page = 1;

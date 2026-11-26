@@ -24,6 +24,7 @@
   import { buildAuditData } from '$lib/utils/audit-data';
   import { maxMsg } from '$lib/validation/zod-messages';
   import { displayNameSchema, idpNameSchema } from '$lib/validation/display-name';
+  import { extJsonParse, extJsonStringify } from '$lib/api-ext';
 
   const uuid = $derived(page.params.uuid);
 
@@ -49,7 +50,7 @@
     idp_name?: string;
     display_name?: string;
     website_url?: string;
-    version: number;
+    version: bigint;
     created_at?: string;
     created_by?: string;
     created_by_name?: string;
@@ -95,7 +96,7 @@
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ entity: body }),
+          body: extJsonStringify({ entity: body }),
         });
 
         if (!response.ok) {
@@ -104,7 +105,7 @@
         }
 
         // The response IS the updated entity (DAL RETURNING), not a wrapper.
-        await response.json();
+        await response.text().then((t) => extJsonParse<unknown>(t));
         console.log('Organization updated successfully');
         // Refresh the organization data to show updated audit info
         await loadOrganization();
@@ -138,7 +139,7 @@
         console.error('Failed to load organization');
         return;
       }
-      const data = await response.json();
+      const data = await response.text().then((t) => extJsonParse<NonNullable<typeof organization>>(t));
       organization = data;
       // Reset form with loaded data
       reset({

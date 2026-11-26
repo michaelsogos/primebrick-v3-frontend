@@ -20,7 +20,7 @@ test("generic json cell renders link-only 'View' CTA opening the sheet", async (
   // Same default-filter caveat as the numeric spec — widen to "All".
   await page.getByRole("button", { name: "All", exact: true }).click();
   const rows = page.locator("table tbody tr");
-  await expect(rows.first()).toBeVisible({ timeout: 30000 });
+  await expect(rows.first()).toBeVisible({ timeout: 5_000 });
 
   // Reports live on the older maintenance runs — the default created-desc
   // sort shows only recent executor rows (report null). Sort "Fire #"

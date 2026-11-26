@@ -34,8 +34,7 @@ const PAGE_URL = "/system/settings/configurations/create";
 
 const test = base.extend<object, { pwContext: BrowserContext; suitePage: Page }>({
   pwContext: [
-    // eslint-disable-next-line no-empty-pattern
-    async ({}, use) => {
+    async (_fixtures, use) => {
       // Shared Edge session (helpers/edge-context): attach to the live CDP
       // session or launch a sanitized one — never a second Edge on the same
       // profile (that was the profile-lock "Target closed" failure). The

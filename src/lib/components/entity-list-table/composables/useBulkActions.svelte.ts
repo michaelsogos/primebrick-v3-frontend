@@ -1,24 +1,22 @@
 import { apiFetch, entityApiBase, serviceApiPrefix } from '$lib/api';
 import { pushNotification } from '$lib/errors/app-errors';
 import type { RFC7807Error } from '$lib/errors/rfc7807';
-import type { EntityAction, BulkCustomAction } from '$lib/entity-list/types';
-import { findActionEndpoint } from '$lib/entity-list';
+import type { EntityAction, BulkCustomAction, EntityMeta } from '$lib/entity-list/types';
+import { findActionEndpoint, runEntityOp } from '$lib/entity-list';
+import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
 import { appendListFilterParams } from '$lib/entity-list/list-filter-params';
 import type { MetaColumn } from '$lib/entity-list/types';
 import type { DeepReadonly } from '@primebrick/ui';
-
-/** Step-up MFA driver shape (useMfaStepUp) — injected by the table so
- *  endpoint-dispatched bulk actions transparently pass through the
- *  403 mfa_step_up_required → dialog → retry flow. */
-interface MfaStepUpDriver {
-  executeWithToken: (
-    requestFn: (token: string | null) => Promise<Response>,
-    context: { action: string; target_resource: string }
-  ) => Promise<Response>;
-}
+import { extJsonParse, extJsonStringify } from '$lib/api-ext';
+import { toDisplayString } from '@primebrick/ui';
+import { SvelteURLSearchParams } from 'svelte/reactivity';
 
 export interface BulkActionsOptions {
   entity: () => string;
+  /** Owning service for builtin entities — census map is last-wins
+   *  ambiguous for them; route context (`decl.module`) threads through
+   *  or bulk ops land on the wrong schema. */
+  service?: () => string | undefined;
   selectedKeys: () => string[];
   /** `meta.actions` — bulk ops dispatch to their declared `endpoint` when
    *  present instead of the `/api/v1/entities/{entity}` convention. */
@@ -35,6 +33,11 @@ export interface BulkActionsOptions {
   searchInKeys?: () => string[] | null;
   filterValues?: () => Record<string, unknown>;
   advancedFilters?: () => readonly import('$lib/entity-list/types').AdvancedFilter[];
+  /** Entity i18n namespace (`meta.entities_ns`) — dialog copy resolution. */
+  entities_ns?: () => string | undefined;
+  /** Rows matching the current filters — the 'all' scope count shown by
+   *  the bulk dialogs' Choicebox. */
+  total?: () => number | bigint;
   onBulkActionStart?: () => void;
   onBulkActionComplete?: () => void;
   onBulkActionError?: (error: Error) => void;
@@ -43,21 +46,16 @@ export interface BulkActionsOptions {
   onToolbarModeChange?: () => void;
   t?: (key: string, params?: Record<string, unknown>) => string;
   dialogs?: {
-    openBulkDeleteDialog: () => void;
-    closeBulkDeleteDialog: () => void;
-    openBulkRestoreDialog: () => void;
-    closeBulkRestoreDialog: () => void;
     openDuplicateDialog: () => void;
     closeDuplicateDialog: () => void;
   };
   setDuplicateScope?: (scope: 'selected' | 'single') => void;
-  /** Host step-up driver — wraps endpoint-dispatched bulk custom actions. */
-  mfaStepUp?: () => MfaStepUpDriver | undefined;
 }
 
 export function useBulkActions(options: BulkActionsOptions) {
   const {
     entity: entityFn,
+    service: serviceFn,
     selectedKeys: selectedKeysFn,
     actions: getActions,
     rowByKey,
@@ -67,6 +65,8 @@ export function useBulkActions(options: BulkActionsOptions) {
     searchInKeys: searchInKeysFn,
     filterValues: filterValuesFn,
     advancedFilters: advancedFiltersFn,
+    entities_ns: entitiesNsFn,
+    total: totalFn,
     onBulkActionStart,
     onBulkActionComplete,
     onBulkActionError,
@@ -75,8 +75,7 @@ export function useBulkActions(options: BulkActionsOptions) {
     onToolbarModeChange,
     dialogs,
     setDuplicateScope,
-    t: tFn = (key: string) => key, // Default fallback
-    mfaStepUp: getMfaStepUp
+    t: tFn = (key: string) => key // Default fallback
   } = options;
 
   const _state = $state({
@@ -98,11 +97,11 @@ export function useBulkActions(options: BulkActionsOptions) {
    */
   async function enumerateMatchingItems(
     deletedRecords: 'EXCLUDED' | 'ONLY',
-  ): Promise<Array<{ uuid: string; version: number }>> {
+  ): Promise<Array<{ uuid: string; version: bigint }>> {
     const uid = uidFn?.() ?? 'uuid';
-    const items: Array<{ uuid: string; version: number }> = [];
+    const items: Array<{ uuid: string; version: bigint }> = [];
     for (let page = 1; ; page++) {
-      const params = new URLSearchParams();
+      const params = new SvelteURLSearchParams();
       params.set('page', String(page));
       params.set('page_size', '200');
       const search = searchFn?.();
@@ -115,14 +114,14 @@ export function useBulkActions(options: BulkActionsOptions) {
         advancedFilters: advancedFiltersFn?.(),
       });
       params.set('deleted_records', deletedRecords);
-      const res = await apiFetch(`${entityApiBase(entityFn())}/list?${params.toString()}`);
+      const res = await apiFetch(`${entityApiBase(entityFn(), serviceFn?.())}/list?${params.toString()}`);
       if (!res.ok) {
-        const data = (await res.json().catch(() => null)) as RFC7807Error | null;
+        const data = (await res.text().then((t) => extJsonParse<unknown>(t)).catch(() => null)) as RFC7807Error | null;
         throw { ...(data ?? {}), title: data?.title || 'Bulk scope enumeration failed', status: data?.status || res.status };
       }
-      const data = (await res.json()) as { rows?: Array<Record<string, unknown>>; total?: number | bigint };
+      const data = (await res.text().then((t) => extJsonParse<unknown>(t))) as { rows?: Array<Record<string, unknown>>; total?: number | bigint };
       const rows = data.rows ?? [];
-      for (const row of rows) items.push({ uuid: String(row[uid]), version: row.version as number });
+      for (const row of rows) items.push({ uuid: toDisplayString(row[uid]), version: row.version as bigint });
       if (rows.length === 0 || items.length >= Number(data.total ?? 0)) break;
     }
     return items;
@@ -131,183 +130,121 @@ export function useBulkActions(options: BulkActionsOptions) {
   /** Declared endpoint for `op` — falls back to the entity convention. */
   function resolveOpUrl(op: string, fallbackSuffix: string): { url: string; method: string } {
     const ep = findActionEndpoint(getActions?.(), op);
-    if (ep) return { url: ep.path, method: ep.method };
-    return { url: `${entityApiBase(entityFn())}${fallbackSuffix}`, method: '' };
+    // Declared paths are service-local — `/svc/<svc>` prefix required.
+    if (ep) return { url: serviceApiPrefix(entityFn(), serviceFn?.()) + ep.path, method: ep.method };
+    return { url: `${entityApiBase(entityFn(), serviceFn?.())}${fallbackSuffix}`, method: '' };
   }
+
+  /** Minimal meta the invoker needs — the table carries the fields as
+   *  separate getters, not a meta object. */
+  function metaForOp(): EntityMeta {
+    return { actions: getActions?.(), entities_ns: entitiesNsFn?.(), uid: uidFn?.() } as EntityMeta;
+  }
+
+  /** Selected rows for the bulk dialog's count + the invoker's bulk scope. */
+  function selectedRows(): Record<string, unknown>[] {
+    return selectedKeysFn()
+      .map((k) => rowByKey?.(k))
+      .filter((r): r is Record<string, unknown> => r !== undefined);
+  }
+
+  const mfaHeader = (token: string | null): Record<string, string> =>
+    token ? { 'x-mfa-action-authorization': token } : {};
 
   function handleBulkDelete() {
     // Fresh scope per open (export precedent): 'selected' when rows are
     // checked, 'all' when the user opens the dialog without a selection.
     _state.deleteScope = selectedKeysFn().length > 0 ? 'selected' : 'all';
-    dialogs?.openBulkDeleteDialog();
-  }
-
-  async function confirmBulkDeleteImpl() {
-    const selectedKeys = selectedKeysFn();
-    if (_state.deleteScope === 'selected' && selectedKeys.length === 0) return;
-    try {
-      _state.isDeleting = true;
-      onBulkActionStart?.();
-
-      // {items: [{uuid, version}]} — each record carries the caller-observed
-      // version for the per-row optimistic-concurrency guard.
-      const items = _state.deleteScope === 'all'
-        ? await enumerateMatchingItems('EXCLUDED')
-        : selectedKeys.map((k) => {
-        const row = rowByKey?.(k);
-        return { uuid: k, version: row?.version as number };
-      });
-      const { url, method } = resolveOpUrl('delete.bulk', '/bulk-delete');
-      const res = await apiFetch(url, {
-        method: method || 'POST',
-        headers: {
-          'Content-Type': 'application/json'
+    void runEntityOp({
+      op: 'delete.bulk',
+      entity: entityFn(),
+      meta: metaForOp(),
+      rows: selectedRows(),
+      service: serviceFn?.(),
+      scopeChoice: {
+        get value() {
+          return _state.deleteScope;
         },
-        body: JSON.stringify({ items })
-      });
-
-      if (!res.ok) {
-        // Propagate the RFC 7807 body verbatim — `extra.issues` carries the
-        // per-row bulk detail (≤10 offenders) rendered by RfcErrorDialog.
-        const data = (await res.json().catch(() => null)) as RFC7807Error & Record<string, unknown> | null;
-        throw {
-          type: 'about:blank',
-          toneForImpact: 'danger',
-          ...(data ?? {}),
-          title: data?.title || 'Bulk delete failed',
-          status: data?.status || res.status,
-          detail: data?.detail || 'Unknown error',
-        };
-      }
-
-      // 200 {received, affected} — success toast via the shell (no event card)
-      const result = (await res.json().catch(() => null)) as { received?: number; affected?: number } | null;
-      pushNotification({
-        impact: 'NONE',
-        messageKey: 'app.common.delete_success',
-        messageParams: { count: result?.affected ?? items.length },
-        scope: tFn('app.common.errors.scope.bulk_delete_api'),
-      });
-
-      // Clear selection after successful deletion
-      onSelectionChange?.([]);
-      // Switch back to filters mode
-      onToolbarModeChange?.();
-      // Refresh the list after successful deletion
-      getOnRefresh?.()?.();
-      onBulkActionComplete?.();
-    } catch (error) {
+        onChange: (v) => {
+          _state.deleteScope = v;
+        },
+      },
+      totalCount: totalFn?.() != null ? BigInt(totalFn()!) : undefined,
+      execute: async (token) => {
+        _state.isDeleting = true;
+        onBulkActionStart?.();
+        try {
+          // {items: [{uuid, version}]} — each record carries the
+          // caller-observed version for the optimistic-concurrency guard.
+          const items = _state.deleteScope === 'all'
+            ? await enumerateMatchingItems('EXCLUDED')
+            : selectedKeysFn().map((k) => ({ uuid: k, version: rowByKey?.(k)?.version as number }));
+          const { url, method } = resolveOpUrl('delete.bulk', '/bulk-delete');
+          return await apiFetch(url, {
+            method: method || 'POST',
+            headers: { 'Content-Type': 'application/json', ...mfaHeader(token) },
+            body: extJsonStringify({ items })
+          });
+        } finally {
+          _state.isDeleting = false;
+        }
+      },
+      onDone: () => {
+        onSelectionChange?.([]);
+        onToolbarModeChange?.();
+        getOnRefresh?.()?.();
+        onBulkActionComplete?.();
+      },
+    }).catch((error) => {
       console.error('Bulk delete failed:', error);
-
-      if (error && typeof error === 'object' && 'title' in error) {
-        const err = error as RFC7807Error;
-        pushNotification(err);
-      } else {
-        pushNotification({
-          impact: 'MEDIUM',
-          messageKey: 'system.entities.list.bulk_delete_failed',
-          scope: tFn('app.common.errors.scope.bulk_delete_api'),
-          detail: error instanceof Error ? error.message : String(error),
-          toast: true,
-        });
-      }
       onBulkActionError?.(error as Error);
-    } finally {
-      _state.isDeleting = false;
-    }
-  }
-
-  async function confirmBulkDeleteWrapper() {
-    await confirmBulkDeleteImpl();
-    dialogs?.closeBulkDeleteDialog();
-  }
-
-  function cancelBulkDelete() {
-    dialogs?.closeBulkDeleteDialog();
+    });
   }
 
   function handleBulkRestore() {
     _state.restoreScope = selectedKeysFn().length > 0 ? 'selected' : 'all';
-    dialogs?.openBulkRestoreDialog();
-  }
-
-  async function confirmBulkRestoreImpl() {
-    const selectedKeys = selectedKeysFn();
-    if (_state.restoreScope === 'selected' && selectedKeys.length === 0) return;
-    try {
-      _state.isRestoring = true;
-      onBulkActionStart?.();
-
-      const items = _state.restoreScope === 'all'
-        ? await enumerateMatchingItems('ONLY')
-        : selectedKeys.map((k) => {
-        const row = rowByKey?.(k);
-        return { uuid: k, version: row?.version as number };
-      });
-      const { url, method } = resolveOpUrl('restore.bulk', '/bulk-restore');
-      const res = await apiFetch(url, {
-        method: method || 'POST',
-        headers: {
-          'Content-Type': 'application/json'
+    void runEntityOp({
+      op: 'restore.bulk',
+      entity: entityFn(),
+      meta: metaForOp(),
+      rows: selectedRows(),
+      service: serviceFn?.(),
+      scopeChoice: {
+        get value() {
+          return _state.restoreScope;
         },
-        body: JSON.stringify({ items })
-      });
-
-      if (!res.ok) {
-        const data = (await res.json().catch(() => null)) as RFC7807Error & Record<string, unknown> | null;
-        throw {
-          type: 'about:blank',
-          toneForImpact: 'warning',
-          ...(data ?? {}),
-          title: data?.title || 'Bulk restore failed',
-          status: data?.status || res.status,
-          detail: data?.detail || 'Unknown error',
-        };
-      }
-
-      const result = (await res.json().catch(() => null)) as { received?: number; affected?: number } | null;
-      pushNotification({
-        impact: 'NONE',
-        messageKey: 'system.entities.version_history.record_restored',
-        messageParams: { count: result?.affected ?? items.length },
-        scope: tFn('app.common.errors.scope.bulk_restore_api'),
-      });
-
-      // Clear selection after successful restore
-      onSelectionChange?.([]);
-      // Switch back to filters mode
-      onToolbarModeChange?.();
-      // Refresh the list after successful restore
-      getOnRefresh?.()?.();
-      onBulkActionComplete?.();
-    } catch (error) {
+        onChange: (v) => {
+          _state.restoreScope = v;
+        },
+      },
+      totalCount: totalFn?.() != null ? BigInt(totalFn()!) : undefined,
+      execute: async (token) => {
+        _state.isRestoring = true;
+        onBulkActionStart?.();
+        try {
+          const items = _state.restoreScope === 'all'
+            ? await enumerateMatchingItems('ONLY')
+            : selectedKeysFn().map((k) => ({ uuid: k, version: rowByKey?.(k)?.version as number }));
+          const { url, method } = resolveOpUrl('restore.bulk', '/bulk-restore');
+          return await apiFetch(url, {
+            method: method || 'POST',
+            headers: { 'Content-Type': 'application/json', ...mfaHeader(token) },
+            body: extJsonStringify({ items })
+          });
+        } finally {
+          _state.isRestoring = false;
+        }
+      },
+      onDone: () => {
+        onSelectionChange?.([]);
+        onToolbarModeChange?.();
+        getOnRefresh?.()?.();
+        onBulkActionComplete?.();
+      },
+    }).catch((error) => {
       console.error('Bulk restore failed:', error);
-
-      if (error && typeof error === 'object' && 'title' in error) {
-        const err = error as RFC7807Error;
-        pushNotification(err);
-      } else {
-        pushNotification({
-          impact: 'MEDIUM',
-          messageKey: 'system.entities.list.bulk_restore_failed',
-          scope: tFn('app.common.errors.scope.bulk_restore_api'),
-          detail: error instanceof Error ? error.message : String(error),
-          toast: true,
-        });
-      }
       onBulkActionError?.(error as Error);
-    } finally {
-      _state.isRestoring = false;
-    }
-  }
-
-  async function confirmBulkRestoreWrapper() {
-    await confirmBulkRestoreImpl();
-    dialogs?.closeBulkRestoreDialog();
-  }
-
-  function cancelBulkRestore() {
-    dialogs?.closeBulkRestoreDialog();
+    });
   }
 
   function handleBulkDuplicate() {
@@ -334,17 +271,17 @@ export function useBulkActions(options: BulkActionsOptions) {
       const response = await apiFetch(url, {
         method: method || 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ uuids: selectedKeys })
+        body: extJsonStringify({ uuids: selectedKeys })
       });
 
       if (!response.ok) {
-        const errorData = await response.json() as RFC7807Error & { duplicateResults?: { successful: string[]; failed: Array<{ uuid: string; error: string }> } };
+        const errorData = await response.text().then((t) => extJsonParse<unknown>(t)) as RFC7807Error & { duplicateResults?: { successful: string[]; failed: Array<{ uuid: string; error: string }> } };
         const enhancedError = { ...errorData, duplicateResults: errorData.duplicateResults };
         pushNotification(enhancedError);
         throw enhancedError;
       }
 
-      const result = await response.json() as { uuids: string[]; errors: Array<{ uuid: string; error: string }> };
+      const result = await response.text().then((t) => extJsonParse<unknown>(t)) as { uuids: string[]; errors: Array<{ uuid: string; error: string }> };
       if (result.errors.length > 0) {
         pushNotification({
           impact: 'MEDIUM',
@@ -384,8 +321,9 @@ export function useBulkActions(options: BulkActionsOptions) {
   /**
    * Dispatch a `meta.table.bulk_custom_actions` CTA — the op endpoint is
    * declared in `meta.actions` (`entity_op` on the owning RPC route).
-   * `requires_selection` rows ride as `{uuids}`; `confirm_key` gates on a
-   * browser confirm; step-up wraps the call when the BE asks for it.
+   * `requires_selection` rows ride as `{uuids}`; `confirm_key`/DELETE
+   * ops are confirm-gated by the governed invoker — step-up wraps the
+   * call uniformly.
    */
   async function handleBulkCustomAction(action: BulkCustomAction) {
     const ep = findActionEndpoint(getActions?.(), action.action_name);
@@ -402,34 +340,35 @@ export function useBulkActions(options: BulkActionsOptions) {
       return;
     }
     if (action.requires_selection !== false && selectedKeysFn().length === 0) return;
-    if (action.confirm_key && !confirm(tFn(action.confirm_key))) return;
     try {
-      onBulkActionStart?.();
-      const url = serviceApiPrefix(entityFn()) + ep.path;
+      const url = serviceApiPrefix(entityFn(), serviceFn?.()) + ep.path;
       const selection = action.requires_selection !== false ? selectedKeysFn() : [];
-      const request = (token: string | null) =>
-        apiFetch(url, {
-          method: ep.method || 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { 'X-MFA-Action-Authorization': token } : {})
-          },
-          body: selection.length > 0 ? JSON.stringify({ uuids: selection }) : undefined
-        });
-      const stepUp = getMfaStepUp?.();
-      const res = stepUp
-        ? await stepUp.executeWithToken(request, { action: action.action_name, target_resource: entityFn() })
-        : await request(null);
-      if (!res.ok) return; // RFC7807 already surfaced by apiFetch
-      onSelectionChange?.([]);
-      onToolbarModeChange?.();
-      getOnRefresh?.()?.();
-      onBulkActionComplete?.();
-      pushNotification({
-        impact: 'LOW',
-        messageKey: 'app.common.done',
-        scope: tFn('app.common.errors.scope.custom_action_api'),
-        toast: true
+      await runEntityOp({
+        op: action.action_name,
+        entity: entityFn(),
+        meta: metaForOp(),
+        rows: selectedRows(),
+        service: serviceFn?.(),
+        execute: (token) => {
+          onBulkActionStart?.();
+          return apiFetch(url, {
+            method: ep.method || 'POST',
+            headers: { 'Content-Type': 'application/json', ...mfaHeader(token) },
+            body: selection.length > 0 ? extJsonStringify({ uuids: selection }) : undefined
+          });
+        },
+        onDone: () => {
+          onSelectionChange?.([]);
+          onToolbarModeChange?.();
+          getOnRefresh?.()?.();
+          onBulkActionComplete?.();
+          pushNotification({
+            impact: 'LOW',
+            messageKey: 'app.common.done',
+            scope: tFn('app.common.errors.scope.custom_action_api'),
+            toast: true
+          });
+        },
       });
     } catch (error) {
       console.error('Bulk custom action failed:', error);
@@ -437,13 +376,33 @@ export function useBulkActions(options: BulkActionsOptions) {
     }
   }
 
-  // Keep original function names for backward compatibility
-  async function confirmBulkDelete() {
-    await confirmBulkDeleteImpl();
-  }
-
-  async function confirmBulkRestore() {
-    await confirmBulkRestoreImpl();
+  /**
+   * `update.bulk` — the apply-to-all editor sheet. Guard: 1..100 selected
+   * rows (the route's own cap). The panel gets a FROZEN snapshot — the
+   * "source of truth" its distribution forecast reads — plus the served
+   * meta (actions + columns) for the editable partition and the governed
+   * submit. Selection-clear + refresh ride `onApplied` like every bulk.
+   */
+  function handleBulkEdit() {
+    const rows = selectedRows();
+    if (rows.length < 1 || rows.length > 100) return;
+    openSheet('entity.bulkEditor', {
+      entity: entityFn(),
+      service: serviceFn?.(),
+      meta: {
+        actions: getActions?.(),
+        entities_ns: entitiesNsFn?.(),
+        uid: uidFn?.(),
+        columns: columnsFn?.() ?? [],
+      } as EntityMeta,
+      rows,
+      onApplied: () => {
+        onSelectionChange?.([]);
+        onToolbarModeChange?.();
+        getOnRefresh?.()?.();
+        onBulkActionComplete?.();
+      },
+    });
   }
 
   async function confirmBulkDuplicate() {
@@ -458,17 +417,12 @@ export function useBulkActions(options: BulkActionsOptions) {
     setDeleteScope,
     setRestoreScope,
     handleBulkDelete,
-    confirmBulkDelete,
-    cancelBulkDelete,
     handleBulkRestore,
-    confirmBulkRestore,
-    cancelBulkRestore,
     handleBulkDuplicate,
     confirmBulkDuplicate,
     cancelBulkDuplicate,
-    confirmBulkDeleteWrapper,
-    confirmBulkRestoreWrapper,
     confirmBulkDuplicateWrapper,
-    handleBulkCustomAction
+    handleBulkCustomAction,
+    handleBulkEdit
   };
 }

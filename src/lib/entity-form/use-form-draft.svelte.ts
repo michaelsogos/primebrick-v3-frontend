@@ -20,8 +20,10 @@
  * are swallowed — drafting must never break a form).
  */
 import { browser } from '$app/environment';
+import { onDestroy } from 'svelte';
 import { SvelteSet } from 'svelte/reactivity';
 import type { FieldConflict } from '$lib/collaboration/merge-delta';
+import { extJsonParse, extJsonStringify } from '$lib/api-ext';
 
 const DRAFT_VERSION = 1;
 const WRITE_DEBOUNCE_MS = 400;
@@ -30,7 +32,7 @@ export interface FormDraftDoc {
 	v: number;
 	data: Record<string, unknown>;
 	tainted: Record<string, boolean>;
-	base_version: number | null;
+	base_version: bigint | null;
 	saved_at: number;
 }
 
@@ -45,7 +47,7 @@ export interface UseFormDraftOpts {
 	/** Declared form field keys — stale draft keys outside this set die silently. */
 	fieldKeys: () => string[];
 	/** Record version the form was loaded against (detail only; 0 on create). */
-	baseVersion: () => number | bigint;
+	baseVersion: () => bigint;
 	data: () => Record<string, unknown>;
 	tainted: () => Record<string, boolean>;
 	hasTainted: () => boolean;
@@ -69,8 +71,10 @@ function readDraft(key: string): FormDraftDoc | null {
 	try {
 		const raw = localStorage.getItem(key);
 		if (!raw) return null;
-		const d = JSON.parse(raw) as FormDraftDoc;
-		if (d?.v !== DRAFT_VERSION || typeof d.data !== 'object' || typeof d.tainted !== 'object')
+		const d = extJsonParse(raw) as FormDraftDoc;
+		// ext-json decodes EVERY integer as native bigint — `d.v` arrives
+		// as `1n`; compare numerically or the doc never validates.
+		if (Number(d?.v) !== DRAFT_VERSION || typeof d.data !== 'object' || typeof d.tainted !== 'object')
 			return null;
 		return d;
 	} catch {
@@ -135,6 +139,10 @@ export function useFormDraft(opts: UseFormDraftOpts): FormDraftApi {
 
 	// Persist — debounced, only while the form has user edits. Pristine
 	// forms delete the slot: a fully undone draft must not restore later.
+	// `pendingWrite` mirrors the latest scheduled write so a teardown
+	// (sheet stack, navigation, quick type-then-close) can flush it —
+	// otherwise the final ~400ms of edits die with the timer.
+	let pendingWrite: (() => void) | null = null;
 	$effect(() => {
 		if (!browser || !opts.ready()) return;
 		const data = opts.data();
@@ -142,7 +150,9 @@ export function useFormDraft(opts: UseFormDraftOpts): FormDraftApi {
 		const dirty = opts.hasTainted();
 		const key = opts.storageKey();
 		if (writeTimer) clearTimeout(writeTimer);
-		writeTimer = setTimeout(() => {
+		const write = () => {
+			writeTimer = null;
+			pendingWrite = null;
 			if (!key) return;
 			try {
 				if (!dirty) {
@@ -153,17 +163,29 @@ export function useFormDraft(opts: UseFormDraftOpts): FormDraftApi {
 					v: DRAFT_VERSION,
 					data,
 					tainted,
-					base_version: Number(opts.baseVersion()) || null,
+					base_version: opts.baseVersion() || null,
 					saved_at: Date.now(),
 				};
-				localStorage.setItem(key, JSON.stringify(doc));
+				localStorage.setItem(key, extJsonStringify(doc));
 			} catch {
 				// quota/serialization — drafting is best-effort, never a form failure
 			}
-		}, WRITE_DEBOUNCE_MS);
+		};
+		pendingWrite = write;
+		writeTimer = setTimeout(write, WRITE_DEBOUNCE_MS);
 		return () => {
 			if (writeTimer) clearTimeout(writeTimer);
 		};
+	});
+
+	// Unmount flush — fires ONLY on real teardown (never on effect
+	// re-runs), so the debounce stays intact for live edits while the
+	// last pending write survives pane remounts.
+	onDestroy(() => {
+		if (writeTimer) clearTimeout(writeTimer);
+		writeTimer = null;
+		pendingWrite?.();
+		pendingWrite = null;
 	});
 
 	return {

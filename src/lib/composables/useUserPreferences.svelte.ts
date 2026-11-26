@@ -1,5 +1,6 @@
 import { browser } from '$app/environment';
 import { apiFetch } from '$lib/api';
+import { extJsonParse, extJsonStringify } from '$lib/api-ext';
 
 /**
  * useUserPreferences — the consolidated-cache-chain store for the
@@ -32,7 +33,7 @@ function readSessionCache(): Record<string, unknown> {
 	if (!browser) return {};
 	try {
 		const raw = sessionStorage.getItem(STORAGE_KEY);
-		const parsed = raw ? (JSON.parse(raw) as unknown) : {};
+		const parsed = raw ? (extJsonParse(raw) as unknown) : {};
 		return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
 			? (parsed as Record<string, unknown>)
 			: {};
@@ -46,7 +47,7 @@ const _state = $state<UserPreferencesState>({ data: readSessionCache(), loaded: 
 function writeSessionCache(): void {
 	if (!browser) return;
 	try {
-		sessionStorage.setItem(STORAGE_KEY, JSON.stringify(_state.data));
+		sessionStorage.setItem(STORAGE_KEY, extJsonStringify(_state.data));
 	} catch {
 		// quota/serialization — the server stays authoritative; ignore.
 	}
@@ -55,7 +56,7 @@ function writeSessionCache(): void {
 async function load(): Promise<void> {
 	const res = await apiFetch('/api/v1/auth/me/preferences');
 	if (!res.ok) return; // fail-soft — cached mirror keeps working
-	const body = (await res.json()) as { preferences?: Record<string, unknown> };
+	const body = (await res.text().then((t) => extJsonParse<unknown>(t))) as { preferences?: Record<string, unknown> };
 	_state.data = body.preferences ?? {};
 	_state.loaded = true;
 	writeSessionCache();
@@ -65,7 +66,7 @@ async function set(key: string, value: unknown): Promise<void> {
 	const res = await apiFetch(`/api/v1/auth/me/preferences/${encodeURIComponent(key)}`, {
 		method: 'PUT',
 		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ value }),
+		body: extJsonStringify({ value }),
 	});
 	if (!res.ok) return;
 	_state.data = { ..._state.data, [key]: value };

@@ -30,6 +30,7 @@ import {
 	type PresenceChannel,
 } from './presence-channel-registry.svelte';
 import { mergeDelta, type FieldConflict } from './merge-delta';
+import { wireVersion } from '$lib/entity-form/wire-version';
 import { PRESENCE_STALE_MS } from './presence-stack';
 import { registerCollabStatus, type CollabStatus } from './collab-status-store.svelte';
 import { apiFetchExt, extJsonStringify } from '$lib/api-ext';
@@ -45,12 +46,15 @@ interface AuditPageRow {
 	delta: Record<string, { old: unknown; new: unknown }>;
 	changed_by: string;
 	changed_by_display_name?: string | null;
-	version: number;
+	version: bigint;
 }
 
 export interface CollaborativeFormOpts {
 	entity: string;
 	uuid: string;
+	/** Owning service — entity API calls (audit diff, conflict refetch)
+	 *  ride the `/svc/<code>` proxy; absent → census map (BE-owned). */
+	service?: string;
 	/**
 	 * Activation gate — reactive: the channel + handler only live while this
 	 * returns true (e.g. `isDetail && meta.collaboration.enabled`). Called
@@ -66,8 +70,8 @@ export interface CollaborativeFormOpts {
 	isTainted: (field: string) => boolean;
 	/** Column lookup for record→form value conversion. */
 	columnOf: (field: string) => MetaColumn | undefined;
-	getRecordVersion: () => number | bigint;
-	setRecordVersion: (v: number | bigint) => void;
+	getRecordVersion: () => bigint;
+	setRecordVersion: (v: bigint) => void;
 }
 
 /** Record value → the shape the form control binds (JSON cols → string). */
@@ -117,7 +121,11 @@ export function useCollaborativeForm(opts: CollaborativeFormOpts) {
 	async function handleEntityChanged(marker: EntityChangedMarker) {
 		if (marker.entity_uuid !== opts.uuid) return;
 		// Self-save echo — the PUT response already realigned the version.
-		if (Number(marker.version) <= Number(opts.getRecordVersion())) return;
+		// (core types the marker `number` — wire reality is bigint: the
+		//  extraction enforces the consumer-side invariant, and a genuine
+		//  number here traces in dev — see wire-version.ts.)
+		const markerVersion = wireVersion(marker.version, `collab marker for '${opts.entity}'`);
+		if (markerVersion <= opts.getRecordVersion()) return;
 
 		// Self = same user AND same tab session. A save from ANOTHER tab of the
 		// same user is foreign: it merges + surfaces conflicts/chip like any
@@ -127,12 +135,12 @@ export function useCollaborativeForm(opts: CollaborativeFormOpts) {
 			marker.changed_by === opts.actorUuid() &&
 			(marker.changed_by_session === undefined ||
 				marker.changed_by_session === channel?.sessionId);
-		opts.setRecordVersion(marker.version);
+		opts.setRecordVersion(markerVersion);
 
 		let row: AuditPageRow | null = null;
 		try {
 			const page = await apiFetchExt<{ data: AuditPageRow[] }>(
-				`${entityApiBase(opts.entity)}/${opts.uuid}/audit?page=1&limit=1`,
+				`${entityApiBase(opts.entity, opts.service)}/${opts.uuid}/audit?page=1&limit=1`,
 			);
 			row = page.data[0] ?? null;
 		} catch {
@@ -284,14 +292,11 @@ export function useCollaborativeForm(opts: CollaborativeFormOpts) {
 		 */
 		async handleVersionConflict() {
 			const fresh = await apiFetchExt<Record<string, unknown>>(
-				`${entityApiBase(opts.entity)}/${opts.uuid}`,
+				`${entityApiBase(opts.entity, opts.service)}/${opts.uuid}`,
 			).catch(() => null);
 			if (!fresh) return; // record unreadable — keep the conflict surface minimal
-			if (
-				typeof fresh.version === 'number' ||
-				typeof fresh.version === 'bigint'
-			) {
-				opts.setRecordVersion(fresh.version);
+			if (fresh.version !== undefined && fresh.version !== null) {
+				opts.setRecordVersion(wireVersion(fresh.version, `conflict refetch for '${opts.entity}'`));
 			}
 			const newConflicts: Record<string, FieldConflict> = {};
 			for (const [key, remoteRaw] of Object.entries(fresh)) {

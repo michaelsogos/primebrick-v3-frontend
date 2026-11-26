@@ -19,10 +19,13 @@
 
 import { z } from 'zod';
 
+import { extJsonStringify, extJsonParse } from '$lib/api-ext';
 const errorLabelKey = z.string().optional();
 
 const ruleWithNumberSchema = z.object({
-  value: z.number().describe('Numeric boundary for this rule'),
+  // ext-json parses wire ints to bigint; the contract type is number —
+  // coerce only bigint here, keep strictness for every other input.
+  value: z.preprocess((v) => (typeof v === 'bigint' ? Number(v) : v), z.number()).describe('Numeric boundary for this rule'),
   error_label_key: errorLabelKey.describe('Translation key for the validation error message'),
 });
 
@@ -90,7 +93,7 @@ export const typeConfigJsonSchema = z.toJSONSchema(typeConfigSchema);
 export function parseTypeConfig(type_config?: string | null): ParsedTypeConfig | null {
   if (!type_config) return null;
   try {
-    return JSON.parse(type_config) as ParsedTypeConfig;
+    return extJsonParse<unknown>(type_config) as ParsedTypeConfig;
   } catch {
     return null;
   }
@@ -137,7 +140,7 @@ function stripEmpty<T>(value: T): T {
  * Strips undefined values and empty objects for clean output.
  */
 export function serializeTypeConfig(config: ParsedTypeConfig): string {
-  return JSON.stringify(stripEmpty(config));
+  return extJsonStringify(stripEmpty(config));
 }
 
 // ─── error_label_key auto-generation ─────────────────────────────

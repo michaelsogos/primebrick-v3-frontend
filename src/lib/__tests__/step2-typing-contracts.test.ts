@@ -130,8 +130,9 @@ describe('tryParseJsonObject — JSON-object detection', () => {
   });
 
   it('parses JSON object strings', () => {
-    expect(tryParseJsonObject('{"x": 1}')).toEqual({ x: 1 });
-    expect(tryParseJsonObject('  {"x": 1}  ')).toEqual({ x: 1 });
+    // ext-json semantics: every wire int materializes as bigint.
+    expect(tryParseJsonObject('{"x": 1}')).toEqual({ x: 1n });
+    expect(tryParseJsonObject('  {"x": 1}  ')).toEqual({ x: 1n });
   });
 
   it.each([
@@ -147,14 +148,14 @@ describe('buildAuditData — three-path contract', () => {
   it('no-arg call returns the create-page shell', () => {
     const d = buildAuditData();
     expect(d.uuid).toBe('');
-    expect(d.version).toBe(0);
+    expect(d.version).toBe(0n);
     expect('created_at' in d).toBe(true);
   });
 
   it('entity maps the standard audit fields', () => {
-    const d = buildAuditData({ uuid: 'u1', version: 3, created_by_name: 'Ann' });
+    const d = buildAuditData({ uuid: 'u1', version: 3n, created_by_name: 'Ann' });
     expect(d.uuid).toBe('u1');
-    expect(d.version).toBe(3);
+    expect(d.version).toBe(3n);
     expect(d.created_by_name).toBe('Ann');
   });
 

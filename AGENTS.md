@@ -55,9 +55,10 @@ You are an expert Svelte™ 5 and TypeScript® developer. You MUST EXCLUSIVELY u
    in production via `svelte.config.js` `onwarn`) and produces stale values.
    - ❌ `const i18nEntity = translationKey ?? entity;` (snapshots initial value)
    - ✅ `const i18nEntity = $derived(translationKey ?? entity);`
-   - Use `svelte-ignore state_referenced_locally` ONLY when the value is genuinely
-     static (e.g., local mutable state initialized from a prop, then reassigned on
-     save). Add a comment explaining why.
+   - Intentional one-time reads (local mutable draft state, registrations,
+     init guards) use `$state(untrack(() => prop))` / `untrack(() => call())` —
+     `svelte-ignore state_referenced_locally` is NOT sanctioned when `untrack()`
+     expresses the same intent in code.
    - See [`.devin/rules/svelte-runes.md`](./.devin/rules/svelte-runes.md) and
      [`docs/ai/svelte-runes.md`](./docs/ai/svelte-runes.md) for the full pattern guide.
 7. **SVELTE MCP TOOL**: Before writing any `.svelte` file, agents MUST pass the
@@ -108,7 +109,7 @@ a version tag. There is no CI pipeline that auto-deploys on push.
 4. **`.devin/rules/i18n-translation-sources.md`** — ⚠️ CRITICAL: BE owns all translations; FE fallback (`en-GB-fallback.json`) is English-only for `app.*` keys.
 5. **`.devin/rules/entity-meta-schema.md`** — ⚠️ CRITICAL: entity metadata contract (root `columns`, `display_field`/`display_name`, `table.*`, `actions` gating). All meta-consuming code MUST follow it.
 6. **`docs/ai/`** — skills selection and suggested workflows.
-7. **`docs/ai/e2e-browser-session.md`** — E2E procedure (shared Edge CDP session, ephemeral test actors, auth/me gating, bounded waits). NEVER use the dev `admin` account in tests.
+7. **`docs/ai/e2e-browser-session.md`** — E2E procedure (shared Edge CDP session, ephemeral test actors, auth/me gating, bounded waits). ⚠️ ALWAYS headed — headless runs are forbidden. NEVER use the dev `admin` account in tests.
 8. **`docs/ai/e2e-test-users.md`** — ⚠️ CRITICAL: all tests authenticate as ephemeral E2E actors (`e2e_test_admin`/`e2e_test_user`, minted per run) — NEVER the dev `admin`.
 9. **`docs/ai/e2e-testid-convention.md`** — `data-testid` naming convention for interactive elements (brittle-on-purpose).
 10. **`docs/ai/e2e-webauthn-auth.md`** — Playwright auth flows: login, invitations, passkeys, MFA, `helpers/webauthn.ts` virtual authenticator.

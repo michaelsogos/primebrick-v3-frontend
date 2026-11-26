@@ -27,10 +27,11 @@
   import { shellNav } from '$lib/shell/modules-shell.svelte';
   import { useCensusSubjectOptions } from '$lib/entity-form/use-census-subject-options.svelte';
 
+import { extJsonStringify } from '$lib/api-ext';
   let {
     value,
     row,
-    title,
+    title: titleProp,
   }: {
     /** The cell's parsed DST document (string JSON — the editor contract). */
     value: unknown;
@@ -103,7 +104,7 @@
 
   /** Viewer prop contract is the raw JSON text (same bind the editor owns). */
   const mapText = $derived(
-    typeof value === 'string' ? value : JSON.stringify(value ?? {}, null, 2),
+    typeof value === 'string' ? value : extJsonStringify(value ?? {}, 2),
   );
 
   /** The target callable's owning service — the subject's first segment is
@@ -145,7 +146,7 @@
     <Waypoints class="size-4" />
   {/snippet}
   {#snippet title()}
-    {title ?? $t('app.widgets.mapper.title')}
+    {titleProp ?? $t('app.widgets.mapper.title')}
   {/snippet}
 
   <div class="h-full overflow-auto p-3 space-y-3">

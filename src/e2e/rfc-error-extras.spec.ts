@@ -11,6 +11,7 @@
 import { test, expect } from "@playwright/test";
 import { loginAsTestAdmin } from "./helpers/admin-login";
 
+import { extJsonStringify } from '@primebrick/core/ext-json';
 test.describe("rfc error extras (entity list)", () => {
   test("list 400 surfaces extra.issues in the error detail dialog", async ({ page }) => {
     await loginAsTestAdmin(page);
@@ -19,7 +20,7 @@ test.describe("rfc error extras (entity list)", () => {
       route.fulfill({
         status: 400,
         contentType: "application/problem+json",
-        body: JSON.stringify({
+        body: extJsonStringify({
           type: "https://primebrick.io/errors/VALIDATION_ERROR",
           title: "Validation Error",
           status: 400,
@@ -52,7 +53,7 @@ test.describe("rfc error extras (entity list)", () => {
     // wait for the reactive "1" badge first (proves the error landed AND
     // the topbar is hydrated enough to handle the open click).
     const errorsToggle = page.getByRole("button", { name: "Errors", exact: true });
-    await expect(errorsToggle).toContainText("1", { timeout: 15000 });
+    await expect(errorsToggle).toContainText("1", { timeout: 5_000 });
     await errorsToggle.click();
     const card = page.locator("text=VALIDATION_ERROR").first();
     await expect(card).toBeVisible({ timeout: 5000 });

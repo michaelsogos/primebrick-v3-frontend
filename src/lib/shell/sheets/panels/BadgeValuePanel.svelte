@@ -16,7 +16,9 @@
    *            commits on blur/Enter (the map key can't be renamed per
    *            keystroke).
    */
+  import { untrack } from 'svelte';
   import { t, dict } from '$lib/i18n';
+  import { i18nKeyOptions, authConfigKeyPrefix } from '$lib/i18n/i18n-key-options';
   import { closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import { SheetPanelLayout, SheetPanelFooter } from '@primebrick/ui';
   import { Button } from '@primebrick/ui';
@@ -46,35 +48,32 @@
   } = $props();
 
   // The draft is intentionally a one-time snapshot of the incoming props —
-  // the panel remounts on each open (keepMountedState defaults false), so
-  // capturing the initial value here is correct, not a stale-read bug.
-  // svelte-ignore state_referenced_locally
-  let draftCode = $state(value_key ?? '');
+  // the panel remounts on each open (keepMountedState defaults false).
+  // untrack marks the read-once in code instead of a suppression.
+  let draftCode = $state(untrack(() => value_key ?? ''));
   /** Color the panel was opened with — the eraser resets the draft to it.
    *  undefined = "no color selected" (the trigger shows a Ban icon). */
-  // svelte-ignore state_referenced_locally
-  const initialColor =
-    (value_key ? builder.values?.[value_key]?.color : undefined) || undefined;
+  const initialColor = untrack(
+    () => (value_key ? builder.values?.[value_key]?.color : undefined) || undefined,
+  );
   let draftColor = $state<string | undefined>(initialColor);
-  // svelte-ignore state_referenced_locally
-  let draftLabelKey = $state(value_key ? (builder.values?.[value_key]?.label_key ?? '') : '');
+  let draftLabelKey = $state(
+    untrack(() => (value_key ? (builder.values?.[value_key]?.label_key ?? '') : '')),
+  );
   /** Original map key while editing — a rename removes the old key. */
-  // svelte-ignore state_referenced_locally
-  let editingKey = $state<string | null>(value_key);
+  let editingKey = $state<string | null>(untrack(() => value_key));
   /** Color picker popover open state — closed when a system swatch is picked. */
   let colorPopoverOpen = $state(false);
 
-  const allI18nKeys = $derived(Object.keys($dict as Record<string, string>));
   const labelKeyOptions = $derived(
-    allI18nKeys
-      .filter((k) => k.startsWith('system.settings.config.auth.'))
-      .map((k) => ({ key: k })),
+    i18nKeyOptions($dict as Record<string, string>, {
+      prefix: 'system.settings.config.auth.',
+    }),
   );
 
   function labelKeySearchFor(rowValue: string) {
-    const key = config_key.trim() || 'my_custom_setting';
     const suffix = rowValue.trim() ? `badge.${rowValue.trim()}` : 'badge.';
-    return `system.settings.config.auth.${key}.${suffix}`;
+    return `${authConfigKeyPrefix(config_key)}${suffix}`;
   }
 
   /** Suggested label key shown as placeholder — also the committed value

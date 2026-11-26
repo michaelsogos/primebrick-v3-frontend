@@ -24,6 +24,7 @@ import { promises as fs } from "node:fs";
 import { join } from "node:path";
 import type { BrowserContext } from "@playwright/test";
 
+import { extJsonStringify, extJsonParse } from '@primebrick/core/ext-json';
 /** The rpId used by the virtual authenticator. Must match the BE/Casdoor derivation. */
 export const WEBAUTHN_RP_ID = "localhost";
 
@@ -103,7 +104,7 @@ export async function captureEnrolledPasskey(
  */
 export async function savePasskey(passkey: CapturedPasskey): Promise<void> {
   await fs.mkdir(AUTH_DIR, { recursive: true });
-  await fs.writeFile(PASSKEY_FILE, JSON.stringify(passkey, null, 2), "utf-8");
+  await fs.writeFile(PASSKEY_FILE, extJsonStringify(passkey,2), "utf-8");
 }
 
 /**
@@ -113,7 +114,7 @@ export async function savePasskey(passkey: CapturedPasskey): Promise<void> {
 export async function loadPasskey(): Promise<CapturedPasskey | null> {
   try {
     const content = await fs.readFile(PASSKEY_FILE, "utf-8");
-    return JSON.parse(content) as CapturedPasskey;
+    return extJsonParse<unknown>(content) as CapturedPasskey;
   } catch {
     return null;
   }

@@ -18,12 +18,14 @@
 import { z } from 'zod';
 import { fieldSpecToZod, type FormPageDecl, type MetaColumn } from '@primebrick/ui';
 import type { EntityMeta } from '$lib/entity-list/types';
+import { orderedColumns } from '$lib/entity-list';
 import {
 	extJsonParse,
 	isValidNatsSubject,
 	isValidScheduleSpec,
 	jsonSchemaCheck,
 	jobTriggerShapeIssues,
+	sequenceReviveShapeIssues,
 	payloadMapConformance,
 } from '@primebrick/ui';
 
@@ -87,6 +89,25 @@ const CROSS_FIELD_VALIDATORS: Record<
 				path: ['target_subject'],
 				message: `target subject must start with ${prefix}`,
 			});
+		}
+	},
+	/** `sequence` revive contract — `revive_slot` must name a `{sezN}`
+	 *  token the pattern interpolates AND the row-owned value of that
+	 *  slot must parse under `derivePeriodLabel` (a TEXT-only sezionale
+	 *  can never be advanced). Shares the core `sequenceReviveShapeIssues`
+	 *  predicate with the dal wire validator (`assertReviveCoherence`) —
+	 *  one rule, two surfaces. Attached via `meta.form.validators` (the
+	 *  builtin entity has no route decl to author a form against). */
+	sequence_revive_shape: (data, ctx) => {
+		for (const i of sequenceReviveShapeIssues({
+			pattern: typeof data.pattern === 'string' ? data.pattern : '',
+			sez: data.sez as string | null | undefined,
+			sez2: data.sez2 as string | null | undefined,
+			sez3: data.sez3 as string | null | undefined,
+			revive_every: data.revive_every as string | null | undefined,
+			revive_slot: data.revive_slot as string | null | undefined,
+		})) {
+			ctx.addIssue({ code: 'custom', path: [i.path], message: i.message });
 		}
 	},
 	/** `job_trigger` shape — `event_subject`/`schedule_spec` are mutually
@@ -186,4 +207,32 @@ export function buildEntityFormSchema(
 		>;
 	}
 	return { schema, fields };
+}
+
+/**
+ * `synthesizeFormDecl` — the fallback `page_props.form` when an entity
+ * has no authored declaration: every writable served column in canonical
+ * `orderedColumns` order. `hidden`/`audited`/`kind` (calculated|virtual
+ * projections)/`managed`/uid/`version` never reach a form by contract —
+ * the SAME partition the SDK declaration-time gate enforces.
+ */
+export function synthesizeFormDecl(meta: EntityMeta): FormPageDecl {
+	const uid = meta.uid ?? 'uuid';
+	return {
+		fields: orderedColumns(meta.columns ?? [])
+			.filter(
+				(c) =>
+					!c.hidden &&
+					c.audited !== true &&
+					!c.kind &&
+					c.managed !== true &&
+					c.key !== uid &&
+					c.key !== 'version',
+			)
+			.map((c) => ({ key: c.key })),
+		// Entity-level form policy (`meta.form.validators`) — the surface
+		// a builtin entity declares for synthesized forms; an authored
+		// route `page_props.form` always wins (caller precedence).
+		validators: meta.form?.validators,
+	};
 }

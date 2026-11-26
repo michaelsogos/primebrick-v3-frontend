@@ -8,7 +8,6 @@
   import type { Snippet } from 'svelte';
   import type { CellArgs, EntityRowActions } from '../types';
   import { MoreVertical } from '@primebrick/ui/vendor/lucide'
-  import { Eye } from '@primebrick/ui/vendor/lucide'
   import { Pencil } from '@primebrick/ui/vendor/lucide'
   import { Trash2 } from '@primebrick/ui/vendor/lucide'
   import { DynamicIcon } from '@primebrick/ui';

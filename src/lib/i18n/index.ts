@@ -3,6 +3,7 @@ import { uiLang } from './store.svelte';
 import { DEFAULT_LANG, type UiLang } from './languages';
 
 import enGBFallback from './messages/en-GB-fallback.json';
+import { toDisplayString } from '@primebrick/ui';
 
 /** Flat dict — keys are full dot-paths, values are translated strings. */
 type Dict = Record<string, string>;
@@ -49,7 +50,7 @@ export function getFallbackDict(): Dict {
 
 function interpolate(template: string, params: Record<string, unknown>): string {
   return template.replace(/\{(\w+)\}/g, (match, key) => {
-    return params[key] !== undefined ? String(params[key]) : match;
+    return params[key] !== undefined ? toDisplayString(params[key]) : match;
   });
 }
 

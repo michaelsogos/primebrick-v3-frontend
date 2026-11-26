@@ -1,13 +1,14 @@
 import { test, expect } from "@playwright/test";
 import { loginAsTestAdmin } from "./helpers/admin-login";
 
+import { extJsonStringify } from '@primebrick/core/ext-json';
 test("probe — kbd legend median layout", async ({ page }) => {
   await loginAsTestAdmin(page);
   await page.goto("/system/job/triggers", { waitUntil: "domcontentloaded" });
-  await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 5_000 });
   await page.getByTestId("elt-kbd-legend").hover();
   const panel = page.getByTestId("elt-kbd-legend-panel");
-  await expect(panel).toBeVisible({ timeout: 8_000 });
+  await expect(panel).toBeVisible({ timeout: 5_000 });
 
   const rows = await panel.evaluate((el) => {
     return Array.from(el.querySelectorAll('[data-slot="keyboard-hints"] > span')).map((row) => {
@@ -21,6 +22,6 @@ test("probe — kbd legend median layout", async ({ page }) => {
       };
     });
   });
-  console.log("[probe] median rows:", JSON.stringify(rows, null, 1));
+  console.log("[probe] median rows:", extJsonStringify(rows,1));
   await panel.screenshot({ path: "probe-kbd-median.png" });
 });

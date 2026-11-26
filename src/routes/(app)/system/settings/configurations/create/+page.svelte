@@ -2,7 +2,8 @@
 
   import { onMount, tick } from 'svelte';
   import { t, dict } from '$lib/i18n';
-  import { Button } from '@primebrick/ui';
+  import { i18nKeyOptions, authConfigKeyPrefix } from '$lib/i18n/i18n-key-options';
+  import { Button, toDisplayString } from '@primebrick/ui';
   import { TextInput } from '@primebrick/ui';
   import { SwitchField } from '@primebrick/ui';
   import { ComboSelect } from '@primebrick/ui';
@@ -32,6 +33,7 @@
   import TypeConfigBuilder from '$lib/components/config-builder/TypeConfigBuilder.svelte';
   import { FormLabelWithPriorityHelp } from '@primebrick/ui';
   import { Badge } from '@primebrick/ui';
+  import { extJsonParse, extJsonStringify } from '$lib/api-ext';
 
   const { notifyParentRefresh } = useSyncChannel('primebrick_config_sync', { mode: 'sender' });
 
@@ -230,7 +232,7 @@
       try {
         const res = await apiFetch(`/api/v1/entities/config_entry/list`);
         if (res.ok) {
-          const data = (await res.json()) as { rows: Array<{ key: string }> };
+          const data = (await res.text().then((t) => extJsonParse<unknown>(t))) as { rows: Array<{ key: string }> };
           keyExistsError = data.rows.some((r) => r.key === keyValue);
         }
       } catch {
@@ -256,7 +258,7 @@
     $errors?.value
       ? Array.isArray($errors.value)
         ? $errors.value.map(String)
-        : [String($errors.value)]
+        : [toDisplayString($errors.value)]
       : [],
   );
 
@@ -291,37 +293,32 @@
 
   // Reactive i18n key placeholders based on the config key being typed.
   // Uses 'my_custom_setting' as fallback when key is empty (same convention as the builder).
-  const labelKeyPlaceholder = $derived(
-    `system.settings.config.auth.${$form.key?.trim() || 'my_custom_setting'}.label`,
-  );
+  const labelKeyPlaceholder = $derived(`${authConfigKeyPrefix($form.key ?? '')}label`);
   const descriptionKeyPlaceholder = $derived(
-    `system.settings.config.auth.${$form.key?.trim() || 'my_custom_setting'}.description`,
+    `${authConfigKeyPrefix($form.key ?? '')}description`,
   );
 
   // ─── i18n key options for label_key / description_key ComboSelects ──────
-  // The dict is flat (keys are dot-paths), so Object.keys() gives us all keys.
-  // Filter to system.settings.config.auth.*.label / .description leaves.
-  // These are the selectable options; the user can also type a new key (allowCreate).
-  const allI18nKeys = $derived(Object.keys($dict as Record<string, string>));
+  // The dict is flat (keys are dot-paths): filter to
+  // system.settings.config.auth.*.label / .description leaves through the
+  // shared vocabulary helper. The user can also type a new key (allowCreate).
   const labelKeyOptions = $derived(
-    allI18nKeys
-      .filter((k) => k.startsWith('system.settings.config.auth.') && k.endsWith('.label'))
-      .map((k) => ({ key: k, _icon: 'languages', _icon_color: 'sky-500' })),
+    i18nKeyOptions($dict as Record<string, string>, {
+      prefix: 'system.settings.config.auth.',
+      suffix: '.label',
+    }),
   );
   const descriptionKeyOptions = $derived(
-    allI18nKeys
-      .filter((k) => k.startsWith('system.settings.config.auth.') && k.endsWith('.description'))
-      .map((k) => ({ key: k, _icon: 'languages', _icon_color: 'sky-500' })),
+    i18nKeyOptions($dict as Record<string, string>, {
+      prefix: 'system.settings.config.auth.',
+      suffix: '.description',
+    }),
   );
 
   // Pre-filter prefix: when the popover opens, only show keys matching the
   // current config key. User can clear the search (X button) to see all.
-  const labelKeyDefaultSearch = $derived(
-    `system.settings.config.auth.${$form.key?.trim() || 'my_custom_setting'}.`,
-  );
-  const descriptionKeyDefaultSearch = $derived(
-    `system.settings.config.auth.${$form.key?.trim() || 'my_custom_setting'}.`,
-  );
+  const labelKeyDefaultSearch = $derived(authConfigKeyPrefix($form.key ?? ''));
+  const descriptionKeyDefaultSearch = $derived(authConfigKeyPrefix($form.key ?? ''));
 
   function handleLabelKeyChange(value: string | string[]) {
     $form.label_key = Array.isArray(value) ? value[0] ?? '' : value;
@@ -342,7 +339,7 @@
 >
 
     <div class="flex-1 overflow-auto">
-      <form id="config-create-form" use:enhance data-has-changes={formGuard.hasChanges} data-tainted={JSON.stringify($tainted ?? null)}>
+      <form id="config-create-form" use:enhance data-has-changes={formGuard.hasChanges} data-tainted={extJsonStringify($tainted ?? null)}>
         <div class="grid grid-cols-2 gap-6 p-4">
           <!-- Column 1 -->
           <div class="space-y-4">

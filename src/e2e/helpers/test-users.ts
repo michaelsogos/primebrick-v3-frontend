@@ -20,6 +20,7 @@ import { e2eUuidV7 } from "./uuid";
 import { Socket } from "net";
 import { getPool } from "./db";
 
+import { extJsonStringify, extJsonParse } from '@primebrick/core/ext-json';
 const ACTOR_NAME = process.env.E2E_ACTOR_NAME ?? "e2e_test_admin";
 const ACTOR_DISPLAY = "E2E Test Admin";
 const ACTOR_EMAIL = `${ACTOR_NAME}@e2e.local`;
@@ -71,7 +72,7 @@ interface IdpConfig {
 
 async function loadIdpConfig(): Promise<IdpConfig> {
   const res = await getPool().query(
-    `SELECT key, value FROM public.config_entries
+    `SELECT key, value FROM system.config_entries
      WHERE key IN ('idp_endpoint', 'idp_client_id', 'idp_client_secret', 'idp_organization')`,
   );
   const map = Object.fromEntries(res.rows.map((r) => [r.key, r.value]));
@@ -86,7 +87,7 @@ async function loadIdpConfig(): Promise<IdpConfig> {
   };
 }
 
-async function casdoorFetch(cfg: IdpConfig, path: string, init?: RequestInit): Promise<any> {
+async function casdoorFetch(cfg: IdpConfig, path: string, init?: RequestInit): Promise<Record<string, unknown> | null> {
   const url = new URL(`${cfg.endpoint}/api${path}`);
   url.searchParams.set("clientId", cfg.clientId);
   url.searchParams.set("clientSecret", cfg.clientSecret);
@@ -94,17 +95,17 @@ async function casdoorFetch(cfg: IdpConfig, path: string, init?: RequestInit): P
     ...init,
     headers: { "Content-Type": "application/json", ...init?.headers },
   });
-  return res.json().catch(() => null);
+  return res.text().then((t) => extJsonParse<Record<string, unknown>>(t)).catch(() => null);
 }
 
 async function deleteCasdoorUser(cfg: IdpConfig, name: string): Promise<void> {
   // Best-effort: fetch for the id, then delete.
   const got = await casdoorFetch(cfg, `/get-user?id=${encodeURIComponent(`${cfg.org}/${name}`)}`);
-  const user = got?.data;
+  const user = got?.data as { id?: string } | undefined;
   if (!user?.id) return;
   await casdoorFetch(cfg, `/delete-user?id=${encodeURIComponent(`${cfg.org}/${name}`)}`, {
     method: "POST",
-    body: JSON.stringify({ id: user.id, owner: cfg.org, name }),
+    body: extJsonStringify({ id: user.id, owner: cfg.org, name }),
   });
 }
 
@@ -114,8 +115,8 @@ async function getRole(cfg: IdpConfig): Promise<Record<string, unknown>> {
     cfg,
     `/get-role?id=${encodeURIComponent(`${cfg.org}/${ADMIN_ROLE}`)}`,
   );
-  if (!got?.data) throw new Error(`[E2E] Casdoor get-role failed: ${JSON.stringify(got)}`);
-  return got.data;
+  if (!got?.data) throw new Error(`[E2E] Casdoor get-role failed: ${extJsonStringify(got)}`);
+  return got.data as Record<string, unknown>;
 }
 
 // update-role applies the body verbatim — omitted fields are reset to their
@@ -131,11 +132,11 @@ async function updateRoleUsers(
     `/update-role?id=${encodeURIComponent(`${cfg.org}/${ADMIN_ROLE}`)}`,
     {
       method: "POST",
-      body: JSON.stringify({ ...role, users }),
+      body: extJsonStringify({ ...role, users }),
     },
   );
   if (res?.status !== "ok" && res?.success !== true) {
-    throw new Error(`[E2E] Casdoor update-role failed: ${JSON.stringify(res)}`);
+    throw new Error(`[E2E] Casdoor update-role failed: ${extJsonStringify(res)}`);
   }
 }
 
@@ -155,7 +156,7 @@ async function unlinkCasdoorUserFromRole(cfg: IdpConfig, userKey: string): Promi
 /** Link/unlink a user into ANY Casdoor role (get-role/update-role by name). */
 async function getNamedRole(cfg: IdpConfig, roleName: string): Promise<Record<string, unknown> | null> {
   const got = await casdoorFetch(cfg, `/get-role?id=${encodeURIComponent(`${cfg.org}/${roleName}`)}`);
-  return got?.data ?? null;
+  return (got?.data ?? null) as Record<string, unknown> | null;
 }
 
 async function updateNamedRoleUsers(
@@ -166,10 +167,10 @@ async function updateNamedRoleUsers(
 ): Promise<void> {
   const res = await casdoorFetch(cfg, `/update-role?id=${encodeURIComponent(`${cfg.org}/${roleName}`)}`, {
     method: "POST",
-    body: JSON.stringify({ ...role, users }),
+    body: extJsonStringify({ ...role, users }),
   });
   if (res?.status !== "ok" && res?.success !== true) {
-    throw new Error(`[E2E] Casdoor update-role(${roleName}) failed: ${JSON.stringify(res)}`);
+    throw new Error(`[E2E] Casdoor update-role(${roleName}) failed: ${extJsonStringify(res)}`);
   }
 }
 
@@ -179,7 +180,7 @@ async function deleteCasdoorRole(cfg: IdpConfig, roleName: string): Promise<void
   if (!role) return;
   await casdoorFetch(cfg, `/delete-role?id=${encodeURIComponent(`${cfg.org}/${roleName}`)}`, {
     method: "POST",
-    body: JSON.stringify({ owner: cfg.org, name: roleName }),
+    body: extJsonStringify({ owner: cfg.org, name: roleName }),
   });
 }
 
@@ -191,7 +192,7 @@ async function deleteCasdoorRole(cfg: IdpConfig, roleName: string): Promise<void
  */
 async function invalidateRoleMappingsCache(): Promise<void> {
   const res = await getPool().query(
-    `SELECT value FROM public.config_entries WHERE key = 'redis_url'`,
+    `SELECT value FROM system.config_entries WHERE key = 'redis_url'`,
   );
   const redisUrl = res.rows[0]?.value as string | undefined;
   if (!redisUrl) return;
@@ -245,7 +246,7 @@ async function createE2eAdminLikeActor(
   // application's organization.
   const addRes = await casdoorFetch(cfg, `/add-user`, {
     method: "POST",
-    body: JSON.stringify({
+    body: extJsonStringify({
       owner: cfg.org,
       name,
       displayName: display,
@@ -260,15 +261,15 @@ async function createE2eAdminLikeActor(
     }),
   });
   if (addRes?.status !== "ok" && addRes?.success !== true) {
-    throw new Error(`[E2E] Casdoor add-user for test actor failed: ${JSON.stringify(addRes)}`);
+    throw new Error(`[E2E] Casdoor add-user for test actor failed: ${extJsonStringify(addRes)}`);
   }
 
   // add-user returns data:"Affected" — fetch the created user for its id.
   // get-user is eventually consistent right after creation → retry briefly.
-  let casdoorUser: any = null;
+  let casdoorUser: Record<string, unknown> | null = null;
   for (let i = 0; i < 10 && !casdoorUser?.id; i++) {
     const created = await casdoorFetch(cfg, `/get-user?id=${encodeURIComponent(`${cfg.org}/${name}`)}`);
-    casdoorUser = created?.data;
+    casdoorUser = created?.data as Record<string, unknown> | null;
     if (!casdoorUser?.id) await new Promise((r) => setTimeout(r, 500));
   }
   if (!casdoorUser?.id) {
@@ -291,7 +292,7 @@ async function createE2eAdminLikeActor(
       auth_method_enforcer_dismissed)
      VALUES ($1,$2,$3,$4,$5,$6,'#4f46e5','TA',true,true,true,$7,$8,$9,$9,'e2e-setup',$9,'e2e-setup',1,true)`,
     [uuid, casdoorUser.id, email, display, cfg.org, name, cfg.endpoint,
-     JSON.stringify([ADMIN_ROLE]), now],
+     extJsonStringify([ADMIN_ROLE]), now],
   );
 
   process.env[`${envPrefix}_USERNAME`] = name;
@@ -402,7 +403,7 @@ export async function createE2eUserActor(): Promise<{ username: string; password
   // 2. Dedicated Casdoor role — kept enabled, zero users until step 4.
   const addRoleRes = await casdoorFetch(cfg, `/add-role`, {
     method: "POST",
-    body: JSON.stringify({
+    body: extJsonStringify({
       owner: cfg.org,
       name: USER_ROLE,
       displayName: "E2E User",
@@ -411,13 +412,13 @@ export async function createE2eUserActor(): Promise<{ username: string; password
     }),
   });
   if (addRoleRes?.status !== "ok" && addRoleRes?.success !== true) {
-    throw new Error(`[E2E] Casdoor add-role(${USER_ROLE}) failed: ${JSON.stringify(addRoleRes)}`);
+    throw new Error(`[E2E] Casdoor add-role(${USER_ROLE}) failed: ${extJsonStringify(addRoleRes)}`);
   }
 
   // 3. Casdoor user — NON-admin, verified, no MFA requirements.
   const addRes = await casdoorFetch(cfg, `/add-user`, {
     method: "POST",
-    body: JSON.stringify({
+    body: extJsonStringify({
       owner: cfg.org,
       name: USER_ACTOR_NAME,
       displayName: USER_ACTOR_DISPLAY,
@@ -432,13 +433,13 @@ export async function createE2eUserActor(): Promise<{ username: string; password
     }),
   });
   if (addRes?.status !== "ok" && addRes?.success !== true) {
-    throw new Error(`[E2E] Casdoor add-user for non-admin actor failed: ${JSON.stringify(addRes)}`);
+    throw new Error(`[E2E] Casdoor add-user for non-admin actor failed: ${extJsonStringify(addRes)}`);
   }
 
-  let casdoorUser: any = null;
+  let casdoorUser: Record<string, unknown> | null = null;
   for (let i = 0; i < 10 && !casdoorUser?.id; i++) {
     const created = await casdoorFetch(cfg, `/get-user?id=${encodeURIComponent(`${cfg.org}/${USER_ACTOR_NAME}`)}`);
-    casdoorUser = created?.data;
+    casdoorUser = created?.data as Record<string, unknown> | null;
     if (!casdoorUser?.id) await new Promise((r) => setTimeout(r, 500));
   }
   if (!casdoorUser?.id) {
@@ -462,7 +463,7 @@ export async function createE2eUserActor(): Promise<{ username: string; password
       auth_method_enforcer_dismissed)
      VALUES ($1,$2,$3,$4,$5,$6,'#0ea5e9','TU',false,true,true,$7,$8,$9,$9,'e2e-setup',$9,'e2e-setup',1,true)`,
     [uuid, casdoorUser.id, USER_ACTOR_EMAIL, USER_ACTOR_DISPLAY, cfg.org, USER_ACTOR_NAME, cfg.endpoint,
-     JSON.stringify([USER_ROLE]), now],
+     extJsonStringify([USER_ROLE]), now],
   );
 
   // 6. Local role_mapping — raw write + explicit cache bust (the API path
@@ -475,7 +476,7 @@ export async function createE2eUserActor(): Promise<{ username: string; password
      (uuid, idp_role, idp_org, permissions, is_admin,
       created_at, created_by, updated_at, updated_by, version)
      VALUES ($1,$2,$3,$4::json,false,$5,'e2e-setup',$5,'e2e-setup',1)`,
-    [e2eUuidV7(), USER_ROLE, cfg.org, JSON.stringify(USER_ROLE_PERMISSIONS), now],
+    [e2eUuidV7(), USER_ROLE, cfg.org, extJsonStringify(USER_ROLE_PERMISSIONS), now],
   );
   await invalidateRoleMappingsCache();
 

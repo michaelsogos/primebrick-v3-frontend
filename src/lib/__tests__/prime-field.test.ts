@@ -84,7 +84,7 @@ describe("PrimeField", () => {
   it("renders help from raw MetaColumn shape, honoring show_form_tooltip", () => {
     render(PrimeFieldHelpFixture, {
       props: {
-        help: { tooltip: "meta.tooltip.key", tooltip_priority: "INFORMATION" as never },
+        help: { tooltip: "app.meta.tooltip.key", tooltip_priority: "INFORMATION" as never },
         control: inputControl,
       },
     });
@@ -94,7 +94,7 @@ describe("PrimeField", () => {
   it("suppresses meta help when show_form_tooltip is false", () => {
     render(PrimeFieldHelpFixture, {
       props: {
-        help: { tooltip: "meta.tooltip.key", show_form_tooltip: false },
+        help: { tooltip: "app.meta.tooltip.key", show_form_tooltip: false },
         control: inputControl,
       },
     });
@@ -107,7 +107,7 @@ describe("PrimeField", () => {
     // icon rendered, tooltip never opened (ID/NAME filter labels).
     render(PrimeFieldHelpFixture, {
       props: {
-        help: { label_key: "col.name", type: "text" } as never,
+        help: { label_key: "app.col.name", type: "text" } as never,
         control: inputControl,
       },
     });
@@ -124,7 +124,7 @@ describe("PrimeField", () => {
   it("gates meta help on show_list_tooltip when help_context='list'", () => {
     render(PrimeFieldHelpFixture, {
       props: {
-        help: { tooltip: "meta.tooltip.key", show_list_tooltip: false },
+        help: { tooltip: "app.meta.tooltip.key", show_list_tooltip: false },
         help_context: "list",
         control: inputControl,
       },
@@ -137,7 +137,7 @@ describe("PrimeField", () => {
     // list surface — the flags are per-surface, not global.
     render(PrimeFieldHelpFixture, {
       props: {
-        help: { tooltip: "meta.tooltip.key", show_form_tooltip: false, show_list_tooltip: true },
+        help: { tooltip: "app.meta.tooltip.key", show_form_tooltip: false, show_list_tooltip: true },
         help_context: "list",
         control: inputControl,
       },

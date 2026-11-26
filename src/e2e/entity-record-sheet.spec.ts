@@ -16,24 +16,24 @@ test.describe("entity.record sheet — responsive + entity id label", () => {
   test("trigger ref sheet: 1-col grid + '{entity} ID' label", async ({ page }) => {
     await loginAsTestAdmin(page);
     await page.goto("/system/job/schedules", { waitUntil: "domcontentloaded" });
-    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 30000 });
+    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 5_000 });
 
     // `trigger_uuid` isn't in the default visible set — enable it via the
     // column picker (same toggle contract as the ref-cell spec).
     await page.getByRole("button", { name: "Columns" }).first().click();
     const toggle = page.getByTestId("columns-toggle-trigger_uuid");
-    await expect(toggle).toBeVisible({ timeout: 15000 });
+    await expect(toggle).toBeVisible({ timeout: 5_000 });
     await toggle.click();
     await page.keyboard.press("Escape");
 
     // The `trigger` column is a type:"ref" cell → text click opens the sheet.
     const triggerCell = page.getByTestId("ref-cell-trigger_uuid-text").first();
-    await expect(triggerCell).toBeVisible({ timeout: 15000 });
+    await expect(triggerCell).toBeVisible({ timeout: 5_000 });
     await triggerCell.click();
 
     const sheet = page.getByTestId("entity-record-sheet");
-    await expect(sheet).toBeVisible({ timeout: 15000 });
-    await expect(page.getByTestId("entity-record-sheet-uid-badge")).toBeVisible({ timeout: 15000 });
+    await expect(sheet).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByTestId("entity-record-sheet-uid-badge")).toBeVisible({ timeout: 5_000 });
 
     // (a) uid badge label: "{entity} ID" — job_trigger singular.
     const label = sheet.locator("label[for='record-sheet-uid-badge']");

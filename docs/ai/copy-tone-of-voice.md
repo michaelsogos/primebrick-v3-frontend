@@ -29,6 +29,18 @@ CTAs.
   meaning in that language's natural phrasing, never transliterating
   dev-speak.
 
+## Concrete jargon cases
+
+- **"Key" / "Chiave" / "…schlüssel" is storage jargon.** A field whose
+  value is an i18n key is named after the translated content the user
+  gets — never after the stored format: `Label Key` → `Label
+  translation` / `Traduzione etichetta`, `Description (translation key)`
+  → `Description translation` / `Traduzione descrizione`, `Error label
+  key` → `Error label translation` / `Traduzione etichetta errore`.
+  Help/hint text MAY quote a real key as an example (`e.g.
+  shell.settings.roles.label.admin`) — there the key itself is the
+  information.
+
 ## Smell test
 
 Read the string as a domain user who has never seen the codebase. If it

@@ -11,8 +11,9 @@ import type { ChatAction } from '$lib/components/ui/smart-ai/chat-actions';
 import type { ChatMessage } from '$lib/components/ui/smart-ai/ai-assistant.types';
 import type { JsonAssistantChoice } from '$lib/components/ui/smart-json-assistant/json-schema.types';
 
+import { extJsonStringify, extJsonParse } from '$lib/api-ext';
 function buildSystemPrompt(schema: object, current_json: string): string {
-  const schemaCompact = JSON.stringify(schema);
+  const schemaCompact = extJsonStringify(schema);
   return [
     'You are a JSON configuration assistant for a "type_config" object.',
     'The JSON Schema below is the ONLY source of truth for valid output:',
@@ -57,7 +58,7 @@ function buildSystemPrompt(schema: object, current_json: string): string {
 /** Validate a JSON candidate against the type_config zod schema. */
 export function validateCandidate(json: string): JsonCandidateValidation {
   try {
-    const parsed = JSON.parse(json);
+    const parsed = extJsonParse<unknown>(json);
     const result = typeConfigSchema.safeParse(parsed);
     if (result.success) return { valid: true, errors: [] };
     const errors = result.error.issues.map(

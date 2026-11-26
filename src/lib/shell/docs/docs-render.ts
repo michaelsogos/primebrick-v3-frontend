@@ -3,14 +3,15 @@
  *
  *   mdx → strip MDX directives → marked (custom renderer) → shiki code
  *   highlight → internal/external link rewrite → image placeholders →
- *   DOMPurify → html + toc
+ *   raw html + toc — sanitization is owned by <SafeHtml profile="docs">
+ *   at render; do NOT render `html` through any other `{@html}` path.
  *
  * Mermaid blocks come back as `<pre class="docs-mermaid">` placeholders —
  * the caller hydrates them with `hydrateMermaid(container)` post-mount.
  */
 import { Marked, type Tokens } from 'marked';
-import DOMPurify from 'dompurify';
 import { createHighlighter, type Highlighter } from 'shiki';
+import { toDisplayString } from '@primebrick/ui';
 
 export type DocsTocItem = { id: string; text: string; depth: 2 | 3 };
 
@@ -56,7 +57,7 @@ function slugify(text: string): string {
 function mdxComponentsToMarkdown(md: string): string {
   return md
     .replace(/<Mermaid\s+chart=\{`([\s\S]*?)`\}\s*\/?>/g, '\n\n```mermaid\n$1\n```\n\n')
-    .replace(/<Mermaid[^>]*>\s*(?:\{`([\s\S]*?)`\}|([\s\S]*?))\s*<\/Mermaid>/g, (_m, attr, body) => `\n\n\`\`\`mermaid\n${attr ?? body}\n\`\`\`\n\n`);
+    .replace(/<Mermaid[^>]*>\s*(?:\{`([\s\S]*?)`\}|([\s\S]*?))\s*<\/Mermaid>/g, (_m, attr, body) => `\n\n\`\`\`mermaid\n${toDisplayString(attr ?? body)}\n\`\`\`\n\n`);
 }
 
 /** Strip MDX-only syntax the KB docs may carry: import/export lines and
@@ -197,11 +198,10 @@ export async function renderDoc(md: string, opts?: { docPath?: string }): Promis
     }
   }
 
-  const clean = DOMPurify.sanitize(html, {
-    ADD_ATTR: ['data-docpath', 'data-docrepo', 'data-docanchor', 'target'],
-    ADD_TAGS: ['figure']
-  });
-  return { html: clean, toc };
+  // Returned RAW — <SafeHtml profile="docs"> sanitizes at render with the
+  // KB profile (data-doc* attrs + figure). Centralizing the sanitize step
+  // in the component makes it impossible to forget.
+  return { html, toc };
 }
 
 /** Hydrate `.docs-mermaid` placeholders inside a mounted container. */

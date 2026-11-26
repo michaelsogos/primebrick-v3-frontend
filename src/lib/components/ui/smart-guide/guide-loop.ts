@@ -24,6 +24,8 @@ import { parseGuideResponse } from './guide-response';
 import { get } from 'svelte/store';
 import { uiLang } from '$lib/i18n/store.svelte';
 
+import { extJsonStringify, extJsonParse } from '$lib/api-ext';
+import { toDisplayString } from '@primebrick/ui';
 /** Loop knobs — all overridable per cerebellum tuning via execution_config
  *  keys of the same name; values below are the built-in defaults. The
  *  preflight stages (S0/S2) are deliberately pinned to temperature 0 and
@@ -105,7 +107,7 @@ function resolveLoopConfig(exec_config: Record<string, unknown> | null): GuideLo
 /** Lightweight per-stage telemetry — same observability pattern as the
  *  composable's [ai-raw]; captured by the parity e2e spec. */
 function stageLog(stage: string, data: Record<string, unknown>): void {
-  console.debug(`[guide-loop] ${stage}`, JSON.stringify(data));
+  console.debug(`[guide-loop] ${stage}`, extJsonStringify(data));
 }
 
 /** Runs fn and logs its wall time + result under [guide-loop]. */
@@ -505,7 +507,7 @@ function parseJson<T>(raw: string): T | null {
       .replace(/^```(?:json)?\s*\n?/i, '')
       .replace(/\n?```\s*$/i, '')
       .trim();
-    return JSON.parse(cleaned) as T;
+    return extJsonParse<unknown>(cleaned) as T;
   } catch {
     return null;
   }
@@ -598,7 +600,7 @@ export async function runGuideRetrievalLoop(
       digestRows.push(h);
       if (digestRows.length >= 12) break;
     }
-    return JSON.stringify(
+    return extJsonStringify(
       digestRows.map((h) => ({
         path: h.path,
         repo: h.repo,
@@ -615,13 +617,13 @@ export async function runGuideRetrievalLoop(
   /** docs_fetch executor — full-document dereference, capped for prompt size. */
   const execFetch = async (path: string, repo?: string): Promise<string> => {
     const t0 = performance.now();
-    const doc = await fetchDoc({ path, repo }).catch((e) => ({ error: String(e) }));
+    const doc = await fetchDoc({ path, repo }).catch((e) => ({ error: (e instanceof Error ? e.message : toDisplayString(e)) }));
     stageLog('tool_docs_fetch', { ms: Math.round(performance.now() - t0), path, found: !!doc && !('error' in doc) });
     if (!doc || 'error' in doc)
       // Steer lazy agents back to search: Coder models skip docs_search and
       // hallucinate doc paths — a bare 404 makes them emit NO_MATCH on
       // covered questions. Point them at the discovery tool instead.
-      return JSON.stringify({
+      return extJsonStringify({
         error: 'document not found',
         hint: 'That path does not exist — never guess paths. Call docs_search with an English query to discover real document paths.',
       });
@@ -644,29 +646,29 @@ export async function runGuideRetrievalLoop(
     const content = doc.content.length > cfg.max_chunk_chars * 2
       ? doc.content.slice(0, cfg.max_chunk_chars * 2) + '\n…[truncated]'
       : doc.content;
-    return JSON.stringify({ path: doc.path, title: doc.title, entity: doc.metadata?.entity, content });
+    return extJsonStringify({ path: doc.path, title: doc.title, entity: doc.metadata?.entity, content });
   };
 
   const execRoutes = async (): Promise<string> => {
     const census = await censusPromise;
-    return JSON.stringify(census.map((r) => ({ route: r.route, kind: r.kind, entity: r.entity })));
+    return extJsonStringify(census.map((r) => ({ route: r.route, kind: r.kind, entity: r.entity })));
   };
 
   const executeTool = async (name: string, args: Record<string, unknown>): Promise<string> => {
     if (name === 'docs_search') {
       const query = typeof args.query === 'string' ? args.query : '';
       const kws = Array.isArray(args.keywords) ? args.keywords.filter((k): k is string => typeof k === 'string') : [];
-      if (!query.trim()) return JSON.stringify({ error: 'missing query' });
+      if (!query.trim()) return extJsonStringify({ error: 'missing query' });
       return execSearch(query, kws.slice(0, cfg.max_keywords));
     }
     if (name === 'docs_fetch') {
       const path = typeof args.path === 'string' ? args.path : '';
-      if (!path.trim()) return JSON.stringify({ error: 'missing path' });
+      if (!path.trim()) return extJsonStringify({ error: 'missing path' });
       // Dedup guard: a repeated fetch of an already-open page wastes a full
       // agent round (observed: users-create.mdx fetched twice in a row).
       // Reply instantly and steer the model to a different page or DONE.
       if (fetchedPaths.has(path)) {
-        return JSON.stringify({ already_fetched: true, path, hint: 'You already hold this page — it IS your evidence. Fetch a different path or say DONE. NO_MATCH is not allowed now.' });
+        return extJsonStringify({ already_fetched: true, path, hint: 'You already hold this page — it IS your evidence. Fetch a different path or say DONE. NO_MATCH is not allowed now.' });
       }
       fetchCallCount++;
       const out = await execFetch(path, typeof args.repo === 'string' ? args.repo : undefined);
@@ -674,7 +676,7 @@ export async function runGuideRetrievalLoop(
       return out;
     }
     if (name === 'list_routes') return execRoutes();
-    return JSON.stringify({ error: `unknown tool "${name}"` });
+    return extJsonStringify({ error: `unknown tool "${name}"` });
   };
 
   // ── Agent loop: the MODEL decides what to look up; we only execute. ──
@@ -861,7 +863,7 @@ export async function runGuideRetrievalLoop(
     }
   } catch (e) {
     throw new Error(
-      `Documentation retrieval failed: ${e instanceof Error ? e.message : String(e)}`,
+      `Documentation retrieval failed: ${e instanceof Error ? e.message : toDisplayString(e)}`,
       { cause: e },
     );
   }
@@ -876,7 +878,7 @@ export async function runGuideRetrievalLoop(
       await execSearch(text, []);
     } catch (e) {
       throw new Error(
-        `Documentation retrieval failed: ${e instanceof Error ? e.message : String(e)}`,
+        `Documentation retrieval failed: ${e instanceof Error ? e.message : toDisplayString(e)}`,
         { cause: e },
       );
     }

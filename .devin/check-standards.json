@@ -109,12 +109,41 @@
         "routes/(app)/system/settings/translations/+page.svelte"
       ]
     },
+    "no-native-dialog": {
+      "allowPaths": [
+        "lib/composables/useUnsavedChangesGuard.svelte.ts"
+      ]
+    },
+    "e2e-wait-budget": {
+      "appliesTo": [
+        "e2e/"
+      ],
+      "allowPaths": [
+        "e2e/ai-bubble-chrome.spec.ts",
+        "e2e/ai-guide-action-cta.spec.ts",
+        "e2e/ai-guide-loop-parity.spec.ts",
+        "e2e/ai-guide-quality.spec.ts",
+        "e2e/ai-json-schema-pending-actions.spec.ts",
+        "e2e/ai-json-schema-quality.spec.ts",
+        "e2e/ai-regex-quality.spec.ts",
+        "e2e/remote-sheet-ai.spec.ts",
+        "e2e/schedule-spec-assist.spec.ts",
+        "e2e/jobs-pages.spec.ts",
+        "e2e/job-chain-live.spec.ts",
+        "e2e/job-triggers-deletion-filter.spec.ts",
+        "e2e/job-trigger-form-lifecycle.spec.ts",
+        "e2e/entity-events-choreography.spec.ts",
+        "e2e/remote-sheet.spec.ts",
+        "e2e/service-unreachable.spec.ts"
+      ]
+    },
     "i18n-entity-fallback": {
       "appliesTo": [
         "lib/entity-list/",
         "lib/components/entity-list-table/"
       ]
     },
+    "display-coerce": {},
     "icon-no-fallback": {},
     "panel-footer-start": {
       "appliesTo": [
@@ -126,6 +155,11 @@
       "appliesTo": [
         "lib/entity-list/sheets/panels/",
         "lib/shell/sheets/panels/"
+      ]
+    },
+    "ext-json": {
+      "allowPaths": [
+        "lib/components/ui/smart-ai/llm-control-parse.ts"
       ]
     }
   },

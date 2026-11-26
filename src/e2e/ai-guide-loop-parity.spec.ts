@@ -23,6 +23,7 @@ import { deleteMfaFactorsByUsername, setAuthMethodEnforcerDismissed } from "./he
 import { E2E_ADMIN_USERNAME, E2E_ADMIN_PASSWORD } from "./helpers/admin-login";
 import { getSharedContext, focusedPage } from "./helpers/edge-context";
 
+import { extJsonStringify, extJsonParse } from '@primebrick/core/ext-json';
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:5173";
 const PREFIX = "smart-guide-ai";
 
@@ -32,7 +33,7 @@ interface LoopDebug {
   generations: { start: number; end?: number; raw?: string }[];
   embed_queries: string[];
   docs_search_calls: number;
-  docs_search_keywords: (string[] | undefined)[];
+  docs_search_bodies: (string | undefined)[];
   routes_census_calls: number;
   worker_debug: string[];
   /** Ordered [guide-loop] stage telemetry lines emitted by guide-loop.ts. */
@@ -83,7 +84,7 @@ function parseStageJson(raw: string): unknown | null {
   // JSON failures when the capture is complete.
   if (/^(Thought|Action|Final)\s*:/m.test(text)) return { react: true };
   try {
-    return JSON.parse(text);
+    return extJsonParse<unknown>(text);
   } catch {
     return null;
   }
@@ -149,7 +150,7 @@ test.describe("Guide agentic loop — WebGPU parity vs CPU baseline", () => {
         generations: [],
         embed_queries: [],
         docs_search_calls: 0,
-        docs_search_keywords: [],
+        docs_search_bodies: [],
         routes_census_calls: 0,
         worker_debug: [],
         loop_events: [],
@@ -166,10 +167,11 @@ test.describe("Guide agentic loop — WebGPU parity vs CPU baseline", () => {
         const url = typeof input === "string" ? input : input instanceof Request ? input.url : input.toString();
         if (url.includes("/svc/ai/api/v1/system/docs/search")) {
           w.__loop_debug!.docs_search_calls++;
-          try {
-            const body = JSON.parse((init?.body as string) ?? "{}");
-            w.__loop_debug!.docs_search_keywords.push(body.keywords);
-          } catch { w.__loop_debug!.docs_search_keywords.push(undefined); }
+          // The raw request body, verbatim — wire parsing lives Node-side
+          // (the ext-json codec does not exist inside evaluate'd code).
+          w.__loop_debug!.docs_search_bodies.push(
+            typeof init?.body === "string" ? init.body : undefined,
+          );
         }
         // The route census is derived client-side from the /modules
         // discovery payload (the /system/routes endpoint is retired) —
@@ -310,7 +312,7 @@ test.describe("Guide agentic loop — WebGPU parity vs CPU baseline", () => {
       });
       log(
         `  done ${total_s.toFixed(1)}s · gens=${turnGens.length} searches=${d1.searches - d0.searches} ` +
-        `embeds=${d1.embeds - d0.embeds} sources=${sources} actions=${JSON.stringify(actions)}`,
+        `embeds=${d1.embeds - d0.embeds} sources=${sources} actions=${extJsonStringify(actions)}`,
       );
 
       // ── Parity assertions ─────────────────────────────────────────
@@ -360,6 +362,6 @@ test.describe("Guide agentic loop — WebGPU parity vs CPU baseline", () => {
       log(`  ${line.slice(0, 200)}`);
     }
 
-    console.log("[parity-results]", JSON.stringify(results, null, 2));
+    console.log("[parity-results]", extJsonStringify(results,2));
   });
 });

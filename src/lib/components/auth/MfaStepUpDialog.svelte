@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { RFC7807Error } from '$lib/errors/rfc7807';
   import { Dialog } from '@primebrick/ui';
   import { BorderedDialog } from '@primebrick/ui';
   import { Button } from '@primebrick/ui';
@@ -12,6 +13,7 @@
   import { pushNotification } from '$lib/errors/app-errors';
   import { ShieldCheck } from '@primebrick/ui/vendor/lucide';
   import { KeyRound } from '@primebrick/ui/vendor/lucide';
+  import { extJsonParse, extJsonStringify } from '$lib/api-ext';
 
   // Props:
   //   open: bindable — controls dialog visibility
@@ -57,14 +59,14 @@
       const resp = await apiFetch('/api/v1/auth/mfa/step-up/initiate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, target_resource }),
+        body: extJsonStringify({ action, target_resource }),
       });
       if (!resp.ok) {
-        const err = await resp.json();
+        const err = await resp.text().then((t) => extJsonParse<RFC7807Error>(t));
         error = err.detail || $t('app.auth.mfa_step_up.step_up_initiate_error');
         return;
       }
-      const data = await resp.json();
+      const data = await resp.text().then((t) => extJsonParse<{ mfa_challenge_token: string; available_factors: typeof availableFactors }>(t));
       challengeToken = data.mfa_challenge_token;
       availableFactors = data.available_factors;
       factorId = availableFactors[0]?.factor_id ?? '';
@@ -87,19 +89,19 @@
       const resp = await apiFetch('/api/v1/auth/mfa/step-up/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: extJsonStringify({
           mfa_challenge_token: challengeToken,
           factor_id: factorId,
           code: otp.code,
         }),
       });
       if (!resp.ok) {
-        const err = await resp.json();
+        const err = await resp.text().then((t) => extJsonParse<RFC7807Error>(t));
         error = err.detail || $t('app.auth.mfa.invalid_code');
         otp.reset();
         return;
       }
-      const data = await resp.json();
+      const data = await resp.text().then((t) => extJsonParse<{ action_authorization_token: string }>(t));
       pushNotification({
         impact: 'NONE',
         message: $t('app.auth.mfa_step_up.step_up_authorized'),

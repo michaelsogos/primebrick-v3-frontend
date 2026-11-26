@@ -19,28 +19,28 @@ test.describe("/system/settings/migrations", () => {
   test("renders the backend card and patch registry rows", async ({ page }) => {
     // The BE card is always present — it serves the page itself.
     const beCard = page.getByTestId("migrations-service-be");
-    await expect(beCard).toBeVisible({ timeout: 15000 });
+    await expect(beCard).toBeVisible({ timeout: 5_000 });
 
     // The dev DB carries applied patches — the registry table must list them.
-    await expect(beCard.locator("tbody tr").first()).toBeVisible({ timeout: 15000 });
+    await expect(beCard.locator("tbody tr").first()).toBeVisible({ timeout: 5_000 });
   });
 
   test("drift check reports a verdict for the backend", async ({ page }) => {
     const beCard = page.getByTestId("migrations-service-be");
-    await expect(beCard.locator("tbody tr").first()).toBeVisible({ timeout: 15000 });
+    await expect(beCard.locator("tbody tr").first()).toBeVisible({ timeout: 5_000 });
 
     await page.getByTestId("migrations-drift-be").click();
     // A verdict badge appears (clean OR differences found — both are valid).
     await expect(
       beCard.getByText(/schema/i).first(),
-    ).toBeVisible({ timeout: 30000 });
+    ).toBeVisible({ timeout: 5_000 });
   });
 
   test("per-service cards cover the registered microservices", async ({ page }) => {
     // Wait for the BE card table to settle — statuses for the other services
     // resolve in parallel (reachable → rows, offline → unreachable state).
     const beCard = page.getByTestId("migrations-service-be");
-    await expect(beCard.locator("tbody tr").first()).toBeVisible({ timeout: 15000 });
+    await expect(beCard.locator("tbody tr").first()).toBeVisible({ timeout: 5_000 });
 
     // At minimum the BE card plus one registered service card must render —
     // whether a service card shows rows or the unreachable state depends on

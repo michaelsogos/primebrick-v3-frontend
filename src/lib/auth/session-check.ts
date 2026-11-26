@@ -10,6 +10,7 @@
  */
 
 import { userProfileStore } from '$lib/user-profile-store.svelte';
+import { extJsonParse } from '$lib/api-ext';
 
 // Concurrency control for token refresh — multiple simultaneous callers
 // wait on the same refresh operation.
@@ -28,7 +29,7 @@ export function hasLocalSession(): boolean {
     const userStr = sessionStorage.getItem('user');
     if (!userStr) return false;
 
-    const user = JSON.parse(userStr);
+    const user = extJsonParse(userStr) as Record<string, unknown>;
     // Consider session valid if it has at least an idp_code or username
     return !!(user.idp_code || user.username);
   } catch {
@@ -49,14 +50,16 @@ export function isTokenExpired(): boolean {
     const userStr = sessionStorage.getItem('user');
     if (!userStr) return true;
 
-    const user = JSON.parse(userStr);
+    const user = extJsonParse(userStr) as Record<string, unknown>;
     // Support both expires_at (new snake_case) and expiresAt (old camelCase) for soft migration
     const expiresAt = user.expires_at || user.expiresAt;
     if (!expiresAt) return true;
 
-    // Add 30 seconds buffer to account for clock skew
+    // Add 30 seconds buffer to account for clock skew.
+    // `expires_at` may arrive as bigint via ext-json — ms-epoch arithmetic
+    // requires a plain number.
     const now = Date.now();
-    return expiresAt - 30000 < now;
+    return Number(expiresAt) - 30000 < now;
   } catch {
     return true;
   }
@@ -74,12 +77,12 @@ export async function refreshAccessToken(): Promise<void> {
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
+      const errorData = await response.text().then((t) => extJsonParse<{ detail?: string }>(t));
       console.error('[Token Refresh] Failed:', errorData);
       throw new Error(errorData.detail || 'Token refresh failed');
     }
 
-    const data = await response.json();
+    const data = await response.text().then((t) => extJsonParse<{ success?: boolean; user?: Record<string, unknown> }>(t));
 
     // Update the session mirror — session fields ONLY (username, idp_code,
     // expires_at, roles, organization). A raw sessionStorage replace here

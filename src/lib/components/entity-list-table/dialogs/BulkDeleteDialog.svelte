@@ -102,6 +102,7 @@
       class="hover:scale-105 transition-all"
       onclick={onConfirm}
       disabled={isDeleting}
+      data-testid="entity-op-confirm"
     >
       {#if isDeleting}
         {$t(busyKey)}

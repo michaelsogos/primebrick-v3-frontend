@@ -22,9 +22,7 @@
 		PropNavigator,
 		TextInput,
 		schemaToNavNodes,
-		type PropNavNode,
-		type SchemaLike,
-	} from '@primebrick/ui';
+		type SchemaLike, toDisplayString } from "@primebrick/ui";
 	import { X as XIcon, Plus } from '@primebrick/ui/vendor/lucide';
 	import { t } from '$lib/i18n';
 	import {
@@ -33,6 +31,7 @@
 	} from './rule-schema-completions';
 	import type { EditorState } from '@codemirror/state';
 
+import { extJsonStringify, extJsonParse } from '$lib/api-ext';
 	type RuleOp = 'eq' | 'neq' | 'exists' | 'contains' | 'gt' | 'lt';
 	type RuleFilterItem = { field: string; op?: RuleOp; value?: unknown };
 
@@ -109,7 +108,7 @@
 	// (the composer can't lie about a document it can't parse).
 	function parseFilters(raw: string): RuleFilterItem[] | null {
 		try {
-			const parsed = JSON.parse(raw);
+			const parsed = extJsonParse<unknown>(raw);
 			if (!Array.isArray(parsed)) return null;
 			if (parsed.some((f) => !f || typeof f !== 'object' || typeof f.field !== 'string')) return null;
 			return parsed as RuleFilterItem[];
@@ -122,14 +121,14 @@
 
 	function commit(next: RuleFilterItem[]) {
 		filters = next;
-		value = JSON.stringify(next);
+		value = extJsonStringify(next);
 	}
 
 	// External value edits (JSON mode round-trip, form reset, record load)
 	// re-sync the draft — the composer never owns the document itself.
 	$effect(() => {
 		const parsed = parseFilters(value);
-		if (parsed !== null && JSON.stringify(parsed) !== JSON.stringify(filters)) filters = parsed;
+		if (parsed !== null && extJsonStringify(parsed) !== extJsonStringify(filters)) filters = parsed;
 	});
 
 	// ── composer draft ─────────────────────────────────────────────────
@@ -141,7 +140,7 @@
 	// (`x_label_key` → translated), `_sub` (readable type line), and the
 	// type icons so this picker and the payload-map selector can never
 	// diverge into two presentations of the same schema.
-	const pathTree = $derived.by(() => schemaToNavNodes(source_schema as SchemaLike | undefined));
+	const pathTree = $derived(schemaToNavNodes(source_schema as SchemaLike | undefined));
 
 	// The value control is typed by the selected path's schema leaf:
 	// enum → single combo over the closed vocabulary, boolean → yes/no
@@ -240,7 +239,7 @@
 	function badgeValue(f: RuleFilterItem): string {
 		if (f.value === true || f.value === false)
 			return $t(f.value ? 'system.entities.list.boolean_true' : 'system.entities.list.boolean_false');
-		return String(f.value ?? '');
+		return toDisplayString(f.value ?? '');
 	}
 </script>
 

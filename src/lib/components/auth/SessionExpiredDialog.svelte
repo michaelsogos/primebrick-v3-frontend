@@ -15,7 +15,7 @@
     sessionExpiredStore.close();
     const pending = sessionExpiredStore.drainPending();
     for (const req of pending) {
-      apiFetch(req.input, { ...req.init, _sessionRetry: true } as RequestInit)
+      apiFetch(req.input, { ...req.init, _sessionRetry: true } as Parameters<typeof apiFetch>[1])
         .then(req.resolve)
         .catch(req.reject);
     }

@@ -1,4 +1,5 @@
 import { userPreferences } from '$lib/composables/useUserPreferences.svelte';
+import { extJsonParse, extJsonStringify } from '$lib/api-ext';
 
 export interface UserProfile {
   uuid?: string;
@@ -33,7 +34,7 @@ export interface UserProfile {
   deleted_at?: string;
   deleted_by?: string;
   deleted_by_name?: string;
-  version?: number;
+  version?: bigint;
   last_synced_at?: string;
   has_passkey?: boolean;
   auth_method_enforcer_dismissed?: boolean;
@@ -43,7 +44,7 @@ export interface UserProfile {
 function loadFromStorage(): UserProfile | null {
   try {
     const stored = sessionStorage.getItem('user');
-    if (stored) return JSON.parse(stored);
+    if (stored) return extJsonParse(stored);
   } catch { /* ignore */ }
   return null;
 }
@@ -62,7 +63,7 @@ export const userProfileStore = {
     // while preserving any fields not present in the PATCH response.
     const next = current ? { ...current, ...profile } : ({ ...profile } as UserProfile);
     userProfileState.current = next;
-    sessionStorage.setItem('user', JSON.stringify(next));
+    sessionStorage.setItem('user', extJsonStringify(next));
   },
 
   /**
@@ -83,12 +84,15 @@ export const userProfileStore = {
     for (const k of SESSION_FIELDS) {
       if (user[k] !== undefined) (patch as Record<string, unknown>)[k] = user[k];
     }
+    // `expires_at` is ms-epoch arithmetic — keep it a plain number
+    // (wire ints parse to bigint under ext-json; the interface says `number`).
+    if (patch.expires_at !== undefined) patch.expires_at = Number(patch.expires_at);
     const nextIdp = user.idp_code as string | undefined;
     const current = userProfileState.current;
     const differentAccount = !!nextIdp && !!current?.idp_code && nextIdp !== current.idp_code;
     const next = differentAccount ? ({ ...patch } as UserProfile) : ({ ...current, ...patch } as UserProfile);
     userProfileState.current = next;
-    sessionStorage.setItem('user', JSON.stringify(next));
+    sessionStorage.setItem('user', extJsonStringify(next));
   },
 
   clear() {

@@ -23,6 +23,7 @@ const state = (over: Partial<Parameters<typeof sanitizeListState>[1]> = {}) => (
 	filterValues: null as Record<string, unknown> | null,
 	advancedFilters: null,
 	searchInKeys: null,
+	sortKey: null as string | null,
 	...over
 });
 
@@ -75,6 +76,27 @@ describe('sanitizeListState', () => {
 		const s2 = state({ searchInKeys: ['ghost'] });
 		sanitizeListState(COLUMNS, s2);
 		expect(s2.searchInKeys).toBeNull();
+	});
+
+	it('drops a sortKey that no longer resolves sortable — renamed column self-heals to default_sort', () => {
+		// `code` → `name` rename: the persisted sort poisons /list into a
+		// 400 loop; dropped to null so meta.default_sort applies.
+		const s = state({ sortKey: 'code' });
+		const r = sanitizeListState(COLUMNS, s);
+		expect(r.droppedSortKey).toBe('code');
+		expect(s.sortKey).toBeNull();
+
+		// A still-sortable key is kept.
+		const s2 = state({ sortKey: 'name' });
+		const r2 = sanitizeListState(COLUMNS, s2);
+		expect(r2.droppedSortKey).toBeNull();
+		expect(s2.sortKey).toBe('name');
+
+		// A virtual (non-sortable) column key is also dropped.
+		const s3 = state({ sortKey: 'computed_badge' });
+		const r3 = sanitizeListState(COLUMNS, s3);
+		expect(r3.droppedSortKey).toBe('computed_badge');
+		expect(s3.sortKey).toBeNull();
 	});
 
 	it('tolerates null state', () => {

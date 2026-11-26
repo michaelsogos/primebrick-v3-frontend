@@ -27,6 +27,13 @@ import type { RemoteErrorKind } from '$lib/components/remote-page/remote-loader'
  *     be swallowed as a param value.
  *     - `component_url` present → `remote` + params extracted from `[name]`
  *       segments positionally.
+ *     - `component_url` absent + `kind:"dict"` + `entity` → `archetype`:
+ *       the host-rendered settings dictionary (EntityDictPage).
+ *     - `component_url` absent + `kind:"list"` + `entity` → `archetype`:
+ *       the host-rendered entity table (EntityTablePage) — `list` IS the
+ *       standard archetype declaration; static +page.svelte variants win
+ *       before the catch-all ever runs, so this branch only serves
+ *       service-published list routes (builtin registries).
  *     - `component_url` absent + `entity` + `page_props.form` → `archetype`:
  *       the host-rendered entity form (EntityFormPage) — the metadata-driven
  *       contract replaces a per-entity remote page.
@@ -40,7 +47,7 @@ export type ResolvedPage =
 	| { kind: 'remote'; decl: CensusRoute; params: Record<string, string> }
 	| {
 			kind: 'archetype';
-			archetype: 'entity_form' | 'entity_dict';
+			archetype: 'entity_form' | 'entity_dict' | 'entity_list';
 			decl: CensusRoute;
 			params: Record<string, string>;
 	  }
@@ -96,6 +103,20 @@ export function resolvePageForPath(
 				return {
 					kind: 'archetype',
 					archetype: 'entity_dict',
+					decl,
+					params: extractTemplateParams(decl.route, pathname),
+				};
+			}
+			// `list` IS the host-rendered EntityTablePage archetype by
+			// declaration ("the standard archetype" — see crm nav-decl).
+			// Module-authored lists usually ride a static +page.svelte
+			// (which wins before the catch-all); the archetype covers
+			// service-published list routes with no static page — builtin
+			// entity registries like /<svc>/settings/sequences.
+			if (decl.kind === 'list' && decl.entity) {
+				return {
+					kind: 'archetype',
+					archetype: 'entity_list',
 					decl,
 					params: extractTemplateParams(decl.route, pathname),
 				};

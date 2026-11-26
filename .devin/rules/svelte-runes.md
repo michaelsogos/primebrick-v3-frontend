@@ -17,6 +17,6 @@ pointer; the normative text lives in the canonical doc.
   `pnpm run lint` (see `eslint.config.js`).
 - The `svelte/prefer-derived-over-derived-by` ESLint rule is set to `error`.
 - Agents MUST use `$derived` for any expression reading reactive sources.
-- Agents MUST NOT suppress `state_referenced_locally` with `svelte-ignore`
-  unless the value is genuinely static (with a comment explaining why).
+- Agents MUST NOT use `svelte-ignore state_referenced_locally` — intentional
+  one-time reads go through `untrack()` (same semantics, explicit in code).
 - Agents MUST use `svelte-autofixer` before writing `.svelte` files.

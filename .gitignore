@@ -36,3 +36,4 @@ playwright/.auth
 docs/.obsidian/
 static/vendor/
 public/vpat/lighthouse/*.report.html
+.eslintcache

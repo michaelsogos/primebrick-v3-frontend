@@ -34,6 +34,7 @@
   import { displayNameSchema } from '$lib/validation/display-name';
   import { ShieldUser } from '@primebrick/ui/vendor/lucide';
   import { ShieldOff } from '@primebrick/ui/vendor/lucide';
+  import { extJsonParse, extJsonStringify } from '$lib/api-ext';
 
   const uuid = $derived(page.params.uuid);
 
@@ -83,7 +84,7 @@
     suspended_at?: string;
     suspended_by?: string;
     auth_method_enforcer_dismissed?: boolean;
-    version: number;
+    version: bigint;
     created_at?: string;
     created_by?: string;
     created_by_name?: string;
@@ -145,7 +146,7 @@
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ entity: body }),
+          body: extJsonStringify({ entity: body }),
         });
 
         if (!response.ok) {
@@ -153,7 +154,7 @@
           return;
         }
 
-        const data = await response.json();
+        const data = await response.text().then((t) => extJsonParse<NonNullable<typeof user>>(t));
         if (data) {
           // The write response IS the authoritative entity (RETURNING) —
           // consume it directly instead of re-fetching.
@@ -187,7 +188,7 @@
         console.error('Failed to load user');
         return;
       }
-      const data = await response.json();
+      const data = await response.text().then((t) => extJsonParse<NonNullable<typeof user>>(t));
       user = data;
       reset({
         data: {

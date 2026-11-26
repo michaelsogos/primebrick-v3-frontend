@@ -27,6 +27,8 @@ import {
   type DeviceType,
 } from '@primebrick/ui/vendor/transformers';
 import { resumableFetch, setByteReporter } from '@primebrick/ui/ai';
+import { extJsonParse } from '$lib/api-ext';
+import { toDisplayString } from '@primebrick/ui';
 
 // ─── TEMP: WebGPU kernel profiling instrumentation ───────────────────────
 // Collects per-kernel GPU execution time via onnxruntime-web's
@@ -72,7 +74,7 @@ function profInstall(): boolean {
     } else {
       post({ type: 'debug', step: 'prof_env', keys: ortEnv ? Object.keys(ortEnv) : null });
     }
-  } catch (e) { post({ type: 'debug', step: 'prof_env', err: String(e) }); }
+  } catch (e) { post({ type: 'debug', step: 'prof_env', err: (e instanceof Error ? e.message : toDisplayString(e)) }); }
   return profInstalled;
 }
 
@@ -227,7 +229,7 @@ async function inspectRepoFiles(repo_id: string, dtype: string): Promise<RepoFil
   try {
     const res = await fetch(`https://huggingface.co/api/models/${repo_id}`);
     if (!res.ok) return empty;
-    const { siblings } = (await res.json()) as { siblings?: { rfilename: string }[] };
+    const { siblings } = (await res.text().then((t) => extJsonParse<unknown>(t))) as { siblings?: { rfilename: string }[] };
     const names = new Set((siblings ?? []).map((f) => f.rfilename));
     const map: Record<string, number> = {};
     for (const name of names) {
@@ -447,7 +449,7 @@ async function loadModel(payload: LoadPayload): Promise<void> {
           max_new_tokens: 6,
           do_sample: false,
         });
-        fingerprint = String(Array.isArray(out) ? out[0]?.generated_text ?? '' : out ?? '').slice(0, 200);
+        fingerprint = toDisplayString(Array.isArray(out) ? out[0]?.generated_text ?? '' : out ?? '').slice(0, 200);
       } else {
         // No-cache models: SKIP warmup. The warmup calls model.generate()
         // which populates internal ORT session state. The subsequent real
@@ -457,7 +459,7 @@ async function loadModel(payload: LoadPayload): Promise<void> {
         fingerprint = 'SKIPPED (no-cache model)';
       }
     } catch (e) {
-      fingerprint = `PROBE_FAILED: ${e instanceof Error ? e.message : String(e)}`;
+      fingerprint = `PROBE_FAILED: ${e instanceof Error ? e.message : toDisplayString(e)}`;
     }
     const warmupTime = performance.now() - warmupStart;
 
@@ -521,7 +523,7 @@ async function loadModel(payload: LoadPayload): Promise<void> {
       tokenizer = null;
       pipeline_generator = null;
     }
-    post({ type: 'load_error', seq, model_id, worker_nonce, error: err instanceof Error ? err.message : String(err) });
+    post({ type: 'load_error', seq, model_id, worker_nonce, error: err instanceof Error ? err.message : toDisplayString(err) });
   } finally {
     load_in_flight = false;
   }
@@ -584,7 +586,7 @@ async function generate(payload: GeneratePayload): Promise<void> {
     let prompt: string;
     try {
       prompt = tokenizer.apply_chat_template
-        ? String(tokenizer.apply_chat_template(messages, {
+        ? toDisplayString(tokenizer.apply_chat_template(messages, {
             add_generation_prompt: true,
             tokenize: false,
             // noThink: omit enable_thinking so the template does NOT inject
@@ -750,7 +752,7 @@ async function generate(payload: GeneratePayload): Promise<void> {
         : (result as { generated_text?: unknown } | undefined)?.generated_text;
       if (Array.isArray(genText)) {
         const lastMsg = genText[genText.length - 1];
-        const content = lastMsg?.role === 'assistant' ? String(lastMsg.content ?? '') : String(genText ?? '');
+        const content = lastMsg?.role === 'assistant' ? toDisplayString(lastMsg.content ?? '') : toDisplayString(genText ?? '');
         if (content) fullText = content;
       } else if (typeof genText === 'string' && genText) {
         fullText = genText;
@@ -858,7 +860,7 @@ async function generate(payload: GeneratePayload): Promise<void> {
     post({
       type: 'stream_error',
       model_id: current_model_id,
-      error: err instanceof Error ? `${err.name}: ${err.message}` : String(err),
+      error: err instanceof Error ? `${err.name}: ${err.message}` : (err instanceof Error ? err.message : toDisplayString(err)),
       stack: err instanceof Error ? err.stack?.slice(0, 500) : undefined,
     });
   } finally {
@@ -932,7 +934,7 @@ async function disposeModel(): Promise<void> {
     await (mdl as { dispose?: () => Promise<void> } | null)?.dispose?.();
     post({ type: 'debug', step: 'dispose_generator_done', model_id: disposed });
   } catch (e) {
-    post({ type: 'debug', step: 'dispose_generator_error', model_id: disposed, error: String(e) });
+    post({ type: 'debug', step: 'dispose_generator_error', model_id: disposed, error: (e instanceof Error ? e.message : toDisplayString(e)) });
   }
 
   post({ type: 'dispose_complete', disposed_model_id: disposed, worker_nonce });

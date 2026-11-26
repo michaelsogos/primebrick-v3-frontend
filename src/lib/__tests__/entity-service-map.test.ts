@@ -34,6 +34,16 @@ describe('entity→service map (census-derived)', () => {
     expect(serviceApiPrefix('user_profile')).toBe('');
   });
 
+  // The census legitimately declares 'api' as the owner of BE entities —
+  // ownership is used for drill-through, but transport must stay direct:
+  // /svc/api asks the gateway to proxy itself (no instance exists → 502).
+  it('api-owned entity keeps the direct path — the gateway never proxies itself', () => {
+    registerEntityServices([['user_profile', 'api'], ...CENSUS]);
+    expect(entityApiBase('user_profile')).toBe('/api/v1/entities/user_profile');
+    expect(serviceApiPrefix('user_profile')).toBe('');
+    expect(entityApiBase('job_schedule')).toBe('/svc/job/api/v1/entities/job_schedule');
+  });
+
   it('re-census swaps ownership — stale entries do not leak', () => {
     registerEntityServices(CENSUS);
     registerEntityServices([['job_schedule', 'job2']]);

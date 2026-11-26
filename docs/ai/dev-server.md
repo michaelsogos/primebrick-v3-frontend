@@ -18,8 +18,14 @@
 4. **The stack must survive the turn**: BE, FE, job-handler and CRM stay
    running across agent turns — a service started inside an agent shell
    dies with the session, so services MUST be started **detached** via
-   `primebrick-workspace/scripts/dev-stack.ps1` (idempotent, skips ports
-   already listening, logs to `primebrick-workspace/temp/logs/`). If a
+   `primebrick-workspace/scripts/dev-stack.ps1` (delegates to
+   `dev-stack.mjs` — genuinely idempotent: per-service state files in
+   `temp/dev/<name>.json`, serialized lock, process-TREE kill via
+   `taskkill /T`, `status`/`stop`/`restart`/`reap` subcommands;
+   `reap` kills untracked primebrick dev processes — zombies — while a
+   chain that reaches an IDE terminal is classified USER-STARTED and
+   never touched. Logs to `temp/logs/` at the multi-repo checkout root
+   (`D:\git\primebrick\temp\logs\` — NOT under primebrick-workspace). If a
    turn finds a service down, restart it detached — never leave the only
    copy of the stack inside an ephemeral shell.
 5. **Releases and branch churn kill the stack — restart it after**:
@@ -84,6 +90,22 @@ Installs run at the **workspace root**, never inside a single repo dir
 (every member must re-resolve consistently). `@primebrick/*` inter-repo
 deps MUST be `workspace:*` — plain semver resolves from npm and silently
 replaces the link with a stale published copy.
+
+## Vendor-plane build gating
+
+`pnpm run dev` runs `vendor/vendor-ensure.mjs` before `vite dev`: it
+hashes the vendor build's real inputs (vendor config + entries, ui's
+`vendor-map.json`, `package.json` + `pnpm-lock.yaml`, and a
+relpath:size:mtime fingerprint of the `dist/` trees of `@primebrick/ui`
+and `@primebrick/core` — the vendor build resolves workspace packages
+through their dist) and **skips the ~20s build when nothing changed**
+(~0.1s). The mechanism, outputs, and manifest handshake are untouched —
+the stamp in `static/vendor/.stamp` only gates WHEN the build runs.
+
+Force a full rebuild anytime with `pnpm vendor:build`. If the stamp
+ever misfires (bundle stale while inputs look equal), that is a bug in
+the input list — report it, and extend the hash inputs in
+`vendor-ensure.mjs` rather than deleting the gate.
 
 ## E2E note
 

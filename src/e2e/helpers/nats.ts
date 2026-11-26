@@ -22,36 +22,11 @@
  */
 import { connect, headers as natsHeaders, type NatsConnection, type MsgHdrs } from "@nats-io/transport-node";
 import { jetstream, jetstreamManager, JetStreamApiError, AckPolicy, type JetStreamClient, type JetStreamManager } from "@nats-io/jetstream";
-import JSONBig from "json-bigint";
+import { extJsonParse, extJsonStringify } from "@primebrick/core/ext-json";
 
-const jsonBig = JSONBig({ strict: true });
-
-/** extJsonStringify equivalent — bigint values serialize as JSON numbers. */
-export function extJsonStringify(data: unknown): string {
-  return jsonBig.stringify(data);
-}
-
-/** extJsonParse equivalent — safe integers revive to native bigint. */
-export function extJsonParse<T = unknown>(text: string): T {
-  return jsonBig.parse(text, (_key, value) => {
-    if (typeof value === "number") {
-      return Number.isSafeInteger(value) ? BigInt(value) : value;
-    }
-    if (
-      typeof value === "object" &&
-      value !== null &&
-      (value as object).constructor?.name === "BigNumber"
-    ) {
-      const bn = value as { toString(): string; toNumber(): number };
-      try {
-        return BigInt(bn.toString());
-      } catch {
-        return bn.toNumber();
-      }
-    }
-    return value;
-  }) as T;
-}
+// Re-exported for spec files that assert on nats payloads — one codec,
+// no local re-implementation.
+export { extJsonParse, extJsonStringify };
 
 export const JOBS_STREAM = "JOBS";
 export const CLIENT_SHIELD_KEY_HEADER = "x-primebrick-client-shield-key";
@@ -71,7 +46,7 @@ let jsm: JetStreamManager | null = null;
 export async function getNats(): Promise<NatsConnection> {
   if (nc) return nc;
   const url = process.env.E2E_NATS_URL ?? "nats://127.0.0.1:4222";
-  nc = await connect({ servers: url, timeout: 10_000 });
+  nc = await connect({ servers: url, timeout: 5_000 });
   js = jetstream(nc);
   jsm = await jetstreamManager(nc);
   return nc;
@@ -115,6 +90,26 @@ export async function publish(
   conn.publish(subject, new TextEncoder().encode(extJsonStringify(data)), {
     headers: buildHeaders(shieldHeaders(shield, extra)),
   });
+}
+
+/**
+ * Request-reply on a callable subject (`<svc>.<name>`) — shield headers
+ * carry the L1 client identity; the reply is ext-json decoded. Throws on
+ * timeout (no responders = the callable isn't mounted).
+ */
+export async function request(
+  subject: string,
+  data: unknown,
+  shield: ShieldIdentity,
+  extra?: Record<string, string>,
+  timeoutMs = 10_000,
+): Promise<unknown> {
+  const conn = await getNats();
+  const r = await conn.request(subject, new TextEncoder().encode(extJsonStringify(data)), {
+    headers: buildHeaders(shieldHeaders(shield, extra)),
+    timeout: timeoutMs,
+  });
+  return extJsonParse(new TextDecoder().decode(r.data));
 }
 
 /** JetStream publish with PubAck — returns the stream sequence. */
@@ -221,7 +216,7 @@ export async function tap(subject: string): Promise<{
           hdrs[k] = m.headers.get(k) ?? "";
         }
       }
-      let payload: unknown = null;
+      let payload: unknown;
       try {
         payload = extJsonParse(new TextDecoder().decode(m.data));
       } catch {

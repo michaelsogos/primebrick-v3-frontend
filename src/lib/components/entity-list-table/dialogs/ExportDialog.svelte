@@ -4,9 +4,11 @@
   import { Dialog } from '@primebrick/ui';
   import { BorderedDialog } from '@primebrick/ui';
   import { Choicebox } from '@primebrick/ui';
+  import { actionColorButtonVariant } from '@primebrick/ui';
   import BsFiletypeXlsx from '~icons/bi/filetype-xlsx';
   import BsFiletypeCsv from '~icons/bi/filetype-csv';
   import { getEntitiesNsContext } from '../context';
+  import type { ActionChrome } from '../types';
 
   interface ExportDialogProps {
     open: boolean;
@@ -23,6 +25,9 @@
     onFileTypeChange: (type: string) => void;
     onConfirm: () => void;
     onCancel: () => void;
+    /** `meta.actions["export"]` chrome — the op's `color` IS the dialog
+     *  severity; export defaults `primary` by design. */
+    chrome?: ActionChrome;
   }
 
   let {
@@ -38,13 +43,15 @@
     isExporting,
     onFileTypeChange,
     onConfirm,
-    onCancel
+    onCancel,
+    chrome
   }: ExportDialogProps = $props();
 
   const ns = $derived(entities_ns ?? getEntitiesNsContext());
+  let severity = $derived(chrome?.color ?? 'primary');
 </script>
 
-<BorderedDialog bind:open={open} {onOpenChange} severity="warning" class="sm:max-w-md" showCloseButton={false}>
+<BorderedDialog bind:open={open} {onOpenChange} {severity} class="sm:max-w-md" showCloseButton={false}>
   <Dialog.Header class="pb-4">
     <Dialog.Title>{$t('app.common.export_confirm_title')}</Dialog.Title>
     <Dialog.Description>
@@ -82,7 +89,7 @@
     </Button>
     <div class="flex gap-2 w-full sm:w-auto">
       <Button
-        variant="warning"
+        variant={actionColorButtonVariant(severity)}
         class="hover:scale-105 transition-all flex-1 sm:flex-none"
         onclick={() => { onFileTypeChange('xlsx'); onConfirm(); }}
         disabled={isExporting}
@@ -95,7 +102,7 @@
         {/if}
       </Button>
       <Button
-        variant="warning"
+        variant={actionColorButtonVariant(severity)}
         class="hover:scale-105 transition-all flex-1 sm:flex-none"
         onclick={() => { onFileTypeChange('csv'); onConfirm(); }}
         disabled={isExporting}

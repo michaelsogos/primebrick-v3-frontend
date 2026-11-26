@@ -1,3 +1,4 @@
+import { extJsonParse } from '$lib/api-ext';
 /**
  * tryParseJsonObject — detect and normalize a JSON-object value.
  *
@@ -14,7 +15,7 @@ export function tryParseJsonObject(val: unknown): Record<string, unknown> | unde
   const trimmed = val.trim();
   if (!trimmed.startsWith('{') || !trimmed.endsWith('}')) return undefined;
   try {
-    const parsed: unknown = JSON.parse(trimmed);
+    const parsed: unknown = extJsonParse<unknown>(trimmed);
     return (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed))
       ? parsed as Record<string, unknown>
       : undefined;

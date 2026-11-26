@@ -77,7 +77,7 @@ export function killEdgeZombies(): void {
   try {
     execSync(
       `powershell -NoProfile -Command "Get-CimInstance Win32_Process -Filter \\"Name='msedge.exe'\\" | Where-Object { \\$_.CommandLine -like '*pw-edge-profile*' } | ForEach-Object { Stop-Process -Id \\$_.ProcessId -Force }"`,
-      { timeout: 20_000, stdio: "ignore" },
+      { timeout: 5_000, stdio: "ignore" },
     );
     log("killed zombie pw-edge-profile Edge processes");
   } catch {
@@ -161,7 +161,7 @@ async function probeFreshContext(context: BrowserContext): Promise<boolean> {
       new Promise<false>((r) => setTimeout(() => r(false), 15_000)),
     ]);
     if (!alive) return false;
-    await page.goto(BASE_URL, { waitUntil: "domcontentloaded", timeout: 20_000 });
+    await page.goto(BASE_URL, { waitUntil: "domcontentloaded", timeout: 5_000 });
     return await page.evaluate(() =>
       fetch("/api/v1/health", { signal: AbortSignal.timeout(5000) })
         .then((r) => r.ok)

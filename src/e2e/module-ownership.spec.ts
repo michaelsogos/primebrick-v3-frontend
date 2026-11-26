@@ -1,6 +1,7 @@
 import { test, expect, type Page, type Response } from "@playwright/test";
 import { loginAsTestAdmin } from "./helpers/admin-login";
 
+import { extJsonStringify, extJsonParse } from '@primebrick/core/ext-json';
 /**
  * Module-ownership hardening suite — the observable contract of the
  * module/nav architecture, verified bidirectionally.
@@ -102,8 +103,8 @@ function expectedOwner(modules: ModuleInfo[], pathname: string): string | null {
 async function fetchModules(page: Page): Promise<ModuleInfo[]> {
   const res = await page.request.get("/api/v1/modules");
   expect(res.ok(), "GET /api/v1/modules must succeed").toBeTruthy();
-  const body = await res.json();
-  const mods: ModuleInfo[] = body.modules ?? body;
+  const body = await res.text().then((t) => extJsonParse<Record<string, unknown>>(t));
+  const mods: ModuleInfo[] = (body.modules ?? body) as ModuleInfo[];
   return mods.filter((m) => m.enabled !== false);
 }
 
@@ -123,7 +124,7 @@ function flattenHrefs(links: NavLink[]): string[] {
 
 async function openLauncher(page: Page) {
   await page.locator(LAUNCHER_TRIGGER).first().click();
-  await page.locator(LAUNCHER_APPS).first().waitFor({ state: "visible", timeout: 10000 });
+  await page.locator(LAUNCHER_APPS).first().waitFor({ state: "visible", timeout: 5_000 });
 }
 
 /** Select an app column item (row click descends — the CTA navigates). */
@@ -186,7 +187,7 @@ async function expectedModuleLabel(page: Page, m: ModuleInfo): Promise<string> {
     `/api/v1/system/translations/${dictModuleOf(m)}/en-GB`
   );
   if (!res.ok()) return m.name;
-  const dict: Record<string, string> = await res.json();
+  const dict: Record<string, string> = await res.text().then((t) => extJsonParse<Record<string, string>>(t));
   return dict[m.label_key] ?? m.name;
 }
 
@@ -249,7 +250,7 @@ test.describe("module ownership — observable contract", () => {
             return prefixes.some((x: string) => p === x || p.startsWith(x + "/"));
           },
           rootPrefixes,
-          { timeout: 15000 }
+          { timeout: 5_000 }
         );
 
         // Contract 1: the landed route must resolve to the module that was
@@ -265,7 +266,7 @@ test.describe("module ownership — observable contract", () => {
         // — never the raw registry name and never a foreign module's.
         const trigger = page.locator(LAUNCHER_TRIGGER).first();
         await expect(trigger).toContainText(await expectedModuleLabel(page, m), {
-          timeout: 10000
+          timeout: 5_000
         });
 
         // Contract 3: the sidebar must render exactly the module's nav
@@ -313,9 +314,24 @@ test.describe("module ownership — observable contract", () => {
       // The primary prefix is derived: /{part_of}/{code}, collapsing to
       // /{code} when part_of === code. Extras may only add /{root}/{code}
       // — the code stays the URL's second segment under every root.
-      const urlCode = urlCodeOf(m);
-      const expectedPrimary =
-        m.part_of === urlCode ? `/${urlCode}` : `/${m.part_of}/${urlCode}`;
+      // Virtual siblings nest one level deeper: served as {parentCode}-{sibId}
+      // with part_of inherited from the parent, their primary prefix is
+      // {parentPrimary}/{sibId} (e.g. job-settings → /system/job/settings).
+      const sibParent =
+        m.translations_module != null && m.id === `${m.translations_module}-${m.name}`
+          ? m.translations_module
+          : undefined;
+      const urlCode = sibParent ? m.name : urlCodeOf(m);
+      const parentSegs = sibParent
+        ? sibParent === m.part_of
+          ? [sibParent]
+          : [m.part_of, sibParent]
+        : null;
+      const expectedPrimary = parentSegs
+        ? `/${[...parentSegs, urlCode].join("/")}`
+        : m.part_of === urlCode
+          ? `/${urlCode}`
+          : `/${m.part_of}/${urlCode}`;
       const prefixes = m.route_prefixes ?? [];
       // Headless services (ai, emailsender, webhook) declare no nav/prefixes
       // — the primary-prefix contract only applies to page-owning modules.
@@ -327,8 +343,9 @@ test.describe("module ownership — observable contract", () => {
       }
       for (const p of prefixes) {
         const segs = p.split("/").filter(Boolean);
+        const codeIdx = parentSegs ? parentSegs.length : segs.length === 1 ? 0 : 1;
         expect(
-          segs.length === 1 ? segs[0] === urlCode : segs[1] === urlCode,
+          segs[codeIdx] === urlCode,
           `module '${m.id}' prefix '${p}' must keep '${urlCode}' as its last declared segment`
         ).toBeTruthy();
       }
@@ -339,7 +356,7 @@ test.describe("module ownership — observable contract", () => {
       for (const href of flattenHrefs(nav)) {
         expect(
           prefixes.some((px) => href === px || href.startsWith(px + "/")),
-          `module '${m.id}' nav link '${href}' must live under one of ${JSON.stringify(prefixes)}`
+          `module '${m.id}' nav link '${href}' must live under one of ${extJsonStringify(prefixes)}`
         ).toBeTruthy();
       }
     }
@@ -350,7 +367,7 @@ test.describe("module ownership — observable contract", () => {
     await expect(
       page.locator(LAUNCHER_TRIGGER).first(),
       "app launcher must be visible in the sidebar"
-    ).toBeVisible({ timeout: 10000 });
+    ).toBeVisible({ timeout: 5_000 });
     const roots = new Set(modules.flatMap((m) => moduleRoots(m)));
     await openLauncher(page);
     for (const root of roots) {
@@ -393,7 +410,7 @@ test.describe("module ownership — observable contract", () => {
         `/api/v1/system/translations/${dictId}/en-GB`
       );
       expect(res.ok(), `dict endpoint for '${dictId}' must succeed`).toBeTruthy();
-      const dict = await res.json();
+      const dict = await res.text().then((t) => extJsonParse<{ dict?: Record<string, unknown> }>(t));
       const size = Object.keys(dict?.dict ?? dict ?? {}).length;
       expect(size, `module '${dictId}' dictionary must not be empty`).toBeGreaterThan(0);
     }
@@ -411,7 +428,7 @@ test.describe("module ownership — observable contract", () => {
     const systemRootModules = modules.filter((m) => moduleRoots(m).includes("system"));
     await openLauncher(page);
     await launcherSelectApp(page, "system");
-    await page.locator(`${LAUNCHER_MODULES} ${LAUNCHER_OPTION}`).first().waitFor({ state: "visible", timeout: 10000 });
+    await page.locator(`${LAUNCHER_MODULES} ${LAUNCHER_OPTION}`).first().waitFor({ state: "visible", timeout: 5_000 });
     const markers = await page
       .locator(`${LAUNCHER_MODULES} [aria-label^='Icon not found']`)
       .count();
@@ -420,7 +437,7 @@ test.describe("module ownership — observable contract", () => {
     // is taken only after the async components actually render.
     await expect
       .poll(async () => page.locator(`${LAUNCHER_MODULES} ${LAUNCHER_OPTION} svg`).count(), {
-        timeout: 10000,
+        timeout: 5_000,
       })
       .toBeGreaterThanOrEqual(systemRootModules.length);
     await page.keyboard.press("Escape");
@@ -467,7 +484,7 @@ test.describe("module ownership — observable contract", () => {
           return prefixes.some((x: string) => p === x || p.startsWith(x + "/"));
         },
         rootPrefixes,
-        { timeout: 15000 }
+        { timeout: 5_000 }
       );
       const owner = expectedOwner(modules, pathOf(page));
       expect(
@@ -485,13 +502,13 @@ test.describe("module ownership — observable contract", () => {
   }) => {
     const modules = await fetchModules(page);
     const appDictRes = await page.request.get("/api/v1/system/translations/public/en-GB");
-    const appDict: Record<string, string> = appDictRes.ok() ? await appDictRes.json() : {};
+    const appDict: Record<string, string> = appDictRes.ok() ? await appDictRes.text().then((t) => extJsonParse<Record<string, string>>(t)) : {};
 
     for (const m of pageModules(modules)) {
       const nav = await fetchModuleNav(page, m.id);
       const moduleLabel = await expectedModuleLabel(page, m);
       const dictRes = await page.request.get(`/api/v1/system/translations/${dictModuleOf(m)}/en-GB`);
-      const dict: Record<string, string> = dictRes.ok() ? await dictRes.json() : {};
+      const dict: Record<string, string> = dictRes.ok() ? await dictRes.text().then((t) => extJsonParse<Record<string, string>>(t)) : {};
 
       // One probe per root slice — the first declared nav link of each
       // root the module serves (crm → /crm/customers + /system/crm/pipeline).
@@ -505,7 +522,7 @@ test.describe("module ownership — observable contract", () => {
         await page.goto(first.href, { waitUntil: "domcontentloaded" });
         const bc = page.locator('nav[aria-label="breadcrumb"]');
         await expect(bc, `breadcrumb must render on ${first.href}`).toBeVisible({
-          timeout: 15000,
+          timeout: 5_000,
         });
 
         // The module/page segments render once the module's nav meta
@@ -516,7 +533,7 @@ test.describe("module ownership — observable contract", () => {
         await expect(
           items,
           `on ${first.href} breadcrumb must render all 3 segments`,
-        ).toHaveCount(3, { timeout: 15000 });
+        ).toHaveCount(3, { timeout: 5_000 });
 
         // Ordered labels — exactly {app} / {module} / {page}.
         const texts = await bc.locator("li").allTextContents();
@@ -607,7 +624,7 @@ test.describe("module ownership — observable contract", () => {
             return prefixes.some((x: string) => p === x || p.startsWith(x + "/"));
           },
           rootPrefixes,
-          { timeout: 15000 }
+          { timeout: 5_000 }
         );
         // Sidebar nav under this root = the root-scoped nav slice.
         // moduleNav loads async after selectModule — poll until the

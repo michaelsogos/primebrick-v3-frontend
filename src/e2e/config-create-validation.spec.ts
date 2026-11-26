@@ -32,7 +32,7 @@ const CREATE_URL = "/system/settings/configurations/create";
  */
 async function selectType(page: Page, typeLabel: string): Promise<void> {
   const trigger = page.getByTestId("config-create-type");
-  await trigger.waitFor({ state: "visible", timeout: 10000 });
+  await trigger.waitFor({ state: "visible", timeout: 5_000 });
   const option = page
     .locator("[data-state='open']")
     .getByRole("option", { name: typeLabel, exact: true });
@@ -61,7 +61,7 @@ async function selectType(page: Page, typeLabel: string): Promise<void> {
  */
 async function pickComboOption(page: Page, testid: string, optionName?: string): Promise<void> {
   const trigger = page.getByTestId(testid);
-  await trigger.waitFor({ state: "visible", timeout: 10000 });
+  await trigger.waitFor({ state: "visible", timeout: 5_000 });
   await trigger.click();
   const popover = page.locator("[data-state='open']").last();
   const option = optionName
@@ -146,7 +146,7 @@ async function expectHidden(page: Page, testid: string): Promise<void> {
  * Wait for the create form to render after navigation.
  */
 async function waitForForm(page: Page): Promise<void> {
-  await page.getByTestId("config-create-key").waitFor({ state: "visible", timeout: 15000 });
+  await page.getByTestId("config-create-key").waitFor({ state: "visible", timeout: 5_000 });
   // Wait for hydration: a click landing before Svelte listeners attach is a
   // no-op (lost input/click events → stale validation). Probe by toggling
   // the type ComboSelect popover — bits-ui only opens it once hydrated.
@@ -220,7 +220,7 @@ test.describe("Left column — top-level field validation", () => {
     // oidc_issuer_url is a reserved config key that always exists on the configurations page.
     await fillKey(page, "oidc_issuer_url");
     // The keyExists check has a 500ms debounce + API call.
-    await expect(page.getByTestId("key-exists-error")).toBeVisible({ timeout: 10000 });
+    await expect(page.getByTestId("key-exists-error")).toBeVisible({ timeout: 5_000 });
   });
 
   test("type required — selecting then the form validates", async ({ page }) => {
@@ -297,7 +297,7 @@ test.describe("Left column — top-level field validation", () => {
     await valueInput.press("Tab");
     await expect(keyInput).toHaveValue(/^e2e_key_/);
     // Wait for key uniqueness check to settle (no keyExists error for a new key).
-    await expect(page.getByTestId("config-create-submit")).toBeEnabled({ timeout: 15000 });
+    await expect(page.getByTestId("config-create-submit")).toBeEnabled({ timeout: 5_000 });
   });
 });
 
@@ -820,7 +820,7 @@ test.describe("Widget config section per type", () => {
     const currencyTrigger = page.getByTestId("tcb-currency");
     await currencyTrigger.click();
     const option = page.locator("[data-state='open'] [role='option']").first();
-    await option.waitFor({ state: "visible", timeout: 10000 });
+    await option.waitFor({ state: "visible", timeout: 5_000 });
     await option.click();
   });
 

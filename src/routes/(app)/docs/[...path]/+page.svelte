@@ -16,6 +16,7 @@
   import AppPageScaffold from '$lib/components/AppPageScaffold.svelte';
   import { fetchDocsIndex, fetchDoc, type DocsIndexRepo } from '$lib/api';
   import { renderDoc, hydrateMermaid } from '$lib/shell/docs/docs-render';
+  import { SafeHtml } from '@primebrick/ui';
   import { cn } from '$lib/utils';
   import { FileText } from '@primebrick/ui/vendor/lucide';
   import { LoaderCircle } from '@primebrick/ui/vendor/lucide';
@@ -65,7 +66,7 @@
     if (docpath) {
       e.preventDefault();
       const target = hrefFor(docrepo ?? docRef?.repo ?? index?.[0]?.repo ?? 'backend', docpath);
-      void goto(target).then(() => {
+      void goto(resolve(target as '/')).then(() => {
         if (anchor) tick().then(() => contentEl?.querySelector(`#${CSS.escape(anchor)}`)?.scrollIntoView());
       });
       return;
@@ -88,7 +89,7 @@
       index = await fetchDocsIndex();
       if (!docRef && index.length) {
         const first = index.flatMap((r) => r.entries.map((e) => ({ repo: r.repo, path: e.path })))[0];
-        if (first) void goto(hrefFor(first.repo, first.path), { replaceState: true });
+        if (first) void goto(resolve(hrefFor(first.repo, first.path) as '/'), { replaceState: true });
       }
     } catch (e) {
       error = e instanceof Error ? e.message : String(e);
@@ -119,7 +120,7 @@
                 {@const active = doc?.repo === repo.repo && doc?.path === entry.path}
                 <li>
                   <a
-                    href={href}
+                    href={resolve(href as '/')}
                     class={cn(
                       'flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm hover:bg-accent',
                       active && 'bg-accent font-medium'
@@ -147,8 +148,7 @@
         <article class="docs-page mx-auto max-w-3xl">
           <div class="mb-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{doc.repo}</div>
           <h1 class="mb-4 text-2xl font-semibold leading-tight">{doc.title}</h1>
-          <!-- eslint-disable-next-line svelte/no-at-html-tags -- KB content is DOMPurify-sanitized in renderDoc -->
-          <div class="docs-md">{@html doc.html}</div>
+          <div class="docs-md"><SafeHtml html={doc.html} profile="docs" /></div>
         </article>
       {:else}
         <div class="flex items-center gap-2 py-16 justify-center text-muted-foreground">

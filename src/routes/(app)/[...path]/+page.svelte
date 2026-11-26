@@ -18,6 +18,7 @@
    */
   import { page as appPage } from '$app/state';
   import { goto } from '$app/navigation';
+  import { resolve as resolvePath } from '$app/paths';
   import { error } from '@sveltejs/kit';
   import { get } from 'svelte/store';
   import { t } from '$lib/i18n';
@@ -27,6 +28,7 @@
   import RemotePageMount from '$lib/components/remote-page/RemotePageMount.svelte';
   import EntityFormPage from '$lib/entity-form/EntityFormPage.svelte';
   import EntityDictPage from '$lib/components/entity-dict-page/EntityDictPage.svelte';
+  import BuiltinEntityListPage from '$lib/components/entity-table-page/BuiltinEntityListPage.svelte';
   import RemotePageErrorPanel from '$lib/components/remote-page/RemotePageErrorPanel.svelte';
   import { Button } from '@primebrick/ui';
   import { resolvePageForPath, type ResolvedPage } from '$lib/navigation/page-resolver';
@@ -52,7 +54,7 @@
       modules = fetched;
       const r = resolvePageForPath(appPage.url.pathname, modules);
       if (r.kind === 'redirect') {
-        void goto(r.href, { replaceState: true });
+        void goto(resolvePath(r.href as '/'), { replaceState: true });
         return;
       }
       resolved = r;
@@ -106,6 +108,12 @@
 {:else if resolved?.kind === 'archetype' && resolved.archetype === 'entity_dict'}
   {#key appPage.url.pathname}
     <EntityDictPage decl={resolved.decl} />
+  {/key}
+{:else if resolved?.kind === 'archetype' && resolved.archetype === 'entity_list'}
+  <!-- Builtin list surfaces own their parametric custom ops
+       (sequence_set collects `next` via an authored dialog). -->
+  {#key appPage.url.pathname}
+    <BuiltinEntityListPage decl={resolved.decl} />
   {/key}
 {:else if resolved?.kind === 'archetype'}
   {#key appPage.url.pathname}

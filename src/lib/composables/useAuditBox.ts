@@ -5,6 +5,7 @@ import { get } from 'svelte/store';
 import { getAuditableDisplayValue } from '$lib/components/entity-list-table/utils/auditable-fields';
 import type { MetaColumn } from '$lib/entity-list/types';
 import type { AuditData } from '$lib/utils/audit-data';
+import { toDisplayString } from '@primebrick/ui';
 
 export type AuditBoxState = {
   auditData: Partial<AuditData>;
@@ -80,7 +81,7 @@ export function useAuditBox(state: AuditBoxState) {
 
     // Fallback for fields without column metadata
     if (!value) return '-';
-    return String(value);
+    return toDisplayString(value);
   }
 
   function openVersionHistory() {

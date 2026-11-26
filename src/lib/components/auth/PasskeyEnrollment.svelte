@@ -2,6 +2,7 @@
   import { onMount } from "svelte";
   import { apiFetch } from "$lib/api";
   import { pushNotification } from "$lib/errors/app-errors";
+  import type { RFC7807Error } from "$lib/errors/rfc7807";
   import { Button } from '@primebrick/ui';
   import { Spinner } from "$lib/components/ui/spinner";
   import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "$lib/components/ui/card";
@@ -19,6 +20,7 @@
   import { lookupAaguid } from "$lib/webauthn/aaguid-registry";
   import { transportKeySuffix } from "$lib/webauthn/transports";
   import { getPlatformVersion } from "$lib/webauthn/platform-info";
+  import { extJsonParse, extJsonStringify } from '$lib/api-ext';
 
   interface WebauthnCredentialInfo {
     id: string;
@@ -44,7 +46,7 @@
     try {
       const resp = await apiFetch("/api/v1/auth/webauthn/credentials");
       if (resp.ok) {
-        const data = await resp.json();
+        const data = await resp.text().then((t) => extJsonParse<{ credentials?: WebauthnCredentialInfo[] }>(t));
         credentials = (data.credentials ?? []) as WebauthnCredentialInfo[];
       }
     } catch (error) {
@@ -62,16 +64,16 @@
       const beginResp = await apiFetch("/api/v1/auth/webauthn/signup/begin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
+        body: extJsonStringify({}),
       });
 
       if (!beginResp.ok) {
-        const err = await beginResp.json();
+        const err = await beginResp.text().then((t) => extJsonParse<RFC7807Error>(t));
         pushNotification({ ...err, toast: false });
         return;
       }
 
-      const { nonce, options } = await beginResp.json();
+      const { nonce, options } = await beginResp.text().then((t) => extJsonParse<{ nonce: string; options: Record<string, unknown> }>(t));
 
       // Step 2: browser ceremony — navigator.credentials.create() shows the
       // OS passkey enrollment prompt (FaceID / TouchID / Windows Hello / security key).
@@ -94,7 +96,7 @@
       const finishResp = await apiFetch("/api/v1/auth/webauthn/signup/finish", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+        body: extJsonStringify({
           nonce,
           credential: encodeAuthenticatorAttestation(
             credential as PublicKeyCredential,
@@ -104,7 +106,7 @@
       });
 
       if (!finishResp.ok) {
-        const err = await finishResp.json();
+        const err = await finishResp.text().then((t) => extJsonParse<RFC7807Error>(t));
         pushNotification({ ...err, toast: false });
         return;
       }
@@ -154,7 +156,7 @@
         method: "DELETE",
       });
       if (!resp.ok) {
-        const err = await resp.json();
+        const err = await resp.text().then((t) => extJsonParse<RFC7807Error>(t));
         pushNotification({ ...err, toast: false });
         return;
       }

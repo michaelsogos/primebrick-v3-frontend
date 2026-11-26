@@ -18,6 +18,7 @@ These files help humans and agents collaborate consistently on the **Primebrick 
 | [`dev-server.md`](./dev-server.md) | Dev-server lifecycle & process ownership — empirical ownership check, ask-first for user-owned servers, port table |
 | [`env-policy.md`](./env-policy.md) | Closed environment policy — `.env` limited to bootstrap vars; runtime config lives in `config_entries` |
 | [`enforcement-over-verification.md`](./enforcement-over-verification.md) | Enforcement-over-verification doctrine — behavior is enforced by code/types/builders/validators, tests prove it |
+| [`display-coercion.md`](./display-coercion.md) | `String(x)` vs `toDisplayString(x)` — the wire `unknown` → display boundary; what the `display-coerce`/`check:stringify` gates flag and why |
 | [`SKILLS.md`](./SKILLS.md) | **Skill selection** — check `[x]` the skills that apply to this repository |
 | [`WORKFLOWS.md`](./WORKFLOWS.md) | Optional workflows (plan → implement → verify) |
 | Root [`../../AGENTS.md`](../../AGENTS.md) | Project facts, commands, and UI conventions |

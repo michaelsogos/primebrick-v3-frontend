@@ -35,6 +35,7 @@ import { semanticScore } from "./helpers/semantic-scorer";
 import { getPool } from "./helpers/db";
 import { getSharedContext, focusedPage } from "./helpers/edge-context";
 
+import { extJsonStringify, extJsonParse } from '@primebrick/core/ext-json';
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:5173";
 const PREFIX = "smart-guide-ai";
 const CASE_KEY = "guide_react_test_score";
@@ -384,29 +385,29 @@ test.describe("AI quality — guide_test_score", () => {
             }
             if (pendingGuideStage) {
               try {
-                turnTrace.push({ stage: pendingGuideStage, ...JSON.parse(v as string) });
+                turnTrace.push({ stage: pendingGuideStage, ...extJsonParse<Record<string, unknown>>(v as string) });
               } catch {
                 turnTrace.push({ stage: pendingGuideStage, raw_arg: String(v).slice(0, 2000) });
               }
               pendingGuideStage = null;
             }
             if (typeof v === "string" && v.length > 60) {
-              log(`[str] ${JSON.stringify(v)}`);
+              log(`[str] ${extJsonStringify(v)}`);
               return;
             }
             const j = v as Record<string, unknown> | null;
             const d = (j?.data ?? j) as Record<string, unknown> | null;
             if (d && d.step === "gen_done") {
               log(
-                `[gen_done] interrupted=${d.streamer_interrupted} max=${d.requested_max_new_tokens} len=${d.raw_len} reason=${d.reason_chars} tail=…${JSON.stringify(d.raw_tail)}`,
+                `[gen_done] interrupted=${d.streamer_interrupted} max=${d.requested_max_new_tokens} len=${d.raw_len} reason=${d.reason_chars} tail=…${extJsonStringify(d.raw_tail)}`,
               );
-              if (typeof d.raw_text === "string") log(`[raw] ${JSON.stringify(d.raw_text)}`);
+              if (typeof d.raw_text === "string") log(`[raw] ${extJsonStringify(d.raw_text)}`);
             } else if (d && d.step === "prof_env") {
-              log(`[prof_env] ${JSON.stringify(d)}`);
+              log(`[prof_env] ${extJsonStringify(d)}`);
             } else if (d && d.step === "profile_stats") {
               log(`[prof] fwd_calls=${d.fwd_calls} fwd_ms=${d.fwd_ms} kernels=${d.kernels} gpu_ms=${d.gpu_ms}`);
             } else if (d && d.step === "prompt_tail") {
-              log(`[prompt] len=${d.len} has_tools=${d.has_tools} tail=…${JSON.stringify(d.tail)}`);
+              log(`[prompt] len=${d.len} has_tools=${d.has_tools} tail=…${extJsonStringify(d.tail)}`);
             } else if (d && (d.step === "kv_cache_pipeline" || d.step === "gen_enter" || d.prompt_token_count)) {
               log(
                 `[tok] step=${d.step ?? "measure"} prompt=${d.prompt_token_count ?? "?"} gen=${d.tokens_generated ?? "?"} tps=${d.tokens_per_second ?? "?"} cache=${d.kv_cache_seq_length ?? d.cache_len_before_gen ?? "?"} msgs=${d.num_messages ?? "?"}`,

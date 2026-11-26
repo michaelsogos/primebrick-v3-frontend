@@ -18,15 +18,18 @@
    */
   import { t, formatUiDateTime } from '$lib/i18n';
   import { uiLang } from '$lib/i18n/store.svelte';
-  import { Badge, Button, Checkbox, DynamicIcon, SelectableRow } from '@primebrick/ui';
+  import { Badge, Button, Checkbox, DynamicIcon, SelectableRow, toDisplayString } from '@primebrick/ui';
   import FormFieldDispatcher from '$lib/entity-form/FormFieldDispatcher.svelte';
   import TranslationKeyCell from './TranslationKeyCell.svelte';
+  import DictFieldCell from './DictFieldCell.svelte';
+  import { Handle as SortableHandle } from '$lib/components/ui/sortable';
   import type { MetaColumn } from '@primebrick/ui';
   import {
     ChevronUp,
     ChevronDown,
     Info,
     RotateCcw,
+    SlidersHorizontal,
     Trash2,
     Undo2,
   } from '@primebrick/ui/vendor/lucide';
@@ -36,22 +39,26 @@
     row,
     uid,
     entity,
+    service,
     title_text,
     translation_key,
     entities_ns,
     pending_owner,
     display_field,
     editable_columns,
+    extras_columns = [],
     columns_map,
     values,
     errors = {},
     tainted = false,
     selected = false,
+    pending = false,
     deleted = false,
     can_update = true,
     can_delete = false,
     can_restore = false,
     orderable = false,
+    sortable = false,
     reorder_first = false,
     reorder_last = false,
     onchange,
@@ -59,12 +66,16 @@
     ontoggle,
     ondelete,
     onrestore,
+    onpendingdelete,
     onmoveup,
     onmovedown,
   }: {
     row: Record<string, unknown>;
     uid: string;
     entity: string;
+    /** Owning module code — seq-bound controls resolve the module-local
+     *  builtin registry through it (see FormFieldDispatcher). */
+    service?: string;
     title_text: string;
     /** meta.translation_key — the label cell's rows vocabulary scope. */
     translation_key: string;
@@ -75,16 +86,27 @@
     /** meta.display_field — the row's VALUE column (label_key on dicts). */
     display_field?: string;
     editable_columns: MetaColumn[];
+    /** Update-editable columns NOT rendered inline — the `entity.dictExtras`
+     *  sheet's field set (empty → no extras CTA). Same set on saved and
+     *  pending rows. */
+    extras_columns?: MetaColumn[];
     columns_map?: ReadonlyMap<string, MetaColumn>;
     values: Record<string, unknown>;
     errors?: Record<string, string[]>;
     tainted?: boolean;
     selected?: boolean;
+    /** Confirmed-not-yet-saved row (composer→pending lifecycle): INFO
+     *  accent = "da salvare" marking, undo-drop CTA instead of delete. */
+    pending?: boolean;
     deleted?: boolean;
     can_update?: boolean;
     can_delete?: boolean;
     can_restore?: boolean;
     orderable?: boolean;
+    /** Render the drag grip — only meaningful inside a `Sortable.Item`
+     *  subtree (flat orderable dict pages); absent there the grip would
+     *  be a dead affordance, so callers pass false in grouped mode. */
+    sortable?: boolean;
     reorder_first?: boolean;
     reorder_last?: boolean;
     onchange: (key: string, value: unknown) => void;
@@ -92,13 +114,19 @@
     ontoggle?: (checked: boolean) => void;
     ondelete?: () => void;
     onrestore?: () => void;
+    /** Pending drop — destructive local delete (zero server request,
+     *  the row never existed server-side): Trash2 + destructive tone,
+     *  same affordance as `dict-row-delete`, NOT an undo/revert. */
+    onpendingdelete?: () => void;
     onmoveup?: () => void;
     onmovedown?: () => void;
   } = $props();
 
-  const row_uid = $derived(String(row[uid] ?? ''));
+  const row_uid = $derived(toDisplayString(row[uid] ?? ''));
 
-  /** The VALUE column — display_field when it is editable, else label_key. */
+  /** The VALUE column — display_field when it is editable, else the
+   *  canonical dict label column (`label_key`); `format:"i18n_key"`
+   *  then governs HOW it renders (TranslationKeyCell), not WHICH column. */
   const valueColumn = $derived(
     editable_columns.find((c) => c.key === display_field) ??
       editable_columns.find((c) => c.key === 'label_key'),
@@ -107,14 +135,14 @@
   /** L1 icon — rendered ONLY when the entity maps an `icon` column and the
    *  row carries a value; absent column/value → no icon (no default). */
   const rowIcon = $derived(
-    columns_map?.has('icon') && row['icon'] ? String(row['icon']) : '',
+    columns_map?.has('icon') && row['icon'] ? toDisplayString(row['icon']) : '',
   );
 
   /** The row's i18n stem — the VALUE column's live value (`label_key` on
    *  keyed dicts). Derived desc/tooltip keys are suffixes on this stem —
    *  the seeded composition convention (`…rows.<code>.description`,
    *  same as `entities.ai_model.qwen3_4b.description`). */
-  const labelStem = $derived(String(values[display_field ?? 'label_key'] ?? ''));
+  const labelStem = $derived(toDisplayString(values[display_field ?? 'label_key'] ?? ''));
 
   /** L2 desc — an explicit `description_key`/`description` column wins
    *  (non-keyed dicts, name_local family); else the derived
@@ -122,13 +150,13 @@
    *  (missing translation → absent line, no invented content). */
   const desc = $derived.by(() => {
     if (columns_map?.has('description_key')) {
-      const k = String(row['description_key'] ?? '').trim();
+      const k = toDisplayString(row['description_key'] ?? '').trim();
       if (!k) return '';
       const v = $t(k);
       return v === k ? '' : v;
     }
     if (columns_map?.has('description')) {
-      return String(row['description'] ?? '').trim();
+      return toDisplayString(row['description'] ?? '').trim();
     }
     if (!labelStem) return '';
     const k = `${labelStem}.description`;
@@ -141,13 +169,13 @@
    *  the desc text (that text already owns LINE 2). */
   const tooltip = $derived.by(() => {
     if (columns_map?.has('tooltip_key')) {
-      const k = String(row['tooltip_key'] ?? '').trim();
+      const k = toDisplayString(row['tooltip_key'] ?? '').trim();
       if (!k) return '';
       const v = $t(k);
       return v === k ? '' : v;
     }
     if (columns_map?.has('tooltip')) {
-      return String(row['tooltip'] ?? '').trim();
+      return toDisplayString(row['tooltip'] ?? '').trim();
     }
     if (!labelStem) return '';
     const k = `${labelStem}.tooltip`;
@@ -157,19 +185,44 @@
 
   const version = $derived(row['version'] as number | undefined);
   const updatedAt = $derived(
-    row['updated_at'] ? formatUiDateTime(String(row['updated_at']), $uiLang) : '',
+    row['updated_at'] ? formatUiDateTime(toDisplayString(row['updated_at']), $uiLang) : '',
   );
   // Same fallback pattern as ConfigListRow: updated_by_name (join) → raw.
   const updatedByName = $derived(
-    row['updated_by_name'] && String(row['updated_by_name']).trim()
-      ? String(row['updated_by_name'])
-      : row['updated_by'] && String(row['updated_by']).trim()
-        ? String(row['updated_by'])
+    row['updated_by_name'] && toDisplayString(row['updated_by_name']).trim()
+      ? toDisplayString(row['updated_by_name'])
+      : row['updated_by'] && toDisplayString(row['updated_by']).trim()
+        ? toDisplayString(row['updated_by'])
         : '',
   );
 
   function openVersionHistory() {
     openSheet('entity.versionHistory', { entity, entities_ns, rowUuid: row_uid });
+  }
+
+  /** Extras affordance — a column outside the inline anatomy carries an
+   *  inline-row error (e.g. a required extra missing on a pending row):
+   *  the CTA turns destructive so the remediation path is visible from
+   *  the row, never a silent `canSave` block. */
+  const extrasError = $derived(
+    extras_columns.some((c) => (errors[c.key]?.length ?? 0) > 0),
+  );
+
+  function openExtras() {
+    openSheet('entity.dictExtras', {
+      columns: extras_columns,
+      columns_map: columns_map ?? new Map(),
+      // Live getters — the page replaces the row map on every commit;
+      // closures over the $props reads always resolve the CURRENT one.
+      values: () => values,
+      errors: () => errors,
+      onchange,
+      translation_key,
+      pending_owner,
+      title: title_text,
+      service,
+      readonly: !can_update || deleted,
+    });
   }
 </script>
 
@@ -177,11 +230,20 @@
   id={row_uid}
   {selected}
   warning={tainted}
+  info={pending}
   on_toggle_select={(_id, checked) => ontoggle?.(checked)}
-  class="grid grid-cols-12 items-center gap-4"
+  class="grid grid-cols-12 items-start gap-4"
 >
-  <!-- Left 6/12: checkbox + 3-line identity -->
+  <!-- Left 6/12: drag grip | checkbox | 3-line identity -->
   <div class="col-span-6 flex items-start gap-3 min-w-0">
+    {#if sortable}
+      <span
+        data-testid="dict-row-drag"
+        class="-ml-1 mt-0.5 shrink-0 {deleted ? 'pointer-events-none opacity-40' : ''}"
+      >
+        <SortableHandle />
+      </span>
+    {/if}
     <Checkbox
       checked={selected}
       onCheckedChange={(c) => ontoggle?.(c === true)}
@@ -201,7 +263,7 @@
         <Badge
           variant="outline"
           class="shrink-0 border-muted-foreground/30 bg-muted/50 font-mono text-xs text-muted-foreground"
-          title={String(row['code'] ?? '')}
+          title={toDisplayString(row['code'] ?? '')}
         >
           {row['code']}
         </Badge>
@@ -250,37 +312,64 @@
   </div>
 
   <!-- Center 4/12: the VALUE field -->
-  <div class="col-span-4 flex items-center justify-center" data-dict-cell={valueColumn?.key}>
+  <div class="col-span-4 min-w-0 flex items-center justify-center" data-dict-cell={valueColumn?.key}>
     {#if valueColumn}
       <div class="w-full min-w-0">
-        {#if valueColumn.key === 'label_key'}
-          <TranslationKeyCell
-            column={valueColumn}
-            value={String(values[valueColumn.key] ?? '')}
-            record={values}
-            {translation_key}
-            {pending_owner}
-            readonly={!can_update || deleted}
-            onchange={(v) => onchange(valueColumn.key, v)}
-          />
-        {:else}
-          <FormFieldDispatcher
-            column={valueColumn}
-            bind:value={() => values[valueColumn.key], (v) => onchange(valueColumn.key, v)}
-            record={values}
-            columns={columns_map}
-            readonly={!can_update || deleted}
-          />
-        {/if}
-        {#if valueColumn && errors[valueColumn.key]?.length}
-          <p class="mt-1 text-xs text-destructive">{errors[valueColumn.key][0]}</p>
-        {/if}
+        <DictFieldCell
+          column={valueColumn}
+          errors={errors[valueColumn.key]}
+          required={valueColumn.nullable === false}
+        >
+          {#snippet control({ id })}
+            {#if valueColumn.format === 'i18n_key'}
+              <TranslationKeyCell
+                column={valueColumn}
+                value={toDisplayString(values[valueColumn.key] ?? '')}
+                record={values}
+                {translation_key}
+                {pending_owner}
+                readonly={!can_update || deleted}
+                {id}
+                onchange={(v) => onchange(valueColumn.key, v)}
+              />
+            {:else}
+              <FormFieldDispatcher
+                column={valueColumn}
+                bind:value={() => values[valueColumn.key], (v) => onchange(valueColumn.key, v)}
+                record={values}
+                served_record={row}
+                columns={columns_map}
+                {service}
+                readonly={!can_update || deleted}
+                controlProps={{
+                  id,
+                  'aria-invalid': (errors[valueColumn.key]?.length ?? 0) > 0 || undefined,
+                  'aria-describedby': errors[valueColumn.key]?.length ? `${id}-error` : undefined,
+                }}
+              />
+            {/if}
+          {/snippet}
+        </DictFieldCell>
       </div>
     {/if}
   </div>
 
-  <!-- Right 2/12: chevrons → taint-undo → single item CTA -->
-  <div class="col-span-2 flex items-center justify-end gap-1">
+  <!-- Right 2/12: extras CTA → chevrons → taint-undo → single item CTA.
+       `items-start` grid + `pt-7` keeps CTAs aligned with the input row
+       when a field error line grows a cell. -->
+  <div class="col-span-2 flex items-center justify-end gap-1 pt-7">
+    {#if extras_columns.length > 0}
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        onclick={openExtras}
+        title={$t('system.entities.dict.extras')}
+        aria-label={$t('system.entities.dict.extras')}
+        data-testid="dict-row-extras"
+      >
+        <SlidersHorizontal class="size-4 {extrasError ? 'text-destructive' : ''}" />
+      </Button>
+    {/if}
     {#if orderable}
       <Button
         variant="ghost"
@@ -317,7 +406,20 @@
         <Undo2 class="size-4 text-warning" />
       </Button>
     {/if}
-    {#if deleted}
+    {#if pending}
+      {#if onpendingdelete}
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onclick={onpendingdelete}
+          title={$t('app.common.discard')}
+          aria-label={$t('app.common.discard')}
+          data-testid="dict-pending-delete"
+        >
+          <Trash2 class="size-4 text-destructive" />
+        </Button>
+      {/if}
+    {:else if deleted}
       {#if can_restore}
         <Button
           variant="ghost"

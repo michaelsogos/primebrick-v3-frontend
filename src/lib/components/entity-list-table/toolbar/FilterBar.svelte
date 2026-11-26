@@ -105,11 +105,11 @@
             if (Array.isArray(filter.value)) {
               return filter.value.map((v) => formatBadgeValue(col, v)).join(", ");
             } else if (filter.operator === "BETWEEN" && typeof filter.value === "object" && filter.value !== null && "start" in filter.value && "end" in filter.value) {
-              const startFormatted = formatFilterDateValue(String(filter.value.start));
-              const endFormatted = formatFilterDateValue(String(filter.value.end));
+              const startFormatted = formatFilterDateValue(toDisplayString(filter.value.start));
+              const endFormatted = formatFilterDateValue(toDisplayString(filter.value.end));
               return `${startFormatted} e ${endFormatted}`;
             } else if (col.type === 'date' || col.type === 'datetime') {
-              return formatFilterDateValue(String(filter.value));
+              return formatFilterDateValue(toDisplayString(filter.value));
             } else {
               return formatBadgeValue(col, filter.value);
             }

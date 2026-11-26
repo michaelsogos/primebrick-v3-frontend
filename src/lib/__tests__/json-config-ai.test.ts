@@ -228,8 +228,8 @@ describe("error_label_key leaf detection + helpers", () => {
 
 describe("setJsonPath — deterministic merge for key-picker results", () => {
   it("sets nested values creating intermediate objects", () => {
-    const out = setJsonPath({}, "validation.rules.min.error_label_key", "my.key");
-    expect(out).toEqual({ validation: { rules: { min: { error_label_key: "my.key" } } } });
+    const out = setJsonPath({}, "validation.rules.min.error_label_key", "app.my.key");
+    expect(out).toEqual({ validation: { rules: { min: { error_label_key: "app.my.key" } } } });
   });
 
   it("preserves existing siblings", () => {

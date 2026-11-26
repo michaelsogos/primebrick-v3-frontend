@@ -49,6 +49,7 @@ import {
   type CapturedPasskey,
 } from "./helpers/webauthn";
 
+import { extJsonParse } from '@primebrick/core/ext-json';
 // ─── Test data helpers ──────────────────────────────────────────────────────
 
 function makeTestUser() {
@@ -146,7 +147,7 @@ test.describe.serial("Suite B — User creation + passkey enrollment + passkey l
 
     await adminPage.waitForURL(
       (url) => url.pathname.includes("/system/settings/users/") && /\/[0-9a-f-]{36}$/.test(url.pathname),
-      { timeout: 15000 },
+      { timeout: 5_000 },
     );
   });
 
@@ -166,19 +167,19 @@ test.describe.serial("Suite B — User creation + passkey enrollment + passkey l
     const onboardPage = await onboardContext.newPage();
 
     await onboardPage.goto(`/welcome#token=${token}`, { waitUntil: "domcontentloaded" });
-    await onboardPage.getByTestId("welcome-step-otp-sent").waitFor({ state: "visible", timeout: 15000 });
+    await onboardPage.getByTestId("welcome-step-otp-sent").waitFor({ state: "visible", timeout: 5_000 });
 
     const otp = "424242";
     await setInvitationOtp(testUser.email, otp);
 
     // OtpInput is a bits-ui PinInput — type real keys; onComplete auto-submits.
     await onboardPage.getByTestId("welcome-otp-input").pressSequentially(otp);
-    await onboardPage.getByTestId("welcome-step-otp-verified").waitFor({ state: "visible", timeout: 15000 });
+    await onboardPage.getByTestId("welcome-step-otp-verified").waitFor({ state: "visible", timeout: 5_000 });
 
     await onboardPage.getByTestId("welcome-password-input").fill(testUser.password);
     await onboardPage.getByTestId("welcome-password-confirm-input").fill(testUser.password);
     await onboardPage.getByTestId("welcome-complete-button").click();
-    await onboardPage.getByTestId("welcome-step-complete").waitFor({ state: "visible", timeout: 15000 });
+    await onboardPage.getByTestId("welcome-step-complete").waitFor({ state: "visible", timeout: 5_000 });
 
     await onboardContext.close();
   });
@@ -197,13 +198,13 @@ test.describe.serial("Suite B — User creation + passkey enrollment + passkey l
     userPage = await userContext.newPage();
 
     await userPage.goto("/login", { waitUntil: "domcontentloaded" });
-    await userPage.getByTestId("login-username-input").waitFor({ state: "visible", timeout: 10000 });
+    await userPage.getByTestId("login-username-input").waitFor({ state: "visible", timeout: 5_000 });
 
     await userPage.getByTestId("login-username-input").fill(testUser.username);
     await userPage.getByTestId("login-password-input").fill(testUser.password);
     await userPage.getByTestId("login-submit-button").click();
 
-    await userPage.waitForURL((url) => !url.pathname.startsWith("/login"), { timeout: 15000 });
+    await userPage.waitForURL((url) => !url.pathname.startsWith("/login"), { timeout: 5_000 });
 
     // Verify session.
     const meResponse = await userPage.request.get("/api/v1/auth/me");
@@ -226,12 +227,12 @@ test.describe.serial("Suite B — User creation + passkey enrollment + passkey l
 
     let usedPrompt = false;
     const promptShown = await passkeyChoice
-      .waitFor({ state: "visible", timeout: 8000 })
+      .waitFor({ state: "visible", timeout: 5_000 })
       .then(() => true)
       .catch(() => false);
     if (promptShown) {
       await passkeyChoice.click();
-      await promptPasskeyButton.waitFor({ state: "visible", timeout: 10000 });
+      await promptPasskeyButton.waitFor({ state: "visible", timeout: 5_000 });
       await promptPasskeyButton.click();
       usedPrompt = true;
     }
@@ -247,13 +248,13 @@ test.describe.serial("Suite B — User creation + passkey enrollment + passkey l
         .catch(() => false);
       if (latePrompt) {
         await passkeyChoice.click();
-        await promptPasskeyButton.waitFor({ state: "visible", timeout: 10000 });
+        await promptPasskeyButton.waitFor({ state: "visible", timeout: 5_000 });
         await promptPasskeyButton.click();
         usedPrompt = true;
       } else {
         // Wait for the PasskeyEnrollment component to render.
         const addButton = userPage.getByTestId("passkey-enrollment-add-button");
-        await addButton.waitFor({ state: "visible", timeout: 15000 });
+        await addButton.waitFor({ state: "visible", timeout: 5_000 });
         await addButton.click();
       }
     }
@@ -263,11 +264,11 @@ test.describe.serial("Suite B — User creation + passkey enrollment + passkey l
       // Enrollment inside the prompt dialog is async — wait for the dialog to
       // close (oncomplete fires only after the finish call succeeded) BEFORE
       // navigating, otherwise the in-flight ceremony is aborted.
-      await dialog.waitFor({ state: "hidden", timeout: 30000 });
+      await dialog.waitFor({ state: "hidden", timeout: 5_000 });
       await userPage.goto("/system/settings/credentials", { waitUntil: "domcontentloaded" });
     }
     const passkeyItem = userPage.getByTestId("passkey-enrollment-item").first();
-    await passkeyItem.waitFor({ state: "visible", timeout: 15000 });
+    await passkeyItem.waitFor({ state: "visible", timeout: 5_000 });
   });
 
   // ─── Step 9: capture the enrolled passkey ─────────────────────────────────
@@ -306,17 +307,17 @@ test.describe.serial("Suite B — User creation + passkey enrollment + passkey l
 
     // The passkey button should be visible (enable_webauthn=true in Casdoor).
     const passkeyButton = freshPage.getByTestId("login-passkey-button");
-    await passkeyButton.waitFor({ state: "visible", timeout: 10000 });
+    await passkeyButton.waitFor({ state: "visible", timeout: 5_000 });
     await passkeyButton.click();
 
     // The virtual authenticator answers navigator.credentials.get().
     // Assert: redirect away from /login.
-    await freshPage.waitForURL((url) => !url.pathname.startsWith("/login"), { timeout: 15000 });
+    await freshPage.waitForURL((url) => !url.pathname.startsWith("/login"), { timeout: 5_000 });
 
     // Assert: /api/v1/auth/me returns the test user.
     const meResponse = await freshPage.request.get("/api/v1/auth/me");
     expect(meResponse.ok()).toBeTruthy();
-    const meBody = await meResponse.json();
+    const meBody = await meResponse.text().then((t) => extJsonParse<{ profile?: Record<string, unknown>; username?: string }>(t));
     expect(meBody.profile?.idp_username ?? meBody.username).toBe(testUser.username);
 
     // Cleanup: clear the virtual authenticator.

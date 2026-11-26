@@ -333,9 +333,12 @@
   }
 
   /** Lazy-load a module's translation dictionary for the Pages column —
-   *  nav data itself is already in the discovery payload, no fetch needed. */
-  function ensureModuleData(moduleId: string) {
-    void loadModuleTranslations(moduleId, get(uiLang));
+   *  nav data itself is already in the discovery payload, no fetch needed.
+   *  `is_reserved` platform rows (api gateway, settings shell) own no dict
+   *  — their labels ride the `system` pack, fetching 404s by design. */
+  function ensureModuleData(m: ModuleInfo) {
+    if (m.is_reserved) return;
+    void loadModuleTranslations(m.id, get(uiLang));
   }
 
   /** Row SELECTED (tap/click/focus) — descends into the column, never navigates. */
@@ -347,13 +350,13 @@
     // The Pages column previews this app's default module — prefetch its
     // meta so column 3 is populated when the pointer reaches it.
     const dflt = shellNav.defaultModuleForRoot(root);
-    if (dflt) ensureModuleData(dflt.id);
+    if (dflt) ensureModuleData(dflt);
   }
 
   function selectModulePreview(m: ModuleInfo) {
     previewModuleId = m.id;
     previewLeaf = null;
-    ensureModuleData(m.id);
+    ensureModuleData(m);
   }
 
   /** GOTO(module, root) target — the declared `default` leaf under this
@@ -372,7 +375,7 @@
     const m = shellNav.defaultModuleForRoot(root);
     if (!m) return;
     open = false;
-    ensureModuleData(m.id);
+    ensureModuleData(m);
     await shellNav.selectModule(m.id);
     void goto(resolve(moduleHomeInApp(m, root) as '/'));
   }
@@ -381,7 +384,7 @@
     if (m.accessible === false || m.enabled === false) return; // hidden/disabled — reveal only
     const root = activeApp;
     open = false;
-    ensureModuleData(m.id);
+    ensureModuleData(m);
     await shellNav.selectModule(m.id);
     void goto(resolve(moduleHomeInApp(m, root) as '/'));
   }
@@ -486,7 +489,8 @@
       previewLeaf = null;
       hoverPath = null;
       shownRows = Math.max(ROWS_MIN, targetRows);
-      if (currentModuleId) ensureModuleData(currentModuleId);
+      const cm = currentModuleId ? shellNav.modules.find((m) => m.id === currentModuleId) : undefined;
+      if (cm) ensureModuleData(cm);
       void tick().then(() => {
         const idx = displayRoots.findIndex((d) => d.root === currentRoot);
         if (idx >= 0) focusRow(0, idx);

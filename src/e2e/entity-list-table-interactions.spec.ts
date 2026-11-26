@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { loginAsTestAdmin } from "./helpers/admin-login";
 
+import { extJsonParse } from '@primebrick/core/ext-json';
 /**
  * entity-list-table interaction spot-checks — the table pipeline was the
  * largest surface re-typed in the `no-explicit-any` cleanup (prop contracts
@@ -34,7 +35,7 @@ test.describe("entity-list-table interactions", () => {
       if (req.url().includes(LIST_URL)) listUrls.push(req.url());
     });
     await page.goto(SCHEDULES, { waitUntil: "domcontentloaded" });
-    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 30000 });
+    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 5_000 });
     listUrls.length = 0;
 
     // Only sortable columns get the cursor-pointer header class.
@@ -52,7 +53,7 @@ test.describe("entity-list-table interactions", () => {
     // Wait for data-row-index rows specifically — bare `tbody tr` resolves on
     // skeleton rows that render before meta/selection state lands.
     const rows = page.locator("table tbody tr[data-row-index]");
-    await expect(rows.first()).toBeVisible({ timeout: 30000 });
+    await expect(rows.first()).toBeVisible({ timeout: 5_000 });
     const count = await rows.count();
     expect(count).toBeGreaterThan(0);
 
@@ -70,13 +71,13 @@ test.describe("entity-list-table interactions", () => {
     // — job_schedule does not, so this contract is asserted on the triggers list.
     await page.goto("/system/job/triggers", { waitUntil: "domcontentloaded" });
     const firstRow = page.locator("table tbody tr[data-row-index]").first();
-    await expect(firstRow).toBeVisible({ timeout: 30000 });
+    await expect(firstRow).toBeVisible({ timeout: 5_000 });
 
     const popup = context.waitForEvent("page", { timeout: 5000 });
     await firstRow.dblclick();
     const tab = await popup;
 
-    await expect(tab).toHaveURL(/\/system\/job\/triggers\/[0-9a-f-]{36}/, { timeout: 15000 });
+    await expect(tab).toHaveURL(/\/system\/job\/triggers\/[0-9a-f-]{36}/, { timeout: 5_000 });
     // The new tab must take focus — the parent stays on the list.
     await expect.poll(() => tab.evaluate(() => document.hasFocus())).toBe(true);
     expect(page.url()).toContain("/system/job/triggers");
@@ -132,7 +133,7 @@ test.describe("entity-list-table interactions", () => {
 
     await page.goto(SCHEDULES, { waitUntil: "domcontentloaded" });
     const rows = page.locator("table tbody tr[data-row-index]");
-    await expect(rows.first()).toBeVisible({ timeout: 30000 });
+    await expect(rows.first()).toBeVisible({ timeout: 5_000 });
 
     // ── 1. No focus, no frame on first load.
     await expect(page.locator("tr[data-focused-row-index]")).toHaveCount(0);
@@ -258,7 +259,7 @@ test.describe("entity-list-table interactions", () => {
     // small enough to fit between the left range zone and the pager.
     await page.setViewportSize({ width: 1920, height: 900 });
     await page.goto(SCHEDULES, { waitUntil: "domcontentloaded" });
-    await expect(page.locator("table tbody tr[data-row-index]").first()).toBeVisible({ timeout: 30000 });
+    await expect(page.locator("table tbody tr[data-row-index]").first()).toBeVisible({ timeout: 5_000 });
     const trigger = page.getByTestId("elt-kbd-legend");
     await expect(trigger).toBeVisible();
     // The trigger itself is icon + translated label, no raw key.
@@ -317,7 +318,7 @@ test.describe("entity-list-table interactions", () => {
   test("pager keys navigate pages like the footer buttons", async ({ page }) => {
     // job_runs is the densest ELT list — hundreds of rows, always multi-page.
     await page.goto("/system/job/runs", { waitUntil: "domcontentloaded" });
-    await expect(page.locator("table tbody tr[data-row-index]").first()).toBeVisible({ timeout: 30000 });
+    await expect(page.locator("table tbody tr[data-row-index]").first()).toBeVisible({ timeout: 5_000 });
 
     const status = page.getByTestId("elt-pagination-status");
     const readPager = async () => {
@@ -350,7 +351,7 @@ test.describe("entity-list-table interactions", () => {
   test("Insert key fires the toolbar NEW CTA", async ({ page, context }) => {
     await page.setViewportSize({ width: 1920, height: 900 });
     await page.goto("/system/job/triggers", { waitUntil: "domcontentloaded" });
-    await expect(page.locator("table tbody tr[data-row-index]").first()).toBeVisible({ timeout: 30000 });
+    await expect(page.locator("table tbody tr[data-row-index]").first()).toBeVisible({ timeout: 5_000 });
 
     const legend = page.getByTestId("elt-kbd-legend");
     await expect(legend).toBeVisible();
@@ -383,7 +384,7 @@ test.describe("card-view toolbar zones (/crm/customers)", () => {
 
   test("cards view mounts select-all | sort | IANA inside L2 — no third bar", async ({ page }) => {
     await page.goto("/crm/customers", { waitUntil: "domcontentloaded" });
-    await expect(page.locator("table tbody tr[data-row-index]").first()).toBeVisible({ timeout: 30000 });
+    await expect(page.locator("table tbody tr[data-row-index]").first()).toBeVisible({ timeout: 5_000 });
 
     const toolbar = page.getByTestId("bulk-actions-toolbar");
     // Table view → no leading zones (chrome identical to before).
@@ -403,12 +404,12 @@ test.describe("card-view toolbar zones (/crm/customers)", () => {
     // entity.datetimeIana sheet with one row per toggleable column.
     await toolbar.getByTestId("entity-list-iana").click();
     const sheet = page.getByTestId("sheet-primary-pane");
-    await expect(sheet.getByTestId("iana-field-onboarding_at")).toBeVisible({ timeout: 10000 });
+    await expect(sheet.getByTestId("iana-field-onboarding_at")).toBeVisible({ timeout: 5_000 });
     await page.keyboard.press("Escape");
 
     // Back to table → the zones leave again.
     await page.getByTestId("elt-view-mode-table").click();
-    await expect(page.locator("table tbody tr[data-row-index]").first()).toBeVisible({ timeout: 30000 });
+    await expect(page.locator("table tbody tr[data-row-index]").first()).toBeVisible({ timeout: 5_000 });
     for (const id of ["entity-list-card-select-all", "entity-list-card-sort", "entity-list-iana"]) {
       await expect(toolbar.getByTestId(id)).toHaveCount(0);
     }
@@ -424,7 +425,7 @@ test.describe("card-view toolbar zones (/crm/customers)", () => {
    */
   test("roles column renders one badge per role code", async ({ page }) => {
     await page.goto("/system/settings/users", { waitUntil: "domcontentloaded" });
-    await expect(page.locator("table tbody tr[data-row-index]").first()).toBeVisible({ timeout: 30000 });
+    await expect(page.locator("table tbody tr[data-row-index]").first()).toBeVisible({ timeout: 5_000 });
 
     // `roles` is default_visible:false → enable it via the columns sheet.
     await page.getByRole("button", { name: "Columns" }).first().click();
@@ -432,7 +433,7 @@ test.describe("card-view toolbar zones (/crm/customers)", () => {
     await page.keyboard.press("Escape");
 
     const rolesCells = page.getByTestId("roles-cell-roles");
-    await expect(rolesCells.first()).toBeVisible({ timeout: 15000 });
+    await expect(rolesCells.first()).toBeVisible({ timeout: 5_000 });
 
     // At least one row must carry badges — every badge keeps the
     // destination-event anatomy (icon + translated label, secondary variant).
@@ -452,7 +453,7 @@ test.describe("card-view toolbar zones (/crm/customers)", () => {
       (r) =>
         r.url().includes("/entities/role_mapping/list") &&
         r.url().includes("filters%5B0%5D%5Bfield%5D=idp_role"),
-      { timeout: 15000 },
+      { timeout: 5_000 },
     );
     await badges.first().click();
     const lookupResp = await roleLookup;
@@ -461,12 +462,12 @@ test.describe("card-view toolbar zones (/crm/customers)", () => {
     expect(clickedCode).toBeTruthy();
 
     const sheet = page.getByTestId("entity-record-sheet");
-    await expect(sheet).toBeVisible({ timeout: 15000 });
+    await expect(sheet).toBeVisible({ timeout: 5_000 });
     await expect(page.getByTestId("entity-record-sheet-missing-hero")).toHaveCount(0);
     await expect(page.getByTestId("entity-record-sheet-failed-hero")).toHaveCount(0);
     // The resolved record carries the clicked role's own code.
     await expect(sheet.locator("#record-sheet-field-idp_role")).toHaveValue(clickedCode!, {
-      timeout: 15000,
+      timeout: 5_000,
     });
     // Escape pops the stacked sheet — the table survives underneath.
     await page.keyboard.press("Escape");
@@ -482,7 +483,7 @@ test.describe("card-view toolbar zones (/crm/customers)", () => {
    */
   test("avatar_initials column renders the hex avatar cell", async ({ page }) => {
     await page.goto("/system/settings/users", { waitUntil: "domcontentloaded" });
-    await expect(page.locator("table tbody tr[data-row-index]").first()).toBeVisible({ timeout: 30000 });
+    await expect(page.locator("table tbody tr[data-row-index]").first()).toBeVisible({ timeout: 5_000 });
 
     // `avatar_initials` is default_visible:false → enable it via the columns sheet.
     await page.getByRole("button", { name: "Columns" }).first().click();
@@ -492,7 +493,7 @@ test.describe("card-view toolbar zones (/crm/customers)", () => {
     // At least one row renders the avatar hex with a non-empty seed
     // ('??' is the honest empty-initials fallback — still a rendered avatar).
     const avatarCell = page.locator("table tbody td .avatar-hex").first();
-    await expect(avatarCell).toBeVisible({ timeout: 15000 });
+    await expect(avatarCell).toBeVisible({ timeout: 5_000 });
     await expect(avatarCell).not.toHaveText(/^\s*$/);
   });
 
@@ -505,12 +506,12 @@ test.describe("card-view toolbar zones (/crm/customers)", () => {
   test("organizations/active answers 200 with the organizations envelope", async ({ page }) => {
     const respPromise = page.waitForResponse(
       (r) => r.url().includes("/api/v1/system/organizations/active") && r.request().method() === "GET",
-      { timeout: 30000 },
+      { timeout: 5_000 },
     );
     await page.goto("/system/settings/users", { waitUntil: "domcontentloaded" });
     const resp = await respPromise;
     expect(resp.status()).toBe(200);
-    const body = (await resp.json()) as { organizations?: unknown };
+    const body = (await resp.text().then((t) => extJsonParse<unknown>(t))) as { organizations?: unknown };
     expect(Array.isArray(body.organizations)).toBe(true);
   });
 });

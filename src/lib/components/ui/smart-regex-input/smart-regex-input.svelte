@@ -18,8 +18,6 @@
   import { inputTrailingIconColorClasses } from '@primebrick/ui';
   import { AiIcon } from '@primebrick/ui';
   import { Eraser } from '@primebrick/ui/vendor/lucide';
-  import { onMount } from 'svelte';
-  import { browser } from '$app/environment';
 
   type Props = {
     /** The regex pattern string (bindable). */
@@ -111,21 +109,6 @@
       },
     });
   }
-
-  // Auto-open the AI panel after a model switch page reload.
-  // switchModel() sets 'regex-ai-auto-open' in sessionStorage before
-  // reloading the page; on the fresh page load we auto-open the sheet
-  // so the user sees the new model loading without manual interaction.
-  onMount(() => {
-    if (!browser) return;
-    try {
-      if (sessionStorage.getItem('regex-ai-auto-open') === '1') {
-        sessionStorage.removeItem('regex-ai-auto-open');
-        // Defer to next tick so the input is mounted first.
-        queueMicrotask(() => open_ai_panel());
-      }
-    } catch { /* sessionStorage unavailable */ }
-  });
 
   // Flags in JS canonical order (RegExp.flags: dgimsuvy) for the text CTA
   let flags_display = $derived([...'dgimsuvy'].filter((f) => flags.includes(f)).join(''));

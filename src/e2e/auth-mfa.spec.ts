@@ -25,6 +25,7 @@ import { generateTotp } from "./helpers/totp";
 import { E2E_MFA_USERNAME, E2E_MFA_PASSWORD } from "./helpers/admin-login";
 import { deleteMfaFactorsByUsername, setAuthMethodEnforcerDismissed } from "./helpers/db";
 
+import { extJsonParse } from '@primebrick/core/ext-json';
 // ─── Suite ──────────────────────────────────────────────────────────────────
 
 test.describe.serial("Suite C — MFA enrollment + login MFA challenge", () => {
@@ -46,11 +47,11 @@ test.describe.serial("Suite C — MFA enrollment + login MFA challenge", () => {
     // Login directly (not using loginAsAdmin helper — it uses domcontentloaded
     // which can race with the FE's hydration on IPv6).
     await adminPage.goto("/login", { waitUntil: "networkidle" });
-    await adminPage.getByTestId("login-username-input").waitFor({ state: "visible", timeout: 10000 });
+    await adminPage.getByTestId("login-username-input").waitFor({ state: "visible", timeout: 5_000 });
     await adminPage.getByTestId("login-username-input").fill(E2E_MFA_USERNAME);
     await adminPage.getByTestId("login-password-input").fill(E2E_MFA_PASSWORD);
     await adminPage.getByTestId("login-submit-button").click();
-    await adminPage.waitForURL((url) => !url.pathname.startsWith("/login"), { timeout: 15000 });
+    await adminPage.waitForURL((url) => !url.pathname.startsWith("/login"), { timeout: 5_000 });
   });
 
   test.afterAll(async () => {
@@ -75,7 +76,7 @@ test.describe.serial("Suite C — MFA enrollment + login MFA challenge", () => {
     const mfaSection = adminPage.getByTestId("mfa-management-empty").or(
       adminPage.getByTestId("mfa-management-list"),
     );
-    await mfaSection.waitFor({ state: "visible", timeout: 15000 });
+    await mfaSection.waitFor({ state: "visible", timeout: 5_000 });
   });
 
   test("Step 2: enroll a new MFA factor", async () => {
@@ -83,13 +84,13 @@ test.describe.serial("Suite C — MFA enrollment + login MFA challenge", () => {
     // Scroll to the MFA section and click the "enroll" button.
     const enrollButton = adminPage.getByTestId("mfa-enroll-button");
     await enrollButton.scrollIntoViewIfNeeded();
-    await enrollButton.waitFor({ state: "visible", timeout: 10000 });
+    await enrollButton.waitFor({ state: "visible", timeout: 5_000 });
     await enrollButton.click();
 
     // Wait for the enrollment dialog to open and the QR step to appear.
     // The secret is displayed in a <code> element with data-testid="mfa-enroll-secret".
     const secretEl = adminPage.getByTestId("mfa-enroll-secret");
-    await secretEl.waitFor({ state: "visible", timeout: 15000 });
+    await secretEl.waitFor({ state: "visible", timeout: 5_000 });
     totpSecret = await secretEl.textContent() ?? "";
     expect(totpSecret).toMatch(/^[A-Z2-7]+$/); // base32
 
@@ -98,7 +99,7 @@ test.describe.serial("Suite C — MFA enrollment + login MFA challenge", () => {
 
     // Wait for the code input to appear.
     const codeInput = adminPage.getByTestId("mfa-enroll-code-input");
-    await codeInput.waitFor({ state: "visible", timeout: 10000 });
+    await codeInput.waitFor({ state: "visible", timeout: 5_000 });
 
     // Optionally fill a label.
     const labelInput = adminPage.getByTestId("mfa-enroll-label-input");
@@ -114,20 +115,20 @@ test.describe.serial("Suite C — MFA enrollment + login MFA challenge", () => {
     try {
       await adminPage
         .getByTestId("mfa-management-list")
-        .waitFor({ state: "visible", timeout: 6000 });
+        .waitFor({ state: "visible", timeout: 5_000 });
     } catch {
       await adminPage.getByTestId("mfa-enroll-finish-button").click();
     }
 
     // Wait for the dialog to close and the factor to appear in the list.
-    await adminPage.getByTestId("mfa-management-list").waitFor({ state: "visible", timeout: 15000 });
+    await adminPage.getByTestId("mfa-management-list").waitFor({ state: "visible", timeout: 5_000 });
     expect(await adminPage.getByTestId("mfa-management-item").count()).toBeGreaterThanOrEqual(1);
   });
 
   test("Step 3: verify /api/v1/auth/me reports has_mfa=true", async () => {
     const resp = await adminPage.request.get("/api/v1/auth/me");
     expect(resp.ok()).toBeTruthy();
-    const body = await resp.json();
+    const body = await resp.text().then((t) => extJsonParse<Record<string, unknown>>(t));
     expect(body.has_mfa).toBe(true);
   });
 
@@ -136,7 +137,7 @@ test.describe.serial("Suite C — MFA enrollment + login MFA challenge", () => {
     await adminPage.request.post("/api/v1/auth/logout");
     // Navigate to login page to confirm we're logged out
     await adminPage.goto("/login", { waitUntil: "domcontentloaded" });
-    await adminPage.getByTestId("login-username-input").waitFor({ state: "visible", timeout: 10000 });
+    await adminPage.getByTestId("login-username-input").waitFor({ state: "visible", timeout: 5_000 });
   });
 
   test("Step 5: login triggers MFA challenge", async ({ browser }) => {
@@ -145,7 +146,7 @@ test.describe.serial("Suite C — MFA enrollment + login MFA challenge", () => {
     const loginPage = await loginContext.newPage();
 
     await loginPage.goto("/login", { waitUntil: "networkidle" });
-    await loginPage.getByTestId("login-username-input").waitFor({ state: "visible", timeout: 10000 });
+    await loginPage.getByTestId("login-username-input").waitFor({ state: "visible", timeout: 5_000 });
 
     await loginPage.getByTestId("login-username-input").fill(E2E_MFA_USERNAME);
     await loginPage.getByTestId("login-password-input").fill(E2E_MFA_PASSWORD);
@@ -153,7 +154,7 @@ test.describe.serial("Suite C — MFA enrollment + login MFA challenge", () => {
 
     // The MFA challenge should appear (instead of redirecting to the app).
     const mfaCodeInput = loginPage.getByTestId("mfa-code-input");
-    await mfaCodeInput.waitFor({ state: "visible", timeout: 15000 });
+    await mfaCodeInput.waitFor({ state: "visible", timeout: 5_000 });
 
     // Generate a TOTP code and enter it.
     const code = generateTotp(totpSecret);
@@ -162,13 +163,13 @@ test.describe.serial("Suite C — MFA enrollment + login MFA challenge", () => {
     // fallback when auto-submit doesn't fire (button stays disabled while the
     // request runs and detaches when the page navigates away).
     try {
-      await loginPage.waitForURL((url) => !url.pathname.startsWith("/login"), { timeout: 6000 });
+      await loginPage.waitForURL((url) => !url.pathname.startsWith("/login"), { timeout: 5_000 });
     } catch {
       await loginPage.getByTestId("mfa-verify-button").click();
     }
 
     // Assert: redirect away from /login (success → app home).
-    await loginPage.waitForURL((url) => !url.pathname.startsWith("/login"), { timeout: 15000 });
+    await loginPage.waitForURL((url) => !url.pathname.startsWith("/login"), { timeout: 5_000 });
 
     // Assert: session is established.
     const meResponse = await loginPage.request.get("/api/v1/auth/me");
@@ -182,7 +183,7 @@ test.describe.serial("Suite C — MFA enrollment + login MFA challenge", () => {
     const loginPage = await loginContext.newPage();
 
     await loginPage.goto("/login", { waitUntil: "networkidle" });
-    await loginPage.getByTestId("login-username-input").waitFor({ state: "visible", timeout: 10000 });
+    await loginPage.getByTestId("login-username-input").waitFor({ state: "visible", timeout: 5_000 });
 
     await loginPage.getByTestId("login-username-input").fill(E2E_MFA_USERNAME);
     await loginPage.getByTestId("login-password-input").fill(E2E_MFA_PASSWORD);
@@ -190,7 +191,7 @@ test.describe.serial("Suite C — MFA enrollment + login MFA challenge", () => {
 
     // Wait for MFA challenge.
     const mfaCodeInput = loginPage.getByTestId("mfa-code-input");
-    await mfaCodeInput.waitFor({ state: "visible", timeout: 15000 });
+    await mfaCodeInput.waitFor({ state: "visible", timeout: 5_000 });
 
     // Enter a wrong code (all zeros — unlikely to match).
     // The OtpInput auto-submits on the 6th digit — no verify click needed.
@@ -200,8 +201,8 @@ test.describe.serial("Suite C — MFA enrollment + login MFA challenge", () => {
     // code either surfaces a destructive alert inside the MFA challenge or, if
     // the challenge token was consumed, opens the global session-expired dialog.
     await Promise.race([
-      loginPage.locator('[data-slot="alert"][class*="destructive"]').waitFor({ state: "visible", timeout: 15000 }),
-      loginPage.getByRole("dialog").waitFor({ state: "visible", timeout: 15000 }),
+      loginPage.locator('[data-slot="alert"][class*="destructive"]').waitFor({ state: "visible", timeout: 5_000 }),
+      loginPage.getByRole("dialog").waitFor({ state: "visible", timeout: 5_000 }),
     ]);
     expect(loginPage.url()).toContain("/login");
 

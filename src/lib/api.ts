@@ -22,7 +22,7 @@ import {
 import type { PageRouteDeclaration } from '@primebrick/ui';
 import { PUBLIC_API_ORIGIN } from '$env/static/public';
 import { building, browser } from '$app/environment';
-import { extJsonStringify } from '$lib/api-ext';
+import { extJsonParse, extJsonStringify } from '$lib/api-ext';
 import { appendListFilterTerm } from '$lib/entity-list/entity-links';
 import type { FilterCondition } from '$lib/entity-list/types';
 import { getCachedETag, setCachedETag } from '@primebrick/ui/cache';
@@ -42,6 +42,11 @@ const ENTITY_API_PATH = '/api/v1/entities';
  * pre-map semantics unchanged.
  */
 let _entityService = new Map<string, string>();
+/** Entities the census registers under MORE THAN ONE service — builtin
+ *  entities mount on every module by construction, so the flat
+ *  entity→service map is last-wins ambiguous for them and must NEVER be
+ *  consulted as the owner authority. */
+let _multiService = new Set<string>();
 
 /**
  * The census feeds the map — called once per `loadShellNav` resolution.
@@ -49,12 +54,52 @@ let _entityService = new Map<string, string>();
  * mounted page never observes a half-empty map mid-refetch.
  */
 export function registerEntityServices(entries: Iterable<readonly [string, string]>): void {
-  _entityService = new Map(entries);
+  const map = new Map<string, string>();
+  const seen = new Map<string, string>();
+  const multi = new Set<string>();
+  for (const [entity, svc] of entries) {
+    map.set(entity, svc);
+    const prev = seen.get(entity);
+    if (prev !== undefined && prev !== svc) multi.add(entity);
+    else seen.set(entity, svc);
+  }
+  _entityService = map;
+  _multiService = multi;
 }
 
-export function entityApiBase(entity: string): string {
+/**
+ * The gateway's own registry code — its entities are BE-owned, so they ride
+ * the direct path. There is no 'api' instance to proxy to: mapping it to
+ * `/svc/api` makes the gateway look up itself and answer 502.
+ */
+function proxyService(entity: string): string | undefined {
   const service = _entityService.get(entity);
-  return service ? `/svc/${service}/api/v1/entities/${entity}` : `${ENTITY_API_PATH}/${entity}`;
+  return service === 'api' ? undefined : service;
+}
+
+/**
+ * Construction-time ownership guard — a multi-service entity queried
+ * WITHOUT an explicit `service` argument would silently resolve to
+ * whichever service registered last (the "emailsender" bug class:
+ * CRM sequence deletes/audits landing on a foreign schema). Route
+ * context MUST carry the owner — `decl.module`, sibling id strip —
+ * so a missing argument here is a programming error, not a data
+ * condition: throw loudly instead of returning a wrong-schema guess.
+ */
+function requireUnambiguous(entity: string, service?: string): void {
+  if (service === undefined && _multiService.has(entity)) {
+    throw new Error(
+      `entityApiBase/serviceApiPrefix("${entity}") called without an explicit service — ` +
+      `the entity mounts on multiple services and the census map is last-wins ambiguous. ` +
+      `Thread the owning service from route context (decl.module).`,
+    );
+  }
+}
+
+export function entityApiBase(entity: string, service?: string): string {
+  requireUnambiguous(entity, service);
+  const svc = service ?? proxyService(entity);
+  return svc ? `/svc/${svc}/api/v1/entities/${entity}` : `${ENTITY_API_PATH}/${entity}`;
 }
 
 /**
@@ -63,9 +108,10 @@ export function entityApiBase(entity: string): string {
  * `/api/v1/actions/<op>`) are service-local — they must ride the same
  * proxy prefix. Single source: the `/api/v1/modules` census.
  */
-export function serviceApiPrefix(entity: string): string {
-  const service = _entityService.get(entity);
-  return service ? `/svc/${service}` : '';
+export function serviceApiPrefix(entity: string, service?: string): string {
+  requireUnambiguous(entity, service);
+  const svc = service ?? proxyService(entity);
+  return svc ? `/svc/${svc}` : '';
 }
 
 // hasLocalSession / isTokenExpired / refreshAccessToken / triggerRefresh
@@ -90,10 +136,10 @@ async function handleRFC7807Error(res: Response): Promise<Response> {
     const contentType = res.headers.get('content-type');
     if (contentType?.includes('application/json')) {
       // Clone before reading so the caller can still access the body
-      const errorData = await res.clone().json();
+      const errorData = await res.clone().text().then((t) => extJsonParse<Record<string, unknown>>(t));
       // Check if it looks like RFC7807 format (has type, title, status)
       if (errorData.type && errorData.title && errorData.status) {
-        pushNotification(errorData);
+        pushNotification(errorData as Parameters<typeof pushNotification>[0]);
       }
     }
   } catch (e) {
@@ -180,7 +226,7 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Pr
     let errorData: Record<string, unknown> | null = null;
     try {
       const cloned = res.clone();
-      errorData = await cloned.json();
+      errorData = await cloned.text().then((t) => extJsonParse<Record<string, unknown> | null>(t));
     } catch { /* not JSON — treat as generic 503 */ }
     const internalCode = errorData?.internal_code;
     const isServiceScoped =
@@ -273,9 +319,9 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Pr
     try {
       const contentType = res.headers.get('content-type');
       if (contentType?.includes('application/json')) {
-        const errorData = await res.json();
+        const errorData = await res.text().then((t) => extJsonParse<Record<string, unknown>>(t));
         if (errorData?.type && errorData?.title && typeof errorData?.status === 'number') {
-          pushNotification(errorData);
+          pushNotification(errorData as Parameters<typeof pushNotification>[0]);
           alreadyNotified = true;
         }
       }
@@ -342,26 +388,26 @@ export async function fetchModules(
 ): Promise<{ modules: ModuleInfo[]; labels: Record<string, string> }> {
   const res = await apiFetch(`/api/v1/modules?lang=${encodeURIComponent(lang)}`, init);
   if (!res.ok) throw new Error(`Modules request failed (${res.status})`);
-  return (await res.json()) as { modules: ModuleInfo[]; labels: Record<string, string> };
+  return (await res.text().then((t) => extJsonParse<unknown>(t))) as { modules: ModuleInfo[]; labels: Record<string, string> };
 }
 
 export async function fetchHealth(): Promise<HealthPayload> {
   const res = await apiFetch('/api/v1/health');
   if (!res.ok) throw new Error(`Health request failed (${res.status})`);
-  return (await res.json()) as HealthPayload;
+  return (await res.text().then((t) => extJsonParse<unknown>(t))) as HealthPayload;
 }
 
 export async function fetchServices(): Promise<ServiceInfo[]> {
   const res = await apiFetch('/api/v1/system/services');
   if (!res.ok) throw new Error(`Services request failed (${res.status})`);
-  const data = (await res.json()) as { services: ServiceInfo[] };
+  const data = (await res.text().then((t) => extJsonParse<unknown>(t))) as { services: ServiceInfo[] };
   return data.services;
 }
 
 export async function fetchService(code: string): Promise<ServiceInfo> {
   const res = await apiFetch(`/api/v1/system/services/${encodeURIComponent(code)}`);
   if (!res.ok) throw new Error(`Service request failed (${res.status})`);
-  const data = (await res.json()) as { service: ServiceInfo };
+  const data = (await res.text().then((t) => extJsonParse<unknown>(t))) as { service: ServiceInfo };
   return data.service;
 }
 
@@ -370,7 +416,7 @@ export async function toggleModule(code: string): Promise<{ is_enabled: boolean 
     method: 'PATCH',
   });
   if (!res.ok) throw new Error(`Toggle failed (${res.status})`);
-  return await res.json();
+  return await res.text().then((t) => extJsonParse<{ is_enabled: boolean }>(t));
 }
 
 export async function deleteModule(code: string): Promise<void> {
@@ -391,10 +437,10 @@ export async function updateService(code: string, data: Partial<ServiceInfo>): P
   const res = await apiFetch(`/api/v1/system/services/${encodeURIComponent(code)}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
+    body: extJsonStringify(data),
   });
   if (!res.ok) throw new Error(`Update failed (${res.status})`);
-  const result = (await res.json()) as { service: ServiceInfo };
+  const result = (await res.text().then((t) => extJsonParse<unknown>(t))) as { service: ServiceInfo };
   return result.service;
 }
 
@@ -411,13 +457,13 @@ export function dbMigrationBase(code: string): string {
 export async function fetchDbMigrationStatus(code: string): Promise<DbMigrationStatus> {
   const res = await apiFetch(`${dbMigrationBase(code)}/status`);
   if (!res.ok) throw new Error(`Migration status failed (${res.status})`);
-  return (await res.json()) as DbMigrationStatus;
+  return (await res.text().then((t) => extJsonParse<unknown>(t))) as DbMigrationStatus;
 }
 
 export async function dbMigrationRetry(code: string): Promise<{ retried: number; result: unknown }> {
   const res = await apiFetch(`${dbMigrationBase(code)}/retry`, { method: 'POST' });
   if (!res.ok) throw new Error(`Migration retry failed (${res.status})`);
-  return await res.json();
+  return await res.text().then((t) => extJsonParse<{ retried: number; result: unknown }>(t));
 }
 
 export async function dbMigrationApprove(
@@ -431,7 +477,7 @@ export async function dbMigrationApprove(
     body: extJsonStringify({ patch_name: patchName, note }),
   });
   if (!res.ok) throw new Error(`Migration approve failed (${res.status})`);
-  return await res.json();
+  return await res.text().then((t) => extJsonParse<{ approved: boolean; detail?: string }>(t));
 }
 
 export async function dbMigrationResolve(
@@ -445,23 +491,23 @@ export async function dbMigrationResolve(
     body: extJsonStringify({ patch_name: patchName, note }),
   });
   if (!res.ok) throw new Error(`Migration resolve failed (${res.status})`);
-  return await res.json();
+  return await res.text().then((t) => extJsonParse<{ resolved: boolean; detail?: string }>(t));
 }
 
 export async function dbMigrationDriftCheck(code: string): Promise<DbMigrationDriftResult> {
   const res = await apiFetch(`${dbMigrationBase(code)}/drift-check`, { method: 'POST' });
   if (!res.ok) throw new Error(`Drift check failed (${res.status})`);
-  return await res.json();
+  return await res.text().then((t) => extJsonParse<DbMigrationDriftResult>(t));
 }
 
 export async function fetchModuleConfig(code: string): Promise<ModuleConfigEntry[]> {
   const res = await apiFetch(`/svc/${encodeURIComponent(code)}/api/v1/entities/config_entry/list`);
   if (!res.ok) throw new Error(`Config fetch failed (${res.status})`);
-  const data = (await res.json()) as { config_entries: ModuleConfigEntry[] };
+  const data = (await res.text().then((t) => extJsonParse<unknown>(t))) as { config_entries: ModuleConfigEntry[] };
   return data.config_entries;
 }
 
-export async function updateModuleConfigKey(code: string, uuid: string, value: string | bigint | number, version?: number): Promise<void> {
+export async function updateModuleConfigKey(code: string, uuid: string, value: string | bigint | number, version?: bigint): Promise<void> {
   const res = await apiFetch(`/svc/${encodeURIComponent(code)}/api/v1/entities/config_entry/${encodeURIComponent(uuid)}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
@@ -475,7 +521,7 @@ export async function updateModuleConfigKey(code: string, uuid: string, value: s
 export async function fetchConfigEntries(): Promise<ConfigEntry[]> {
   const res = await apiFetch('/api/v1/entities/config_entry/list');
   if (!res.ok) throw new Error(`Config entries fetch failed (${res.status})`);
-  const data = (await res.json()) as { rows: ConfigEntry[] };
+  const data = (await res.text().then((t) => extJsonParse<unknown>(t))) as { rows: ConfigEntry[] };
   return data.rows;
 }
 
@@ -487,7 +533,7 @@ export async function fetchConfigEntries(): Promise<ConfigEntry[]> {
 export async function fetchConfigEntryMeta(): Promise<{ type_capabilities?: TypeCapabilitiesMap }> {
   const res = await apiFetch('/api/v1/entities/config_entry/meta');
   if (!res.ok) throw new Error(`Config entry meta fetch failed (${res.status})`);
-  return (await res.json()) as { type_capabilities?: TypeCapabilitiesMap };
+  return (await res.text().then((t) => extJsonParse<unknown>(t))) as { type_capabilities?: TypeCapabilitiesMap };
 }
 
 // === AI models / cerebellum fetchers REMOVED — ai-domain fetches live in
@@ -541,10 +587,10 @@ export async function searchDocs(params: {
   const res = await apiFetch('/svc/ai/api/v1/system/docs/search', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(params),
+    body: extJsonStringify(params),
   });
   if (!res.ok) throw new Error(`Docs search failed (${res.status})`);
-  const data = (await res.json()) as { results: DocsSearchHit[] };
+  const data = (await res.text().then((t) => extJsonParse<unknown>(t))) as { results: DocsSearchHit[] };
   return data.results;
 }
 
@@ -568,10 +614,10 @@ export async function fetchDocsIndex(): Promise<DocsIndexRepo[]> {
   const res = await apiFetch('/svc/ai/api/v1/system/docs/index', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({}),
+    body: extJsonStringify({}),
   });
   if (!res.ok) throw new Error(`Docs index failed (${res.status})`);
-  const data = (await res.json()) as { repos: DocsIndexRepo[] };
+  const data = (await res.text().then((t) => extJsonParse<unknown>(t))) as { repos: DocsIndexRepo[] };
   return data.repos;
 }
 
@@ -584,11 +630,11 @@ export async function fetchDoc(params: {
   const res = await apiFetch('/svc/ai/api/v1/system/docs/document', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(params),
+    body: extJsonStringify(params),
   });
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`Doc fetch failed (${res.status})`);
-  const data = (await res.json()) as { document: { repo: string; path: string; title: string; content: string; metadata: Record<string, unknown> } };
+  const data = (await res.text().then((t) => extJsonParse<unknown>(t))) as { document: { repo: string; path: string; title: string; content: string; metadata: Record<string, unknown> } };
   return data.document;
 }
 
@@ -645,7 +691,7 @@ export interface McpToolDef {
 export async function listMcpTools(): Promise<McpToolDef[]> {
   const res = await apiFetch('/api/v1/system/mcp/tools');
   if (!res.ok) return [];
-  const data = (await res.json()) as { tools: McpToolDef[] };
+  const data = (await res.text().then((t) => extJsonParse<unknown>(t))) as { tools: McpToolDef[] };
   return data.tools ?? [];
 }
 
@@ -668,9 +714,9 @@ export async function callMcpTool(
   const res = await apiFetch('/api/v1/system/mcp/call', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ tool, args }),
+    body: extJsonStringify({ tool, args }),
   });
-  const data = (await res.json()) as McpCallResponse;
+  const data = (await res.text().then((t) => extJsonParse<unknown>(t))) as McpCallResponse;
   if (!res.ok) return { ok: false, error: data.error ?? `Tool call failed (${res.status})` };
   return data;
 }
@@ -698,14 +744,14 @@ export async function createConfigEntry(params: {
     body: extJsonStringify(translations?.length ? { entity, translations } : { entity }),
   });
   if (!res.ok) throw new Error(`Config entry create failed (${res.status})`);
-  const data = (await res.json()) as ConfigEntry;
+  const data = (await res.text().then((t) => extJsonParse<unknown>(t))) as ConfigEntry;
   return data;
 }
 
 export async function updateConfigEntry(
   uuid: string,
   patch: { value?: string | bigint | number; type?: string; type_config?: string | null },
-  version: number,
+  version: bigint,
 ): Promise<void> {
   const res = await apiFetch(`/api/v1/entities/config_entry/${encodeURIComponent(uuid)}`, {
     method: 'PUT',
@@ -721,7 +767,7 @@ export async function bulkUpdateConfigEntries(
     value?: string | bigint | number;
     type?: string;
     type_config?: string | null;
-    version: number;
+    version: bigint;
   }>,
 ): Promise<number> {
   const res = await apiFetch('/api/v1/entities/config_entry/bulk-update', {
@@ -732,33 +778,33 @@ export async function bulkUpdateConfigEntries(
   if (!res.ok) {
     // Propagate the RFC 7807 body verbatim so the caller can pushNotification()
     // it and extra.issues (per-row bulk detail) reaches the error dialog.
-    const errorData = await res.json().catch(() => null);
+    const errorData = await res.text().then((t) => extJsonParse<Record<string, unknown>>(t)).catch(() => null);
     if (errorData && typeof errorData === 'object' && 'status' in errorData) throw errorData;
     throw new Error(`Config entries bulk update failed (${res.status})`);
   }
-  const data = (await res.json()) as { success: boolean; updated: number };
+  const data = (await res.text().then((t) => extJsonParse<unknown>(t))) as { success: boolean; updated: number };
   return data.updated;
 }
 
-export async function deleteConfigEntry(uuid: string, version: number, mfaActionAuthorization: string | null): Promise<Response> {
+export async function deleteConfigEntry(uuid: string, version: bigint, mfaActionAuthorization: string | null): Promise<Response> {
   return apiFetch(`/api/v1/entities/config_entry/${encodeURIComponent(uuid)}?version=${version}`, {
     method: 'DELETE',
     headers: mfaActionAuthorization ? { 'x-mfa-action-authorization': mfaActionAuthorization } : {},
   });
 }
 
-export async function bulkDeleteConfigEntries(items: Array<{ uuid: string; version: number }>, mfaActionAuthorization: string | null): Promise<Response> {
+export async function bulkDeleteConfigEntries(items: Array<{ uuid: string; version: bigint }>, mfaActionAuthorization: string | null): Promise<Response> {
   return apiFetch('/api/v1/entities/config_entry/bulk-delete', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       ...(mfaActionAuthorization ? { 'x-mfa-action-authorization': mfaActionAuthorization } : {}),
     },
-    body: JSON.stringify({ items }),
+    body: extJsonStringify({ items }),
   });
 }
 
-export async function restoreConfigEntry(uuid: string, version: number): Promise<void> {
+export async function restoreConfigEntry(uuid: string, version: bigint): Promise<void> {
   const res = await apiFetch(`/api/v1/entities/config_entry/${encodeURIComponent(uuid)}/restore?version=${version}`, {
     method: 'POST',
   });
@@ -771,14 +817,14 @@ export async function restoreConfigEntry(uuid: string, version: number): Promise
 export async function fetchPublicTranslations(language: string): Promise<Record<string, string>> {
   const res = await apiFetch(`/api/v1/system/translations/public/${encodeURIComponent(language)}`);
   if (!res.ok) throw new Error(`Public translations request failed (${res.status})`);
-  return await res.json();
+  return await res.text().then((t) => extJsonParse<Record<string, string>>(t));
 }
 
 /** Authenticated pages — module-aware translation dict (runtime read). */
 export async function fetchModuleTranslations(moduleCode: string, language: string): Promise<Record<string, string>> {
   const res = await apiFetch(`/api/v1/system/translations/${encodeURIComponent(moduleCode)}/${encodeURIComponent(language)}`);
   if (!res.ok) throw new Error(`Translations request failed (${res.status})`);
-  return await res.json();
+  return await res.text().then((t) => extJsonParse<Record<string, string>>(t));
 }
 
 /**
@@ -794,7 +840,7 @@ export async function fetchTranslationsFind(matches: string[], language?: string
   if (language) qs.set('language', language);
   const res = await apiFetch(`/api/v1/system/translations/find?${qs.toString()}`);
   if (!res.ok) throw new Error(`Translations find failed (${res.status})`);
-  const data = (await res.json()) as { rows: TranslationMatchRow[] };
+  const data = (await res.text().then((t) => extJsonParse<unknown>(t))) as { rows: TranslationMatchRow[] };
   return data.rows;
 }
 
@@ -827,9 +873,9 @@ export async function fetchTranslationList(moduleCode: string, query: {
   if (query.search_in?.length) params.set('search_in', query.search_in.join(','));
   if (query.connector) params.set('connector', query.connector);
   query.filters?.forEach((f, i) => appendListFilterTerm(params, i, { field: f.field, op: f.op, value: f.value }));
-  const res = await apiFetch(`/api/v1/entities/translation/list?${params}`);
+  const res = await apiFetch(`/api/v1/entities/translation/list?${params.toString()}`);
   if (!res.ok) throw new Error(`Translations list request failed (${res.status})`);
-  return await res.json();
+  return await res.text().then((t) => extJsonParse<{ rows: unknown[]; page: number; page_size: number; total: bigint }>(t));
 }
 
 /** Admin: create a translation row. */
@@ -842,10 +888,10 @@ export async function createTranslation(moduleCode: string, data: {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     // `{entity}` envelope — a `translations` sibling is rejected by the BE.
-    body: JSON.stringify({ entity: data }),
+    body: extJsonStringify({ entity: data }),
   });
   if (!res.ok) throw new Error(`Translation create failed (${res.status})`);
-  return await res.json();
+  return await res.text().then((t) => extJsonParse<unknown>(t));
 }
 
 /** Admin: update a translation row. `version` is required (optimistic concurrency). */
@@ -853,19 +899,19 @@ export async function updateTranslation(moduleCode: string, uuid: string, data: 
   key?: string;
   language?: string;
   value?: string;
-  version: number;
+  version: bigint;
 }): Promise<unknown> {
   const res = await apiFetch(`/api/v1/entities/translation/${encodeURIComponent(uuid)}?module=${encodeURIComponent(moduleCode)}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ entity: data }),
+    body: extJsonStringify({ entity: data }),
   });
   if (!res.ok) throw new Error(`Translation update failed (${res.status})`);
-  return await res.json();
+  return await res.text().then((t) => extJsonParse<unknown>(t));
 }
 
 /** Admin: soft-delete a translation row. */
-export async function deleteTranslation(moduleCode: string, uuid: string, version: number): Promise<void> {
+export async function deleteTranslation(moduleCode: string, uuid: string, version: bigint): Promise<void> {
   const res = await apiFetch(`/api/v1/entities/translation/${encodeURIComponent(uuid)}?module=${encodeURIComponent(moduleCode)}&version=${version}`, {
     method: 'DELETE',
   });
@@ -873,7 +919,7 @@ export async function deleteTranslation(moduleCode: string, uuid: string, versio
 }
 
 /** Admin: restore a soft-deleted translation row. */
-export async function restoreTranslation(moduleCode: string, uuid: string, version: number): Promise<void> {
+export async function restoreTranslation(moduleCode: string, uuid: string, version: bigint): Promise<void> {
   const res = await apiFetch(`/api/v1/entities/translation/${encodeURIComponent(uuid)}/restore?module=${encodeURIComponent(moduleCode)}&version=${version}`, {
     method: 'POST',
   });

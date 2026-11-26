@@ -1,7 +1,8 @@
 <script lang="ts">
   /**
    * EntityRecordSheet — the `entity.record` host panel: the record view
-   * opened by a `type:"ref"` cell's TEXT affordance.
+   * opened by a `type:"ref"` cell's TEXT affordance, a row's detail CTA,
+   * or `meta.create.surface:"sheet"` create CTAs.
    *
    * Resolution contract (uniform, no dedicated endpoints):
    *   uuid refs → the cell value IS the target uid → canonical
@@ -9,59 +10,90 @@
    *   business-key refs (`ref.filter_field` ≠ uid) → the stored value
    *     identifies the target row through its `/list` filter →
    *     `rows[0][uid]` → same canonical GET.
+   *   `mode:"create"` → meta only, no fetch; the surface POSTs
+   *     `create.single` then the panel morphs into update on the
+   *     created row (canonical re-GET — the served row is truth).
    *
-   * Layout: the target entity's census `page_props.form` placements
-   * (order + col/row/row_span grid) when a form-bearing route exists,
-   * else the fallback — every served `meta.columns` in declared order.
+   * The FORM is `EntityFormSurface` — the SAME engine `EntityFormPage`
+   * mounts (schema + superform + dispatcher + guards + collab + draft +
+   * commit). ONE declaration, two chromes: the page's width decides the
+   * placement grid; the sheet's narrow width collapses it.
    *
-   * Field rendering: `TableCell` — the canonical metadata-driven VALUE
-   * renderer. This is a READ-ONLY display surface: no form widgets, no
-   * dispatcher. Ref fields render the same link anatomy as the list
-   * (text → a further `entity.record` sheet = drill-through; icon →
-   * `_blank` filtered list), so nested references navigate the same panel.
-   *
-   * In-sheet links are `_blank`-only by contract.
+   * Sheet chrome the panel owns: ref-resolution, hero states, the pencil
+   * edit-toggle (readonly default), uid/version/lifecycle/audit chrome,
+   * the dirty-close guard registration (X/Escape/outside while editing
+   * → the surface's unsaved-changes confirm; pencil-off discards
+   * silently by contract).
    */
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
+  import { resolve } from '$app/paths';
   import { t } from '$lib/i18n';
   import { apiFetch, entityApiBase, routesCensusFromModules, ApiUnreachableError } from '$lib/api';
+  import { serviceCodeOf } from '$lib/composables/use-service-availability.svelte';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
-  import { fetchEntityMeta } from '$lib/entity-list';
+  import { fetchEntityMeta, orderedColumns } from '$lib/entity-list';
   import { filteredEntityListHref } from '$lib/entity-list/entity-links';
-  import { Badge, Button, DynamicIcon, SheetPanelFooter, SheetPanelLayout, toDisplayString } from '@primebrick/ui';
-  import EntityRecordSheetBody from '../EntityRecordSheetBody.svelte';
+  import { Accordion, Badge, Button, DynamicIcon, SheetPanelFooter, SheetPanelLayout, toDisplayString } from '@primebrick/ui';
+  import EntityFormSurface from '$lib/entity-form/EntityFormSurface.svelte';
   import EntityRecordUid from '../EntityRecordUid.svelte';
-  import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
+  import { openSheet, setSheetCloseGuard } from '$lib/shell/sheets/sheet-manager.svelte';
   import { isEntityOpAllowed } from '$lib/permissions.svelte';
-  import { findActionEndpoint, fillActionPath } from '$lib/entity-list/action-endpoints';
-  import { extJsonStringify } from '$lib/api-ext';
-  import { Check, ExternalLink, Pencil, X } from '@primebrick/ui/vendor/lucide';
+  import { useAuditBox } from '$lib/composables/useAuditBox';
+  import type { AuditData } from '$lib/utils/audit-data';
+  import { extJsonParse } from '$lib/api-ext';
+  import { ExternalLink, Pencil, PencilOff } from '@primebrick/ui/vendor/lucide';
   import { LoadingBar } from '$lib/components/ui/loading-bar';
   import type { MetaColumn, EntityMeta } from '$lib/entity-list/types';
   import type { FormFieldPlacement } from '@primebrick/ui';
   import { isUUID, StateHero } from '@primebrick/ui';
 
+  import { SvelteURLSearchParams } from 'svelte/reactivity';
+
   let {
     entity,
     value,
     ref,
+    service,
+    edit,
+    mode: modeProp,
   }: {
     /** Target entity API name (from `column.ref.entity`). */
     entity: string;
-    /** The cell's raw value — the target uid for uuid refs. */
-    value: unknown;
+    /** The cell's raw value — the target uid for uuid refs. Absent in
+     *  `mode:"create"` (no record exists yet). */
+    value?: unknown;
     /** The column's ref contract — drives business-key resolution. */
     ref?: MetaColumn['ref'];
+    /** Owning service — required for builtin entities (census map is
+     *  last-wins ambiguous; route context threads through or the sheet
+     *  fetches the wrong schema). */
+    service?: string;
+    /** Open straight into edit mode — ELT Modifica fallback for
+     *  entities without a `kind:"detail"` route. */
+    edit?: boolean;
+    /** `create` → SAME panel, no record fetch: meta only, widgets
+     *  editable from mount, commit POSTs `create.single` then the panel
+     *  morphs into update on the created row. `update` (default) → the
+     *  ref-resolution + GET contract above. */
+    mode?: 'create' | 'update';
   } = $props();
 
+  /** Panel mode — `let` because a successful create morphs the sheet
+   *  into update on the created row (props are mount-stable). */
+  let mode = $state<'create' | 'update'>(untrack(() => modeProp ?? 'update'));
+  const isCreate = $derived(mode === 'create');
+  /** The ref value load() resolves — in create mode nothing exists until
+   *  the POST lands, then it carries the created uid. */
+  let resolvedValue = $state<unknown>(untrack(() => value));
+
   // Props are stable within a sheet mount — the host remounts the panel
-  // per open, so plain captures are the honest contract.
-  // svelte-ignore state_referenced_locally
-  const basePath = entityApiBase(entity);
+  // per open; untrack marks the intentional one-time read.
+  const basePath = untrack(() => entityApiBase(entity, service));
   const routeCensus = $derived(routesCensusFromModules(shellNav.modules));
 
   /** The entity's declared form layout — first form-bearing route in the
-   *  census (detail preferred over create). Absent → fallback columns. */
+   *  census (detail preferred over create). Absent → the surface's
+   *  fallback: every writable served column in declared order. */
   const formFields = $derived.by<FormFieldPlacement[] | undefined>(() => {
     const routes = routeCensus.filter(
       (r) => r.entity === entity && r.page_props?.form?.fields?.length,
@@ -69,8 +101,7 @@
     const detail = routes.find((r) => r.kind === 'detail') ?? routes[0];
     return detail?.page_props?.form?.fields;
   });
-  /** Two-column grid only when the declared layout actually uses col 2. */
-  const formTwoCol = $derived((formFields ?? []).some((p) => (p.col ?? 1) > 1));
+  const formDecl = $derived(formFields ? { fields: formFields } : undefined);
 
   let meta = $state<EntityMeta | null>(null);
   let record = $state<Record<string, unknown> | null>(null);
@@ -88,21 +119,21 @@
    *  uuid before GET; heroes keep showing it above the error state.
    *  Initial value = the cell's raw stored value (same prop-stability
    *  contract as `basePath` — the panel remounts per open). */
-  // svelte-ignore state_referenced_locally
-  let heroUid = $state<unknown>(value);
+  let heroUid = $state<unknown>(untrack(() => value));
 
   /** Edit mode — gated on `meta.actions`: the pencil renders iff the
    *  `update.single` op is enabled AND the user satisfies its declared
    *  permissions (same `isEntityOpAllowed` gate as row CTAs — fail-closed). */
-  let editing = $state(false);
-  let saving = $state(false);
-  let saveError = $state<string | null>(null);
-  /** Field surface draft — bound up from the body; readonly mode keeps it
-   *  inert, edit mode collects writes. */
-  let draft = $state<Record<string, unknown>>({});
+  // `edit` prop seeds the initial mode (ELT Modifica fallback — the
+  // pencil gate still applies: `canUpdate` false → edit renders off).
+  let editing = $state(untrack(() => edit === true || modeProp === 'create'));
   const canUpdate = $derived(
     meta ? isEntityOpAllowed(meta.actions, 'update.single') : false,
   );
+
+  /** The mounted form surface — footer CTAs and the close guard reach
+   *  its exports (guard/formId/handleReset/confirmDiscard). */
+  let surface = $state<EntityFormSurface | null>(null);
 
   /** Translated entity singular — the `<ns>.entities.<tk>.singular`
    *  convention shared with `entityPageTitle`; interpolated into hero
@@ -162,24 +193,9 @@
     return icon ? (RECORD_ICON_VARIANTS[icon] ?? icon) : null;
   });
 
-  const columnsMap = $derived.by<ReadonlyMap<string, MetaColumn>>(() => {
-    const m = new Map<string, MetaColumn>();
-    for (const c of meta?.columns ?? []) m.set(c.key, c);
-    return m;
-  });
-  /** Form layout entries resolved to their column (drift-safe: a
-   *  placement key absent from served meta is dropped, never invented). */
-  const formPlacements = $derived.by(() => {
-    if (!formFields) return [] as { col: MetaColumn; p: FormFieldPlacement }[];
-    const out: { col: MetaColumn; p: FormFieldPlacement }[] = [];
-    for (const p of formFields) {
-      const col = columnsMap.get(p.key);
-      if (col && !col.hidden) out.push({ col, p });
-    }
-    return out;
-  });
   const titleText = $derived.by(() => {
     if (!meta) return entity;
+    if (isCreate) return entitySingular;
     const disp = meta.display_field ? record?.[meta.display_field] : undefined;
     return disp !== undefined && disp !== null && disp !== ''
       ? toDisplayString(disp)
@@ -206,83 +222,66 @@
   const isDeleted = $derived(Boolean(record?.deleted_at));
   const isSuspended = $derived(Boolean(record?.suspended_at));
 
-  /** Keys the PUT is allowed to carry — the SAME partition the body
-   *  renders: declared placements when present, else served non-audit,
-   *  non-uid, non-version, non-hidden columns. uid/version/audit never
-   *  cross the write boundary. */
-  const saveKeys = $derived.by<string[]>(() => {
-    if (formPlacements.length)
-      return formPlacements.filter(({ col }) => col.immutable !== true).map(({ col }) => col.key);
-    const uid = meta?.uid ?? 'uuid';
-    return (meta?.columns ?? [])
-      .filter(
-        (c) =>
-          !c.hidden &&
-          c.audited !== true &&
-          c.immutable !== true &&
-          c.key !== uid &&
-          c.key !== 'version',
-      )
-      .map((c) => c.key);
-  });
+  /** Immutable audit facts — the sheet's narrow space keeps them behind
+   *  a collapsed accordion (the page's footer block is the wide-chrome
+   *  anatomy). `version` lives on the footer badge, never duplicated. */
+  const auditColumns = $derived(
+    orderedColumns(meta?.columns).filter((c) => !c.hidden && c.audited === true && c.key !== 'version'),
+  );
+  const auditBox = $derived(
+    useAuditBox({
+      auditData: (record ?? {}) as Partial<AuditData>,
+      auditingColumns: auditColumns,
+      isCreatePage: isCreate,
+      entity: meta?.entity ?? '',
+      entities_ns: meta?.entities_ns,
+      rowUuid: rowUuid ?? '',
+    }),
+  );
 
-  /** Dirty-field diff — strict update schemas (`.strict()` DTOs) accept
-   *  ONLY their declared writable set; sending unchanged read-only fields
-   *  is a 400 by contract. Only what the user actually changed crosses
-   *  the wire. */
-  function dirtyFields(): Record<string, unknown> {
-    const fields: Record<string, unknown> = {};
-    if (!record) return fields;
-    for (const k of saveKeys) {
-      if (draft[k] !== record[k]) fields[k] = draft[k];
-    }
-    // Avatar-initials derivation: `type:"avatar"` columns are immutable
-    // (never in saveKeys), but when their `initials_field` sibling crosses
-    // the wire the derived initials ride with it — the same rule the
-    // dedicated form pages apply at submit.
-    for (const col of meta?.columns ?? []) {
-      const src = col.type === 'avatar' ? col.avatar?.initials_field : undefined;
-      if (src && fields[src] !== undefined) fields[col.key] = draft[col.key];
-    }
-    return fields;
-  }
-
-  async function save(): Promise<void> {
-    if (!meta || !record || rowUuid === null) return;
-    saving = true;
-    saveError = null;
-    try {
-      const uid = meta.uid ?? 'uuid';
-      const endpoint = findActionEndpoint(meta.actions, 'update.single');
-      const url = endpoint
-        ? fillActionPath(endpoint.path, record, uid)
-        : `${basePath}/${encodeURIComponent(rowUuid)}`;
-      const fields = dirtyFields();
-      fields.version = record.version;
-      const res = await apiFetch(url, {
-        method: endpoint?.method ?? 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: extJsonStringify({ entity: fields }),
-      });
-      if (!res.ok) {
-        saveError = `HTTP ${res.status}`;
-        return;
-      }
+  /** Post-commit — the surface already rebaselined, notified the parent
+   *  list and cleared the draft slot; the panel owns the morph. */
+  function onsaved(row: Record<string, unknown> | null, op: 'create' | 'update') {
+    if (!row) return;
+    if (op === 'update') {
+      record = row;
       editing = false;
-      // Re-GET through the canonical path — the served row is the source
-      // of truth, never the echoed payload.
-      await load();
-    } catch {
-      saveError = 'save_failed';
-    } finally {
-      saving = false;
+      return;
     }
+    // create → morph into update on the created row: the served record
+    // is the source of truth, never the echoed payload — canonical re-GET.
+    const uid = meta?.uid ?? 'uuid';
+    resolvedValue = row[uid];
+    heroUid = resolvedValue;
+    mode = 'update';
+    editing = false;
+    record = row;
+    void load();
   }
 
+  /** Pencil toggle — OFF is the silent-discard path by contract: pending
+   *  edits drop back to the baseline without a confirm (the toggle IS
+   *  the explicit intent). */
+  let prevEditing = $state(untrack(() => editing));
+  $effect(() => {
+    const e = editing;
+    if (!e && prevEditing) surface?.discardEdits();
+    prevEditing = e;
+  });
   function toggleEdit() {
-    saveError = null;
     editing = !editing;
   }
+
+  // Dirty-close guard — X / Escape / outside while EDITING consults the
+  // surface's unsaved-changes confirm through SheetHost's close funnel.
+  // `editing=false` → pencil-off already discarded → close proceeds.
+  $effect(() => {
+    setSheetCloseGuard(async () => {
+      if (!editing) return true;
+      return (await surface?.confirmDiscard()) ?? true;
+    });
+    return () => setSheetCloseGuard(null);
+  });
 
   /** Version badge → `entity.versionHistory` stacked on the right: the
    *  record sheet slides left, history closes back into it. */
@@ -296,6 +295,7 @@
         entities_ns: meta.entities_ns,
         rowUuid,
         columns: meta.columns ?? [],
+        service,
       },
       { stack: true },
     );
@@ -308,8 +308,14 @@
     unreachable = false;
     try {
       meta = await fetchEntityMeta(basePath);
+      // Create mode — no record exists yet: meta drives the empty form,
+      // `record={}` keeps uid/audit/version/lifecycle chrome absent.
+      if (mode === 'create') {
+        record = {};
+        return;
+      }
       const uid = meta.uid ?? 'uuid';
-      let uuid = String(value);
+      let uuid = String(resolvedValue);
       const ff = ref?.filter_field;
       // uid-keyed refs resolve `value` straight to `GET /record/<uuid>` — a
       // non-uuid target is a pseudo-actor ref (`system`, seed aliases):
@@ -320,7 +326,7 @@
         return;
       }
       if (ff && ff !== uid) {
-        const params = new URLSearchParams();
+        const params = new SvelteURLSearchParams();
         params.set('filters[0][field]', ff);
         params.set('filters[0][op]', '=');
         params.set('filters[0][value]', String(value));
@@ -330,13 +336,13 @@
           failed = true;
           return;
         }
-        const listBody = (await listRes.json()) as { rows?: Record<string, unknown>[] };
+        const listBody = (await listRes.text().then((t) => extJsonParse<unknown>(t))) as { rows?: Record<string, unknown>[] };
         const hit = listBody.rows?.[0];
         if (!hit?.[uid]) {
           notFound = true;
           return;
         }
-        uuid = String(hit[uid]);
+        uuid = toDisplayString(hit[uid]);
       }
       heroUid = uuid;
       const res = await apiFetch(`${basePath}/${uuid}`);
@@ -348,7 +354,7 @@
         failed = true;
         return;
       }
-      record = (await res.json()) as Record<string, unknown>;
+      record = (await res.text().then((t) => extJsonParse<unknown>(t))) as Record<string, unknown>;
     } catch (e) {
       // ApiUnreachableError = the owning service (or the BE itself for
       // unmapped entities) can't be reached — proxy 502/503-scoped or a
@@ -380,7 +386,7 @@
     <span class={isDeleted ? 'text-destructive' : undefined}>{titleText}</span>
   {/snippet}
   {#snippet actions()}
-    {#if canUpdate}
+    {#if canUpdate && !isCreate}
       <Button
         variant="ghost"
         size="icon"
@@ -391,12 +397,12 @@
         onclick={toggleEdit}
         data-testid="entity-record-sheet-edit-toggle"
       >
-        {#if editing}<X class="size-4" />{:else}<Pencil class="size-4" />{/if}
+        {#if editing}<PencilOff class="size-4" />{:else}<Pencil class="size-4" />{/if}
       </Button>
     {/if}
     {#if listHref}
       <a
-        href={listHref}
+        href={resolve(listHref as '/')}
         target="_blank"
         rel="noopener noreferrer"
         class="inline-flex items-center gap-1 text-muted-foreground transition-colors hover:text-foreground"
@@ -459,18 +465,50 @@
         test_id="entity-record-sheet-failed-hero"
       />
     {:else if record && meta}
-      <EntityRecordSheetBody
+      <EntityFormSurface
+        bind:this={surface}
+        {entity}
+        service={serviceCodeOf(basePath) ?? service}
+        {mode}
         {meta}
         {record}
-        {formPlacements}
-        {formTwoCol}
+        recordUuid={rowUuid}
+        modules={shellNav.modules}
+        {formDecl}
         {editing}
-        bind:draft
+        {onsaved}
       />
-      {#if saveError}
-        <p class="mt-3 text-sm text-destructive" data-testid="entity-record-sheet-save-error">
-          {$t('app.common.save_failed')} — {saveError}
-        </p>
+      {#if auditColumns.length && !isCreate}
+        <!-- Audit fields live behind a collapsed accordion — the
+             separator-line affordance is the canonical Accordion
+             trigger. -->
+        <Accordion.Root type="single" class="w-full">
+          <Accordion.Item value="audit">
+            <Accordion.Trigger class="text-xs font-normal text-muted-foreground hover:no-underline">
+              {$t('system.common.sections.audit')}
+            </Accordion.Trigger>
+            <Accordion.Content class="pb-0">
+              <section
+                aria-label={$t('system.common.sections.audit')}
+                data-testid="entity-record-sheet-audit-section"
+              >
+                <!-- gap-y-2 = the FormPageLayout audit-foot leading;
+                     values ellipse (never wrap, never horizontal
+                     scroll). -->
+                <dl class="grid grid-cols-1 gap-y-2 text-xs">
+                  {#each auditColumns as col (col.key)}
+                    <div class="flex items-baseline gap-x-2">
+                      <dt class="shrink-0 text-primary">{$t(col.label_key)}:</dt>
+                      <dd class="min-w-0 truncate italic text-muted-foreground" title={auditBox.formatValue(record[col.key], col)}>
+                        {auditBox.formatValue(record[col.key], col)}
+                      </dd>
+                    </div>
+                  {/each}
+                </dl>
+              </section>
+            </Accordion.Content>
+          </Accordion.Item>
+        </Accordion.Root>
       {/if}
     {/if}
   </div>
@@ -518,20 +556,22 @@
           <Button
             variant="outline"
             size="sm"
-            disabled={saving}
-            onclick={toggleEdit}
-            data-testid="entity-record-sheet-cancel"
+            disabled={!surface?.guard.hasChanges}
+            onclick={() => surface?.handleReset()}
+            data-testid="entity-form-reset"
+            title={$t('app.common.reset')}
           >
-            {$t('app.common.cancel')}
+            <DynamicIcon name="eraser" size={16} />
+            {$t('app.common.reset')}
           </Button>
           <Button
             size="sm"
-            disabled={saving}
-            onclick={save}
-            data-testid="entity-record-sheet-save"
+            type="submit"
+            form={surface?.formId}
+            disabled={!surface?.guard.canSave || surface?.guard.submitting}
+            data-testid="entity-form-submit"
           >
-            <Check class="mr-1 size-4" />
-            {$t('app.common.save')}
+            {$t(isCreate ? 'app.common.create' : 'app.common.save')}
           </Button>
         {/if}
       </SheetPanelFooter>

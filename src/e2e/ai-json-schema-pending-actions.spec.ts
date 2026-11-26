@@ -26,6 +26,7 @@ import { E2E_ADMIN_USERNAME, E2E_ADMIN_PASSWORD } from "./helpers/admin-login";
 import { mergeTestScoreTurns, type E2ETurn } from "./helpers/test-scores";
 import { getSharedContext, focusedPage } from "./helpers/edge-context";
 
+import { extJsonStringify, extJsonParse } from '@primebrick/core/ext-json';
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:5173";
 const PAGE_URL = `${BASE_URL}/system/settings/configurations/create`;
 const PREFIX = "smart-json-ai";
@@ -78,19 +79,19 @@ type TopicNode = {
 /** Same in-page expected-tree computation as the navigation spec. */
 async function expectedTree(page: Page, configType: string): Promise<{ roots: TopicNode[]; index: Record<string, TopicNode> }> {
   const [meta, sysDict, pubDict] = await Promise.all([
-    page.request.get(`${BASE_URL}/api/v1/entities/config_entry/meta`).then((r) => r.json()),
-    page.request.get(`${BASE_URL}/api/v1/system/translations/system/it-IT`).then((r) => (r.ok() ? r.json() : {})),
-    page.request.get(`${BASE_URL}/api/v1/system/translations/public/it-IT`).then((r) => (r.ok() ? r.json() : {})),
+    page.request.get(`${BASE_URL}/api/v1/entities/config_entry/meta`).then((r) => r.text().then((t) => extJsonParse<{ type_capabilities?: Record<string, unknown> }>(t))),
+    page.request.get(`${BASE_URL}/api/v1/system/translations/system/it-IT`).then((r) => (r.ok() ? r.text().then((t) => extJsonParse<Record<string, unknown>>(t)) : {})),
+    page.request.get(`${BASE_URL}/api/v1/system/translations/public/it-IT`).then((r) => (r.ok() ? r.text().then((t) => extJsonParse<Record<string, unknown>>(t)) : {})),
   ]);
   return page.evaluate(async ({ type, meta, dicts }) => {
-    const mods: any[] = [];
+    const mods: Record<string, unknown>[] = [];
     for (const url of [
       "/src/lib/components/ui/smart-json-config/type-config-explorer.ts",
       "/src/lib/config/type-config-schema.ts",
       "/src/lib/components/ui/smart-json-assistant/json-schema-explorer.ts",
       "/src/lib/components/ui/smart-json-config/type-config-i18n.ts",
     ]) {
-      (window as any).__et_step = url;
+      (window as unknown as { __et_step?: string }).__et_step = url;
       mods.push(
         await Promise.race([
           import(/* @vite-ignore */ url),
@@ -98,7 +99,12 @@ async function expectedTree(page: Page, configType: string): Promise<{ roots: To
         ]),
       );
     }
-    const [{ schemaForCapabilities }, { typeConfigJsonSchema }, explorer, topicI18n] = mods;
+    const [{ schemaForCapabilities }, { typeConfigJsonSchema }, explorer, topicI18n] = mods as [
+      { schemaForCapabilities: (s: unknown, c: unknown) => unknown },
+      { typeConfigJsonSchema: unknown },
+      { buildSchemaTopics: (s: unknown) => unknown },
+      { localizeTopics: (t: unknown, c: unknown, tr: (k: string) => string) => unknown },
+    ];
     const flatDict = { ...(dicts.public as Record<string, string>), ...(dicts.system as Record<string, string>) };
     const translate = (key: string) => flatDict[key] ?? key;
     const caps = meta.type_capabilities?.[type] ?? { validation: { required: true, unsigned: false, regex: false }, widget: {} };
@@ -240,7 +246,7 @@ test.describe("JSON-schema assistant — pending-action false pick", () => {
           setTimeout(() => r({ evaluate_timeout: true }), 15_000),
         ),
       ]);
-      log(`init-stall diagnostics: ${JSON.stringify(diag)}`);
+      log(`init-stall diagnostics: ${extJsonStringify(diag)}`);
       throw e;
     }
     log("model ready");

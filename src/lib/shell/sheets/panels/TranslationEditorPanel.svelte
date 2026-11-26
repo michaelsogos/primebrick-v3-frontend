@@ -70,7 +70,7 @@
   /** Server row per language — `{value}` always; `{uuid,version}` when the
    *  admin list endpoint could read them (update CAS identity). `null` =
    *  fetched, no row (createable); `undefined` = not fetched yet. */
-  type ServerRow = { value: string; uuid?: string; version?: number };
+  type ServerRow = { value: string; uuid?: string; version?: bigint };
   let existing = $state<Partial<Record<UiLang, ServerRow | null>>>({});
   /** User edits only — prefilled from the owner's pending queue on mount. */
   let draft = $state<Record<string, string>>({});
@@ -155,7 +155,7 @@
         page_size: 100,
         filters: [{ field: 'key', op: '=', value: i18n_key }],
       });
-      const rows = res.rows as Array<{ uuid: string; version: number; language: string; value: string }>;
+      const rows = res.rows as Array<{ uuid: string; version: bigint; language: string; value: string }>;
       for (const r of rows) {
         if (UI_LANGS.includes(r.language as UiLang)) {
           existing[r.language as UiLang] = { value: r.value, uuid: r.uuid, version: r.version };
@@ -226,7 +226,6 @@
   /** Per-language row helpers — read live state inside the each block. */
   const rowOf = (l: UiLang) => existing[l];
   const savedOf = (l: UiLang) => rowOf(l) != null;
-  const isEn = (l: UiLang) => EN_LANGS.includes(l);
   /** Editable: missing rows always; saved rows need the update perm AND a
    *  CAS identity (rows read via the flat-dict fallback carry none →
    *  disabled, an honest degradation — never a phantom update). */
@@ -414,7 +413,7 @@
   }
 
   function save() {
-    const entries: Record<string, { value: string; uuid?: string; version?: number }> = {};
+    const entries: Record<string, { value: string; uuid?: string; version?: bigint }> = {};
     for (const [lang, v] of Object.entries(draft)) {
       const value = v.trim();
       if (!value) continue;

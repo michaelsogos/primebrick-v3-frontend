@@ -20,6 +20,7 @@ import { test, expect } from "@playwright/test";
 import { loginAsTestAdmin } from "./helpers/admin-login";
 import { declareTrigger, deleteTrigger } from "./helpers/job-chain";
 
+import { extJsonStringify, extJsonParse } from '@primebrick/core/ext-json';
 test.use({ actionTimeout: 5000 });
 
 const MAP = {
@@ -43,7 +44,7 @@ const MAP = {
 const SERVICE_OFFLINE_502 = {
   status: 502,
   contentType: "application/json",
-  body: JSON.stringify({
+  body: extJsonStringify({
     type: "https://primebrick.dev/problems/service-offline",
     title: "Service offline",
     status: 502,
@@ -176,7 +177,7 @@ test.describe("service unreachable watermark", () => {
     // Strip BEFORE the first census — set prior to login.
     await page.route("**/api/v1/modules**", async (route) => {
       const res = await route.fetch();
-      const body = (await res.json()) as { modules?: { id?: string }[] };
+      const body = (await res.text().then((t) => extJsonParse<unknown>(t))) as { modules?: { id?: string }[] };
       body.modules = (body.modules ?? []).filter((m) => m.id !== "emailsender");
       await route.fulfill({ response: res, json: body });
     });

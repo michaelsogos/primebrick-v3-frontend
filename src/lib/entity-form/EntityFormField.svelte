@@ -1,8 +1,8 @@
 <script lang="ts">
 	/**
 	 * EntityFormField — the ONE per-field anatomy shared by every form
-	 * surface: `EntityFormPage` (inside FormField/FormControl, edit mode)
-	 * and `EntityRecordSheetBody` (standalone, readonly). The widget
+	 * surface: `EntityFormPage` and `EntityRecordSheet` both mount it
+	 * through `EntityFormSurface`. The widget
 	 * resolution itself lives in `FormFieldDispatcher`; this component
 	 * owns the surrounding anatomy — icon + translated label + priority
 	 * tooltip + optional editing badge, the boolean→SwitchField split,
@@ -18,6 +18,7 @@
 	 * or fallback that routes one here is a contract violation and fails
 	 * fast instead of silently drawing a dead control.
 	 */
+	import { untrack } from 'svelte';
 	import { t } from '$lib/i18n';
 	import {
 		FormLabel,
@@ -50,10 +51,14 @@
 		targetCallable,
 		sourceEmit,
 		disabledBadgeValues,
+		service,
+		translation_key,
+		pending_owner,
 	}: {
 		column: MetaColumn;
-		/** Declared `page_props.form` placement — readonly/placeholder_key.
-		 *  Fallback surfaces (no form declaration) pass undefined. */
+		/** Declared `page_props.form` placement — placeholder_key /
+		 *  grid hints. Fallback surfaces (no form declaration) pass
+		 *  undefined. */
 		placement?: FormFieldPlacement;
 		columns: ReadonlyMap<string, MetaColumn>;
 		value?: unknown;
@@ -84,31 +89,43 @@
 		targetCallable?: CallableDecl;
 		sourceEmit?: EmitDecl;
 		disabledBadgeValues?: string[];
+		/** Owning module code — seq-bound controls resolve the module-local
+		 *  builtin registry through it (see FormFieldDispatcher). */
+		service?: string;
+		/** Served entity `translation_key` — scopes `format:"i18n_key"`
+		 *  vocabulary + suggestion (see FormFieldDispatcher). */
+		translation_key?: string;
+		/** Pending-translations queue owner — the entity's API base path;
+		 *  powers the i18n_key languages CTA + pending badge. */
+		pending_owner?: string;
 	} = $props();
 
 	// Construction guard — `column` is mount-stable (keyed per col.key in
-	// every caller); the audited contract is checked once, at init.
-	// svelte-ignore state_referenced_locally
-	if (column.audited) {
-		throw new Error(
-			`EntityFormField: audited column "${column.key}" cannot render as a form field — audit values are read-only by contract`,
-		);
-	}
+	// every caller); the audited contract is checked once, at init, so
+	// untrack marks the intentional read-once.
+	untrack(() => {
+		if (column.audited) {
+			throw new Error(
+				`EntityFormField: audited column "${column.key}" cannot render as a form field — audit values are read-only by contract`,
+			);
+		}
+	});
 
 	const labelFor = $derived(controlProps?.id as string | undefined);
 
 /** Disabled state — surface-level non-editability (sheet without the
- *  pencil), `kind:"calculated"` server projections (never writable by
- *  construction), or the `immutable` lifecycle frozen after creation.
- *  Renders the disabled chrome (grey border + muted bg). */
+ *  pencil), `kind`-ed server projections (`calculated`/`virtual` — never
+ *  writable by construction), or the `immutable` lifecycle frozen after
+ *  creation. Renders the disabled chrome (grey border + muted bg). */
 const fieldDisabled = $derived(
 	disabled ||
-		column.kind === 'calculated' ||
+		column.kind !== undefined ||
 		(column.immutable === true && mode !== 'create'),
 );
-/** Readonly state — placement-readonly: a value-locked field inside an
- *  editable form. Renders the readonly chrome (grey border + white bg). */
-const fieldReadonly = $derived(readonly || placement?.readonly === true);
+/** Readonly state — collaboration conflict lock: a value-locked field
+ *  inside an editable form. Renders the readonly chrome (grey border +
+ *  white bg). */
+const fieldReadonly = $derived(readonly);
 
 	/** SwitchField binds a strict `boolean`; the field value is the
 	 *  record's `unknown` (undefined on columns the row never populated).
@@ -192,6 +209,9 @@ const fieldReadonly = $derived(readonly || placement?.readonly === true);
 		disabled={fieldDisabled}
 		readonly={fieldReadonly}
 		{served_record}
+		{service}
+		{translation_key}
+		{pending_owner}
 		bind:value
 		bind:record
 	/>

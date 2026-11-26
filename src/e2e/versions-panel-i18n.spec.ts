@@ -42,7 +42,7 @@ test("versions panel — installed modules show localized display names (it-IT)"
     Settings: "Impostazioni",
   };
   for (const [english, italian] of Object.entries(expected)) {
-    await expect(installed).toContainText(italian, { timeout: 15000 });
+    await expect(installed).toContainText(italian, { timeout: 5_000 });
     // The English registry name must not render as the primary label —
     // scoped to the medium-weight span so the mono `code` note and the
     // base_url lines stay exempt.

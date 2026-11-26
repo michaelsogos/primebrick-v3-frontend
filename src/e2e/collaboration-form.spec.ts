@@ -35,6 +35,7 @@
 import { test, expect } from "@playwright/test";
 import { loginAsTestAdmin, loginAsCollabAdmin } from "./helpers/admin-login";
 
+import { extJsonParse } from '@primebrick/core/ext-json';
 const TS = Date.now();
 const RULE_NAME = `e2e-collab-${TS}`;
 const JOB_BASE = "/svc/job/api/v1/entities";
@@ -78,7 +79,7 @@ test.describe("collaborative update surface (job_trigger detail)", () => {
         const errBody = await res.text();
         throw new Error(`fixture POST rejected (${res.status()}): ${errBody}`);
       }
-      const body = (await res.json()) as { uuid: string };
+      const body = (await res.text().then((t) => extJsonParse<unknown>(t))) as { uuid: string };
       fixtureUuids.push(body.uuid);
       return body.uuid;
     } finally {
@@ -98,7 +99,7 @@ test.describe("collaborative update surface (job_trigger detail)", () => {
       for (const uuid of fixtureUuids) {
         // Re-read version — saves bumped it since creation.
         const get = await page.request.get(`${JOB_BASE}/job_trigger/${uuid}`);
-        const row = (await get.json()) as { version: number };
+        const row = (await get.text().then((t) => extJsonParse<unknown>(t))) as { version: number };
         await page.request.delete(`${JOB_BASE}/job_trigger/${uuid}?version=${row.version}`);
       }
     } finally {
@@ -119,7 +120,7 @@ test.describe("collaborative update surface (job_trigger detail)", () => {
       // --- A opens the record, B opens the same record -------------------
       await loginAsTestAdmin(pageA);
       await pageA.goto(DETAIL_PATH(ruleUuid), { waitUntil: "domcontentloaded" });
-      await expect(pageA.getByTestId("entity-form-page")).toBeVisible({ timeout: 30000 });
+      await expect(pageA.getByTestId("entity-form-page")).toBeVisible({ timeout: 5_000 });
       const presenceZone = pageA.getByTestId("page-header-presence");
       // Design: "0 others → no avatars" — the stack renders nothing while
       // A is alone on the record (no self chip — the viewer's own
@@ -128,7 +129,7 @@ test.describe("collaborative update surface (job_trigger detail)", () => {
 
       await loginAsCollabAdmin(pageB);
       await pageB.goto(DETAIL_PATH(ruleUuid), { waitUntil: "domcontentloaded" });
-      await expect(pageB.getByTestId("entity-form-page")).toBeVisible({ timeout: 30000 });
+      await expect(pageB.getByTestId("entity-form-page")).toBeVisible({ timeout: 5_000 });
 
       // B's READING signal lands on A's snapshot → stack appears: one
       // other-avatar (B). No self chip exists anymore.
@@ -209,7 +210,7 @@ test.describe("collaborative update surface (job_trigger detail)", () => {
     try {
       await loginAsTestAdmin(pageA);
       await pageA.goto(DETAIL_PATH(uuid2), { waitUntil: "domcontentloaded" });
-      await expect(pageA.getByTestId("entity-form-page")).toBeVisible({ timeout: 30000 });
+      await expect(pageA.getByTestId("entity-form-page")).toBeVisible({ timeout: 5_000 });
       const presenceZone = pageA.getByTestId("page-header-presence");
       // Fresh record — A is alone, the stack stays empty.
       await expect(presenceZone.getByTestId("presence-avatar")).toHaveCount(0);
@@ -217,7 +218,7 @@ test.describe("collaborative update surface (job_trigger detail)", () => {
       // Same user, second context → A must SEE the duplicate session.
       await loginAsTestAdmin(pageB);
       await pageB.goto(DETAIL_PATH(uuid2), { waitUntil: "domcontentloaded" });
-      await expect(pageB.getByTestId("entity-form-page")).toBeVisible({ timeout: 30000 });
+      await expect(pageB.getByTestId("entity-form-page")).toBeVisible({ timeout: 5_000 });
 
       const otherTabAvatar = presenceZone.getByTestId("presence-avatar");
       await expect(otherTabAvatar).toHaveCount(1, { timeout: 5000 });
@@ -225,10 +226,8 @@ test.describe("collaborative update surface (job_trigger detail)", () => {
       // Same user proof: the "other" avatar carries MY user uuid (from
       // /auth/me) and its tooltip labels it as my other tab
       // (en "other tab" / it "scheda").
-      const selfUuid = await pageA.evaluate(async () => {
-        const me = await fetch("/api/v1/auth/me").then((r) => r.json());
-        return me.uuid as string;
-      });
+      const meText = await pageA.evaluate(async () => (await fetch("/api/v1/auth/me")).text());
+      const selfUuid = extJsonParse<{ uuid?: string }>(meText).uuid as string;
       await expect(otherTabAvatar).toHaveAttribute("data-presence-user", selfUuid!);
       await expect(otherTabAvatar).toHaveAttribute("title", /tab|scheda/i);
 

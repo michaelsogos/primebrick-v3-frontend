@@ -16,6 +16,7 @@ import { randomBytes, createHash } from "node:crypto";
 import type { APIRequestContext } from "@playwright/test";
 import type { ShieldIdentity } from "./nats";
 
+import { extJsonParse } from '@primebrick/core/ext-json';
 export const E2E_UA_PREFIX = "primebrick-e2e/1.0.0";
 
 export interface ShieldHandle extends ShieldIdentity {
@@ -43,7 +44,7 @@ export async function registerShieldIdentity(request: APIRequestContext): Promis
     `/api/v1/entities/client_registry/list?filters[0][field]=ua_prefix&filters[0][op]=%3D&filters[0][value]=${encodeURIComponent(E2E_UA_PREFIX)}&deleted_records=INCLUDED`,
   );
   const existing = list.ok()
-    ? (((await list.json()) as { rows?: Array<{ uuid: string; version?: number; deleted_at?: string | null }> }).rows ?? [])[0]
+    ? (((await list.text().then((t) => extJsonParse<unknown>(t))) as { rows?: Array<{ uuid: string; version?: number; deleted_at?: string | null }> }).rows ?? [])[0]
     : undefined;
 
   if (existing) {
@@ -57,12 +58,14 @@ export async function registerShieldIdentity(request: APIRequestContext): Promis
       version += 1; // restore bumps the row version
     }
     const upd = await request.put(`/api/v1/entities/client_registry/${rowUuid}`, {
-      data: { entity: { client_key: clientKey, is_enabled: true, version } },
+      // extJsonParse returns bigint for int8 leaves — playwright's request
+      // serializer can't carry it; the wire needs a plain number.
+      data: { entity: { client_key: clientKey, is_enabled: true, version: Number(version) } },
     });
     if (!upd.ok()) {
       // Version drift between list and update — retry once on the fresh row.
       const fresh = await request.get(`/api/v1/entities/client_registry/${rowUuid}`);
-      const frow = (await fresh.json()) as { version?: number };
+      const frow = (await fresh.text().then((t) => extJsonParse<unknown>(t))) as { version?: number };
       const retry = await request.put(`/api/v1/entities/client_registry/${rowUuid}`, {
         data: { entity: { client_key: clientKey, is_enabled: true, version: frow.version ?? 0 } },
       });
@@ -82,7 +85,7 @@ export async function registerShieldIdentity(request: APIRequestContext): Promis
       const body = await res.text();
       throw new Error(`client_registry create failed ${res.status()}: ${body}`);
     }
-    rowUuid = ((await res.json()) as { uuid: string }).uuid;
+    rowUuid = ((await res.text().then((t) => extJsonParse<unknown>(t))) as { uuid: string }).uuid;
   }
   const row = { uuid: rowUuid };
   // Sanity: the presented key must hash to what the verifier will compare.
@@ -97,7 +100,7 @@ export async function registerShieldIdentity(request: APIRequestContext): Promis
       const cur = await request.get(`/api/v1/entities/client_registry/${row.uuid}`);
       let v = 0;
       if (cur.ok()) {
-        const j = (await cur.json()) as { version?: number; row?: { version?: number } };
+        const j = (await cur.text().then((t) => extJsonParse<unknown>(t))) as { version?: number; row?: { version?: number } };
         v = j.version ?? j.row?.version ?? 0;
       }
       const del = await request.delete(`/api/v1/entities/client_registry/${row.uuid}?version=${v}`);

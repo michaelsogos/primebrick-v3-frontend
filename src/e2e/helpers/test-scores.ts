@@ -11,6 +11,7 @@
  */
 import { getPool } from "./db";
 
+import { extJsonStringify } from '@primebrick/core/ext-json';
 export type E2ETurn = {
   n: number;
   /** "conversation" | "navigation" — which session/spec produced the turn. */
@@ -89,11 +90,11 @@ export function buildTestScoreUpdate(
   const measuredSet = measured?.vram_bytes
     ? `, working_set_mb = $4, working_set_source = 'e2e_measured', working_set_detail = $5::jsonb`
     : "";
-  const values: unknown[] = [repo, JSON.stringify(nextScores), rank];
+  const values: unknown[] = [repo, extJsonStringify(nextScores), rank];
   if (measured?.vram_bytes) {
     values.push(
       Math.round(measured.vram_bytes / (1024 * 1024)),
-      JSON.stringify({
+      extJsonStringify({
         measured_vram_bytes: measured.vram_bytes,
         measured_at: new Date().toISOString(),
         measured_ctx_tokens: measured.ctx_tokens,

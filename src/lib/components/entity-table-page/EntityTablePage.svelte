@@ -1,13 +1,16 @@
 <script lang="ts" generics="TRow extends Record<string, unknown>">
+  import { toDisplayString } from '@primebrick/ui';
   import { t } from '$lib/i18n';
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
-  import { onMount, type Snippet } from 'svelte';
+  import { onMount, untrack, type Snippet } from 'svelte';
   import { entitiesNs } from '$lib/utils/entity-meta';
+  import { pushNotification } from '$lib/errors/app-errors';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
   import { isSnakeCaseSingular } from '$lib/entity-list';
   import { EntityListTable } from '$lib/components/entity-list-table';
   import type { CellArgs } from '$lib/components/entity-list-table/types';
+  import type { RowCustomAction } from '@primebrick/core';
   // Page body chrome (the bordered box) is inherited — AppShell mounts
   // AppPageScaffold once for every (app) page; archetypes never self-wrap.
   import {
@@ -19,6 +22,11 @@
   interface EntityTablePageProps {
     /** Full entity API base (`/api/v1/entities/<entity>` or `/svc/<svc>/api/v1/entities/<entity>`). */
     basePath: string;
+    /** Owning service — REQUIRED for builtin entities (they mount on
+     *  every service, so the entity→service census is last-wins
+     *  ambiguous). Side paths (row ops, audit, sheets, export, record
+     *  sheet) thread it through instead of re-deriving from `entity`. */
+    service?: string;
     /** Page storage namespace — `pb:<page>:list:`. */
     storageKeyPrefix: string;
     /** Legacy family BroadcastChannel (receiver mode — child form pages notify). */
@@ -51,6 +59,10 @@
     onCreateAction?: () => void;
     /** Full override for the row edit action — bypasses navStrategy. */
     onEditAction?: (row: TRow) => void;
+    /** Full override for the row dblclick — bypasses the wired default
+     *  (`kind:"detail"` route in a new tab, else the `entity.record`
+     *  update sheet). */
+    onRowDblClick?: (row: TRow) => void;
     /** Handlers for `meta.table.row_custom_actions` entries (keyed by action_name). */
     customActionHandlers?: Record<string, (row: TRow) => void>;
     /** Row-actions column — default true. */
@@ -62,8 +74,10 @@
 
     /** Per-cell render override — forwarded verbatim to EntityListTable. */
     cell?: Snippet<[CellArgs<TRow>]>;
-    /** Page-specific dialogs — rendered after the table; receives the meta uid. */
-    extraDialogs?: Snippet<[uid: string]>;
+    /** Page-specific dialogs — rendered after the table; receives the meta
+     *  uid + `meta.table.row_custom_actions` so a custom-action dialog can
+     *  inherit the SAME chrome the row CTA rendered (one source). */
+    extraDialogs?: Snippet<[uid: string, row_custom_actions: RowCustomAction[] | undefined]>;
     metaLoadingView?: Snippet;
     rowsLoadingView?: Snippet;
     emptyView?: Snippet;
@@ -74,6 +88,7 @@
 
   let {
     basePath,
+    service,
     storageKeyPrefix,
     syncChannel,
     errorScopeKey,
@@ -90,6 +105,7 @@
     editPath,
     onCreateAction,
     onEditAction,
+    onRowDblClick,
     customActionHandlers,
     rowActions = true,
     selectionLabelKey,
@@ -107,9 +123,8 @@
   }: EntityTablePageProps = $props();
 
   // Page-level config props are immutable per mount (the entity doesn't
-  // change under a mounted page) — the composable captures them at init.
-  // svelte-ignore state_referenced_locally
-  const list = useEntityList<TRow>({
+  // change under a mounted page) — untrack marks the one-time capture.
+  const list = untrack(() => useEntityList<TRow>({
     basePath,
     storageKeyPrefix,
     syncChannel,
@@ -123,7 +138,7 @@
     searchGate,
     searchDebounceMs,
     t: $t
-  });
+  }));
 
   onMount(() => {
     void list.init();
@@ -184,7 +199,7 @@
     if (navStrategy === 'popup') {
       const w = window.open(effectiveCreatePath, '_blank');
       if (w) w.focus();
-      else alert('Popup bloccato dal browser! Controlla le impostazioni.');
+      else pushNotification({ impact: 'MEDIUM', messageKey: 'app.common.popup_blocked', toast: true });
     } else {
       void goto(resolve(effectiveCreatePath as '/'));
     }
@@ -192,18 +207,61 @@
 
   function openEdit(row: TRow) {
     if (!effectiveEditPath) return;
-    const url = effectiveEditPath.replace(':uuid', encodeURIComponent(String(row[uid])));
+    const url = effectiveEditPath.replace(':uuid', encodeURIComponent(toDisplayString(row[uid])));
     if (navStrategy === 'popup') {
       const w = window.open(url, '_blank');
       if (w) w.focus();
-      else alert('Popup bloccato dal browser! Controlla le impostazioni.');
+      else pushNotification({ impact: 'MEDIUM', messageKey: 'app.common.popup_blocked', toast: true });
     } else {
       void goto(resolve(url as '/'));
     }
   }
 
-  const effectiveOnCreateAction = $derived(onCreateAction ?? (effectiveCreatePath ? openCreate : undefined));
-  const effectiveOnEditAction = $derived(onEditAction ?? (effectiveEditPath ? openEdit : undefined));
+  /** Record-sheet fallback — entities without a `kind:"detail"` route
+   *  (builtin registry lists publish `kind:"list"` only) still get a
+   *  governed edit surface: `entity.record` opens in edit mode, gated
+   *  on `update.single` by the sheet itself. Without it the Modifica
+   *  CTA rendered but dispatched to a `undefined` handler — a silent
+   *  no-op. */
+  function openEditSheet(row: TRow) {
+    void import('$lib/shell/sheets/sheet-manager.svelte').then(({ openSheet }) =>
+      openSheet('entity.record', { entity, value: row[uid], service, edit: true }),
+    );
+  }
+
+  /** Meta-driven create surface — `meta.create.surface === "sheet"`
+   *  opens the SAME `entity.record` panel in create mode (no census
+   *  `kind:"create"` route required: a sheet is never a nav leaf).
+   *  The `form` default keeps resolving through the census route. */
+  const createSurface = $derived(meta?.create?.surface);
+  function openCreateSheet() {
+    void import('$lib/shell/sheets/sheet-manager.svelte').then(({ openSheet }) =>
+      openSheet('entity.record', { entity, service, mode: 'create' }),
+    );
+  }
+
+  const effectiveOnCreateAction = $derived(
+    onCreateAction ??
+      (createSurface === 'sheet' ? openCreateSheet : effectiveCreatePath ? openCreate : undefined),
+  );
+  const effectiveOnEditAction = $derived(
+    onEditAction ?? (effectiveEditPath ? openEdit : openEditSheet)
+  );
+
+  /** Row dblclick — "sheet se è previsto, altrimenti default è page":
+   *  entities whose record surface is the sheet (no `kind:"detail"`
+   *  census route) open `entity.record` in update mode (view→pencil,
+   *  same target as ref-cell drill-through); entities with a detail
+   *  page keep the built-in new-tab navigation. `service` threads
+   *  through — builtin census-map lookups are last-wins ambiguous. */
+  function openRecordSheet(row: TRow) {
+    void import('$lib/shell/sheets/sheet-manager.svelte').then(({ openSheet }) =>
+      openSheet('entity.record', { entity, value: row[uid], service }),
+    );
+  }
+  const effectiveOnRowDblClick = $derived(
+    onRowDblClick ?? (censusDetailRoute ? undefined : openRecordSheet)
+  );
   const effectiveSelectionLabelKey = $derived(
     selectionLabelKey ?? (entity ? `${entitiesNs(meta)}.entities.${entity}.plural` : undefined)
   );
@@ -214,6 +272,7 @@
 
 <EntityListTable
     {entity}
+    {service}
     {translationKey}
     entities_ns={entitiesNs(meta)}
     bind:datetimeIanaModeByKey
@@ -229,6 +288,7 @@
     onCreateAction={effectiveOnCreateAction}
     create_cta={createCta}
     onEditAction={effectiveOnEditAction}
+    onRowDblClick={effectiveOnRowDblClick}
     defaultView={list.viewMode}
     defaultSort={meta?.table?.default_sort}
     pageSizeOptions={meta?.table?.page_size_options}
@@ -279,5 +339,5 @@
   />
 
 {#if extraDialogs}
-  {@render extraDialogs(uid)}
+  {@render extraDialogs(uid, meta?.table?.row_custom_actions)}
 {/if}

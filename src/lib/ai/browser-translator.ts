@@ -19,7 +19,6 @@
 
 declare global {
   /** W3C built-in AI surface — not yet in TypeScript's DOM lib. */
-  // eslint-disable-next-line no-var
   var Translator:
     | {
         availability(options: {
@@ -38,7 +37,6 @@ declare global {
         }>;
       }
     | undefined;
-  // eslint-disable-next-line no-var
   var LanguageDetector:
     | {
         availability(options?: {

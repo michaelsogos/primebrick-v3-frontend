@@ -28,6 +28,7 @@
   import { buildAuditData } from '$lib/utils/audit-data';
   import { maxMsg } from '$lib/validation/zod-messages';
   import { displayNameSchema, idpNameSchema, startsAndEndsWithAlphanumeric } from '$lib/validation/display-name';
+  import { extJsonParse, extJsonStringify } from '$lib/api-ext';
 
   const { notifyParentRefresh } = useSyncChannel('primebrick_organizations_sync', { mode: 'sender' });
 
@@ -70,18 +71,18 @@
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ entity: body }),
+          body: extJsonStringify({ entity: body }),
         });
 
         if (!response.ok) {
-          const errorData = await response.json();
+          const errorData = await response.text().then((t) => extJsonParse<unknown>(t));
           console.error('Failed to create organization:', errorData);
           cancel();
           return;
         }
 
         // The response IS the created entity (DAL RETURNING), not a wrapper.
-        const organization = await response.json();
+        const organization = await response.text().then((t) => extJsonParse<{ uuid?: string }>(t));
         if (organization?.uuid) {
           console.log('Organization created successfully');
 
@@ -170,7 +171,7 @@
         return ValidationResult.ERROR_API;
       }
 
-      const data = await response.json();
+      const data = await response.text().then((t) => extJsonParse<{ available?: boolean }>(t));
       if (data.available === true) {
         return ValidationResult.VALID;
       } else {

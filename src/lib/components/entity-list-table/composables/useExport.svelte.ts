@@ -1,4 +1,4 @@
-import { apiFetch, entityApiBase } from '$lib/api';
+import { apiFetch, entityApiBase, serviceApiPrefix } from '$lib/api';
 import { SvelteDate, SvelteURLSearchParams } from 'svelte/reactivity';
 import { pushNotification } from '$lib/errors/app-errors';
 import type { RFC7807Error } from '$lib/errors/rfc7807';
@@ -6,9 +6,15 @@ import type { MetaColumn, AdvancedFilter, EntityAction } from '$lib/entity-list/
 import { findActionEndpoint } from '$lib/entity-list';
 import { appendListFilterParams } from '$lib/entity-list/list-filter-params';
 import type { DeepReadonly } from '@primebrick/ui';
+import { extJsonParse } from '$lib/api-ext';
+import { toDisplayString } from '@primebrick/ui';
 
 interface ExportOptions {
   entity: () => string;
+  /** Owning service for builtin entities — census map is last-wins
+   *  ambiguous for them; route context (`decl.module`) threads through
+   *  or the export hits the wrong schema. */
+  service?: () => string | undefined;
   uid: () => string;
   /** `meta.actions` — the `export` op dispatches to its declared `endpoint`
    *  when present instead of the `/api/v1/entities/{entity}` convention. */
@@ -30,6 +36,7 @@ interface ExportOptions {
 export function useExport(options: ExportOptions) {
   const {
     entity: entityFn,
+    service: serviceFn,
     uid: uidFn,
     actions: getActions,
     columns: columnsFn,
@@ -61,6 +68,13 @@ export function useExport(options: ExportOptions) {
     isEmailPreparing: false,
     emailCopied: false
   });
+
+  /** Declared `export` endpoint (service-local path → `/svc` prefix) or
+   *  the entity convention fallback. */
+  function exportBase(entity: string): string {
+    const ep = findActionEndpoint(getActions?.(), 'export');
+    return ep ? serviceApiPrefix(entity, serviceFn?.()) + ep.path : `${entityApiBase(entity, serviceFn?.())}/export`;
+  }
 
   function openExportDialog() {
     _state.fileType = null;
@@ -149,11 +163,10 @@ export function useExport(options: ExportOptions) {
       }
       // 'non_deleted' is default (EXCLUDED), so no param needed
 
-      const exportBase = findActionEndpoint(getActions?.(), 'export')?.path ?? `${entityApiBase(entity)}/export`;
-      const response = await apiFetch(`${exportBase}?${params.toString()}`);
+      const response = await apiFetch(`${exportBase(entity)}?${params.toString()}`);
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response.text().then((t) => extJsonParse<unknown>(t));
         throw errorData;
       }
 
@@ -252,14 +265,13 @@ export function useExport(options: ExportOptions) {
       // 'non_deleted' is default (EXCLUDED), so no param needed
 
       Object.entries(filters).forEach(([key, value]) => {
-        params.append(key, String(value));
+        params.append(key, toDisplayString(value));
       });
 
-      const exportBase = findActionEndpoint(getActions?.(), 'export')?.path ?? `${entityApiBase(entity)}/export`;
-      const response = await apiFetch(`${exportBase}?${params.toString()}`);
+      const response = await apiFetch(`${exportBase(entity)}?${params.toString()}`);
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response.text().then((t) => extJsonParse<unknown>(t));
         throw errorData;
       }
 

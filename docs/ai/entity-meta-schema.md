@@ -22,6 +22,13 @@ type EntityMeta = {
   display_name: string;           // response-required — "${field}" template,
                                   // BE materializes default "${display_field}"
   actions_overrides?: Record<string, { enabled?: boolean }>;
+  create?: { surface?: "form" | "sheet" };
+                                // "form" (default/absent) → census kind:"create"
+                                //   route + page_props.form → EntityFormPage
+                                // "sheet" → list CTA opens entity.record in
+                                //   mode:"create" (no route — a sheet is
+                                //   never a nav leaf). Declared on the meta,
+                                //   never via component props.
   columns: MetaColumn[];          // ROOT-level field dictionary (all page types)
   table?: TableMeta;              // OPTIONAL — absent on form-only metas
   actions?: EntityAction[];       // derived capability contract
@@ -76,6 +83,18 @@ type EntityMeta = {
     `shellNav.modules` and renders the module's own icon (uncolored) +
     translated name, linking to `/system/settings/modules`; unresolved
     codes render the raw value.
+  - `i18n_key` → governed translation badge: `languages` icon +
+    `$t(value)` inside a `Badge`, the raw key in the tooltip, and the
+    raw key itself (mono) when no translation resolves — the same
+    source/destination anatomy `nats_subject` owns. Declared on columns
+    whose VALUES are translation keys (dict `label_key`/
+    `description_key`, sequence labels); the dict page's
+    `TranslationKeyCell` dispatch reads the same contract. On FORM
+    surfaces the format autowires the canonical translation-key
+    ComboSelect (`i18nKeyOptions` shared vocabulary scoped to
+    `*.entities.<translation_key>.rows.*`, `custom.*` suggestion +
+    `allowCreate`, `coerceI18nKeyChange` commit rules) — the ONE control
+    every key-picking surface consumes.
   - `json` → human-readable chips/prose where the shape is known
     (`job_trigger.filter` conditions), else safe stringified preview.
   - `identifier`/`display_name` → standard text affordances.
@@ -101,6 +120,24 @@ type EntityMeta = {
   auto-injected `default_visible:false`). `hidden: true` on an authored
   column is the ONLY opt-out — it removes the column from served meta.
   Restating derived facts (`nullable`, `max_length`, `pg_type`) throws.
+- **Field validation is ONE predicate on every surface** — form pages,
+  sheets AND the dict archetype all delegate to core `checkFieldValue`
+  (via `fieldSpecToZod` binding): the same predicate
+  `entityFieldValidator` runs server-side, emitting the shared
+  `key|jsonParams` error vocabulary decoded by `translateFieldError`.
+  Surfaces own ONLY the required decision (`nullable===false`, minus
+  surface-scoped exemptions — placements on forms, suggestion-eligible
+  keys on dicts) — never re-implement rules locally.
+- **Served `default` — the decorator→meta→FE default chain** —
+  `MetaColumn.default` is the create-form initial value. Sources, in
+  precedence order per surface: `placement.default_value` (per-surface
+  override) → AUTHORED `default` in `*.meta.ts` (the legal column-level
+  override) → DERIVED from `@Column({defaultSql})` when the expression is
+  a constant literal (quoted strings, numerics, booleans — typed per
+  `pg_type`: int8 → `bigint`, numeric/money → `Decimal`, else `number`;
+  volatile expressions like `now()`/`uuidv7()` are physical-only, never
+  served — nothing deterministic to prefill). Update surfaces ignore all
+  of it — the served record is the baseline.
 
 ## Numeric columns — `uom` contract (display)
 

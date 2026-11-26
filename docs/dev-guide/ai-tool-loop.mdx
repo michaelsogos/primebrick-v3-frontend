@@ -76,3 +76,29 @@ route it discovered via the routes census. Local tools still produce a
   untrusted input: validate args before `/system/mcp/call` just as the
   guide loop validates `AiAction`s against census candidates.
 - **Bound every loop** — resubmit always carries an explicit step cap.
+
+## Parsing model output — two disjoint classes
+
+Model-emitted JSON comes in exactly two kinds, and they must never share
+a parse path:
+
+1. **Orchestration signals** — the small control payloads that drive the
+   caller's loop (`{"select":2}`, `{"apply":true}`, `{"positive":[…]}`):
+   verdicts, picks, transient examples. These are **not** domain data,
+   never persist, and never cross the wire codec boundary. Parse them
+   ONLY through `llmControlParse()` (`components/ui/smart-ai/llm-control-parse.ts`)
+   — plain `JSON.parse` semantics, markdown-fence stripping, balanced-brace
+   extraction. It is the ONE sanctioned `JSON.parse` in the codebase,
+   declared as a governed seam in check-standards `allowPaths`.
+2. **Domain-destined payloads** — write-args for entity writes, type-build
+   config editing the reactive form underneath. These round-trip through
+   `extJsonParse`/`extJsonStringify` like any wire data: bigint contract
+   enforced, integer fields arrive as bigint and the domain logic works
+   on them unchanged.
+
+Why the split exists: the ext-json wire codec decodes every integer as
+bigint — correct for domain rows, meaningless for control signals. A
+control payload parsed through the wire codec silently breaks numeric
+comparisons (`typeof obj.select === 'number'` never matches `2n`) — the
+numbered-pick action in the assistant was dead for exactly this reason
+before the boundary was separated.
