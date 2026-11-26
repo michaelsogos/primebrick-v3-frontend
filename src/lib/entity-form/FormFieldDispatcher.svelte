@@ -1162,6 +1162,7 @@
 		valueField="idp_role"
 		labelField="label_key"
 		isLabelTranslated={true}
+		loading={systemRoles.state.loading}
 		{placeholder}
 		disabled={effectiveLocked}
 		{...controlProps}
