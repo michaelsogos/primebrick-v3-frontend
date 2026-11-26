@@ -458,6 +458,11 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     await expect(menu).toBeVisible();
     const cta = menu.getByText("Set counter");
     await expect(cta).toBeVisible();
+    // The forced-revive row action resolves its module translation and the
+    // Lucide glyph — never the raw key/custom sequence icon fallback.
+    const reviveItem = menu.getByRole("menuitem").filter({ hasText: /Revive now|Rinnova ora/i });
+    await expect(reviveItem).toBeVisible();
+    await expect(reviveItem.locator("svg.lucide-rotate-cw-square").first()).toBeVisible();
 
     // `sequence_set` is parametric — the authored dialog collects `next`,
     // informed by `sequence-analyze` (the strip mounts live stats).
