@@ -11,9 +11,10 @@ import { extJsonParse } from "@primebrick/core/ext-json";
  *    disabled on update (sez*, revive_every, revive_slot, default_from).
  *  - `depends_on.disabled_when{revive_every, set:false}` gates
  *    default_from / revive_slot / revive_grace until the cadence is set.
- *  - `format:"revive_interval"` renders the composite editor
- *    (number + closed 5-unit dropdown) and emits the `'N unit'` varchar
- *    canonical — verified on the wire after create.
+ *  - `format:"revive_interval"` renders the canonical-text + assist-popover
+ *    editor (schedule-widget anatomy, user-ratified 2026-11-26): composing
+ *    in the popover writes the `'N unit'` varchar canonical into the
+ *    visible input — verified on the wire after create.
  *  - The `default_from` anchor input seeds tomorrow 00:00 local and
  *    `expire_at` derives server-side from it — verified on the stored row.
  *  - Audited columns render in the record-sheet audit accordion, never
@@ -111,13 +112,34 @@ test.describe("sequence create sheet — field contract", () => {
 		// tz defaults to UTC (options_source iana.tzones) — no input needed.
 		await field("sez").locator("input").fill("2026");
 
-		// ── revive_interval composite: number + closed unit dropdown.
+		// ── revive_interval editor: the assist popover composes the canonical.
 		//    "1 year" + sez "2026" is the advanceable pair — a month-grain
 		//    cadence would correctly flag sez (year-shape can't +3m). ────
 		const revive = field("revive_every");
-		await revive.locator("input").fill("1");
-		await revive.locator("[data-testid$='-uom-cta']").click();
-		await page.locator("[data-testid$='-uom-option-year']").click();
+		await revive.locator("[data-testid$='-assist']").click();
+		// the popover portals out of the field container — page-level selectors;
+		// one popover open at a time keeps them unambiguous.
+		const everyN = page.locator("[data-testid='revive-interval-input-every-n']");
+		await expect(everyN, "interval numeric inside the assist popover").toBeVisible({ timeout: 5_000 });
+		await everyN.fill("1");
+		await page.locator("[data-testid='revive-interval-input-every-n-uom-cta']").click();
+		await page.locator("[data-testid='revive-interval-input-every-n-uom-option-year']").click();
+		await page.locator("[data-testid='revive-interval-input-apply']").click();
+		// apply writes the canonical varchar into the visible input — the wire
+		// value the user composes is the value they see.
+		await expect(
+			revive.locator("input").first(),
+			"canonical input carries the composed spec",
+		).toHaveValue("1 year", { timeout: 5_000 });
+		// interpreter strip — plural-aware prose through the BE-seeded keys:
+		// the value explains itself on the surface. The shared browser profile
+		// locale is not pinned by this spec, so the assertion covers the
+		// singular "year" shape in every seeded language — what matters is the
+		// interpolation chain (key → n/unit params → singular unit prose).
+		await expect(
+			revive.getByTestId("revive-interval-input-interpreter"),
+			"interpreter strip renders the renewal prose",
+		).toContainText(/1\s(anno|year|an|año|jahr|ano)\b/i, { timeout: 5_000 });
 
 		// gates release once the cadence holds a value
 		for (const k of ["default_from", "revive_slot", "revive_grace"]) {
@@ -145,10 +167,10 @@ test.describe("sequence create sheet — field contract", () => {
 		);
 		await page.getByTestId("entity-form-submit").click();
 		await posted;
-		// view-mode: revive_every round-trips into the composite verbatim
+		// view-mode: revive_every round-trips into the canonical input verbatim
 		await expect(
 			field("revive_every").locator("input").first(),
-		).toHaveValue("1", { timeout: 5_000 });
+		).toHaveValue("1 year", { timeout: 5_000 });
 
 		// ── wire truth: the stored row carries the varchar canonical and
 		//    server-derived anchors (expire_at from the default_from
@@ -242,11 +264,20 @@ test.describe("sequence create sheet — field contract", () => {
 		await expect(field("name").locator("input").first()).toBeEnabled({ timeout: 5_000 });
 
 		// in-tempo edit: 1 year → 2 years — the stored row re-anchors
-		// `expire_at` at the next boundary (verified on the wire).
-		// NumericInput commits on BLUR (typing is a draft) — Tab to commit
-		// before asserting dirt.
-		await field("revive_every").locator("input").first().fill("2");
-		await field("revive_every").locator("input").first().press("Tab");
+		// `expire_at` at the next boundary (verified on the wire). The assist
+		// popover seeds the builder from the CURRENT canonical (round-trip
+		// evidence: the numeric pre-fills "1"), apply writes "2 years".
+		await field("revive_every").locator("[data-testid$='-assist']").click();
+		const editN = page.locator("[data-testid='revive-interval-input-every-n']");
+		await expect(editN, "popover numeric seeded from the stored canonical").toHaveValue("1", {
+			timeout: 5_000,
+		});
+		await editN.fill("2");
+		await page.locator("[data-testid='revive-interval-input-apply']").click();
+		await expect(
+			field("revive_every").locator("input").first(),
+			"canonical input carries the recomposed spec",
+		).toHaveValue("2 years", { timeout: 5_000 });
 		// the form may submit via the governed `update.single` action
 		// endpoint (path != /entities/sequence/{uuid}) — match any
 		// sequence write, not the fallback URL shape.
@@ -307,21 +338,27 @@ test.describe("sequence create sheet — field contract", () => {
 		await field("start").locator("input").fill("1");
 		await field("sez").locator("input").fill("26");
 
-		// flip to literal mode — the leading mode toggle swaps the
-		// composite for the DateWheelPicker instant field.
+		// pin composition — the assist popover's fixed-date card hosts the
+		// DateWheelPicker instant field; apply writes the 'at <ISO>' canonical.
 		const revive = field("revive_every");
-		await revive.locator("[data-testid$='-mode']").click();
-		const atCta = revive.locator("[data-testid$='-at']");
-		await expect(atCta).toBeVisible({ timeout: 5_000 });
-		await atCta.click();
+		await revive.locator("[data-testid$='-assist']").click();
+		await page.locator("[data-testid='revive-interval-input-mode-pin']").click();
+		const pinPicker = page.locator("[data-testid='revive-interval-input-pin']");
+		await expect(pinPicker).toBeVisible({ timeout: 5_000 });
+		await pinPicker.click();
 		// wheel pick: a year clearly in the future, day/month stay today.
 		// The wheel commits when the snap settles — wait for the trigger
 		// text to carry the year BEFORE closing (Escape mid-snap drops
 		// the uncommitted pick).
 		const year = String(new Date().getFullYear() + 2);
 		await page.getByRole("option", { name: year, exact: true }).click();
-		await expect(atCta).toContainText(year, { timeout: 5_000 });
+		await expect(pinPicker).toContainText(year, { timeout: 5_000 });
 		await page.keyboard.press("Escape");
+		await page.locator("[data-testid='revive-interval-input-apply']").click();
+		await expect(
+			revive.locator("input").first(),
+			"canonical input carries the pinned spec",
+		).toHaveValue(/^at \d{4}-\d{2}-\d{2}T/, { timeout: 5_000 });
 
 		// the gate must have released once the spec holds a value — assert
 		// enabled so a lost pick fails fast instead of hanging on a

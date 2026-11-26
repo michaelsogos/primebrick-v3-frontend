@@ -87,8 +87,10 @@ test.describe("builtin sequence registry — mounted by construction", () => {
       expect(byKey.get(k)?.sticky).toBe(false);
       expect(byKey.get(k)?.default_visible).not.toBe(false);
     }
-    expect(byKey.get("revive_every")?.default_visible).not.toBe(false);
-    for (const k of ["default_from", "revive_slot", "revive_grace", "expire_at"]) {
+    // tz + revive_every are hidden by default but toggleable — user-ratified
+    // 2026-11-26 (the default view ends at emitted_next; the column sheet
+    // re-enables them). Same contract the default-view test pins below.
+    for (const k of ["tz", "revive_every", "default_from", "revive_slot", "revive_grace", "expire_at"]) {
       expect(byKey.get(k)?.default_visible).toBe(false);
       expect(byKey.get(k)?.hidden).not.toBe(true);
     }
@@ -600,7 +602,7 @@ test.describe("builtin sequence registry — mounted by construction", () => {
       await expect(page.getByTestId("filters-apply")).toBeVisible({ timeout: 5_000 });
 
       // ── anatomy: the governed control per column contract, never a bare textbox ──
-      // The revive composite's inner numeric carries the labelled field id —
+      // The revive editor's canonical input carries the labelled field id —
       // resolving the label proves the composite IS the mounted control.
       for (const label of ["Renew Every", "Activation"]) {
         const input = page.getByLabel(label, { exact: true }).first();
@@ -610,6 +612,18 @@ test.describe("builtin sequence registry — mounted by construction", () => {
           { timeout: 5_000 },
         );
       }
+      // the assist machinery mounts on the filter surface too — same composite,
+      // same composer (the popover portals out of the filter sheet).
+      await page.locator("[data-testid='revive-interval-input-assist']").first().click();
+      await expect(
+        page.locator("[data-testid='revive-interval-input-mode-interval']"),
+        "interval card in the filter-mounted popover",
+      ).toBeVisible({ timeout: 5_000 });
+      await expect(
+        page.locator("[data-testid='revive-interval-input-mode-pin']"),
+        "fixed-date card in the filter-mounted popover",
+      ).toBeVisible({ timeout: 5_000 });
+      await page.keyboard.press("Escape");
       // i18n key + self-ref + actor columns mount comboboxes, never textboxes.
       // ComboSelect triggers are div[role=combobox] — non-labelable elements,
       // so the accessible-name chain does not apply; the structural chain
@@ -628,7 +642,10 @@ test.describe("builtin sequence registry — mounted by construction", () => {
         });
       }
 
-      // ── wire: the revive composite emits the canonical varchar the filter matches ──
+      // ── wire: free text travels verbatim and ILIKE-matches as a substring ──
+      // (user-ratified 2026-11-26: standard text-filter semantics — typing "1"
+      // wires value=1, and %1% still hits the seeded "1 year" canonical row;
+      // the assist composer remains the exact-canonical path).
       const urls: string[] = [];
       page.on("request", (req) => {
         if (req.url().includes("/entities/sequence/list")) urls.push(req.url());
@@ -645,10 +662,10 @@ test.describe("builtin sequence registry — mounted by construction", () => {
               return Array.from({ length: 8 }, (_, i) => i).some(
                 (i) =>
                   url.searchParams.get(`filters[${i}][field]`) === "revive_every" &&
-                  url.searchParams.get(`filters[${i}][value]`) === "1 year",
+                  url.searchParams.get(`filters[${i}][value]`) === "1",
               );
             }),
-          { timeout: 5_000, message: `no revive_every=1 year filter in: ${urls.join("\n")}` },
+          { timeout: 5_000, message: `no revive_every=1 filter in: ${urls.join("\n")}` },
         )
         .toBe(true);
       const filtered = urls

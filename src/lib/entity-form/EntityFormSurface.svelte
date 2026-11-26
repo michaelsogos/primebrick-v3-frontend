@@ -627,7 +627,7 @@
 
 <svelte:window onbeforeunload={handleBeforeUnload} />
 
-<div class="@container flex h-full flex-col gap-4" data-testid="entity-form-surface">
+<div class="@container flex min-h-full flex-col gap-4" data-testid="entity-form-surface">
 	{#if mode === 'update' && uidValue !== undefined && uidValue !== null}
 		<!-- Identity pill — the same `EntityRecordUid` the sheet hero states
 		     carry: ONE declaration, both surfaces. -->
