@@ -491,6 +491,71 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     expect(apiFetches).toBe(0);
   });
 
+  test("standard filters apply on pattern — draft binds, wire carries ILIKE, rows narrow", async ({ page }) => {
+    const suffix = Date.now().toString(36);
+    const matchName = `e2e_filter_match_${suffix}`;
+    const missName = `e2e_filter_miss_${suffix}`;
+    const created: string[] = [];
+    const createSeq = async (name: string, pattern: string) => {
+      const r = await page.request.post(`${CRM_BASE}/sequence`, {
+        data: { entity: { name, pattern, step: "1", start: "1" } },
+      });
+      expect([200, 201], `create ${name}: ${await r.text()}`).toContain(r.status());
+      const row = extJsonParse<{ entity?: { uuid?: string } }>(await r.text());
+      if (row.entity?.uuid) created.push(row.entity.uuid);
+    };
+    await createSeq(matchName, `FLT${suffix.slice(-4)}-{seq:4}`);
+    await createSeq(missName, `FLT${suffix.slice(-4)}-{seq:3}`);
+    try {
+      const listReq = page.waitForResponse(
+        (r) => r.url().includes("/entities/sequence/list") && r.status() === 200,
+        { timeout: 5_000 },
+      );
+      await page.goto("/crm/settings/sequences");
+      await listReq;
+      await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 5_000 });
+
+      await page.getByRole("button", { name: "Filters", exact: true }).first().click();
+      await expect(page.getByTestId("filters-apply")).toBeVisible({ timeout: 5_000 });
+      const control = page.getByRole("textbox", { name: "Pattern", exact: true });
+      await expect(control).toBeVisible({ timeout: 5_000 });
+      await control.fill("4}");
+
+      const urls: string[] = [];
+      page.on("request", (req) => {
+        if (req.url().includes("/entities/sequence/list")) urls.push(req.url());
+      });
+      // Enter is the keyboard commit gesture for scalar filter drafts — the
+      // user must never be forced to hunt for the footer Apply button.
+      await control.press("Enter");
+
+      await expect.poll(() => urls.length, { timeout: 5_000 }).toBeGreaterThan(0);
+      const filtered = urls
+        .map((u) => new URL(u))
+        .find((u) =>
+          Array.from({ length: 8 }, (_, i) => i).some(
+            (i) => u.searchParams.get(`filters[${i}][field]`) === "pattern",
+          ),
+        );
+      expect(filtered, `no pattern filter in list urls: ${urls.join("\n")}`).toBeTruthy();
+      const idx = Array.from({ length: 8 }, (_, i) => i).find(
+        (i) => filtered!.searchParams.get(`filters[${i}][field]`) === "pattern",
+      )!;
+      expect(filtered!.searchParams.get(`filters[${idx}][op]`)).toBe("ILIKE");
+      expect(filtered!.searchParams.get(`filters[${idx}][value]`)).toBe("4}");
+
+      await expect(page.locator("table tbody tr", { hasText: matchName }).first()).toBeVisible({ timeout: 5_000 });
+      await expect(page.locator("table tbody tr", { hasText: missName })).toHaveCount(0);
+    } finally {
+      for (const uuid of created.splice(0)) {
+        const got = await page.request.get(`${CRM_BASE}/sequence/${uuid}`).catch(() => null);
+        if (!got?.ok()) continue;
+        const row = extJsonParse<{ version?: unknown }>(await got.text());
+        await page.request.delete(`${CRM_BASE}/sequence/${uuid}?version=${String(row.version ?? 0)}`).catch(() => {});
+      }
+    }
+  });
+
   /**
    * `format:"i18n_key"` cells render the governed translation badge —
    * the same source/destination anatomy `nats_subject` owns: languages

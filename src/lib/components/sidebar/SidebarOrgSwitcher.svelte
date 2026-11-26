@@ -10,6 +10,7 @@
   import { BuildingComplex } from '@primebrick/ui/vendor/lucide';
   import { ChevronsUpDown } from '@primebrick/ui/vendor/lucide';
   import { extJsonParse } from '$lib/api-ext';
+  import { userProfileState } from '$lib/user-profile-store.svelte';
 
   let { collapsed }: { collapsed: boolean } = $props();
 
@@ -27,7 +28,16 @@
         const data = await res.text().then((t) => extJsonParse<{ organizations?: ActiveOrg[] }>(t));
         activeOrgs = data.organizations ?? [];
         if (activeOrgs.length > 0 && !selectedOrgId) {
-          selectedOrgId = activeOrgs[0].idp_code;
+          // Default to the signed-in user's own organization, not merely the
+          // first active row: user_profiles.idp_org carries the IdP org NAME
+          // (`acme`) while the directory row's globally unique code is
+          // `owner/name` (`admin/acme`). Fall back to the first active org
+          // only when the profile cannot be matched.
+          const profileOrg = userProfileState.current?.idp_org ?? userProfileState.current?.organization;
+          const ownOrg = profileOrg
+            ? activeOrgs.find((o) => o.idp_code === profileOrg || o.idp_name === profileOrg)
+            : undefined;
+          selectedOrgId = (ownOrg ?? activeOrgs[0]).idp_code;
         }
       }
     } catch (e) {

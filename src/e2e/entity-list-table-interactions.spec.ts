@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { loginAsTestAdmin } from "./helpers/admin-login";
 
-import { extJsonParse } from '@primebrick/core/ext-json';
+import { extJsonParse, extJsonStringify } from '@primebrick/core/ext-json';
 /**
  * entity-list-table interaction spot-checks — the table pipeline was the
  * largest surface re-typed in the `no-explicit-any` cleanup (prop contracts
@@ -504,6 +504,17 @@ test.describe("card-view toolbar zones (/crm/customers)", () => {
    * whole app shell silently (switcher stays empty).
    */
   test("organizations/active answers 200 with the organizations envelope", async ({ page }) => {
+    const dataUri = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+    // Force one served avatar into the base64/data-URI wire form: the entity
+    // contract carries the string verbatim, and the switcher must render it
+    // exactly like a static path (the regression class is shape-specific).
+    await page.route("**/api/v1/system/organizations/active", async (route) => {
+      const upstream = await route.fetch();
+      const payload = extJsonParse<{ organizations?: Array<{ avatar?: string | null }> }>(await upstream.text());
+      const firstWithAvatar = payload.organizations?.find((o) => typeof o.avatar === "string" && o.avatar.length > 0);
+      if (firstWithAvatar) firstWithAvatar.avatar = dataUri;
+      await route.fulfill({ response: upstream, body: extJsonStringify(payload) });
+    });
     const respPromise = page.waitForResponse(
       (r) => r.url().includes("/api/v1/system/organizations/active") && r.request().method() === "GET",
       { timeout: 5_000 },
@@ -511,7 +522,34 @@ test.describe("card-view toolbar zones (/crm/customers)", () => {
     await page.goto("/system/settings/users", { waitUntil: "domcontentloaded" });
     const resp = await respPromise;
     expect(resp.status()).toBe(200);
-    const body = (await resp.text().then((t) => extJsonParse<unknown>(t))) as { organizations?: unknown };
+    const body = (await resp.text().then((t) => extJsonParse<unknown>(t))) as {
+      organizations?: Array<{ display_name?: string; avatar?: string | null }>;
+    };
     expect(Array.isArray(body.organizations)).toBe(true);
+    // Avatar-bearing organizations render real <img> elements in the switcher
+    // dropdown — the raw entity value (data URI or static path) is the src,
+    // never dropped back to the fallback building icon.
+    const withAvatar = (body.organizations ?? []).filter((o) => typeof o.avatar === "string" && o.avatar.length > 0);
+    expect(withAvatar.length).toBeGreaterThan(0);
+    await page.getByRole("button", { name: "Select organization" }).click();
+    for (const org of withAvatar.slice(0, 2)) {
+      const item = page.getByRole("menuitem", { name: org.display_name });
+      await expect(item).toBeVisible({ timeout: 5_000 });
+      const img = item.locator("img").first();
+      await expect(img).toHaveAttribute("src", org.avatar!);
+      await expect.poll(async () => img.evaluate((el: HTMLImageElement) => el.naturalWidth)).toBeGreaterThan(0);
+    }
+    const dataBacked = withAvatar.find((o) => o.avatar === dataUri);
+    expect(dataBacked, "intercept did not inject the data-uri avatar").toBeTruthy();
+    // Closed dropdown: the trigger defaults to the signed-in user's own IdP
+    // organization (`acme` → `admin/acme`), not the first active row. The
+    // initial sidebar fetch can predate this test's route interception, so
+    // pin identity + successful image rendering rather than the exact wire
+    // avatar shape here (the data-uri shape is pinned in the dropdown above).
+    const trigger = page.getByRole("button", { name: "Select organization" });
+    const triggerImg = trigger.locator("img").first();
+    await expect(trigger).toContainText("ACME");
+    await expect(triggerImg).toHaveAttribute("alt", "ACME");
+    await expect.poll(async () => triggerImg.evaluate((el: HTMLImageElement) => el.naturalWidth)).toBeGreaterThan(0);
   });
 });

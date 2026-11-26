@@ -175,6 +175,19 @@
     onAdvancedFiltersChange?.(tempAdvancedFilters, globalConnector);
   }
 
+  /** Enter in a plain scalar input is the standard keyboard commit gesture
+   *  for a draft FORM panel. It must not steal Enter from option pickers,
+   *  textareas, or contenteditable controls, where the key already owns
+   *  selection/newline semantics. */
+  function commitOnEnter(event: KeyboardEvent) {
+    if (event.key !== 'Enter' || event.shiftKey || event.ctrlKey || event.metaKey || event.altKey) return;
+    const target = event.target as HTMLElement | null;
+    if (!(target instanceof HTMLInputElement)) return;
+    if (target.closest('[role="combobox"], [data-combobox-input], textarea, [contenteditable="true"]')) return;
+    event.preventDefault();
+    applyFilters();
+  }
+
   function resetAllFilters() {
     tempFilterValues = {};
     timezoneValues = {};
@@ -351,6 +364,8 @@
           (Array.isArray(newFilterValue) && newFilterValue.length === 0)),
   );
 </script>
+
+<svelte:window onkeydown={commitOnEnter} />
 
 <SheetPanelLayout contentClass="p-4" footer={applyFooter}>
   {#snippet icon()}
