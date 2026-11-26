@@ -415,6 +415,28 @@ test.describe("card-view toolbar zones (/crm/customers)", () => {
     }
   });
 
+  test("card sort dropdown rows all carry the canonical type/declared icon", async ({ page }) => {
+    await page.goto("/crm/customers", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("table tbody tr[data-row-index]").first()).toBeVisible({ timeout: 5_000 });
+
+    await page.getByTestId("elt-view-mode-cards").click();
+    const sortCta = page.getByTestId("entity-list-card-sort");
+    await expect(sortCta).toBeVisible();
+    await sortCta.click();
+
+    // Picker-surface doctrine: every sortable-column row resolves a glyph
+    // through metaColumnIcon (declared → options_source → format/type).
+    const items = page.locator('[data-slot="dropdown-menu-item"]');
+    await expect(items.first()).toBeVisible({ timeout: 5_000 });
+    const count = await items.count();
+    expect(count).toBeGreaterThan(2);
+    for (let i = 0; i < count; i++) {
+      const text = (await items.nth(i).textContent())?.trim().slice(0, 30);
+      await expect(items.nth(i).locator("svg").first(), `sort row "${text}" carries no icon`).toHaveCount(1);
+    }
+    await page.keyboard.press("Escape");
+  });
+
   /**
    * `options_source:"system.roles"` cell renderer — the `user_profile.roles`
    * column (jsonb array of idp_role codes) must render ONE secondary badge

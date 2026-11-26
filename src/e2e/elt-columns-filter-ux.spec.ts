@@ -73,6 +73,27 @@ test.describe("ELT columns/filter UX — job_schedule", () => {
     await page.keyboard.press("Escape");
   });
 
+  test("search-in panel rows all carry the canonical type/declared icon", async ({ page }) => {
+    await loginAsTestAdmin(page);
+    await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 5_000 });
+
+    await page.getByTestId("entity-search-scope").click();
+    await expect(page.getByTestId("search-in-all")).toBeVisible({ timeout: 5_000 });
+
+    // Same picker-surface doctrine as the columns panel — every row resolves
+    // a glyph through metaColumnIcon. The `search-in-all` pseudo-row is the
+    // deliberate exception (it is not a column).
+    const rows = page.locator('[data-testid^="search-in-"]:not([data-testid="search-in-all"])');
+    const rowCount = await rows.count();
+    expect(rowCount).toBeGreaterThan(2);
+    for (let i = 0; i < rowCount; i++) {
+      const key = (await rows.nth(i).getAttribute("data-testid"))!.replace("search-in-", "");
+      await expect(rows.nth(i).locator("svg").first(), `search-in row "${key}" carries no icon`).toHaveCount(1);
+    }
+    await page.keyboard.press("Escape");
+  });
+
   test("reload strip shows the indeterminate bar during a populated-table reload", async ({ page }) => {
     await loginAsTestAdmin(page);
     // Slow the list endpoint so the loading window is observable.

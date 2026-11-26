@@ -8,7 +8,7 @@
    * page declares a meta default_sort).
    */
   import { t } from '$lib/i18n';
-  import { Button } from '@primebrick/ui';
+  import { Button, DynamicIcon, metaColumnIcon } from '@primebrick/ui';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import { dropdownMenuSelectedItemClass } from '$lib/components/ui/dropdown-menu/dropdown-menu-item-selected';
   import { ArrowUpNarrowWide, ArrowDownWideNarrow } from '@primebrick/ui/vendor/lucide';
@@ -44,11 +44,18 @@
   </DropdownMenu.Trigger>
   <DropdownMenu.Content align="start">
     {#each sortableColumns as col (col.key)}
+      {@const rowIcon = metaColumnIcon(col)}
       <DropdownMenu.Item
         class={dropdownMenuSelectedItemClass(sortKey === col.key)}
         onSelect={() => onSortChange(col.key, sortKey === col.key ? sortDir : 'asc')}
       >
-        {$t(col.label_key)}
+        <!-- Picker-surface doctrine: the canonical metaColumnIcon precedence
+             (declared → options_source → format/type) — every column has a
+             type, so every row scans by glyph. -->
+        <span class="inline-flex items-center gap-2">
+          {#if rowIcon}<DynamicIcon name={rowIcon} size={14} class="opacity-70" />{/if}
+          {$t(col.label_key)}
+        </span>
       </DropdownMenu.Item>
     {/each}
   </DropdownMenu.Content>
