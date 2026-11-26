@@ -35,6 +35,7 @@
  *   onMount(() => void list.init());
  */
 import { browser } from '$app/environment';
+import { onDestroy } from 'svelte';
 import { SvelteURLSearchParams } from 'svelte/reactivity';
 import { apiFetchWithTimeout } from '$lib/api';
 import { extJsonParse, extJsonStringify } from '$lib/api-ext';
@@ -401,6 +402,18 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
 
   let searchTimer: ReturnType<typeof setTimeout> | null = null;
   let activeListController: AbortController | null = null;
+  /** Set when the owning component is destroyed — async continuations
+   *  (init/loadMeta/loadRows/loadSparklines chains outlive navigation)
+   *  MUST bail before touching `$derived` values: those belong to the
+   *  dead effect tree and reads would warn `derived_inert` (and return
+   *  stale data). Also aborts the in-flight list fetch and clears the
+   *  search debounce so no work at all continues for a dead instance. */
+  let destroyed = false;
+  onDestroy(() => {
+    destroyed = true;
+    activeListController?.abort();
+    if (searchTimer) clearTimeout(searchTimer);
+  });
   /** Recursion guard for the stale-meta heal — one meta re-download per
    *  failure chain, never a retry loop. */
   let healing = false;
@@ -411,8 +424,10 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
    *  visible keys) against the fresh meta. The healed state persists
    *  through the metaLoaded-gated persist effect. */
   async function healStaleMeta() {
+    if (destroyed) return;
     invalidateEntityMeta(opts.basePath);
     await loadMeta(true);
+    if (destroyed) return;
     sanitizeListState(columns, _state);
   }
 
@@ -443,8 +458,11 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
   }
 
   async function loadMeta(force = false) {
+    if (destroyed) return;
     if (_state.meta && !force) return;
-    _state.meta = await fetchEntityMeta(opts.basePath);
+    const meta = await fetchEntityMeta(opts.basePath);
+    if (destroyed) return;
+    _state.meta = meta;
     applyMetaDefaults();
     // Sanitize persisted selections against the served meta: unknown preset
     // ids are dropped, missing/invalid ones fall back to default_option —
@@ -458,6 +476,7 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
   }
 
   async function loadRows() {
+    if (destroyed) return;
     activeListController?.abort();
     const controller = new AbortController();
     activeListController = controller;
@@ -528,6 +547,7 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
     }
 
     const res = await apiFetchWithTimeout(`${opts.basePath}/list?${qs.toString()}`, { signal: controller.signal }, 30_000);
+    if (destroyed) return;
     if (!res.ok) {
       const apiDetails = await readApiErrorDetails(res);
       // Stale-meta self-heal — the wire fails closed on unresolvable
@@ -550,6 +570,7 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
       throw new ApiListError(apiDetails.code ?? 'LIST_FAILED', res.status, apiDetails);
     }
     const data = extJsonParse<ListResponse<TRow>>(await res.text());
+    if (destroyed) return;
     _state.rows = data.rows;
     _state.total = data.total;
     // Apply the echoed page/page_size — the BE may clamp out-of-range pages.
@@ -565,8 +586,10 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
    * load; failures are best-effort (cells render the empty placeholder).
    */
   async function loadSparklines() {
+    if (destroyed) return;
     const cols = (columns ?? []).filter((c) => c.type === 'sparkline' && c.sparkline);
     for (const col of cols) {
+      if (destroyed) return;
       const cfg = col.sparkline!;
       const keys = _state.rows
         .map((r) => r[cfg.row_key])
@@ -699,6 +722,7 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
     try {
       // Sequential: if meta fails (gateway/offline), loadRows never runs.
       await loadMeta();
+      if (destroyed) return;
       // Drop persisted criteria that no longer resolve under the served
       // meta — a stale key would poison every list call into a 400 loop
       // (the wire now fails closed on unknown fields). Silent for the
@@ -716,6 +740,7 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
         }
       }
       await loadRows();
+      if (destroyed) return;
       const maxPages = Math.max(1, Math.ceil(Number(_state.total) / _state.pageSize));
       if (_state.page > maxPages) {
         _state.page = 1;

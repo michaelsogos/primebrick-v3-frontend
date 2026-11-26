@@ -1,5 +1,5 @@
 import { SvelteMap } from 'svelte/reactivity';
-import { onMount, untrack } from 'svelte';
+import { onDestroy, onMount, untrack } from 'svelte';
 import type { MetaColumn } from '$lib/entity-list/types';
 import type { DeepReadonly } from '@primebrick/ui';
 
@@ -55,7 +55,17 @@ export function useStickyColumns(options: {
 
   let updatingStickyOffsets = false;
 
+  /** Set on destroy — RAF/microtask/ResizeObserver callbacks can fire after
+   *  the owning component dies; reading `safeStickyColumnsGroup` (a derived
+   *  of the dead effect tree) at that point warns `derived_inert` and yields
+   *  stale geometry. One guard here covers every deferred entry path. */
+  let destroyed = false;
+  onDestroy(() => {
+    destroyed = true;
+  });
+
   function updateStickyOffsets() {
+    if (destroyed) return;
     if (updatingStickyOffsets) return;
     updatingStickyOffsets = true;
     try {
