@@ -59,6 +59,8 @@
 	import { i18nKeySuggestionFor, slugifyKey } from '$lib/i18n/dict-suggestion';
 	import { UI_LANGS } from '$lib/i18n/languages';
 	import { uiLang } from '$lib/i18n/store.svelte';
+	import { shellNav } from '$lib/shell/modules-shell.svelte';
+	import { page } from '$app/state';
 	import { apiFetch } from '$lib/api';
 	import { openSheet } from '$lib/shell/sheets/sheet-manager.svelte';
 	import { Badge } from '@primebrick/ui';
