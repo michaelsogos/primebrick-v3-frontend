@@ -32,8 +32,7 @@
     PrimeField,
     Accordion,
     formatListCellValue,
-    columnSchemaLeaf,
-    schemaTypeIcon, toDisplayString } from '@primebrick/ui';
+    metaColumnIcon, toDisplayString } from '@primebrick/ui';
   import { openSheet, closeSheet } from '$lib/shell/sheets/sheet-manager.svelte';
   import SheetHeaderAction from '$lib/shell/sheets/SheetHeaderAction.svelte';
   import FormFieldDispatcher from '$lib/entity-form/FormFieldDispatcher.svelte';
@@ -350,7 +349,7 @@
         options={availableColumns.map((c) => ({
           value: c.key,
           label: $t(c.label_key),
-          _icon: c.icon ?? schemaTypeIcon(columnSchemaLeaf(c))._icon,
+          _icon: metaColumnIcon(c),
         }))}
         valueField="value"
         labelField="label"

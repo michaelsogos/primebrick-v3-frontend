@@ -33,6 +33,7 @@
     DynamicIcon,
     formatListCellValue,
     getResolvedIanaTimeZone,
+    metaColumnIcon,
     numericKindOf, toDisplayString } from '@primebrick/ui';
   import SheetHeaderAction from '$lib/shell/sheets/SheetHeaderAction.svelte';
   import FormFieldDispatcher from '$lib/entity-form/FormFieldDispatcher.svelte';
@@ -211,7 +212,7 @@
     selectedColumn ? getOperatorsForColumnType(selectedColumn.type) : [],
   );
   const fieldOptions = $derived(
-    fieldOptionsColumns.map((c) => ({ value: c.key, label: $t(c.label_key), _icon: c.icon ?? '' })),
+    fieldOptionsColumns.map((c) => ({ value: c.key, label: $t(c.label_key), _icon: metaColumnIcon(c) })),
   );
   const operatorOptions = $derived(
     availableOperators.map((op) => ({

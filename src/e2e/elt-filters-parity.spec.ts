@@ -301,4 +301,29 @@ test.describe("elt filters widget parity", () => {
       )
       .toBe(true);
   });
+
+  test("advanced tab — field picker options carry the type icon (metaColumnIcon wiring)", async ({ page }) => {
+    await page.goto(TRIGGERS, { waitUntil: "domcontentloaded" });
+    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 5_000 });
+    await openFiltersSheet(page);
+    await page.getByTestId("filters-mode-advanced").click();
+
+    const fieldLabel = page.locator("label", { hasText: /field/i }).first();
+    const fieldId = await fieldLabel.getAttribute("for");
+    await page.locator(`[id="${fieldId}"]`).click();
+    const popover = page.locator("[data-popover-content], [cmdk-list]").last();
+    await expect(popover).toBeVisible({ timeout: 5_000 });
+
+    // EVERY option row carries a leading svg glyph — the declared metadata
+    // icon or the type-derived fallback; a bare text row is the regression
+    // this wiring closes (user-reported: no icons in the field dropdown).
+    const rows = popover.locator("[cmdk-item], [role='option']");
+    await expect(rows.first()).toBeVisible({ timeout: 5_000 });
+    const count = await rows.count();
+    expect(count).toBeGreaterThan(3);
+    for (let i = 0; i < count; i++) {
+      await expect(rows.nth(i).locator("svg").first(), `option #${i} carries an icon`).toBeVisible();
+    }
+    await page.keyboard.press("Escape");
+  });
 });
