@@ -409,7 +409,7 @@ test.describe("builtin sequence registry — mounted by construction", () => {
     const headTexts = (await page.locator("table thead th").allTextContents())
       .map((t) => t.replace(/\s+/g, " ").trim())
       .filter(Boolean);
-    expect(headTexts.slice(0, 12)).toEqual([
+    expect(headTexts.slice(0, 11)).toEqual([
       "Name",
       "Sezionale",
       "Sezionale 2",
@@ -421,8 +421,12 @@ test.describe("builtin sequence registry — mounted by construction", () => {
       "Pattern",
       "Current Sequence",
       "Next Sequence",
-      "Time zone",
     ]);
+    // tz / revive_every and everything after are default_visible:false but
+    // toggleable — the user-ratified contract (2026-11-26: "poi TZ, revive
+    // every, e quello dopo NON visibile di default ma togglabile").
+    expect(headTexts).not.toContain("Time zone");
+    expect(headTexts).not.toContain("Renew Every");
     expect(headTexts).not.toContain("Description key");
     // `last_alloc_*` carry the standard audit anatomy — `default_visible:false`,
     // toggleable: absent from the head like every audit stamp, surfaced by
@@ -720,7 +724,8 @@ test.describe("builtin sequence registry — mounted by construction", () => {
       .filter(Boolean);
     // The polluted hide MUST NOT win — the governed head is the decl's.
     expect(headTexts.slice(0, 5)).toEqual(["Name", "Sezionale", "Sezionale 2", "Sezionale 3", "Increment"]);
-    expect(headTexts).toContain("Time zone");
+    expect(headTexts).toContain("Next Sequence");
+    expect(headTexts).not.toContain("Time zone");
     // The canonical store (sessionStorage — localStorage is the legacy
     // read-only fallback, orphaned by design) rewrites as v3 with the
     // pollution dropped.
