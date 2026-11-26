@@ -51,6 +51,7 @@ export {
 	sanitizeVisibleKeys,
 	searchableTextColumns,
 	getOperatorsForColumnType,
+	getOperatorsForColumn,
 	FILTER_OPERATOR_ICON,
 	FILTER_OPERATOR_KEY,
 	STANDARD_OPS,

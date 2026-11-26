@@ -7,7 +7,7 @@
  * silently for the user, with a dev-gated console.warn for diagnosis.
  */
 import {
-  getOperatorsForColumnType,
+  getOperatorsForColumn,
   isColumnFilterable,
   isColumnSortable,
   searchableTextColumns,
@@ -47,7 +47,7 @@ export function sanitizeListState(
   const sortable = new Set(
     columns.filter((c) => isColumnSortable(c)).map((c) => c.key)
   );
-  const typeByKey = new Map(columns.map((c) => [c.key, c.type]));
+  const columnByKey = new Map(columns.map((c) => [c.key, c]));
 
   const droppedFilterFields: string[] = [];
   const droppedAdvancedIds: string[] = [];
@@ -70,11 +70,11 @@ export function sanitizeListState(
 
   if (state.advancedFilters) {
     state.advancedFilters = state.advancedFilters.filter((f) => {
-      const type = typeByKey.get(f.field);
+      const column = columnByKey.get(f.field);
       const ok =
-        type !== undefined &&
+        column !== undefined &&
         filterable.has(f.field) &&
-        getOperatorsForColumnType(type).includes(f.operator);
+        getOperatorsForColumn(column).includes(f.operator);
       if (!ok) droppedAdvancedIds.push(f.id);
       return ok;
     });

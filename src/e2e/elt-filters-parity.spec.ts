@@ -277,6 +277,18 @@ test.describe("elt filters widget parity", () => {
     const popover = page.locator("[data-popover-content], [cmdk-list]").last();
     await popover.getByText(/listening.?event/i).first().click();
 
+    // Governed-vocabulary field — the operator set collapses to equality:
+    // a combobox value picker can never fill contains/startsWith/endsWith
+    // (user-reported: "starts with" on a timezone picker is nonsense).
+    const opLabel = page.locator("label", { hasText: /\boperator\b/i }).first();
+    const opId = await opLabel.getAttribute("for");
+    await page.locator(`[id="${opId}"]`).click();
+    const opPopover = page.locator("[data-popover-content], [cmdk-list]").last();
+    await expect(opPopover).toBeVisible({ timeout: 5_000 });
+    const opRows = opPopover.locator("[cmdk-item], [role='option']");
+    await expect(opRows).toHaveCount(2, { timeout: 5_000 });
+    await page.keyboard.press("Escape");
+
     // Value → first census emit offered (multi combo on the filter surface).
     const valueLabel = page.locator("label", { hasText: /\bvalue\b/i }).first();
     const valueId = await valueLabel.getAttribute("for");

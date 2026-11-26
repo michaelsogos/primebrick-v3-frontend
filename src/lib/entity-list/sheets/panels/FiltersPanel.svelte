@@ -56,7 +56,7 @@
     FilterOperator,
   } from '$lib/entity-list/types';
   import {
-    getOperatorsForColumnType,
+    getOperatorsForColumn,
     FILTER_OPERATOR_ICON,
     FILTER_OPERATOR_KEY,
   } from '$lib/entity-list/types';
@@ -209,7 +209,7 @@
 
   const selectedColumn = $derived(filterableColumns.find((c) => c.key === newFilterField));
   const availableOperators = $derived(
-    selectedColumn ? getOperatorsForColumnType(selectedColumn.type) : [],
+    selectedColumn ? getOperatorsForColumn(selectedColumn) : [],
   );
   const fieldOptions = $derived(
     fieldOptionsColumns.map((c) => ({ value: c.key, label: $t(c.label_key), _icon: metaColumnIcon(c) })),
@@ -235,7 +235,7 @@
     newFilterStart = null;
     newFilterEnd = null;
     const col = filterableColumns.find((c) => c.key === f);
-    const ops = col ? getOperatorsForColumnType(col.type) : [];
+    const ops = col ? getOperatorsForColumn(col) : [];
     if (ops.length && !ops.includes(newFilterOperator)) newFilterOperator = ops[0];
   });
 
