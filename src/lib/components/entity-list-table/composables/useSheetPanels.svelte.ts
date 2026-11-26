@@ -20,6 +20,10 @@ export interface UseSheetPanelsOptions {
   onSearchInKeysChange: () => (keys: string[] | null) => void;
   onVisibleKeysChange: () => (keys: string[]) => void;
   entity: () => string;
+  /** Served-meta `translation_key` — scopes the `format:"i18n_key"` filter
+   *  vocabulary to `*.entities.<tk>.rows.*` instead of the broad `.entities.`
+   *  fallback (thousands of foreign keys, multi-second popover mount). */
+  translationKey?: () => string | undefined;
   /** Owning service — REQUIRED for builtin entities (they mount on every
    *  service, so the census map is last-wins ambiguous). Same contract as
    *  the ELT root prop; threaded into the `entity.filters` sheet so
@@ -116,6 +120,7 @@ export function useSheetPanels(options: UseSheetPanelsOptions) {
       'entity.filters': () => ({
         entity: options.entity(),
         service: options.service?.(),
+        translation_key: options.translationKey?.(),
         filterableColumns: options.filterableColumns(),
         filterValues: options.filterValues() ?? {},
         onFilterValuesChange: options.onFilterValuesChange?.(),

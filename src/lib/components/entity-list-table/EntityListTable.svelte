@@ -344,6 +344,7 @@
     onVisibleKeysChange: () => onVisibleKeysChange,
     entity: () => entity,
     service: () => service,
+    translationKey: () => effectiveTranslationKey,
     filterableColumns: () => filterableColumns,
     searchableColumns: () => searchableColumns,
     nonAuditingColumns: () => nonAuditingColumns,

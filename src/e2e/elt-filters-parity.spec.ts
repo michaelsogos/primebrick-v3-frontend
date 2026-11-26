@@ -338,4 +338,64 @@ test.describe("elt filters widget parity", () => {
     }
     await page.keyboard.press("Escape");
   });
+
+  test("advanced tab — i18n_key value combobox opens instantly (render-window regression lock)", async ({ page }) => {
+    // The EXACT user-reported scenario (2026-11-26): sequences → advanced →
+    // Description translation → Value. Pre-cap the popover shell took 1.8s
+    // to appear (thousands of `.entities.` rows mounted synchronously —
+    // zero network involved); the render window makes open instant.
+    await page.goto("/crm/settings/sequences", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 5_000 });
+    await openFiltersSheet(page);
+    await page.getByTestId("filters-mode-advanced").click();
+
+    const fieldLabel = page.locator("label", { hasText: /\bfield\b/i }).first();
+    const fieldId = await fieldLabel.getAttribute("for");
+    await page.locator(`[id="${fieldId}"]`).click();
+    const fieldPopover = page.locator("[data-popover-content], [cmdk-list]").last();
+    await fieldPopover.getByText(/description.?translation/i).first().click();
+
+    const valueLabel = page.locator("label", { hasText: /\bvalue\b/i }).first();
+    const valueId = await valueLabel.getAttribute("for");
+    await page.locator(`[id="${valueId}"]`).click();
+    // 1s is generous for CI noise yet decisive: the pre-cap mount cost was
+    // cpu-bound and consistent (1.8s even on a fast machine).
+    const popover = page.locator("[data-popover-content]").last();
+    await expect(popover, "popover shell must appear immediately — the render window caps the mount cost").toBeVisible({ timeout: 1_000 });
+    await page.keyboard.press("Escape");
+  });
+
+  test("standard tab — large vocabularies render through the capped window with truncation hint", async ({ page }) => {
+    // The IANA timezone vocabulary (~400 entries) is the deterministic
+    // large-vocabulary surface: the cap must hold, the hint must tell the
+    // user the list did not end, and scrolling must disclose more rows.
+    await page.goto("/crm/settings/sequences", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 5_000 });
+    await openFiltersSheet(page);
+
+    const { control } = await labeledControl(page, /time.?zone|fuso/i);
+    await expect(control).toHaveAttribute("role", "combobox");
+    await control.click();
+    const popover = page.locator("[data-popover-content], [cmdk-list]").last();
+    await expect(popover).toBeVisible({ timeout: 5_000 });
+
+    const rows = popover.locator("[cmdk-item], [role='option']");
+    await expect(rows.first()).toBeVisible({ timeout: 5_000 });
+    const initialCount = await rows.count();
+    // The cap (50) bounds the initial mount — hundreds of rows here would
+    // be the synchronous-mount regression back.
+    expect(initialCount, "initial render window is capped").toBeLessThanOrEqual(51);
+    expect(initialCount).toBeGreaterThan(10);
+
+    // The truncation hint carries the hidden count — the list did NOT end.
+    const hint = popover.locator(".cb-truncation-hint");
+    await expect(hint).toBeVisible();
+    await expect(hint).toContainText(/\d+/);
+
+    // Scrolling to the bottom discloses the next chunk progressively.
+    const list = popover.locator('[data-slot="command-list"]').first();
+    await list.evaluate((el) => { el.scrollTop = el.scrollHeight; });
+    await expect.poll(async () => rows.count(), { timeout: 3_000 }).toBeGreaterThan(initialCount);
+    await page.keyboard.press("Escape");
+  });
 });

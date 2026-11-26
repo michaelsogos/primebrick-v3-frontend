@@ -68,6 +68,10 @@
     /** Owning service — threaded into audit-actor resolution; required
      *  for builtin entities (the census map is last-wins ambiguous). */
     service?: string;
+    /** Served-meta `translation_key` — scopes `format:"i18n_key"` value
+     *  vocabularies to the entity's own row keys; absent → the dispatcher's
+     *  broad `.entities.` fallback (accepted degradation). */
+    translation_key?: string;
     filterableColumns?: MetaColumn[];
     filterValues?: Record<string, unknown>;
     onFilterValuesChange?: (values: Record<string, unknown>) => void;
@@ -79,6 +83,7 @@
   let {
     entity,
     service,
+    translation_key,
     filterableColumns = [],
     filterValues = {},
     onFilterValuesChange,
@@ -447,6 +452,7 @@
             column={col}
             filterEntity={entity}
             {service}
+            {translation_key}
             bind:value={tempFilterValues[col.key]}
             bind:timezone={timezoneValues[col.key]}
             emitsOptions={census.emitsOptions}
@@ -544,6 +550,7 @@
                     column={selectedColumn}
                     filterEntity={entity}
             {service}
+            {translation_key}
                     bind:value={newFilterStart}
                     bind:timezone={advancedTimezone}
                     controlProps={{ id }}
@@ -553,6 +560,7 @@
                     column={selectedColumn}
                     filterEntity={entity}
             {service}
+            {translation_key}
                     bind:value={newFilterEnd}
                     bind:timezone={advancedTimezone}
                   />
@@ -563,6 +571,7 @@
                   column={selectedColumn}
                   filterEntity={entity}
             {service}
+            {translation_key}
                   bind:value={newFilterValue}
                   bind:timezone={advancedTimezone}
                   emitsOptions={census.emitsOptions}
