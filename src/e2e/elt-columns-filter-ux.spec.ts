@@ -52,6 +52,27 @@ test.describe("ELT columns/filter UX — job_schedule", () => {
     await page.keyboard.press("Escape");
   });
 
+  test("columns panel rows all carry the canonical type/declared icon", async ({ page }) => {
+    await loginAsTestAdmin(page);
+    await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 5_000 });
+
+    await page.getByRole("button", { name: "Columns" }).first().click();
+    await expect(page.getByTestId("columns-select-all")).toBeVisible({ timeout: 5_000 });
+
+    // Picker-surface doctrine: EVERY row resolves a glyph — the declared
+    // icon when authored, otherwise the options_source/format/type-derived
+    // one (metaColumnIcon). A row without svg is a wiring regression.
+    const toggles = page.locator('[data-testid^="columns-toggle-"]');
+    const rowCount = await toggles.count();
+    expect(rowCount).toBeGreaterThan(3);
+    for (let i = 0; i < rowCount; i++) {
+      const key = (await toggles.nth(i).getAttribute("data-testid"))!.replace("columns-toggle-", "");
+      await expect(toggles.nth(i).locator("svg").first(), `column row "${key}" carries no icon`).toHaveCount(1);
+    }
+    await page.keyboard.press("Escape");
+  });
+
   test("reload strip shows the indeterminate bar during a populated-table reload", async ({ page }) => {
     await loginAsTestAdmin(page);
     // Slow the list endpoint so the loading window is observable.

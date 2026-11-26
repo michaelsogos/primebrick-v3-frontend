@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Checkbox, checkboxVisualOnlyClass, DynamicIcon } from '@primebrick/ui';
+  import { Checkbox, checkboxVisualOnlyClass, DynamicIcon, metaColumnIcon } from '@primebrick/ui';
   import * as Sortable from '$lib/components/ui/sortable';
 
   import { SheetPanelLayout } from '@primebrick/ui';
@@ -9,7 +9,16 @@
   import { Columns3 } from '@primebrick/ui/vendor/lucide';
   import { Eraser } from '@primebrick/ui/vendor/lucide';
 
-  type ColumnLike = { key: string; label_key: string; hideable?: boolean; icon?: string };
+  /** The column-visibility picker IS a picker surface — rows carry the
+   *  canonical `metaColumnIcon` derivation (declared icon → options_source
+   *  semantic glyph → format/type-derived), never the declared icon alone:
+   *  every column has a type, so every row scans by glyph. The narrowing
+   *  keeps only what the panel reads — callers pass full MetaColumn. */
+  type ColumnLike = Parameters<typeof metaColumnIcon>[0] & {
+    key: string;
+    label_key: string;
+    hideable?: boolean;
+  };
 
   interface Props {
     stickyColumns: ColumnLike[];
@@ -50,6 +59,7 @@
   >
     <div role="list" class="flex flex-col">
       {#each columns as col (col.key)}
+        {@const rowIcon = metaColumnIcon(col)}
         <Sortable.Item id={col.key}>
           <div
                 class={col.hideable === false
@@ -72,7 +82,7 @@
                     />
                   </span>
                   <span class="inline-flex size-3.5 shrink-0 items-center justify-center" aria-hidden="true">
-                    {#if col.icon}<DynamicIcon name={col.icon} size={14} class="opacity-70" />{/if}
+                    {#if rowIcon}<DynamicIcon name={rowIcon} size={14} class="opacity-70" />{/if}
                   </span>
                   <span class="min-w-0 flex-1 truncate">{$t(col.label_key)}</span>
                 </button>
