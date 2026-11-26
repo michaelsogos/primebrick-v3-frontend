@@ -93,7 +93,13 @@ const isAllowedMajorBump =
   branchVersion.major > latest.major &&
   branchVersion.minor === 0 && branchVersion.patch === 0;
 
-if (branch !== expectedBranch && !isAllowedMajorBump) {
+const isAllowedPatchBump =
+  kind === "release" && branchVersion !== null &&
+  branchVersion.major === latest.major &&
+  branchVersion.minor === latest.minor &&
+  branchVersion.patch === latest.patch + 1;
+
+if (branch !== expectedBranch && !isAllowedMajorBump && !isAllowedPatchBump) {
   console.error(
     [
       `Branch name must match the next ${kind} version.`,
@@ -106,7 +112,7 @@ if (branch !== expectedBranch && !isAllowedMajorBump) {
 }
 
 const pkg = readJson(pkgPath);
-const expectedVersion = format(isAllowedMajorBump ? branchVersion : expected);
+const expectedVersion = format(isAllowedMajorBump || isAllowedPatchBump ? branchVersion : expected);
 
 if (pkg.version !== expectedVersion) {
   if (args.has("--check")) {

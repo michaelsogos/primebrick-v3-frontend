@@ -68,6 +68,11 @@ are unaffected. `audit` fails when the wiring is missing.
 - **Feature branches**: `git checkout -b feature/<slug>` from updated `develop`
 - **Release branches**: `git checkout -b release/<version>` from `develop` (for version bumps)
 - **Hotfix branches**: `git checkout -b hotfix/<version>` from `main` (for production fixes)
+- **`arch/*` branches**: cross-repo architectural workstreams. Same lifecycle
+  as `feature/*` — cut from `develop`, close ONLY into `develop` with
+  `--no-ff` + push + delete local/remote. They count toward the one-open-
+  work-branch rule per repo; `gitflow.ts finish` handles them (base: develop).
+
 
 ## When to ask user permission
 
@@ -129,6 +134,13 @@ The script runs automatically as a `prebuild` hook and:
 - **Tag derived from branch name**: `release/0.13.2` → tag `0.13.2`
 - **Hotfix increments PATCH**: `0.13.1` → `hotfix/0.13.2` → tag `0.13.2`
 - **Release increments MINOR**: `0.13.2` → `release/0.14.0` → tag `0.14.0`
+- **Release MAY declare a deliberate PATCH increment**: when the branch is
+  `release/<same major>.<same minor>.<patch+1>` (tag `0.13.2` → `release/0.13.3`),
+  version-sync accepts it exactly like the deliberate MAJOR-bump exception.
+  A patch-line release carrying feature work is a declared forcing, owned
+  by the user — the version ledger stays honest because the tag matches
+  the committed package.json.
+
 
 ## Commit trailer (AI agents — cross-repo convention)
 
