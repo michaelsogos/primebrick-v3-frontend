@@ -358,7 +358,7 @@ test.describe("sequence create sheet — field contract", () => {
 		await expect(
 			revive.locator("input").first(),
 			"canonical input carries the pinned spec",
-		).toHaveValue(/^at \d{4}-\d{2}-\d{2}T/, { timeout: 5_000 });
+		).toHaveValue(/^@at \d{4}-\d{2}-\d{2}T/, { timeout: 5_000 });
 
 		// the gate must have released once the spec holds a value — assert
 		// enabled so a lost pick fails fast instead of hanging on a
@@ -387,10 +387,10 @@ test.describe("sequence create sheet — field contract", () => {
 		);
 		const row = (parsed.rows ?? parsed.items ?? [])[0];
 		expect(row, "created row on the list").toBeTruthy();
-		expect(String(row?.revive_every)).toMatch(/^at \d{4}-\d{2}-\d{2}T/);
+		expect(String(row?.revive_every)).toMatch(/^@at \d{4}-\d{2}-\d{2}T/);
 		// same instant — serialize formats may differ (Z vs +00:00)
 		expect(new Date(row?.expire_at as string).getTime()).toBe(
-			new Date(String(row?.revive_every).slice(3)).getTime(),
+			new Date(String(row?.revive_every).slice(4)).getTime(),
 		);
 		expect(row?.revive_slot).toBe("sez");
 
