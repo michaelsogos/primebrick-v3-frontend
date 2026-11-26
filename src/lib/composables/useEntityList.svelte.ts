@@ -44,6 +44,7 @@ import type { AppErrorTag } from '$lib/errors/app-errors';
 import {
   defaultVisibleColumnKeys,
   deriveVisibleKeyPrefs,
+  migrateVisibleKeyPrefs,
   orderedColumns,
   resolveVisibleKeyPrefs,
   sanitizeVisibleKeys,
@@ -236,7 +237,7 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
   let pageSizeRestored = false;
   /** v2 visibility prefs awaiting column resolution — set on restore,
    *  consumed by `ensureVisibleKeys` once meta lands. */
-  let pendingVisiblePrefs: Pick<VisibleKeyPrefs, 'shown' | 'hidden'> | null = null;
+  let pendingVisiblePrefs: VisibleKeyPrefs | null = null;
 
   /** Storage-shape guard: v2 writes `{v:2, shown:[], hidden:[]}` — a
    *  legacy v1 payload is a bare `string[]`. */
@@ -275,12 +276,17 @@ export function useEntityList<TRow extends Record<string, unknown>>(opts: UseEnt
       if (vk) {
         const parsed = extJsonParse(vk) as unknown;
         if (isVisibleKeyPrefs(parsed)) {
-          // v2 {shown,hidden} — intent stored, set resolved once columns land.
-          pendingVisiblePrefs = parsed;
+          // v2/v3 {shown,hidden} — migrated once at restore: v2 `hidden` arrays
+          // are bootstrap-polluted fake intent (see core migrateVisibleKeyPrefs)
+          // and drop; genuine `shown` survives. Resolved once columns land.
+          pendingVisiblePrefs = migrateVisibleKeyPrefs(parsed);
         } else if (Array.isArray(parsed) && parsed.every((x) => typeof x === 'string')) {
-          // Legacy v1 resolved array — applied verbatim (identical render),
-          // migrated to v2 shape on the next persist.
-          _state.visibleKeys = parsed;
+          // Legacy v1 resolved array — a key in it WAS visible, everything
+          // else is unknowable intent (default-hidden vs user-hidden are
+          // indistinguishable, the v2 migration contract): carry the array
+          // as `shown`, drop the invisible rest so meta evolution reaches
+          // the profile again.
+          pendingVisiblePrefs = { v: 3, shown: parsed, hidden: [] };
         }
       }
       const sik = storageGet(skSearchInKeys);

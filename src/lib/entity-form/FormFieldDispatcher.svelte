@@ -15,8 +15,12 @@
 	 * sheet — one control contract, two surface maps: multi-select variants
 	 * where the filter feeds IN semantics (badge/subject/entity-ref), a
 	 * boolean tri-state (any/true/false), and editor-only widgets
-	 * (payload_map/json editors, schedule builder) degrade to plain text
-	 * (a filter needs a value to match, not an authoring surface).
+	 * (payload_map/json editors, schedule builder, sequence authoring)
+	 * degrade to plain text (a filter needs a value to match, not an
+	 * authoring surface). VALUE controls never degrade: the revive
+	 * composites emit exactly the canonical varchar the criterion matches,
+	 * the i18n-key pick filters through the same governed vocabulary
+	 * (single-pick, no create — user-ratified 2026-11-26).
 	 */
 	import type {
 		CallableDecl,
@@ -271,6 +275,9 @@
 		'phone',
 		'text',
 		'iana_tz_multi',
+		'revive_interval',
+		'revive_offset',
+		'i18n_key_filter',
 	]);
 
 	function resolveFormControl(): string {
@@ -323,8 +330,20 @@
 		// Avatar columns filter as contains-text on the stored initials —
 		// the preview renderer is a form/list surface, never a filter control.
 		if (column.type === 'avatar') return 'text';
+		// The revive composites are VALUE controls, not editors: the canonical
+		// `'N unit'`/`'at|until <ISO>'` varchar they emit IS the stored wire
+		// format the criterion matches — the same control serves both surfaces
+		// (user-ratified 2026-11-26; the earlier degrade was drift, never a
+		// sanctioned decision).
+		if (column.format === 'revive_interval') return 'revive_interval';
+		if (column.format === 'revive_offset') return 'revive_offset';
+		// `i18n_key` — the filter variant is the same governed vocabulary
+		// pick, minus the form-only machinery: no create (a criterion
+		// references EXISTING keys), no `custom.*` suggestion seeding (no
+		// record context), no languages CTA.
+		if (column.format === 'i18n_key') return 'i18n_key_filter';
 		const resolved = deriveControl();
-		if (resolved === 'subject_combo' || resolved === 'json' || resolved === 'rule_filter' || resolved === 'payload_map' || resolved === 'schedule_spec' || resolved === 'revive_interval' || resolved === 'revive_offset' || resolved === 'sequence' || resolved === 'sequence_pattern' || resolved === 'i18n_key')
+		if (resolved === 'subject_combo' || resolved === 'json' || resolved === 'rule_filter' || resolved === 'payload_map' || resolved === 'schedule_spec' || resolved === 'sequence' || resolved === 'sequence_pattern')
 			return 'text';
 		if (FILTER_CONTROLS.has(resolved)) return resolved;
 		throw new Error(
@@ -622,6 +641,7 @@
 	const entityRef = useEntityRefOptions(
 		() => column,
 		() => depFilters,
+		() => service,
 	);
 
 	/** `options_source:"audit.actors"` options — the filtered entity's own
@@ -1103,6 +1123,37 @@
 			{/if}
 		{/snippet}
 	</ComboSelect>
+{:else if control === 'i18n_key_filter'}
+	<!-- `format:"i18n_key"` FILTER variant — the same governed `i18nKeyOptions`
+	     vocabulary pick, minus the form machinery: `allowCreate` off (a
+	     criterion references EXISTING keys — a created orphan key matches no
+	     row), no `custom.*` suggestion seeding (filters have no record
+	     context; the auto-assign effect keys on `control === 'i18n_key'` and
+	     never fires here), no languages CTA/pending badge. Scope falls back
+	     to the broad `.entities.` vocabulary — the served meta contract for
+	     metas without a `translation_key`, accepted degradation. Single-pick:
+	     the standard serializer keeps ILIKE substring semantics. -->
+	<ComboSelect
+		mode="single"
+		value={stringValue.value}
+		onChange={(v) => {
+			const raw = Array.isArray(v) ? (v[0] ?? '') : v;
+			stringValue.value = raw;
+		}}
+		options={i18nKeyFieldOptions}
+		valueField="key"
+		labelField="key"
+		isLabelTranslated={true}
+		iconField="_icon"
+		iconColorField="_icon_color"
+		allowCreate={false}
+		{placeholder}
+		searchPlaceholder={placeholder}
+		truncateFrom="start"
+		display="detailed"
+		disabled={effectiveLocked}
+		{...controlProps}
+	/>
 {:else if control === 'role_multi'}
 	<ComboSelect
 		mode="multi"

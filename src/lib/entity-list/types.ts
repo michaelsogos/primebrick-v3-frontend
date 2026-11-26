@@ -46,6 +46,7 @@ export {
 	isColumnSearchable,
 	defaultVisibleColumnKeys,
 	deriveVisibleKeyPrefs,
+	migrateVisibleKeyPrefs,
 	resolveVisibleKeyPrefs,
 	sanitizeVisibleKeys,
 	searchableTextColumns,

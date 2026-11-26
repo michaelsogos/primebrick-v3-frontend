@@ -5,8 +5,11 @@
    * contract (`type`/`format`/`options_source`/`ref`) — the panel owns no
    * control anatomy of its own: badges are `display="badge"` multi
    * ComboSelects, census subjects the detailed multi combo, booleans the
-   * tri-state, entity refs the paged server combobox, write-only editor
-   * widgets degrade to text.
+   * tri-state, entity refs the paged server combobox, revive specs the
+   * dual-mode composite, i18n keys the governed vocabulary pick. Only
+   * write-only EDITOR widgets degrade to text (`payload_map`/json/
+   * rule_filter/schedule_spec/sequence authoring) — value controls never
+   * do (user-ratified 2026-11-26).
    *
    * Standard tab = one criterion per filterable column (quick filters).
    * Advanced tab = explicit {field, operator, value} criteria rows — the

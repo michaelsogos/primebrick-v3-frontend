@@ -72,6 +72,10 @@ export interface EntityRefOptionsApi {
 export function useEntityRefOptions(
 	column: () => MetaColumn | undefined,
 	filters?: () => readonly FilterCondition[] | undefined,
+	/** Owning service — REQUIRED for builtin entities (`sequence` mounts in
+	 *  every module service: the census map is ambiguous without it and
+	 *  `entityApiBase` throws). Mirrors `useAuditActorOptions` threading. */
+	service: () => string | undefined = () => undefined,
 ): EntityRefOptionsApi {
 	const _state = $state({
 		options: [] as EntityRefOption[],
@@ -85,7 +89,7 @@ export function useEntityRefOptions(
 	 *  `meta.uid` (bigint `"id"` for true-FK pickers). */
 	const valueField = $derived(column()?.ref?.value_field);
 	let meta = $state<EntityMeta | null>(null);
-	const metaBasePath = $derived(entity ? entityApiBase(entity) : undefined);
+	const metaBasePath = $derived(entity ? entityApiBase(entity, service()) : undefined);
 
 	// Paging state — `search` mirrors the last committed server query so
 	// onLoadMore continues the same result set.

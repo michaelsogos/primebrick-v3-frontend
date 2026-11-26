@@ -557,6 +557,189 @@ test.describe("builtin sequence registry — mounted by construction", () => {
   });
 
   /**
+   * Filter-surface widget parity — user-ratified 2026-11-26: VALUE controls
+   * never degrade to plain text. `revive_every`/`revive_grace` mount the
+   * dual-mode revive composite (the canonical varchar it emits IS the
+   * matched wire format), `description_key` the governed i18n vocabulary
+   * pick, `revived_from` the paged entity-ref combo (self-ref, service-
+   * threaded), `revived_by` the audit-actor combo. Audit actors resolve
+   * display names server-side and the combo searches labels client-side.
+   */
+  test("standard filters mount governed widgets — revive composite, i18n/ref/actor combos, wire + label search", async ({ page }) => {
+    const suffix = Date.now().toString(36);
+    const matchName = `e2e_wgt_match_${suffix}`;
+    const missName = `e2e_wgt_miss_${suffix}`;
+    const created: string[] = [];
+    const createSeq = async (name: string, extra: Record<string, unknown>) => {
+      const r = await page.request.post(`${CRM_BASE}/sequence`, {
+        data: { entity: { name, step: "1", start: "1", ...extra } },
+      });
+      expect([200, 201], `create ${name}: ${await r.text()}`).toContain(r.status());
+      const row = extJsonParse<{ entity?: { uuid?: string } }>(await r.text());
+      if (row.entity?.uuid) created.push(row.entity.uuid);
+    };
+    await createSeq(matchName, {
+      pattern: `W${suffix.slice(-4)}{seq:3}-{sez}`,
+      sez: "2026-01-15",
+      revive_every: "1 year",
+      revive_slot: "sez",
+    });
+    await createSeq(missName, { pattern: `W${suffix.slice(-4)}{seq:4}` });
+    try {
+      const listReq = page.waitForResponse(
+        (r) => r.url().includes("/entities/sequence/list") && r.status() === 200,
+        { timeout: 5_000 },
+      );
+      await page.goto("/crm/settings/sequences");
+      await listReq;
+      await page.getByRole("button", { name: "Filters", exact: true }).first().click();
+      await expect(page.getByTestId("filters-apply")).toBeVisible({ timeout: 5_000 });
+
+      // ── anatomy: the governed control per column contract, never a bare textbox ──
+      // The revive composite's inner numeric carries the labelled field id —
+      // resolving the label proves the composite IS the mounted control.
+      for (const label of ["Renew Every", "Activation"]) {
+        const input = page.getByLabel(label, { exact: true }).first();
+        await expect(input, `${label} must mount the revive composite`).toHaveAttribute(
+          "data-testid",
+          "revive-interval-input-field",
+          { timeout: 5_000 },
+        );
+      }
+      // i18n key + self-ref + actor columns mount comboboxes, never textboxes.
+      // ComboSelect triggers are div[role=combobox] — non-labelable elements,
+      // so the accessible-name chain does not apply; the structural chain
+      // `label[for] → control[id]` is the wired contract under test.
+      const controlFor = async (label: string) => {
+        const labelEl = page.locator(`label:has-text("${label}")`).first();
+        await expect(labelEl, `${label} label`).toBeVisible({ timeout: 5_000 });
+        const forId = await labelEl.getAttribute("for");
+        expect(forId, `${label} label must wire for=`).toBeTruthy();
+        return page.locator(`[id="${forId}"]`);
+      };
+      for (const label of ["Description translation", "Cloned From", "Revived by", "Created by"]) {
+        const control = await controlFor(label);
+        await expect(control, `${label} must mount a combobox`).toHaveAttribute("role", "combobox", {
+          timeout: 5_000,
+        });
+      }
+
+      // ── wire: the revive composite emits the canonical varchar the filter matches ──
+      const urls: string[] = [];
+      page.on("request", (req) => {
+        if (req.url().includes("/entities/sequence/list")) urls.push(req.url());
+      });
+      const renewInput = page.getByLabel("Renew Every", { exact: true }).first();
+      await renewInput.fill("1");
+      await page.getByTestId("filters-apply").click();
+
+      await expect
+        .poll(
+          () =>
+            urls.some((u) => {
+              const url = new URL(u);
+              return Array.from({ length: 8 }, (_, i) => i).some(
+                (i) =>
+                  url.searchParams.get(`filters[${i}][field]`) === "revive_every" &&
+                  url.searchParams.get(`filters[${i}][value]`) === "1 year",
+              );
+            }),
+          { timeout: 5_000, message: `no revive_every=1 year filter in: ${urls.join("\n")}` },
+        )
+        .toBe(true);
+      const filtered = urls
+        .map((u) => new URL(u))
+        .find((u) =>
+          Array.from({ length: 8 }, (_, i) => i).some(
+            (i) => u.searchParams.get(`filters[${i}][field]`) === "revive_every",
+          ),
+        )!;
+      const idx = Array.from({ length: 8 }, (_, i) => i).find(
+        (i) => filtered.searchParams.get(`filters[${i}][field]`) === "revive_every",
+      )!;
+      expect(filtered.searchParams.get(`filters[${idx}][op]`)).toBe("ILIKE");
+      await expect(page.locator("table tbody tr", { hasText: matchName }).first()).toBeVisible({ timeout: 5_000 });
+      await expect(page.locator("table tbody tr", { hasText: missName })).toHaveCount(0);
+
+      // ── actor labels: display names resolve server-side, label search hits them ──
+      // This test's own rows are written by the ephemeral admin — the actor
+      // vocabulary MUST carry its display name, not the raw uuid.
+      const actorCombo = await controlFor("Created by");
+      await actorCombo.click();
+      const adminOption = page.getByRole("option", { name: /E2E Test Admin/ }).first();
+      await expect(adminOption, "actor vocabulary must label-resolve the live profile").toBeVisible({ timeout: 5_000 });
+      // ComboSelect client-search covers labels — typing the display name
+      // prefix must keep the option visible (the raw-uuid search failure the
+      // user reported cannot reproduce with resolved labels).
+      const search = page.getByPlaceholder(/search/i).first();
+      await expect(search).toBeVisible({ timeout: 5_000 });
+      await search.fill("E2E Test");
+      await expect(adminOption).toBeVisible({ timeout: 5_000 });
+      await page.keyboard.press("Escape");
+    } finally {
+      for (const uuid of created.splice(0)) {
+        const got = await page.request.get(`${CRM_BASE}/sequence/${uuid}`).catch(() => null);
+        if (!got?.ok()) continue;
+        const row = extJsonParse<{ version?: unknown }>(await got.text());
+        await page.request.delete(`${CRM_BASE}/sequence/${uuid}?version=${String(row.version ?? 0)}`).catch(() => {});
+      }
+    }
+  });
+
+  /**
+   * Column-visibility v2 pollution self-heals — the migration contract:
+   * a stored v2 blob whose `hidden` array pins default-hidden columns as
+   * fake intent (written by the bootstrap effect under the pre-reorder
+   * decl) must NOT defeat the governed default visibility. `hidden` drops
+   * wholesale at restore; the governed head renders and the store
+   * rewrites as v3.
+   */
+  test("polluted v2 column prefs migrate — governed default order renders, store rewrites v3", async ({ page }) => {
+    // The exact pollution shape: every default-hidden column of the
+    // pre-reorder decl recorded as fake user intent — including the
+    // sez block the reorder wave flipped to default-visible. Serialized
+    // node-side (ext-json wire contract) and injected verbatim.
+    const pollutedBlob = extJsonStringify({
+      v: 2,
+      shown: [],
+      hidden: ["sez", "sez2", "sez3", "step", "start", "tz", "revive_every", "description_key"],
+    });
+    await page.addInitScript(
+      ([key, val]) => window.localStorage.setItem(key, val),
+      ["pb:crm-sequence:list:visibleKeys", pollutedBlob] as const,
+    );
+    const listReq = page.waitForResponse(
+      (r) => r.url().includes("/entities/sequence/list") && r.status() === 200,
+      { timeout: 5_000 },
+    );
+    await page.goto("/crm/settings/sequences");
+    await listReq;
+    await expect(page.locator("table")).toBeVisible({ timeout: 5_000 });
+    const headTexts = (await page.locator("table thead th").allTextContents())
+      .map((t) => t.replace(/\s+/g, " ").trim())
+      .filter(Boolean);
+    // The polluted hide MUST NOT win — the governed head is the decl's.
+    expect(headTexts.slice(0, 5)).toEqual(["Name", "Sezionale", "Sezionale 2", "Sezionale 3", "Increment"]);
+    expect(headTexts).toContain("Time zone");
+    // The canonical store (sessionStorage — localStorage is the legacy
+    // read-only fallback, orphaned by design) rewrites as v3 with the
+    // pollution dropped.
+    await expect
+      .poll(
+        async () => {
+          const raw = await page.evaluate(() =>
+            window.sessionStorage.getItem("pb:crm-sequence:list:visibleKeys"),
+          );
+          if (!raw) return null;
+          const parsed = extJsonParse<{ v?: number; hidden?: string[] }>(raw);
+          return `${parsed.v}:${(parsed.hidden ?? []).length}`;
+        },
+        { timeout: 5_000 },
+      )
+      .toBe("3:0");
+  });
+
+  /**
    * `format:"i18n_key"` cells render the governed translation badge —
    * the same source/destination anatomy `nats_subject` owns: languages
    * icon + `$t(key)` label inside a Badge, raw key in the tooltip, and
