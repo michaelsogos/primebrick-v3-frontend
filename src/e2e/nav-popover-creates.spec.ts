@@ -61,4 +61,16 @@ test("the popover preview lists create leaves for standard entities — and the 
   const createLabels = labels.filter((l) => /nav.create|Nuov|New/i.test(l));
   console.log("create rows visible in popover:", createLabels.length, JSON.stringify(createLabels));
   expect(createLabels.length, "the popover lists the auto-wired create leaves").toBeGreaterThanOrEqual(3);
+
+  // Wired icon contract (user-ratified 2026-11-27): create pages default
+  // to file-plus. The rows render DynamicIcon — lucide stamps the name in
+  // the svg class list; the visible svg presence is the end-user truth.
+  let filePlusCount = 0;
+  for (const r of await rows.all()) {
+    const t = ((await r.textContent()) ?? "").trim();
+    if (!/nav.create|Nuov|New/i.test(t)) continue;
+    if ((await r.locator("svg.lucide-file-plus").count()) > 0) filePlusCount++;
+  }
+  console.log("create rows with file-plus icon:", filePlusCount);
+  expect(filePlusCount, "every create leaf carries the wired file-plus icon").toBe(createLabels.length);
 });
