@@ -6,7 +6,7 @@
   import CellAffordance from './CellAffordance.svelte';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
   import { t } from '$lib/i18n';
-  import { formatListCellValue, toDisplayString, colorCssFromToken, extJsonStringify, FILTER_OPERATOR_KEY } from '@primebrick/ui';
+  import { formatListCellValue, toDisplayString, colorCssFromToken, extJsonStringify, FILTER_OPERATOR_KEY, describeReviveAxis, formatUiDateTime, formatUiDateTimeInTimeZone, getResolvedIanaTimeZone, uiLocaleTag } from '@primebrick/ui';
   import { formatDatetimeCellDisplay } from '$lib/entity-list';
   import { Badge } from '@primebrick/ui';
   import { ScheduleSpecCell, DynamicIcon } from '@primebrick/ui';
@@ -208,6 +208,26 @@
       : undefined,
   );
 
+  /** `format:"revive_interval"`/`"revive_offset"` — display-only localization
+   *  (the SAME user-ratified contract as the input widget, task 10): the cell
+   *  renders plural-aware unit prose ("2 anni") or the localized pin instant;
+   *  the canonical wire literal always lives in the tooltip. Empty cells fall
+   *  through to the universal null contract, unparseable ones render raw. */
+  const reviveCellDisplay = $derived.by(() => {
+    if (column.format !== 'revive_interval' && column.format !== 'revive_offset') return undefined;
+    if (typeof value !== 'string' || value.trim() === '') return undefined;
+    const d = describeReviveAxis(value, column.format === 'revive_interval' ? 'at' : 'until');
+    if (d.kind === 'interval')
+      return `${d.n} ${$t(`app.widgets.revive_interval.unit.${d.unit}.${d.n === 1 ? 'one' : 'other'}`)}`;
+    if (d.kind === 'pin') {
+      const tz = getResolvedIanaTimeZone();
+      return tz
+        ? formatUiDateTimeInTimeZone(d.at, uiLocaleTag($uiLang), tz)
+        : formatUiDateTime(d.at, uiLocaleTag($uiLang));
+    }
+    return undefined;
+  });
+
   type JsonCondition = { field: string; op?: string; value?: unknown };
   /** Trigger/filter `{field,op,value}` DSL vocabulary → canonical
    *  `system.entities.list.operators.*` key segments (the same keys the
@@ -329,6 +349,20 @@
   </Badge>
 {:else if column.format === 'schedule_spec' && typeof value === 'string' && value !== ''}
   <ScheduleSpecCell {value} />
+{:else if reviveCellDisplay}
+  <!-- Localized revive display — the canonical wire literal stays one
+       hover away in the tooltip, same anatomy as the other governed
+       format cells. -->
+  <Tooltip.Root>
+    <Tooltip.Trigger>
+      {#snippet child({ props })}
+        <span {...props} class="min-w-0 truncate" data-testid="revive-cell-display">{reviveCellDisplay}</span>
+      {/snippet}
+    </Tooltip.Trigger>
+    <Tooltip.Content>
+      <p class="font-mono text-xs">{toDisplayString(value)}</p>
+    </Tooltip.Content>
+  </Tooltip.Root>
 {:else if column.format === 'nats_subject' && value}
   <!-- Display name (translated census label_key) renders INSIDE the badge
        when the census resolves it; the raw subject path always lives in
