@@ -14,7 +14,7 @@
  *      only `$.entity.after.preferred_locale`; the eye-dashed CTA inside the
  *      dropdown search row reveals the rest disabled+searchable.
  *
- * Surface: /system/job/triggers/create with `emailsender.send` as the
+ * Surface: /system/job/job_triggers/create with `emailsender.send` as the
  * target (its `to` prop is `array<string email>` — the dedup fixture)
  * and `events.crm.customer.on.changed` as the event (rich nested payload schema —
  * the icon fixture). Nothing is submitted.
@@ -33,7 +33,7 @@ test.use({ actionTimeout: 5000 });
  *  cold popup — retry inside the poll budget until the child mounts. */
 async function openTriggersCreate(page: Page, context: BrowserContext): Promise<Page> {
   await loginAsTestAdmin(page);
-  await page.goto("/system/job/triggers", { waitUntil: "domcontentloaded" });
+  await page.goto("/system/job/job_triggers", { waitUntil: "domcontentloaded" });
   await expect(page.locator("table")).toBeVisible();
   // Sidebar nav links mount only after onMount + module-nav fetch — the
   // doc's hydration gate: clicking SSR DOM hits dead handlers.
@@ -47,7 +47,7 @@ async function openTriggersCreate(page: Page, context: BrowserContext): Promise<
     popup = p;
   }).toPass({ timeout: 5000 });
   await popup.waitForLoadState("domcontentloaded", { timeout: 5000 });
-  await expect(popup.getByTestId("entity-form-page")).toBeVisible();
+  await expect(popup.getByTestId("entity-form-surface")).toBeVisible();
   return popup;
 }
 

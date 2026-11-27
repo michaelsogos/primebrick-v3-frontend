@@ -5,7 +5,7 @@
  * branch routes through the injected formatter — the seam that had been
  * bypassed (raw toDisplayString, left-aligned).
  *
- * Surface: /system/job/runs — job_run list, `fire_seq`/`redelivery_count`
+ * Surface: /system/job/job_runs — job_run list, `fire_seq`/`redelivery_count`
  * are default_visible number columns on a self-populating entity.
  */
 import { test, expect } from "@playwright/test";
@@ -15,7 +15,7 @@ test.use({ actionTimeout: 5000 });
 
 test("number cells render right-aligned, tabular digits, locale-formatted", async ({ page }) => {
   await loginAsTestAdmin(page);
-  await page.goto("/system/job/runs", { waitUntil: "domcontentloaded" });
+  await page.goto("/system/job/job_runs", { waitUntil: "domcontentloaded" });
   // The list defaults to outcome "Dispatched" (always empty once runs settle)
   // — widen to "All" so the completed runs surface.
   await page.getByRole("button", { name: "All", exact: true }).click();

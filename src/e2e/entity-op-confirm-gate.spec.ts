@@ -353,7 +353,7 @@ async function searchTpl(page: Page, code: string) {
 // `emailsender.send` is used; with no schedule/event the trigger never
 // arms, so no email can ever leave. ----
 
-const TRIGGERS_URL = "/system/job/triggers";
+const TRIGGERS_URL = "/system/job/job_triggers";
 const TRIGGERS_API = "/svc/job/api/v1/entities/job_trigger";
 
 function watchTrigger(page: Page) {

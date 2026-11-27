@@ -39,8 +39,8 @@ const jobModule: ModuleInfo = {
   enabled: true,
   part_of: 'system',
   route_prefixes: ['/system/job'],
-  nav: [{ id: 'schedules', label_key: 'job.nav.schedules', href: '/system/job/job-schedules', default: true }],
-  routes: [{ route: '/system/job/job-schedules' }] as ModuleInfo['routes'],
+  nav: [{ id: 'schedules', label_key: 'job.nav.schedules', href: '/system/job/job_schedules', default: true }],
+  routes: [{ route: '/system/job/job_schedules' }] as ModuleInfo['routes'],
 };
 
 // Module with ZERO accessible leaves — present only for the reveal switch.
@@ -67,7 +67,7 @@ describe('isRouteAccessible — access-filtered census', () => {
   it('declared routes and nav leaves are accessible', () => {
     expect(isRouteAccessible('/system/settings/profile', MODULES)).toBe(true);
     expect(isRouteAccessible('/system/settings/users', MODULES)).toBe(true);
-    expect(isRouteAccessible('/system/job/job-schedules', MODULES)).toBe(true);
+    expect(isRouteAccessible('/system/job/job_schedules', MODULES)).toBe(true);
   });
 
   it('[param] route patterns match concrete paths', () => {
@@ -80,7 +80,7 @@ describe('isRouteAccessible — access-filtered census', () => {
   it('denies paths under an owned prefix absent from the census', () => {
     // Filtered or unknown — deliberately indistinguishable.
     expect(isRouteAccessible('/system/settings/secret', MODULES)).toBe(false);
-    expect(isRouteAccessible('/system/job/triggers', MODULES)).toBe(false);
+    expect(isRouteAccessible('/system/job/job_triggers', MODULES)).toBe(false);
   });
 
   it('denies every path of an accessible:false module — including its prefix', () => {
@@ -97,7 +97,7 @@ describe('isRouteAccessible — access-filtered census', () => {
 describe('safePageFor — fallback resolution', () => {
   it('denied page resolves to the owning module default leaf', () => {
     expect(safePageFor('/system/settings/secret', MODULES)).toBe('/system/settings/profile');
-    expect(safePageFor('/system/job/anything', MODULES)).toBe('/system/job/job-schedules');
+    expect(safePageFor('/system/job/anything', MODULES)).toBe('/system/job/job_schedules');
   });
 
   it('fully-inaccessible module falls to the root default module leaf', () => {

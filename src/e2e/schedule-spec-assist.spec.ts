@@ -25,14 +25,14 @@ test.describe("schedule-spec-input UOM interval builder", () => {
   }) => {
     await loginAsTestAdmin(page);
 
-    await page.goto("/system/job/triggers", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job_triggers", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
     const [popup] = await Promise.all([
       context.waitForEvent("page", { timeout: 15000 }),
       page.getByTestId("entity-create-cta").click(),
     ]);
     await popup.waitForLoadState("domcontentloaded");
-    await expect(popup.getByTestId("entity-form-page")).toBeVisible({ timeout: 30000 });
+    await expect(popup.getByTestId("entity-form-surface")).toBeVisible({ timeout: 30000 });
 
     // Open the assist popover on the schedule_spec field.
     const specField = popup.getByTestId("entity-form-field-schedule_spec");

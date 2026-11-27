@@ -16,12 +16,12 @@ import { extJsonParse, extJsonStringify } from '@primebrick/core/ext-json';
  *     focused browser tab (the internal preview pane was removed — Sheets own
  *     record detail now)
  *
- * Surface: /system/job/job-schedules — host-rendered standard list
+ * Surface: /system/job/job_schedules — host-rendered standard list
  * archetype, guaranteed populated (the job module registers schedules at
  * boot; jobs-pages' sparkline spec depends on the same fact).
  */
 
-const SCHEDULES = "/system/job/job-schedules";
+const SCHEDULES = "/system/job/job_schedules";
 const LIST_URL = "/job_schedule/list";
 
 test.describe("entity-list-table interactions", () => {
@@ -67,9 +67,9 @@ test.describe("entity-list-table interactions", () => {
   });
 
   test("row dblclick opens the record detail route in a new focused tab", async ({ page, context }) => {
-    // job_trigger owns a kind:"detail" census decl (/system/job/triggers/[uuid])
+    // job_trigger owns a kind:"detail" census decl (/system/job/job_triggers/[uuid])
     // — job_schedule does not, so this contract is asserted on the triggers list.
-    await page.goto("/system/job/triggers", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job_triggers", { waitUntil: "domcontentloaded" });
     const firstRow = page.locator("table tbody tr[data-row-index]").first();
     await expect(firstRow).toBeVisible({ timeout: 5_000 });
 
@@ -77,10 +77,10 @@ test.describe("entity-list-table interactions", () => {
     await firstRow.dblclick();
     const tab = await popup;
 
-    await expect(tab).toHaveURL(/\/system\/job\/triggers\/[0-9a-f-]{36}/, { timeout: 5_000 });
+    await expect(tab).toHaveURL(/\/system\/job\/job_triggers\/[0-9a-f-]{36}/, { timeout: 5_000 });
     // The new tab must take focus — the parent stays on the list.
     await expect.poll(() => tab.evaluate(() => document.hasFocus())).toBe(true);
-    expect(page.url()).toContain("/system/job/triggers");
+    expect(page.url()).toContain("/system/job/job_triggers");
     await tab.close();
   });
 
@@ -317,7 +317,7 @@ test.describe("entity-list-table interactions", () => {
    */
   test("pager keys navigate pages like the footer buttons", async ({ page }) => {
     // job_runs is the densest ELT list — hundreds of rows, always multi-page.
-    await page.goto("/system/job/runs", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job_runs", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table tbody tr[data-row-index]").first()).toBeVisible({ timeout: 5_000 });
 
     const status = page.getByTestId("elt-pagination-status");
@@ -344,13 +344,13 @@ test.describe("entity-list-table interactions", () => {
   /**
    * Insert = the toolbar NEW CTA — the same handler, whatever it does
    * (sheet, goto, popup). The triggers list is the NEW-TAB archetype:
-   * pressing Ins must open /system/job/triggers/create in a new tab.
+   * pressing Ins must open /system/job/job_triggers/create in a new tab.
    * The legend mirrors the CTA by showing the Ins hint only when a
    * create action exists.
    */
   test("Insert key fires the toolbar NEW CTA", async ({ page, context }) => {
     await page.setViewportSize({ width: 1920, height: 900 });
-    await page.goto("/system/job/triggers", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job_triggers", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table tbody tr[data-row-index]").first()).toBeVisible({ timeout: 5_000 });
 
     const legend = page.getByTestId("elt-kbd-legend");
@@ -364,7 +364,7 @@ test.describe("entity-list-table interactions", () => {
     const popup = context.waitForEvent("page", { timeout: 5000 });
     await page.keyboard.press("Insert");
     const tab = await popup;
-    await expect(tab).toHaveURL(/\/system\/job\/triggers\/create/, { timeout: 5000 });
+    await expect(tab).toHaveURL(/\/system\/job\/job_triggers\/create/, { timeout: 5000 });
     await tab.close();
   });
 });

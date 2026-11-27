@@ -3,7 +3,7 @@ import { loginAsTestAdmin } from "./helpers/admin-login";
 
 import { extJsonStringify, extJsonParse } from '@primebrick/core/ext-json';
 /**
- * /system/job/triggers — the deletion-filter button group regression.
+ * /system/job/job_triggers — the deletion-filter button group regression.
  *
  * job_trigger is soft-deletable (deleted_at = disablement), so the ELT
  * toolbar renders the three-way deletion toggle. Every option switch MUST
@@ -19,7 +19,7 @@ import { extJsonStringify, extJsonParse } from '@primebrick/core/ext-json';
 
 const GROUP_SEL = "[data-slot='button-group']";
 
-test.describe("/system/job/triggers deletion filter", () => {
+test.describe("/system/job/job_triggers deletion filter", () => {
   test.beforeEach(async ({ page }) => {
     await loginAsTestAdmin(page);
   });
@@ -42,7 +42,7 @@ test.describe("/system/job/triggers deletion filter", () => {
           .catch(() => {});
     });
 
-    await page.goto("/system/job/triggers", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job_triggers", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
 
     // Wait for the initial list fetch to land.
@@ -130,7 +130,7 @@ test.describe("/system/job/triggers deletion filter", () => {
   test("row menu renders exec-stop/exec-start semantic chrome — icon+label one color", async ({
     page,
   }) => {
-    await page.goto("/system/job/triggers", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job_triggers", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
 
     const menuItem = (nameRe: RegExp) =>
@@ -311,7 +311,7 @@ test.describe("/system/job/triggers deletion filter", () => {
         res.text().then((t) => extJsonParse<{ total?: unknown }>(t)).then((b) => { excludedTotal = Number(b?.total ?? -1); }).catch(() => {});
     });
 
-    await page.goto("/system/job/triggers", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job_triggers", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
     await expect
       .poll(() => excludedTotal, { timeout: 30000 })

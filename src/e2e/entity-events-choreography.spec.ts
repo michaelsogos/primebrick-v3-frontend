@@ -54,14 +54,14 @@ test.describe("entity events choreography — trigger authored in the browser", 
   }) => {
     await loginAsTestAdmin(page);
 
-    await page.goto("/system/job/triggers", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job_triggers", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
     const [popup] = await Promise.all([
       context.waitForEvent("page", { timeout: 15000 }),
       page.getByTestId("entity-create-cta").click(),
     ]);
     await popup.waitForLoadState("domcontentloaded");
-    await expect(popup.getByTestId("entity-form-page")).toBeVisible({ timeout: 30000 });
+    await expect(popup.getByTestId("entity-form-surface")).toBeVisible({ timeout: 30000 });
 
     await popup.getByTestId("entity-form-field-name").locator("input").fill(TRIG_NAME);
 

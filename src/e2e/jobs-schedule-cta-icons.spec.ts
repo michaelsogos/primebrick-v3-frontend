@@ -3,7 +3,7 @@ import { loginAsTestAdmin } from "./helpers/admin-login";
 
 import { extJsonParse } from '@primebrick/core/ext-json';
 /**
- * /system/job/job-schedules — `:filled` icon qualifier on lifecycle CTAs.
+ * /system/job/job_schedules — `:filled` icon qualifier on lifecycle CTAs.
  *
  * The entity_op `cta.icon` carries DynamicIcon's `:filled` name
  * qualifier (`icon:"pause:filled"`/`"play:filled"` on the pause/resume
@@ -33,7 +33,7 @@ test.describe("job_schedule lifecycle CTAs — :filled icons", () => {
   test("meta carries qualified names; bulk toolbar renders filled svgs", async ({
     page,
   }) => {
-    await page.goto("/system/job/job-schedules", {
+    await page.goto("/system/job/job_schedules", {
       waitUntil: "domcontentloaded",
     });
     await expect(page.locator("table")).toBeVisible({ timeout: 5_000 });
@@ -93,7 +93,7 @@ test.describe("job_schedule lifecycle CTAs — :filled icons", () => {
   });
 
   test("row kebab renders lifecycle ops with :filled svgs", async ({ page }) => {
-    await page.goto("/system/job/job-schedules", {
+    await page.goto("/system/job/job_schedules", {
       waitUntil: "domcontentloaded",
     });
     await expect(page.locator("table")).toBeVisible({ timeout: 5_000 });

@@ -20,14 +20,14 @@ import { loginAsTestAdmin } from "./helpers/admin-login";
  *   - Labels carry `MetaColumn.icon`, and the help icon exists only where
  *     `show_list_tooltip` declares it (ghost-icon regression).
  *
- * Surfaces: /system/job/triggers (census subject + badge + json→text),
+ * Surfaces: /system/job/job_triggers (census subject + badge + json→text),
  * /system/settings/users (booleans + tooltip/no-tooltip label pair),
- * /system/job/runs (entity-ref combo).
+ * /system/job/job_runs (entity-ref combo).
  */
 
-const TRIGGERS = "/system/job/triggers";
+const TRIGGERS = "/system/job/job_triggers";
 const USERS = "/system/settings/users";
-const RUNS = "/system/job/runs";
+const RUNS = "/system/job/job_runs";
 
 /** Live `/list` request URLs for one entity, captured from page traffic. */
 function watchList(page: Page, entity: string): string[] {

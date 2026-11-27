@@ -6,7 +6,7 @@ import { extJsonParse } from '@primebrick/core/ext-json';
  * off the target entity's display template (`${display_field}` here:
  * job_trigger.name → trigger_uuid_name).
  *
- * Contract verified end-to-end on /system/job/job-schedules:
+ * Contract verified end-to-end on /system/job/job_schedules:
  *  - the list response carries `trigger_uuid_name` (no uuid fallback when
  *    the target row exists — NULL when the ref is empty).
  *  - the ref cell renders the joined display name, never the raw uuid.
@@ -28,7 +28,7 @@ test.describe("ref display join — job_schedule.trigger_uuid", () => {
     expect(named!.trigger_uuid_name).not.toBe(named!.trigger_uuid);
 
     // The cell shows the display name (ref-cell-*-text testid contract).
-    await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job_schedules", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 5_000 });
     await page.getByRole("button", { name: "Columns" }).first().click();
     const toggle = page.getByTestId("columns-toggle-trigger_uuid");

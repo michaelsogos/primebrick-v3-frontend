@@ -39,7 +39,7 @@ import { extJsonParse } from '@primebrick/core/ext-json';
 const TS = Date.now();
 const RULE_NAME = `e2e-collab-${TS}`;
 const JOB_BASE = "/svc/job/api/v1/entities";
-const DETAIL_PATH = (uuid: string) => `/system/job/triggers/${uuid}`;
+const DETAIL_PATH = (uuid: string) => `/system/job/job_triggers/${uuid}`;
 
 // Serial: the fixture row is created in beforeAll and every test relies on
 // it; the two-context choreography inside each test is itself sequential.
@@ -120,7 +120,7 @@ test.describe("collaborative update surface (job_trigger detail)", () => {
       // --- A opens the record, B opens the same record -------------------
       await loginAsTestAdmin(pageA);
       await pageA.goto(DETAIL_PATH(ruleUuid), { waitUntil: "domcontentloaded" });
-      await expect(pageA.getByTestId("entity-form-page")).toBeVisible({ timeout: 5_000 });
+      await expect(pageA.getByTestId("entity-form-surface")).toBeVisible({ timeout: 5_000 });
       const presenceZone = pageA.getByTestId("page-header-presence");
       // Design: "0 others → no avatars" — the stack renders nothing while
       // A is alone on the record (no self chip — the viewer's own
@@ -129,7 +129,7 @@ test.describe("collaborative update surface (job_trigger detail)", () => {
 
       await loginAsCollabAdmin(pageB);
       await pageB.goto(DETAIL_PATH(ruleUuid), { waitUntil: "domcontentloaded" });
-      await expect(pageB.getByTestId("entity-form-page")).toBeVisible({ timeout: 5_000 });
+      await expect(pageB.getByTestId("entity-form-surface")).toBeVisible({ timeout: 5_000 });
 
       // B's READING signal lands on A's snapshot → stack appears: one
       // other-avatar (B). No self chip exists anymore.
@@ -210,7 +210,7 @@ test.describe("collaborative update surface (job_trigger detail)", () => {
     try {
       await loginAsTestAdmin(pageA);
       await pageA.goto(DETAIL_PATH(uuid2), { waitUntil: "domcontentloaded" });
-      await expect(pageA.getByTestId("entity-form-page")).toBeVisible({ timeout: 5_000 });
+      await expect(pageA.getByTestId("entity-form-surface")).toBeVisible({ timeout: 5_000 });
       const presenceZone = pageA.getByTestId("page-header-presence");
       // Fresh record — A is alone, the stack stays empty.
       await expect(presenceZone.getByTestId("presence-avatar")).toHaveCount(0);
@@ -218,7 +218,7 @@ test.describe("collaborative update surface (job_trigger detail)", () => {
       // Same user, second context → A must SEE the duplicate session.
       await loginAsTestAdmin(pageB);
       await pageB.goto(DETAIL_PATH(uuid2), { waitUntil: "domcontentloaded" });
-      await expect(pageB.getByTestId("entity-form-page")).toBeVisible({ timeout: 5_000 });
+      await expect(pageB.getByTestId("entity-form-surface")).toBeVisible({ timeout: 5_000 });
 
       const otherTabAvatar = presenceZone.getByTestId("presence-avatar");
       await expect(otherTabAvatar).toHaveCount(1, { timeout: 5000 });
@@ -260,8 +260,8 @@ test.describe("collaborative update surface (job_trigger detail)", () => {
     page,
   }) => {
     await loginAsTestAdmin(page);
-    await page.goto("/system/job/triggers/create", { waitUntil: "domcontentloaded" });
-    await expect(page.getByTestId("entity-form-page")).toBeVisible({ timeout: 5000 });
+    await page.goto("/system/job/job_triggers/create", { waitUntil: "domcontentloaded" });
+    await expect(page.getByTestId("entity-form-surface")).toBeVisible({ timeout: 5000 });
     // The presence zone renders in the header but stays EMPTY on create —
     // no record uuid, no channel, no avatars, no chip.
     await expect(page.getByTestId("presence-avatars")).toHaveCount(0);

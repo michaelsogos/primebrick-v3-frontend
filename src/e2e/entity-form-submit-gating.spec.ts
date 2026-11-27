@@ -1,7 +1,7 @@
 /**
  * entity-form-submit-gating — the dynamic form's Save button contract.
  *
- * /system/job/triggers/create renders the EntityFormPage archetype. The
+ * /system/job/job_triggers/create renders the EntityFormPage archetype. The
  * footer submit must follow `useFormGuard.canSave`:
  *   - untouched form        → disabled (not tainted)
  *   - tainted but invalid   → disabled (required fields / cross-field rules)
@@ -31,14 +31,14 @@ test.describe("entity-form submit gating", () => {
     // 30s element wait alone can outlast the default 30s test budget.
     test.setTimeout(120_000);
     await loginAsTestAdmin(page);
-    await page.goto("/system/job/triggers", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job_triggers", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table")).toBeVisible({ timeout: 5_000 });
     const [popup] = await Promise.all([
       context.waitForEvent("page", { timeout: 5_000 }),
       page.getByTestId("entity-create-cta").click(),
     ]);
     await popup.waitForLoadState("domcontentloaded");
-    await expect(popup.getByTestId("entity-form-page")).toBeVisible({ timeout: 5_000 });
+    await expect(popup.getByTestId("entity-form-surface")).toBeVisible({ timeout: 5_000 });
     const submit = popup.getByTestId("entity-form-submit");
 
     // 1. Untouched → disabled (no taint yet, regardless of validity).

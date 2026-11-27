@@ -92,9 +92,9 @@ test.describe("access axis — server-side discovery filtering", () => {
 
   test("non-admin: launcher hides settings until the reveal switch is on", async ({ page }) => {
     await loginAsTestUser(page);
-    await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job_schedules", { waitUntil: "domcontentloaded" });
     await page
-      .locator("[data-sidebar='content'] a[href='/system/job/job-schedules']")
+      .locator("[data-sidebar='content'] a[href='/system/job/job_schedules']")
       .first()
       .waitFor({ state: "visible", timeout: 5_000 });
     await openLauncher(page);
@@ -126,7 +126,7 @@ test.describe("access axis — server-side discovery filtering", () => {
 
   test("non-admin: sidebar on a job page carries no settings links", async ({ page }) => {
     await loginAsTestUser(page);
-    await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job_schedules", { waitUntil: "domcontentloaded" });
     await page
       .locator("[data-sidebar='content'] a[href]")
       .first()
@@ -139,7 +139,7 @@ test.describe("access axis — server-side discovery filtering", () => {
       hrefs.filter((h) => h?.startsWith("/system/settings")),
       "no /system/settings links may render for a user without the grant",
     ).toEqual([]);
-    expect(hrefs.some((h) => h === "/system/job/job-schedules")).toBeTruthy();
+    expect(hrefs.some((h) => h === "/system/job/job_schedules")).toBeTruthy();
   });
 
   test("non-admin: direct URL to a gated page → deny + RFC notification + safe redirect", async ({
@@ -147,9 +147,9 @@ test.describe("access axis — server-side discovery filtering", () => {
   }) => {
     await loginAsTestUser(page);
     // First land somewhere reachable so the shell + discovery payload load.
-    await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job_schedules", { waitUntil: "domcontentloaded" });
     await page
-      .locator("[data-sidebar='content'] a[href='/system/job/job-schedules']")
+      .locator("[data-sidebar='content'] a[href='/system/job/job_schedules']")
       .first()
       .waitFor({ state: "visible", timeout: 5_000 });
 
@@ -157,7 +157,7 @@ test.describe("access axis — server-side discovery filtering", () => {
 
     // The URL guard denies: RFC7807 notification + redirect to the safe
     // page — the System root's only accessible module default leaf.
-    await page.waitForURL("**/system/job/job-schedules", { timeout: 5_000 });
+    await page.waitForURL("**/system/job/job_schedules", { timeout: 5_000 });
     await expect(
       page.locator("[data-sonner-toast]").filter({ hasText: "ACCESS_DENIED" }).first(),
       "an ACCESS_DENIED notification must surface the denied page",

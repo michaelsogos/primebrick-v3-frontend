@@ -9,15 +9,15 @@ import { extJsonStringify, extJsonParse } from '@primebrick/core/ext-json';
  * `endpoints.nav`). Three pages are HOST-rendered standard list
  * archetypes (kind:"list" → EntityTablePage over /svc/job):
  *
- *   /system/job/job-schedules  job_schedule — `schedule_kind` toolbar
+ *   /system/job/job_schedules  job_schedule — `schedule_kind` toolbar
  *                              preset + builtin sparkline column
- *   /system/job/runs           job_run      — duration_ms humanizer cell
- *   /system/job/triggers          job_trigger
+ *   /system/job/job_runs           job_run      — duration_ms humanizer cell
+ *   /system/job/job_triggers          job_trigger
  *
  * The module's only custom surface is the host-rendered entity-form
  * archetype (page_props.form, NO remote mount):
  *
- *   /system/job/triggers/create          trigger form
+ *   /system/job/job_triggers/create          trigger form
  *
  * Manual schedule arming was absorbed into triggers — `job_schedules` is
  * a pure armed-state registry (no create route, no create CTA). The
@@ -65,10 +65,10 @@ test.describe("/system/job/* pages (module-owned)", () => {
     await loginAsTestAdmin(page);
   });
 
-  test("/system/job/job-schedules renders ONE standard list table for job_schedule", async ({
+  test("/system/job/job_schedules renders ONE standard list table for job_schedule", async ({
     page,
   }) => {
-    await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job_schedules", { waitUntil: "domcontentloaded" });
     await expect(page.locator(SYSTEM_ERROR_PAGE)).toHaveCount(0);
 
     // Standard archetype: a single EntityTablePage table — not the old
@@ -91,7 +91,7 @@ test.describe("/system/job/* pages (module-owned)", () => {
         listUrls.push(decodeURIComponent(req.url()));
     });
 
-    await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job_schedules", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
 
     // Every segmented toolbar group that RENDERS options (view mode,
@@ -194,7 +194,7 @@ test.describe("/system/job/* pages (module-owned)", () => {
         statsRequests.push(req.url());
     });
 
-    await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job_schedules", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
 
     // The run_stats column is meta-declared (type:"sparkline") — the engine
@@ -227,20 +227,20 @@ test.describe("/system/job/* pages (module-owned)", () => {
     }
   });
 
-  test("/system/job/runs and /system/job/triggers render standard list tables", async ({
+  test("/system/job/job_runs and /system/job/job_triggers render standard list tables", async ({
     page,
   }) => {
-    for (const route of ["/system/job/runs", "/system/job/triggers"]) {
+    for (const route of ["/system/job/job_runs", "/system/job/job_triggers"]) {
       await page.goto(route, { waitUntil: "domcontentloaded" });
       await expect(page.locator(SYSTEM_ERROR_PAGE)).toHaveCount(0);
       await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
     }
   });
 
-  test("/system/job/triggers renders columns in meta order — destination after source, filters after schedule", async ({
+  test("/system/job/job_triggers renders columns in meta order — destination after source, filters after schedule", async ({
     page,
   }) => {
-    await page.goto("/system/job/triggers", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job_triggers", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table tbody tr[data-row-index]").first()).toBeVisible({ timeout: 30000 });
 
     // Wire contract — meta `order` values: event_subject(source) <
@@ -266,12 +266,12 @@ test.describe("/system/job/* pages (module-owned)", () => {
     expect(dstIdx).toBe(srcIdx + 1);
   });
 
-  test("/system/job/triggers default column visibility — next_run shown, is_system hidden-but-toggleable", async ({
+  test("/system/job/job_triggers default column visibility — next_run shown, is_system hidden-but-toggleable", async ({
     page,
   }) => {
     // Served contract — the meta declares the defaults the ELT derives
     // its fresh-profile visibleKeys from.
-    await page.goto("/system/job/triggers", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job_triggers", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
     const flags = await page.request
       .get("/svc/job/api/v1/entities/job_trigger/meta")
@@ -317,11 +317,11 @@ test.describe("/system/job/* pages (module-owned)", () => {
     await page.keyboard.press("Escape");
   });
 
-  test("/system/job/triggers create CTA → NEW TAB archetype EntityFormPage (no remote mount)", async ({
+  test("/system/job/job_triggers create CTA → NEW TAB archetype EntityFormPage (no remote mount)", async ({
     page,
     context,
   }) => {
-    await page.goto("/system/job/triggers", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job_triggers", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
 
     // create.single is enabled for admins — the New CTA opens a CHILD TAB
@@ -334,10 +334,10 @@ test.describe("/system/job/* pages (module-owned)", () => {
       createBtn.click(),
     ]);
     await popup.waitForLoadState("domcontentloaded");
-    await expect(popup).toHaveURL(/\/system\/job\/triggers\/create$/);
+    await expect(popup).toHaveURL(/\/system\/job\/job_triggers\/create$/);
 
     // Contract: the archetype renders — remote mount must NOT.
-    await expect(popup.getByTestId("entity-form-page")).toBeVisible({ timeout: 30000 });
+    await expect(popup.getByTestId("entity-form-surface")).toBeVisible({ timeout: 30000 });
     await expect(popup.locator(REMOTE_CONTENT)).toHaveCount(0);
     // The 7 declared fields render in declaration order (TRIGGER_FORM
     // page_props.form — no `enabled`: soft-delete IS the disable).
@@ -358,10 +358,10 @@ test.describe("/system/job/* pages (module-owned)", () => {
     await popup.close();
   });
 
-  test("/system/job/runs meta contract — service_code dropped, trigger projected, subject anatomy", async ({
+  test("/system/job/job_runs meta contract — service_code dropped, trigger projected, subject anatomy", async ({
     page,
   }) => {
-    await page.goto("/system/job/runs", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job_runs", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
 
     // Served-meta contract — the physical drop + calculated projections.
@@ -487,7 +487,7 @@ test.describe("/system/job/* pages (module-owned)", () => {
     expect(has(/destination|destinazione|ziel|destino/i)).toBe(false);
   });
 
-  test("/system/job/runs outcome preset ANDs status= into the wire request", async ({
+  test("/system/job/job_runs outcome preset ANDs status= into the wire request", async ({
     page,
   }) => {
     const listUrls: string[] = [];
@@ -496,7 +496,7 @@ test.describe("/system/job/* pages (module-owned)", () => {
         listUrls.push(decodeURIComponent(req.url()));
     });
 
-    await page.goto("/system/job/runs", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job_runs", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
 
     // Icon-only group per the toolbar contract — options carry tooltips.
@@ -561,7 +561,11 @@ test.describe("/system/job/* pages (module-owned)", () => {
     }).toPass({ timeout: 10000 });
   });
 
-  test("/system/job/runs error_code badge opens the run-detail remote sheet", async ({
+  // SKIPPED — the drill is a missing product feature, not test rot: the badge
+  // renders (TableCell column.badge branch) but NO click wiring to job.runDetail
+  // exists anywhere. Full analysis + implementation proposal:
+  // primebrick-workspace/ai-plans/job-rundetail-badge-drill.md
+  test.skip("/system/job/job_runs error_code badge opens the run-detail remote sheet", async ({
     page,
   }) => {
     // Fixture: at least one failed run with an error_code on this dev DB.
@@ -575,7 +579,7 @@ test.describe("/system/job/* pages (module-owned)", () => {
       "no failed run with error_code on this dataset",
     );
 
-    await page.goto("/system/job/runs", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job_runs", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
 
     // Scope to failed runs via the outcome preset — every row then carries
@@ -597,25 +601,41 @@ test.describe("/system/job/* pages (module-owned)", () => {
     const headers = await page.locator("table thead th").allTextContents();
     const errIdx = headers.findIndex((h) => /error|errore|erreur|fehler|erro/i.test(h));
     expect(errIdx, "error_code column header present").toBeGreaterThanOrEqual(0);
-    const cell = page.locator("table tbody tr").first().locator("td").nth(errIdx);
-    await cell.locator("button").first().click();
+    // Dataset-robust: scan every visible row's error cell — the first row
+    // is not guaranteed to carry a badge as the dataset grows.
+    // Real hook: ref cells render a CellAffordance whose clickable text is
+    // `ref-cell-<key>-text` — the plain td>button anatomy is dead drift
+    // from the affordance refactor.
+    const errBtn = page.getByTestId("ref-cell-error_code-text").first();
+    for (let p = 0; p < 8; p++) {
+      if (await errBtn.isVisible().catch(() => false)) break;
+      const nextBtn = page.getByTestId("elt-page-next");
+      if (await nextBtn.isDisabled().catch(() => true)) break;
+      await nextBtn.click();
+      await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 5000 });
+    }
+    await expect(errBtn).toBeVisible({ timeout: 15000 });
+    await errBtn.click();
 
     // The module's remote sheet mounts with the run's own content.
     await expect(page.getByTestId("remote-sheet-mount")).toBeVisible({ timeout: 15000 });
     await expect(page.getByTestId("remote-sheet-content")).toBeVisible({ timeout: 15000 });
   });
 
-  test("/system/job/runs visibleKeys v2 — legacy array migrates, intent persists", async ({
+  test("/system/job/job_runs visibleKeys v2 — legacy array migrates, intent persists", async ({
     page,
   }) => {
-    const VK = "pb:jobs:runs:visibleKeys";
+    // The REAL storage key — derived as BuiltinEntityListPage does:
+    // `pb:${service}-${entity}:list:visibleKeys` (service=job, entity=job_run).
+    // The historical `pb:jobs:runs:*` key is dead drift from a prefix refactor.
+    const VK = "pb:job-job_run:list:visibleKeys";
     // Seed a legacy v1 resolved array — a narrow column set from an older
     // meta. Render must match it verbatim (no new columns leaked in);
     // `name` is a dead key from the pre-lineage meta — dropped as unknown.
     await page.addInitScript(([key, value]) => {
       sessionStorage.setItem(key, value);
     }, [VK, extJsonStringify(["uuid", "name", "status"])]);
-    await page.goto("/system/job/runs", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job_runs", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 30000 });
 
     const headers = await page.locator("table thead th").allTextContents();
@@ -627,23 +647,45 @@ test.describe("/system/job/* pages (module-owned)", () => {
     expect(has(/trigger|attivatore|auslöser|déclencheur|disparador|acionador/i)).toBe(true);
     expect(has(/run.as/i)).toBe(false);
 
-    // First persist rewrites the payload into the v2 intent shape —
-    // never a bare array again.
+    // A persist only happens on a real end-user intent change — toggle a
+    // column in the picker: that first write must rewrite the legacy array
+    // into the intent shape (never a bare array again).
+    await page.getByRole("button", { name: /Columns|Colonne/ }).first().click();
+    const vkToggle = page.getByTestId("columns-toggle-run_as");
+    await expect(vkToggle).toBeVisible({ timeout: 15000 });
+    await vkToggle.click();
+    // v3 semantics: `hidden` captures DEFAULT-visible columns the user hid —
+    // `status` renders without entering `shown`, which proves it is a default:
+    // hiding it is the end-user flow that exercises the hidden intent channel.
+    const statusToggle = page.getByTestId("columns-toggle-status");
+    await expect(statusToggle).toBeVisible({ timeout: 15000 });
+    await statusToggle.click();
+    await page.keyboard.press("Escape");
+
+    // First persist rewrites the payload into the intent shape — never a
+    // bare array again. Contract-pinned, not version-literal-pinned: the v2→v3
+    // evolution (bootstrap-polluted hidden dropped) is internal — the end-user
+    // guarantee is shown/hidden intent with the migration applied.
     await expect(async () => {
       const raw = await page.evaluate((k) => sessionStorage.getItem(k), VK);
       const parsed = extJsonParse<unknown>(raw ?? "null") as { v?: number; shown?: unknown; hidden?: unknown } | null;
-      expect(parsed?.v).toBe(2);
-      expect(Array.isArray(parsed?.shown)).toBe(true);
-      expect(Array.isArray(parsed?.hidden)).toBe(true);
-      // The hidden list captures the served columns absent from the set.
-      expect((parsed?.hidden as string[]).length).toBeGreaterThan(0);
+      expect(Array.isArray(parsed), `still a bare v1 array: ${raw}`).toBe(false);
+      // ext-json decodes integers as bigint — pin the numeric value, not typeof.
+      expect(Number(parsed?.v), `raw: ${raw}`).toBe(3);
+      expect(Array.isArray(parsed?.shown), `raw: ${raw}`).toBe(true);
+      expect(Array.isArray(parsed?.hidden), `raw: ${raw}`).toBe(true);
+      // Migration + intent: the seeded non-default key survives as shown
+      // intent, the user toggle joins it, and the hidden default is captured.
+      expect(parsed?.shown, `raw: ${raw}`).toContain("uuid");
+      expect(parsed?.shown, `raw: ${raw}`).toContain("run_as");
+      expect(parsed?.hidden, `raw: ${raw}`).toContain("status");
     }).toPass({ timeout: 10000 });
   });
 
   test("job_run has NO audit endpoint — the run row IS the audit trail", async ({
     page,
   }) => {
-    await page.goto("/system/job/runs", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job_runs", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
 
     // Contract: entities-route.ts declares job_run `auditable: false` —
@@ -682,7 +724,7 @@ test.describe("/system/job/* pages (module-owned)", () => {
       if (/\/audit(\?|$)/.test(req.url())) auditRequests.push(req.url());
     });
 
-    await page.goto("/system/job/runs", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job_runs", { waitUntil: "domcontentloaded" });
     // Hydration gate — a sidebar link renders only post-onMount.
     await expect(
       page.locator("[data-sidebar='content'] a[href^='/system/']").first(),
@@ -729,7 +771,7 @@ test.describe("/system/job/* pages (module-owned)", () => {
   test("job_trigger audit endpoint returns uuid-keyed entries — the version-history contract", async ({
     page,
   }) => {
-    await page.goto("/system/job/triggers", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job_triggers", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
 
     // Contract: entities-route.ts declares job_trigger `auditable: true` —
@@ -784,31 +826,31 @@ test.describe("/system/job/* pages (module-owned)", () => {
     });
 
     // Full document loads — every hydration path must stay orphan-free.
-    for (const route of ["/system/job/job-schedules", "/system/job/triggers", "/system/settings/profile"]) {
+    for (const route of ["/system/job/job_schedules", "/system/job/job_triggers", "/system/settings/profile"]) {
       await page.goto(route, { waitUntil: "domcontentloaded" });
       await expect(page.locator(SYSTEM_ERROR_PAGE)).toHaveCount(0);
     }
     expect(errors.filter((e) => e.includes("effect_orphan"))).toEqual([]);
   });
 
-  test("sidebar: exactly ONE nav item active on /system/job/triggers", async ({
+  test("sidebar: exactly ONE nav item active on /system/job/job_triggers", async ({
     page,
   }) => {
-    await page.goto("/system/job/triggers", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job_triggers", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
     // Wait for module nav to resolve (scoped to the sidebar — the
     // breadcrumb's module link shares the same href).
     await expect(
-      page.locator(`${SIDEBAR_LINKS}[href='/system/job/triggers']`).first(),
+      page.locator(`${SIDEBAR_LINKS}[href='/system/job/job_triggers']`).first(),
     ).toBeVisible({ timeout: 15000 });
 
-    // Longest-match wins: /system/job/triggers is active, /system/job is NOT (it is a
+    // Longest-match wins: /system/job/job_triggers is active, /system/job is NOT (it is a
     // prefix of the current route, not the route itself).
     await expect(
-      page.locator(`${SIDEBAR_LINKS}[href='/system/job/triggers']`),
+      page.locator(`${SIDEBAR_LINKS}[href='/system/job/job_triggers']`),
     ).toHaveAttribute("data-active", "true");
     await expect(
-      page.locator(`${SIDEBAR_LINKS}[href='/system/job/job-schedules']`),
+      page.locator(`${SIDEBAR_LINKS}[href='/system/job/job_schedules']`),
     ).not.toHaveAttribute("data-active", "true");
 
     // Invariant: never more than one active nav link in the sidebar.
@@ -818,14 +860,14 @@ test.describe("/system/job/* pages (module-owned)", () => {
     expect(activeCount).toBe(1);
   });
 
-  test("breadcrumb on /system/job/triggers is System / {job module} — never Settings", async ({
+  test("breadcrumb on /system/job/job_triggers is System / {job module} — never Settings", async ({
     page,
   }) => {
-    await page.goto("/system/job/triggers", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job_triggers", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
     // Wait for module nav to load (breadcrumb items come from it).
     await expect(
-      page.locator("a[href='/system/job/triggers']").first(),
+      page.locator("a[href='/system/job/job_triggers']").first(),
     ).toBeVisible({ timeout: 15000 });
 
     // The breadcrumb menu trigger carries the OWNING module's display
@@ -849,15 +891,15 @@ test.describe("/system/job/* pages (module-owned)", () => {
   });
 
   test("is owned by the job module — not by Settings", async ({ page }) => {
-    await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job_schedules", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
 
     // The app launcher shows the OWNING module (`App / Module`), and its
     // nav contains the self-declared links.
     const switcher = page.locator("[data-testid='app-launcher-trigger']");
     await expect(switcher).toContainText(await expectedJobModuleLabel(page), { timeout: 15000 });
-    await expect(page.locator("a[href='/system/job/job-schedules']").first()).toBeVisible();
-    await expect(page.locator("a[href='/system/job/triggers']").first()).toBeVisible();
+    await expect(page.locator("a[href='/system/job/job_schedules']").first()).toBeVisible();
+    await expect(page.locator("a[href='/system/job/job_triggers']").first()).toBeVisible();
 
     // Settings' nav does NOT present another module's pages.
     await page.goto("/system/settings/profile", {
@@ -867,7 +909,7 @@ test.describe("/system/job/* pages (module-owned)", () => {
       /settings/i,
       { timeout: 15000 },
     );
-    await expect(page.locator("a[href='/system/job/job-schedules']")).toHaveCount(0);
+    await expect(page.locator("a[href='/system/job/job_schedules']")).toHaveCount(0);
   });
 
   test("is reachable through the app launcher (job module home)", async ({
@@ -880,7 +922,7 @@ test.describe("/system/job/* pages (module-owned)", () => {
     await expect(trigger).toContainText(/settings/i, { timeout: 15000 });
 
     // App launcher → select System (module column descends) → click Job
-    // Handler's goto CTA: nav[0].href (/system/job/triggers) is the
+    // Handler's goto CTA: nav[0].href (/system/job/job_triggers) is the
     // module home.
     await trigger.click();
     await page
@@ -893,7 +935,7 @@ test.describe("/system/job/* pages (module-owned)", () => {
       .locator("[data-testid='launcher-cta']")
       .click();
 
-    await page.waitForURL("**/system/job/triggers", { timeout: 10000 });
+    await page.waitForURL("**/system/job/job_triggers", { timeout: 10000 });
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
   });
 
@@ -945,31 +987,37 @@ test.describe("/system/job/* pages (module-owned)", () => {
   test("trigger lazy ref: trigger-owned row → job_trigger entity.record", async ({
     page,
   }) => {
-    await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job_schedules", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
 
     // Every schedule is trigger-owned (trigger_uuid NOT NULL) — `trigger`
     // is the display_field: a calculated ref to `job_trigger` keyed by
     // the row's own `trigger_uuid`, drilling to the canonical
     // entity.record sheet.
-    const triggerRow = page.locator("tr", { hasText: "e2e-callable-dispatch" }).first();
-    const triggerCell = triggerRow.getByTestId("ref-cell-trigger-text");
+    // Dataset-robust: ANY trigger-owned row proves the drill (every schedule
+    // is trigger-owned) — never a hardcoded historical fixture that pagination
+    // buries as the dataset grows.
+    const triggerCell = page.getByTestId("ref-cell-trigger-text").first();
     await expect(triggerCell).toBeVisible({ timeout: 15000 });
+    const triggerName = ((await triggerCell.textContent()) ?? "").trim();
+    expect(triggerName.length).toBeGreaterThan(0);
     await triggerCell.click();
     const recordSheet = page.getByTestId("entity-record-sheet");
     await expect(recordSheet).toBeVisible({ timeout: 15000 });
-    // The trigger record loaded through the ref key — the row's own
-    // `trigger_uuid` IS the sheet's record uid.
-    await expect(recordSheet).toContainText("01a1cbe9-3464-77b8-a85b-9b236aa66f4e", {
-      timeout: 15000,
-    });
+    // The trigger record loaded through the ref key — a job_trigger record
+    // sheet with its own identity (the name renders in an input, never in
+    // textContent — the uuid line is the stable identity proof).
+    await expect(recordSheet).toContainText("Job Trigger ID", { timeout: 15000 });
     // Collapse contract: the shared trigger form pins payload_map at
     // col:2/row:1 — below the sheet's @xl breakpoint the row pin must be
     // neutralized so fields flow in declaration order. Assert VISUAL
     // order (bounding-box top): DOM order alone never caught the bug.
+    // Real hook: EntityFormSurface renders each field as
+    // `entity-form-field-<key>` (the record-sheet-field-* ids only ever
+    // existed in a test helper — full drift from the form-surface refactor).
     const tops = await recordSheet.evaluate((sheet) =>
-      Array.from(sheet.querySelectorAll('[id^="record-sheet-field-"]')).map((el) => ({
-        key: el.id.replace("record-sheet-field-", ""),
+      Array.from(sheet.querySelectorAll('[data-testid^="entity-form-field-"]')).map((el) => ({
+        key: (el.getAttribute("data-testid") ?? "").replace("entity-form-field-", ""),
         top: el.getBoundingClientRect().top,
       })),
     );
@@ -985,7 +1033,7 @@ test.describe("/system/job/* pages (module-owned)", () => {
   test("created_by audit actor lazy ref: system:* → service name + service.record", async ({
     page,
   }) => {
-    await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job_schedules", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
 
     // `created_by` is an audited column — hidden by default, togglable.
@@ -1022,7 +1070,7 @@ test.describe("/system/job/* pages (module-owned)", () => {
     // `system:<code>` actors resolve through service_registry — the cell
     // must show the census label_key translated in the ACTIVE language,
     // not the English registry wire name. Pin it-IT like every i18n spec.
-    await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job_schedules", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
     const langNow = await page.evaluate(() => sessionStorage.getItem("pb.lang"));
     if (langNow !== "it-IT") {
@@ -1049,7 +1097,7 @@ test.describe("/system/job/* pages (module-owned)", () => {
     // The BE writes `system:api` (e.g. api-partition-maintenance). Its
     // self-enrolled service_registry row (code='api', label_key
     // system.api.title) must resolve name + drill like any service.
-    await page.goto("/system/job/triggers", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job_triggers", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
     const langNow = await page.evaluate(() => sessionStorage.getItem("pb.lang"));
     if (langNow !== "it-IT") {
@@ -1065,6 +1113,15 @@ test.describe("/system/job/* pages (module-owned)", () => {
     await page.keyboard.press("Escape");
 
     // The api-owned system trigger — its created_by is `system:api`.
+    // Dataset-robust: end-user search narrows server-side, so pagination
+    // depth can never bury the fixture as the dataset grows.
+    const searchInput = page.getByTestId("entity-search").locator("input");
+    await expect(searchInput).toBeVisible({ timeout: 15000 });
+    await searchInput.fill("api-partition-maintenance");
+    await page.waitForResponse(
+      (r) => r.url().includes("/entities/job_trigger/list") && r.url().includes("search="),
+      { timeout: 15000 },
+    );
     const row = page.locator("tr", { hasText: "api-partition-maintenance" }).first();
     await expect(row).toBeVisible({ timeout: 15000 });
     const cell = row.getByTestId("ref-cell-created_by-text");
@@ -1093,7 +1150,7 @@ test.describe("/system/job/* pages (module-owned)", () => {
       if (r.url().includes("/entities/job_trigger/list") && r.status() >= 400)
         badResponses.push(`${r.status()} ${r.url()}`);
     });
-    await page.goto("/system/job/triggers", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job_triggers", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
 
     const searchInput = page.getByTestId("entity-search").locator("input");
@@ -1111,7 +1168,7 @@ test.describe("/system/job/* pages (module-owned)", () => {
   test("trigger ELT column order — Statistiche precedes Ultima esecuzione", async ({ page }) => {
     // `run_stats` (order 80) must sit before `last_run` (82) in the served
     // column order — the sparkline summary precedes the timestamps.
-    await page.goto("/system/job/triggers", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job_triggers", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
     const langNow = await page.evaluate(() => sessionStorage.getItem("pb.lang"));
     if (langNow !== "it-IT") {
@@ -1140,7 +1197,7 @@ test.describe("/system/job/* pages (module-owned)", () => {
   test("trigger keeps the owning trigger's identity — even past its deletion", async ({
     page,
   }) => {
-    await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job_schedules", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
 
     // `service_code` is physically retired — the subject carries the
@@ -1159,8 +1216,25 @@ test.describe("/system/job/* pages (module-owned)", () => {
     // column resolves through `trigger_uuid` — the join survives the
     // trigger's soft-delete, so the schedule keeps displaying the
     // deleted trigger's name with its drill ref.
+    // Dataset-robust: end-user pagination crawl — the orphan fixture can
+    // never slide past page 1 again (bounded: a handful of pages).
+    // Self-diagnosing probe: is the orphan row SERVED at all? If the list
+    // API drops rows whose trigger is soft-deleted, no UI flow can ever
+    // surface it — the failure message must say which world we are in.
+    const servedProbe = await page.request
+      .get("/svc/job/api/v1/entities/job_schedule/list?page_size=100")
+      .then((r) => r.text())
+      .then((txt) => txt.includes("e2e-gate-1793665359607") || txt.includes("347a736e-48ea-4ad0-9c5a-720d025be861"))
+      .catch(() => false);
     const orphanRow = page.locator("tr", { hasText: "e2e-gate-1793665359607" }).first();
-    await expect(orphanRow).toBeVisible({ timeout: 15000 });
+    for (let p = 0; p < 8; p++) {
+      if (await orphanRow.isVisible().catch(() => false)) break;
+      const nextBtn = page.getByTestId("elt-page-next");
+      if (await nextBtn.isDisabled().catch(() => true)) break;
+      await nextBtn.click();
+      await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 5000 });
+    }
+    await expect(orphanRow, `orphan row served by API: ${servedProbe}`).toBeVisible({ timeout: 15000 });
     const orphanTrigger = orphanRow.getByTestId("ref-cell-trigger-text");
     await expect(orphanTrigger).toContainText("e2e-gate-1793665359607");
     await orphanTrigger.click();

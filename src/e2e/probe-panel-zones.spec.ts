@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 import { loginAsTestAdmin } from "./helpers/admin-login";
 
 import { extJsonStringify } from '@primebrick/core/ext-json';
-const TRIGGERS = "/system/job/triggers";
+const TRIGGERS = "/system/job/job_triggers";
 
 test("probe — panel zones: toolbar border + footer anatomy", async ({ page }) => {
   await loginAsTestAdmin(page);

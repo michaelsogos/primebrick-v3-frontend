@@ -1,7 +1,7 @@
 /**
  * job-rule-form-lifecycle — the EntityFormPage archetype end-to-end.
  *
- * /system/job/triggers/create is declared kind:"create" + entity + page_props.form
+ * /system/job/job_triggers/create is declared kind:"create" + entity + page_props.form
  * (NO component_url): the resolver picks the archetype, the host renders the
  * form from served meta.columns + placement.
  *
@@ -50,14 +50,14 @@ test.describe("job_trigger entity-form archetype lifecycle", () => {
     await loginAsTestAdmin(page);
 
     // 1. The create CTA opens the archetype in a NEW TAB (popup contract).
-    await page.goto("/system/job/triggers", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job_triggers", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
     const [popup] = await Promise.all([
       context.waitForEvent("page", { timeout: 15000 }),
       page.getByTestId("entity-create-cta").click(),
     ]);
     await popup.waitForLoadState("domcontentloaded");
-    await expect(popup.getByTestId("entity-form-page")).toBeVisible({ timeout: 30000 });
+    await expect(popup.getByTestId("entity-form-surface")).toBeVisible({ timeout: 30000 });
 
     // 2. Form anatomy (contract, not implementation):
     //    - module breadcrumb present
@@ -178,14 +178,14 @@ test.describe("schedule_spec assist — choicebox mode cards", () => {
     context,
   }) => {
     await loginAsTestAdmin(page);
-    await page.goto("/system/job/triggers", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job_triggers", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
     const [popup] = await Promise.all([
       context.waitForEvent("page", { timeout: 15000 }),
       page.getByTestId("entity-create-cta").click(),
     ]);
     await popup.waitForLoadState("domcontentloaded");
-    await expect(popup.getByTestId("entity-form-page")).toBeVisible({ timeout: 30000 });
+    await expect(popup.getByTestId("entity-form-surface")).toBeVisible({ timeout: 30000 });
 
     // Open the assist popover — the mode picker is a radiogroup of cards.
     const schedField = popup.getByTestId("entity-form-field-schedule_spec");
@@ -328,14 +328,14 @@ test.describe("schedule_spec assist — choicebox mode cards", () => {
     context,
   }) => {
     await loginAsTestAdmin(page);
-    await page.goto("/system/job/triggers", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job_triggers", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table")).toBeVisible({ timeout: 30000 });
     const [popup] = await Promise.all([
       context.waitForEvent("page", { timeout: 15000 }),
       page.getByTestId("entity-create-cta").click(),
     ]);
     await popup.waitForLoadState("domcontentloaded");
-    await expect(popup.getByTestId("entity-form-page")).toBeVisible({ timeout: 30000 });
+    await expect(popup.getByTestId("entity-form-surface")).toBeVisible({ timeout: 30000 });
 
     const schedField = popup.getByTestId("entity-form-field-schedule_spec");
     await schedField.locator('[data-testid$="-assist"]').click();

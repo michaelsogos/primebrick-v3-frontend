@@ -10,7 +10,7 @@
  *      deletes the draft slot;
  *   4. undoing the edit self-deletes the slot (no ghost drafts).
  *
- * Surface: /system/job/triggers/create — `name` is a plain text input,
+ * Surface: /system/job/job_triggers/create — `name` is a plain text input,
  * the cheapest real field. Conventions: e2e-browser-session.md — 5s
  * expectation budget everywhere, no waitForTimeout, dead clicks retried
  * inside polls.
@@ -24,7 +24,7 @@ test.use({ actionTimeout: 5000 });
 
 async function openTriggersCreate(page: Page, context: BrowserContext): Promise<Page> {
   await loginAsTestAdmin(page);
-  await page.goto("/system/job/triggers", { waitUntil: "domcontentloaded" });
+  await page.goto("/system/job/job_triggers", { waitUntil: "domcontentloaded" });
   await expect(page.locator("table")).toBeVisible();
   await expect(page.locator('a[href^="/system/"]').first()).toBeVisible();
   let popup!: Page;
@@ -36,7 +36,7 @@ async function openTriggersCreate(page: Page, context: BrowserContext): Promise<
     popup = p;
   }).toPass({ timeout: 5000 });
   await popup.waitForLoadState("domcontentloaded", { timeout: 5000 });
-  await expect(popup.getByTestId("entity-form-page")).toBeVisible();
+  await expect(popup.getByTestId("entity-form-surface")).toBeVisible();
   return popup;
 }
 
@@ -75,8 +75,8 @@ test("detail: stale-base draft becomes a conflict; reset refetches the live row"
   const { uuid } = (await create.text().then((t) => extJsonParse<unknown>(t))) as { uuid: string };
 
   try {
-    await page.goto(`/system/job/triggers/${uuid}`, { waitUntil: "domcontentloaded" });
-    await expect(page.getByTestId("entity-form-page")).toBeVisible({ timeout: 5_000 });
+    await page.goto(`/system/job/job_triggers/${uuid}`, { waitUntil: "domcontentloaded" });
+    await expect(page.getByTestId("entity-form-surface")).toBeVisible({ timeout: 5_000 });
     const nameField = page.getByTestId("entity-form-field-name");
     const nameInput = nameField.locator("input");
     await expect(nameInput).toHaveValue(name);
@@ -100,7 +100,7 @@ test("detail: stale-base draft becomes a conflict; reset refetches the live row"
     // Refresh → fresh row + draft replay: name holds the draft value AND
     // surfaces the stale-base conflict (ring + destructive chip).
     await page.reload({ waitUntil: "domcontentloaded" });
-    await expect(page.getByTestId("entity-form-page")).toBeVisible();
+    await expect(page.getByTestId("entity-form-surface")).toBeVisible();
     await expect(nameInput).toHaveValue(edited, { timeout: 5000 });
     await expect(nameField).toHaveClass(/ring-destructive/, { timeout: 5000 });
     const chip = page.getByTestId("presence-status-chip");
@@ -147,10 +147,10 @@ test("draft survives refresh; reset returns to defaults and clears the slot", as
 
   // Refresh → the restore replays the tainted key onto fresh defaults.
   await popup.reload({ waitUntil: "domcontentloaded" });
-  await expect(popup.getByTestId("entity-form-page")).toBeVisible();
+  await expect(popup.getByTestId("entity-form-surface")).toBeVisible();
   await expect(nameInput).toHaveValue(draftValue);
   // The restored field is honestly tainted — the form reports changes.
-  const form = popup.getByTestId("entity-form-page");
+  const form = popup.getByTestId("entity-form-surface");
   await expect(form).toHaveAttribute("data-has-changes", "true");
   await expect(form).toHaveAttribute("data-tainted", /"name":true/);
 

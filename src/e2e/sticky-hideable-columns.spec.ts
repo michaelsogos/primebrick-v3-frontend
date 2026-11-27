@@ -18,7 +18,7 @@ import { loginAsTestAdmin } from "./helpers/admin-login";
 test.describe("identity column contract — job_schedule", () => {
   test("display_field pinned first, uuid sticky-toggleable, subject chrome", async ({ page }) => {
     await loginAsTestAdmin(page);
-    await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job_schedules", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 5_000 });
 
     // The pinned identity column is the FIRST header cell after the
@@ -69,7 +69,7 @@ test.describe("identity column contract — job_schedule", () => {
    * therefore exists even for never-ran schedules. */
   test("sparkline renders a fixed 10-slot frame, current bucket last", async ({ page }) => {
     await loginAsTestAdmin(page);
-    await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job_schedules", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 5_000 });
 
     const svg = page.locator("table tbody svg[aria-label='sparkline']").first();
@@ -86,7 +86,7 @@ test.describe("identity column contract — job_schedule", () => {
    * "N Label"), derived locale-proof from the trigger's aria-label. */
   test("sparkline slot hover opens the standard tooltip with bucket data", async ({ page }) => {
     await loginAsTestAdmin(page);
-    await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job_schedules", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 5_000 });
 
     // The overlay triggers are per-slot buttons siblings of each row's

@@ -4,7 +4,7 @@ import { loginAsTestAdmin } from "./helpers/admin-login";
 import { extJsonStringify } from '@primebrick/core/ext-json';
 test("probe — kbd legend median layout", async ({ page }) => {
   await loginAsTestAdmin(page);
-  await page.goto("/system/job/triggers", { waitUntil: "domcontentloaded" });
+  await page.goto("/system/job/job_triggers", { waitUntil: "domcontentloaded" });
   await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 5_000 });
   await page.getByTestId("elt-kbd-legend").hover();
   const panel = page.getByTestId("elt-kbd-legend-panel");

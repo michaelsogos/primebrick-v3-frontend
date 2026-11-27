@@ -12,9 +12,9 @@ import {
 import type { CensusRoute } from '../api';
 
 const census = [
-	{ route: '/system/job/triggers', entity: 'job_trigger', kind: 'list' },
-	{ route: '/system/job/triggers/[uuid]', entity: 'job_trigger', kind: 'detail' },
-	{ route: '/system/job/runs', entity: 'job_run', kind: 'list' }
+	{ route: '/system/job/job_triggers', entity: 'job_trigger', kind: 'list' },
+	{ route: '/system/job/job_triggers/[uuid]', entity: 'job_trigger', kind: 'detail' },
+	{ route: '/system/job/job_runs', entity: 'job_run', kind: 'list' }
 ] as CensusRoute[];
 
 describe('filteredEntityListHref', () => {
@@ -22,7 +22,7 @@ describe('filteredEntityListHref', () => {
 		const href = filteredEntityListHref(census, 'job_run', [
 			{ field: 'schedule_subject', op: '=', value: 'jobs.sched.trigger.abc' }
 		]);
-		expect(href).toContain('/system/job/runs?');
+		expect(href).toContain('/system/job/job_runs?');
 		const qs = new URLSearchParams(href!.split('?')[1]);
 		expect(qs.get('filters[0][field]')).toBe('schedule_subject');
 		expect(qs.get('filters[0][op]')).toBe('=');
@@ -51,7 +51,7 @@ describe('filteredEntityListHref', () => {
 describe('entityRefHref', () => {
 	it('detail route substitutes the value', () => {
 		expect(entityRefHref(census, { entity: 'job_trigger' }, 'u-1')).toBe(
-			'/system/job/triggers/u-1'
+			'/system/job/job_triggers/u-1'
 		);
 	});
 	it('route:"list" filters by filter_field (uuid default)', () => {

@@ -97,7 +97,7 @@ test.describe("service unreachable watermark", () => {
         route.fulfill(SERVICE_OFFLINE_502),
       );
 
-      await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
+      await page.goto("/system/job/job_schedules", { waitUntil: "domcontentloaded" });
       await expect(page.locator("table")).toBeVisible();
       await enableColumn(page, "trigger_uuid");
 
@@ -140,7 +140,7 @@ test.describe("service unreachable watermark", () => {
         route.fulfill(SERVICE_OFFLINE_502),
       );
 
-      await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
+      await page.goto("/system/job/job_schedules", { waitUntil: "domcontentloaded" });
       await expect(page.locator("table")).toBeVisible();
       await enableColumn(page, "trigger_uuid");
 
@@ -192,7 +192,7 @@ test.describe("service unreachable watermark", () => {
     });
 
     try {
-      await page.goto("/system/job/triggers", { waitUntil: "domcontentloaded" });
+      await page.goto("/system/job/job_triggers", { waitUntil: "domcontentloaded" });
       await expect(page.locator("table")).toBeVisible();
       await enableColumn(page, "payload_map");
 
@@ -237,7 +237,7 @@ test.describe("service unreachable watermark", () => {
         route.fulfill(SERVICE_OFFLINE_502),
       );
 
-      await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
+      await page.goto("/system/job/job_schedules", { waitUntil: "domcontentloaded" });
       await expect(page.locator("table")).toBeVisible();
       await enableColumn(page, "trigger_uuid");
 

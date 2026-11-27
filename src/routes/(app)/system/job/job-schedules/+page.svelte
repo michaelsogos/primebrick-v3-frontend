@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * /system/job/job-schedules — job_schedule list, HOST-rendered
+   * /system/job/job_schedules — job_schedule list, HOST-rendered
    * EntityTablePage (standard archetype). Declared by the job service's
    * `endpoints.nav` census (`kind:"list"`, `entity:"job_schedule"`);
    * api_base resolves via the /api/v1/modules census → /svc/job.

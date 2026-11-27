@@ -5,7 +5,7 @@
  * `entity.jsonViewer` sheet. The wiring being proven: JsonCellViewer
  * shares CellAffordance with ref/mapper cells — no invented anatomy.
  *
- * Surface: /system/job/runs — job_run.report is a default_visible
+ * Surface: /system/job/job_runs — job_run.report is a default_visible
  * format:"json" column; maintenance reports are objects → generic
  * fallback on every populated row.
  */
@@ -16,7 +16,7 @@ test.use({ actionTimeout: 5000 });
 
 test("generic json cell renders link-only 'View' CTA opening the sheet", async ({ page }) => {
   await loginAsTestAdmin(page);
-  await page.goto("/system/job/runs", { waitUntil: "domcontentloaded" });
+  await page.goto("/system/job/job_runs", { waitUntil: "domcontentloaded" });
   // Same default-filter caveat as the numeric spec — widen to "All".
   await page.getByRole("button", { name: "All", exact: true }).click();
   const rows = page.locator("table tbody tr");

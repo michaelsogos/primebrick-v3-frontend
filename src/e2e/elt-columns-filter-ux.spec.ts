@@ -22,7 +22,7 @@ const SK = "pb:jobs:schedules:";
 test.describe("ELT columns/filter UX — job_schedule", () => {
   test("columns panel select-all → all rendered; deselect → declared defaults", async ({ page }) => {
     await loginAsTestAdmin(page);
-    await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job_schedules", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 5_000 });
 
     await page.getByRole("button", { name: "Columns" }).first().click();
@@ -54,7 +54,7 @@ test.describe("ELT columns/filter UX — job_schedule", () => {
 
   test("columns panel rows all carry the canonical type/declared icon", async ({ page }) => {
     await loginAsTestAdmin(page);
-    await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job_schedules", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 5_000 });
 
     await page.getByRole("button", { name: "Columns" }).first().click();
@@ -75,7 +75,7 @@ test.describe("ELT columns/filter UX — job_schedule", () => {
 
   test("search-in panel rows all carry the canonical type/declared icon", async ({ page }) => {
     await loginAsTestAdmin(page);
-    await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job_schedules", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 5_000 });
 
     await page.getByTestId("entity-search-scope").click();
@@ -101,7 +101,7 @@ test.describe("ELT columns/filter UX — job_schedule", () => {
       await new Promise((r) => setTimeout(r, 900));
       await route.continue();
     });
-    await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job_schedules", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 5_000 });
 
     const strip = page.getByTestId("elt-reload-strip");
@@ -118,7 +118,7 @@ test.describe("ELT columns/filter UX — job_schedule", () => {
     await loginAsTestAdmin(page);
     // NO route delay — localhost responses finish well under one paint.
     // Without the min-duration hold the strip never becomes visible.
-    await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job_schedules", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 5_000 });
 
     const bar = page.getByTestId("elt-reload-strip").locator('[data-slot="loading-bar"]');
@@ -158,7 +158,7 @@ test.describe("ELT columns/filter UX — job_schedule", () => {
       }
     });
 
-    await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job_schedules", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 5_000 });
 
     // search_in only reaches the wire when a search is typed — without
@@ -193,7 +193,7 @@ test.describe("ELT columns/filter UX — job_schedule", () => {
         });
       } catch { /* non-json */ }
     });
-    await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job_schedules", { waitUntil: "domcontentloaded" });
     // Wait for a REAL data row — the loading/empty state is a single
     // colspan row; data rows carry a 2nd+ cell. Counting too early gives 1.
     await expect(page.locator("table tbody tr").first().locator("td").nth(1)).toBeVisible({ timeout: 5_000 });
@@ -221,7 +221,7 @@ test.describe("ELT columns/filter UX — job_schedule", () => {
 
   test("filters panel excludes the preset-owned schedule_type field", async ({ page }) => {
     await loginAsTestAdmin(page);
-    await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job_schedules", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 5_000 });
 
     await page.getByRole("button", { name: /filters/i }).first().click();

@@ -47,7 +47,7 @@ async function openRemoteSheet(page: import('@playwright/test').Page, key: strin
 
 test('remote sheet job.runDetail mounts and loads its run', async ({ page }) => {
   await loginAsTestAdmin(page);
-  await page.goto('/system/job/runs', { waitUntil: 'domcontentloaded' });
+  await page.goto('/system/job/job_runs', { waitUntil: 'domcontentloaded' });
   await page.getByTestId('sidebar-profile-menu-trigger').waitFor({ state: 'visible', timeout: 15_000 });
   // Let the app settle so every shell module URL is in the resource buffer.
   await page.waitForTimeout(2000);
@@ -83,7 +83,7 @@ test('remote sheet job.runDetail mounts and loads its run', async ({ page }) => 
 
 test('unknown sheet key is rejected — no empty surface', async ({ page }) => {
   await loginAsTestAdmin(page);
-  await page.goto('/system/job/runs', { waitUntil: 'domcontentloaded' });
+  await page.goto('/system/job/job_runs', { waitUntil: 'domcontentloaded' });
   await page.getByTestId('sidebar-profile-menu-trigger').waitFor({ state: 'visible', timeout: 15_000 });
   await page.waitForTimeout(2000);
   const url = await sheetManager(page);

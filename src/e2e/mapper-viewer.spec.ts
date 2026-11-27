@@ -66,7 +66,7 @@ test.describe("mapper viewer", () => {
     });
 
     try {
-      await page.goto("/system/job/triggers", { waitUntil: "domcontentloaded" });
+      await page.goto("/system/job/job_triggers", { waitUntil: "domcontentloaded" });
       await expect(page.locator("table")).toBeVisible();
       await expect(page.locator('a[href^="/system/"]').first()).toBeVisible();
 
@@ -98,7 +98,7 @@ test.describe("mapper viewer", () => {
 
       // Trailing CTA → the record's detail route, _blank.
       const ext = row.getByTestId("mapper-cell-payload_map-ext");
-      await expect(ext).toHaveAttribute("href", `/system/job/triggers/${uuid}`);
+      await expect(ext).toHaveAttribute("href", `/system/job/job_triggers/${uuid}`);
 
       await cell.click();
 

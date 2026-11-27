@@ -18,7 +18,7 @@
  *     forecast is display-only and never shrinks the items array
  *   - submit goes through the governed confirm channel (no window.confirm)
  *
- * Target: `job_trigger` (ELT page /system/job/triggers) — `bulkUpdate`
+ * Target: `job_trigger` (ELT page /system/job/job_triggers) — `bulkUpdate`
  * rides the shared `writePerms` grant. Residue-free: seeded rows are
  * bulk-deleted at the end, pass or fail.
  */
@@ -103,7 +103,7 @@ test.describe("bulk editor — update.bulk end to end", () => {
     uuids.push(a.uuid, b.uuid);
 
     // ── ELT → bulk mode → select the two seeded rows ───────────────
-    await page.goto("/system/job/triggers", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job_triggers", { waitUntil: "domcontentloaded" });
     await expect(page.locator("table")).toBeVisible({ timeout: 5_000 });
     await page.getByTestId("bulk-actions-toggle").click();
 

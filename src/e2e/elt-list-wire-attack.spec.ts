@@ -36,7 +36,7 @@ test.describe("wire attack — job_schedule list", () => {
 
   test.beforeEach(async ({ page }) => {
     await loginAsTestAdmin(page);
-    await page.goto("/system/job/job-schedules", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/job/job_schedules", { waitUntil: "domcontentloaded" });
     if (!allRows) {
       const base = await wire(page, "page=1&page_size=1");
       expect(base.status).toBe(200);
