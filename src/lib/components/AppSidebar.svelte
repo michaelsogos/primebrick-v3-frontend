@@ -3,6 +3,7 @@
   import * as Sidebar from '$lib/components/ui/sidebar';
   import { t } from '$lib/i18n';
   import { shellNav } from '$lib/shell/modules-shell.svelte';
+  import { sortNavLeaves } from '$lib/shell/nav-ordering';
   import { afterNavigate } from '$app/navigation';
   import { resolve } from '$app/paths';
   import { userProfileState, userProfileStore } from '$lib/user-profile-store.svelte';
@@ -36,7 +37,11 @@
   const navItems = $derived.by(() => {
     const nav = shellNav.moduleNav?.nav ?? [];
     const root = shellNav.rootForRoute(page.url.pathname);
-    return nav.filter((item) => item.href.split('/').filter(Boolean)[0] === root);
+    const scoped = nav.filter((item) => item.href.split('/').filter(Boolean)[0] === root);
+    // Pinned positions win; unpinned leaves sort alphabetically by their
+    // translated label — the ordering can only live here, where the i18n
+    // resolution exists (user-ratified 2026-11-27).
+    return sortNavLeaves(scoped, (key) => $t(key));
   });
   const moduleNavLoading = $derived(shellNav.moduleNavLoading);
   const moduleNavError = $derived(shellNav.moduleNavError);

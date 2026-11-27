@@ -123,6 +123,15 @@ export type ModuleNavLink = {
    * leaf wins. Leaf items only (never a `children` parent).
    */
   default?: boolean;
+  /**
+   * Explicit pin position (1-based) in the leaf array — leaves carrying
+   * it are pinned at their position; every unpinned leaf fills the
+   * remaining slots alphabetically by its translated label. The sort is
+   * render-time in the sidebar (the only place translations exist);
+   * this payload stays language-neutral. Pin beyond length clamps to
+   * last; colliding pins tie-break alphabetically.
+   */
+  order?: number;
   children?: ModuleNavLink[];
 };
 
