@@ -246,3 +246,29 @@ test.describe("icon defaults — the kind materialization end-user truth", () =>
     }
   });
 });
+
+test.describe("create leaf auto-wire — the leaf follows the route's fate (2026-11-27)", () => {
+  test.beforeEach(async ({ page }) => {
+    await loginAsTestAdmin(page);
+  });
+
+  test("a standard entity with create permission carries a create child leaf in the sidebar", async ({ page }) => {
+    await page.goto("/crm/customer_accounts", { waitUntil: "domcontentloaded" });
+    await expect(
+      page.locator('[data-sidebar="sidebar"] a[href="/crm/customer_accounts/create"]').first(),
+      "the create leaf is visible in the nav — auto-wired, child of the list leaf",
+    ).toBeVisible({ timeout: 15_000 });
+  });
+
+  test("customer_consents — read-only surface — carries NO create leaf, exactly like it carries no create route", async ({ page }) => {
+    await page.goto("/crm/customer_consents", { waitUntil: "domcontentloaded" });
+    await expect(
+      page.locator('[data-sidebar="sidebar"] a[href="/crm/customer_consents"]').first(),
+      "the list leaf exists",
+    ).toBeVisible({ timeout: 15_000 });
+    expect(
+      await page.locator('[data-sidebar="sidebar"] a[href="/crm/customer_consents/create"]').count(),
+      "no create route → no create leaf — the leaf never outlives its surface",
+    ).toBe(0);
+  });
+});
