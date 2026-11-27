@@ -182,11 +182,12 @@ test.describe("sequence-revive — generation lifecycle", () => {
     expect(new Date(gen1.switch_at as string).getTime() - exp1).toBe(2 * 86_400_000);
     expect(gen1.revive_every).toBe("1 day");
 
-    // `revive_every` is the row's identity — a PATCH attempting to mutate
-    // the cadence is a validation error (Q7 immutability, wire-level).
+    // The TRUE immutables are still rejected at the wire — the slot choice
+    // is generation identity (edit-in-tempo ratified 2026-11-27 covers the
+    // AXES only; sez*/revive_slot/default_from stay frozen post-create).
     const mut = await page.request.put(`${CRM}/sequence/${gen1.uuid}`, {
       // extJsonParse returns bigint for int8 leaves — coerce at the wire.
-      data: { entity: { version: Number(gen1.version), revive_every: "1 month" } },
+      data: { entity: { version: Number(gen1.version), revive_slot: "sez2" } },
     });
     expect(mut.status(), await mut.text()).toBeGreaterThanOrEqual(400);
 
@@ -247,5 +248,91 @@ test.describe("sequence-revive — generation lifecycle", () => {
     const next = await createCustomer(page, String(gen2.uuid), "next");
     expect(next.status, next.body).toBe(201);
     expect(String(next.parsed?.code ?? (next.parsed?.entity as Record<string, unknown>)?.code)).toBe(`R${RUN.slice(-4)}001-2026-01-16`);
+  });
+
+  // Contract B — ratified by the user 2026-11-27: the revive AXES
+  // (`revive_every`/`revive_grace`) are editable while in tempo. The
+  // guarded write re-anchors the persisted moments at NOW under FOR
+  // UPDATE serialization vs the sweep; unchanged axes skip the guard so
+  // ordinary edits never disturb the schedule. The truly immutable
+  // identity fields (sez*/revive_slot/default_from) stay wire-rejected.
+  test("revive axes editable while in tempo — re-anchor matrix", async ({ page }) => {
+    await loginAsTestAdmin(page);
+
+    const cr = await page.request.post(`${CRM}/sequence`, {
+      data: {
+        entity: {
+          name: `e2e-axes-${RUN}`,
+          pattern: `A${RUN.slice(-4)}{seq:3}-{sez}`,
+          step: "1",
+          start: "1",
+          tz: "UTC",
+          sez: "2026-01-15",
+          revive_every: "1 day",
+          revive_slot: "sez",
+          revive_grace: "2 days",
+        },
+      },
+    });
+    expect([200, 201], `create: ${await cr.text()}`).toContain(cr.status());
+    const row0 = extJsonParse<{ entity?: SeqRow } & SeqRow>(await cr.text());
+    let row = (row0.entity ?? row0) as SeqRow;
+    createdSeqs.push(row.uuid);
+
+    const put = async (entity: Record<string, unknown>) => {
+      const res = await page.request.put(`${CRM}/sequence/${row.uuid}`, {
+        data: { entity: { version: Number(row.version), ...entity } },
+      });
+      const text = await res.text();
+      if (res.ok()) {
+        const parsed = extJsonParse<{ entity?: SeqRow } & SeqRow>(text);
+        row = (parsed.entity ?? parsed) as SeqRow;
+      }
+      return { status: res.status(), text };
+    };
+
+    // ── 1. Cadence edit accepted — anchors re-derived at NOW ─────────
+    const before = { expire: row.expire_at as string, switch: row.switch_at as string };
+    const edit = await put({ revive_every: "1 month" });
+    expect(edit.status, edit.text).toBe(200);
+    // PROBE — persistence truth independent of the response envelope.
+    const fresh = await page.request.get(`${CRM}/sequence/${row.uuid}`);
+    const freshRow = extJsonParse<SeqRow>(await fresh.text());
+    console.log("PROBE resp:", row.revive_every, "| fresh:", freshRow.revive_every, "| freshExpire:", freshRow.expire_at);
+    expect(row.revive_every).toBe("1 month");
+    // UTC row — the month boundary is day-01 00:00:00Z, strictly future.
+    const expIso = row.expire_at as string;
+    expect(expIso).toMatch(/^\d{4}-\d{2}-01T00:00:00/);
+    expect(new Date(expIso).getTime()).toBeGreaterThan(Date.now());
+    // The grace survives the cadence edit — switch = expire + 2 days.
+    const expMs = new Date(expIso).getTime();
+    expect(new Date(row.switch_at as string).getTime() - expMs).toBe(2 * 86_400_000);
+    expect(expIso).not.toBe(before.expire);
+
+    // ── 2. Unchanged axes — a name edit leaves anchors bit-identical ─
+    const anchored = { expire: row.expire_at as string, switch: row.switch_at as string };
+    const noop = await put({ name: `e2e-axes-${RUN}-renamed`, revive_every: row.revive_every, revive_grace: row.revive_grace });
+    expect(noop.status, noop.text).toBe(200);
+    expect(row.expire_at).toBe(anchored.expire);
+    expect(row.switch_at).toBe(anchored.switch);
+
+    // ── 3. Grace-only edit — switch recomputes, expire untouched ─────
+    const grace = await put({ revive_grace: "3 days" });
+    expect(grace.status, grace.text).toBe(200);
+    expect(row.expire_at).toBe(anchored.expire);
+    expect(new Date(row.switch_at as string).getTime() - new Date(anchored.expire).getTime()).toBe(3 * 86_400_000);
+
+    // ── 4. Revive off — NULL clears the anchors ──────────────────────
+    const off = await put({ revive_every: null });
+    expect(off.status, off.text).toBe(200);
+    expect(row.revive_every ?? null).toBeNull();
+    expect(row.expire_at ?? null).toBeNull();
+    expect(row.switch_at ?? null).toBeNull();
+
+    // ── 5. A past `at` pin is a validation error — never dies on arrival
+    const past = await page.request.put(`${CRM}/sequence/${row.uuid}`, {
+      data: { entity: { version: Number(row.version), revive_every: "at 2020-01-01T00:00:00Z" } },
+    });
+    expect(past.status(), await past.text()).toBeGreaterThanOrEqual(400);
   });
 });
