@@ -140,6 +140,11 @@ const ENTITY_TABLE: Record<string, string> = {
   qualification: "qualifications",
 };
 
+/* LIST composition words â€” the ratified convention: list nav leaf, list page
+ * title and entity title ALL carry "{LIST} {plural}" per language, identical
+ * strings everywhere (user-ratified 2026-11-27). */
+const LISTW: Record<Lang4, string> = { "de-DE": "Liste", "fr-FR": "Liste", "es-ES": "Lista", "pt-PT": "Lista" };
+
 /* The create-leaf compositions â€” the historical bug surface. Gender agreement
  * is correct by construction in every language. */
 const CREATES: Record<string, Record<Lang4, string>> = {
@@ -216,9 +221,9 @@ test("entity naming + create compositions + residue keys carry the authored tran
       const checks: Array<[string, string]> = [
         [`crm.entities.${entity}.singular`, exp.sg],
         [`crm.entities.${entity}.plural`, exp.pl],
-        [`crm.entities.${entity}.title`, exp.pl],
+        [`crm.entities.${entity}.title`, `${LISTW[lang]} ${exp.pl}`],
         [`crm.entities.${entity}.new.title`, exp.nw],
-        [`crm.${table}.nav`, exp.pl],
+        [`crm.${table}.nav`, `${LISTW[lang]} ${exp.pl}`],
       ];
       for (const [key, expected] of checks) {
         if (dict[key] !== expected) wrong.push(`${key} â†’ got ${extJsonStringify(dict[key])}, expected ${extJsonStringify(expected)}`);
@@ -249,8 +254,8 @@ test("browser: popover creates + sidebar leaves render translated per language â
     // Sidebar truth: the derived leaves carry the translated nav labels.
     const accountsLabel = ((await page.locator('a[href="/crm/customer_accounts"]').first().textContent()) ?? "").trim();
     const addressesLabel = ((await page.locator('a[href="/crm/local_addresses"]').first().textContent()) ?? "").trim();
-    expect(accountsLabel, `${lang} sidebar customer_accounts leaf`).toBe(NAMING.customer_account[lang].pl);
-    expect(addressesLabel, `${lang} sidebar local_addresses leaf`).toBe(NAMING.local_address[lang].pl);
+    expect(accountsLabel, `${lang} sidebar customer_accounts leaf`).toBe(`${LISTW[lang]} ${NAMING.customer_account[lang].pl}`);
+    expect(addressesLabel, `${lang} sidebar local_addresses leaf`).toBe(`${LISTW[lang]} ${NAMING.local_address[lang].pl}`);
 
     // Popover truth: walk the launcher columns like the user does.
     await page.getByTestId("app-launcher-trigger").click();
@@ -289,7 +294,7 @@ test("browser: popover creates + sidebar leaves render translated per language â
       const composition = perLang[lang];
       const idx = labels.indexOf(composition);
       expect(idx, `${lang} popover lists ${extJsonStringify(composition)}`).toBeGreaterThanOrEqual(0);
-      const expectedList = NAMING[TABLE_ENTITY[table]][lang].pl;
+      const expectedList = `${LISTW[lang]} ${NAMING[TABLE_ENTITY[table]][lang].pl}`;
       const next = labels[idx + 1] ?? "";
       expect(next, `${lang} create leaf ${extJsonStringify(composition)} immediately precedes its list ${extJsonStringify(expectedList)}`).toBe(expectedList);
     }
