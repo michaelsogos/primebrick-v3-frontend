@@ -85,12 +85,7 @@ test.describe("i18n_key filter vocabulary + combobox eraser", () => {
     // The key MUST be offered — the contains rule over custom+app+module
     // namespaces is the ratified composition (not keys-in-use distinct).
     const input = popover.locator('[data-slot="command-input"] input, input').first();
-    const rawCount = await popover.locator("[cmdk-item], [role='option']").count();
-    const rawTexts = await popover.locator("[cmdk-item], [role='option']").allInnerTexts().catch(() => []);
-    console.log("[TOC-0] untyped items:", rawCount, JSON.stringify(rawTexts).slice(0, 400));
     await input.fill("prova_del_nove");
-    const typedCount = await popover.locator("[cmdk-item], [role='option']").count();
-    console.log("[TOC-0] typed items:", typedCount);
     await expect(
       popover.locator("[cmdk-item], [role='option']").filter({ hasText: PROBE_KEY }).first(),
       "the catalog-written custom row-key is offered by the filter vocabulary",

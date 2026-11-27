@@ -1,6 +1,6 @@
 import { SvelteSet } from 'svelte/reactivity';
 import { useEntitySheetSync, nextSearchScopeKeys, defaultVisibleColumnKeys } from '$lib/entity-list';
-import type { MetaColumn, ViewName, AdvancedFilter } from '$lib/entity-list/types';
+import type { MetaColumn, AdvancedFilter } from '$lib/entity-list/types';
 import type { DeepReadonly } from '@primebrick/ui';
 
 export interface UseSheetPanelsOptions {

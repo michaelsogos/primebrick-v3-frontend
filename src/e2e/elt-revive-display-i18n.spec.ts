@@ -102,7 +102,7 @@ test.describe("revive-interval input display localization (it-IT session)", () =
       // search, never assumed on page one.
       await page.getByTestId("entity-search").locator("input").fill(NAME);
       const row = page.locator("table tbody tr", { hasText: NAME }).first();
-      await expect(row, "the seeded sequence row is listed").toBeVisible({ timeout: 8_000 });
+      await expect(row, "the seeded sequence row is listed").toBeVisible({ timeout: 5_000 });
       const cell = row.getByTestId("revive-cell-display").first();
       await expect(cell, "the cell renders localized unit prose, never '2 years'").toHaveText("2 anni", {
         timeout: 5_000,
