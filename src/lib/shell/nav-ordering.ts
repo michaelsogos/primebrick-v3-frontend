@@ -49,3 +49,37 @@ export function sortNavLeaves(
     leaf.children?.length ? { ...leaf, children: sortNavLeaves(leaf.children, labelOf) } : leaf
   );
 }
+
+/**
+ * Flat-projection pairing (user-ratified 2026-11-27): a popover-only leaf
+ * (`sidebar: false`) whose href is exactly `<listHref>/create` is the
+ * auto-wired create of that list — in the flat popover column it ALWAYS
+ * sits immediately BEFORE its list leaf. The pair itself keeps the list
+ * leaf's alphabetical position (the create carries no independent sort
+ * weight). Pairing is structural by href — never by label or id shape.
+ */
+export function pairCreatesBeforeLists(leaves: readonly ModuleNavLink[]): ModuleNavLink[] {
+  const hrefs = new Set(leaves.map((l) => l.href));
+  const creates = new Map<string, ModuleNavLink>();
+  const rest: ModuleNavLink[] = [];
+  for (const l of leaves) {
+    if (l.sidebar === false && l.href.endsWith('/create') && hrefs.has(l.href.slice(0, -'/create'.length))) {
+      creates.set(l.href.slice(0, -'/create'.length), l);
+    } else {
+      rest.push(l);
+    }
+  }
+  const out: ModuleNavLink[] = [];
+  for (const l of rest) {
+    const c = creates.get(l.href);
+    if (c) {
+      out.push(c);
+      creates.delete(l.href);
+    }
+    out.push(l);
+  }
+  // Orphaned popover-only leaves (no list sibling in scope) append last —
+  // visibility beats hiding, but they carry no pairing anchor.
+  for (const c of creates.values()) out.push(c);
+  return out;
+}

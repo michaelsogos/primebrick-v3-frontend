@@ -49,9 +49,16 @@ test("the popover preview lists create leaves for standard entities — and the 
 
   // End-user property: every standard entity with create permission shows
   // its create entry in the popover preview. Create rows link to /create.
-  const createLabels = labels.filter((l) => /nav.create|Nuov|New/i.test(l));
-  console.log("create rows visible in popover:", createLabels.length, JSON.stringify(createLabels));
-  expect(createLabels.length, "the popover lists the auto-wired create leaves").toBeGreaterThanOrEqual(3);
+  // Pairing + label contract (user-ratified 2026-11-27): every create
+  // leaf carries the SAME label as the create page title ("New") and sits
+  // immediately BEFORE its list leaf in the flat popover column.
+  const createIdx = labels.map((l, i) => (/^New$|^Nuovo$/.test(l) ? i : -1)).filter((i) => i >= 0);
+  console.log("create row positions:", JSON.stringify(createIdx), "of", labels.length);
+  expect(createIdx.length, "the popover lists the auto-wired create leaves").toBeGreaterThanOrEqual(3);
+  for (const i of createIdx) {
+    const next = labels[i + 1] ?? "";
+    expect(next, `the create at position ${i} immediately precedes its list leaf`).not.toMatch(/^New$|^Nuovo$/);
+  }
 
   // Wired icon contract (user-ratified 2026-11-27): create pages default
   // to file-plus. The rows render DynamicIcon — lucide stamps the name in
@@ -59,9 +66,9 @@ test("the popover preview lists create leaves for standard entities — and the 
   let filePlusCount = 0;
   for (const r of await rows.all()) {
     const t = ((await r.textContent()) ?? "").trim();
-    if (!/nav.create|Nuov|New/i.test(t)) continue;
+    if (!/^New$|^Nuovo$/.test(t)) continue;
     if ((await r.locator("svg.lucide-file-plus").count()) > 0) filePlusCount++;
   }
   console.log("create rows with file-plus icon:", filePlusCount);
-  expect(filePlusCount, "every create leaf carries the wired file-plus icon").toBe(createLabels.length);
+  expect(filePlusCount, "every create leaf carries the wired file-plus icon").toBe(createIdx.length);
 });

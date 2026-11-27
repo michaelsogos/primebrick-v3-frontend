@@ -8,7 +8,7 @@
   import { uiLang } from '$lib/i18n/store.svelte';
   import { loadModuleTranslations } from '$lib/i18n/use-module-translations.svelte';
   import { defaultLeafHref, flattenNavLeaves, shellNav } from '$lib/shell/modules-shell.svelte';
-  import { sortNavLeaves } from '$lib/shell/nav-ordering';
+  import { sortNavLeaves, pairCreatesBeforeLists } from '$lib/shell/nav-ordering';
   import { resolveModuleLabel } from '$lib/shell/module-label';
   import { routesCensusFromModules } from '$lib/api';
   import { routePatternMatches } from '$lib/navigation/access-guard';
@@ -221,11 +221,12 @@
       for (const c of sortNavLeaves(l.children ?? [], (key) => $t(key))) pushWithChildren(c);
     };
     for (const l of sorted) pushWithChildren(l);
-    if (!showAll) return flat;
+    const paired = pairCreatesBeforeLists(flat);
+    if (!showAll) return paired;
     const hidden = (mod?.nav_hidden ?? [])
       .filter(inRoot)
       .map((i) => ({ ...i, hidden: true as const }));
-    return [...flat, ...hidden];
+    return [...paired, ...hidden];
   });
 
   /* Selection (gradient) = ONLY what the user previewed or the route
