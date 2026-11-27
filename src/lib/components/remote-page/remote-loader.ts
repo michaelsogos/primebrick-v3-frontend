@@ -21,6 +21,8 @@
 import { mount, unmount, type Component } from 'svelte';
 import {
 	diffVendorRequirements,
+	isPrimebrickVendorSpecifier,
+	versionDrift,
 	type HostMountHandle,
 	type MountPageFn,
 	type MountSheetFn,
@@ -184,10 +186,22 @@ function mismatchDetail(mismatches: VendorMismatch[]): string {
 
 /**
  * Vendor handshake — verify the chunk's declared `vendor_requires` against
- * the host `vendor-manifest.json` BEFORE importing. Exact-match policy: a
- * chunk compiled against different vendor versions must be rebuilt, not
- * imported — the alternative is an opaque `import()` TypeError or, worse, a
- * split-instance runtime.
+ * the host `vendor-manifest.json` BEFORE importing. Proportional drift
+ * policy (2026-11-27, user-ratified): enforcement of version staleness lives
+ * at LINT time — runtime is never brutal:
+ *
+ *   `@primebrick/*` any drift     → tolerated (console.warn) — our libs are
+ *                                   never fail-closed in the user's face
+ *   third-party patch drift       → tolerated (console.warn) — a patch never
+ *                                   kills a page
+ *   third-party minor/major drift → BLOCKED — internal API shapes genuinely
+ *                                   change (svelte/internal is unstable)
+ *   missing specifier             → BLOCKED — the import map cannot resolve
+ *                                   it, the import would certainly fail
+ *
+ * The worst leniency case is a genuinely broken chunk failing its import —
+ * already classified as an in-content `import` error panel with retry, so
+ * the shell survives every outcome.
  */
 async function verifyVendorDeps(
 	component_url: string,
@@ -238,10 +252,33 @@ async function verifyVendorDeps(
 	}
 	const mismatches = diffVendorRequirements(requires, host_manifest);
 	if (mismatches.length > 0) {
-		throw new RemoteLoadError(
-			'vendor',
-			`vendor mismatch — rebuild the module chunk: ${mismatchDetail(mismatches)}`,
-		);
+		const blocking: VendorMismatch[] = [];
+		const tolerated: VendorMismatch[] = [];
+		for (const m of mismatches) {
+			// Missing is always blocking — the host import map has no entry,
+			// so the bare specifier can never resolve, first-party or not.
+			if (m.kind === 'missing') {
+				blocking.push(m);
+				continue;
+			}
+			const drift = versionDrift(m.required, m.provided);
+			if (isPrimebrickVendorSpecifier(m.specifier) || drift === 'patch') {
+				tolerated.push(m);
+			} else {
+				blocking.push(m);
+			}
+		}
+		if (tolerated.length > 0) {
+			console.warn(
+				`[remote-loader] vendor drift tolerated (rebuild the module chunk at your next convenience): ${mismatchDetail(tolerated)}`,
+			);
+		}
+		if (blocking.length > 0) {
+			throw new RemoteLoadError(
+				'vendor',
+				`vendor mismatch — rebuild the module chunk: ${mismatchDetail(blocking)}`,
+			);
+		}
 	}
 }
 

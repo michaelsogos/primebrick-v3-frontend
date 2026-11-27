@@ -222,7 +222,7 @@ describe('loadRemoteModule — vendor handshake', () => {
 		expect(result.mod).toBe(mod);
 	});
 
-	it('fails vendor on version mismatch — before fetching the chunk', async () => {
+	it('fails vendor on third-party minor drift — before fetching the chunk', async () => {
 		const fetch_fn = fetchWith(extJsonStringify({ vendor_requires: { svelte: '5.58.0' } }));
 		const import_fn = vi.fn(async () => mod);
 		await expect(loadRemoteModule(url, undefined, { fetch_fn, import_fn })).rejects.toMatchObject({
@@ -234,6 +234,33 @@ describe('loadRemoteModule — vendor handshake', () => {
 			expect.stringContaining('jobs-page.js'),
 		);
 		expect(import_fn).not.toHaveBeenCalled();
+	});
+
+	it('tolerates third-party patch drift — the chunk loads', async () => {
+		const fetch_fn = fetchWith(extJsonStringify({ vendor_requires: { svelte: '5.57.99' } }));
+		const result = await loadRemoteModule(url, undefined, {
+			fetch_fn,
+			import_fn: async () => mod,
+		});
+		expect(result.mod).toBe(mod);
+	});
+
+	it('tolerates @primebrick/* minor drift — runtime never blocks our libs', async () => {
+		const fetch_fn = fetchWith(extJsonStringify({ vendor_requires: { '@primebrick/ui': '3.1.0' } }));
+		const result = await loadRemoteModule(url, undefined, {
+			fetch_fn,
+			import_fn: async () => mod,
+		});
+		expect(result.mod).toBe(mod);
+	});
+
+	it('tolerates @primebrick/* major drift — lint-time enforcement, never runtime', async () => {
+		const fetch_fn = fetchWith(extJsonStringify({ vendor_requires: { '@primebrick/ui': '4.0.0' } }));
+		const result = await loadRemoteModule(url, undefined, {
+			fetch_fn,
+			import_fn: async () => mod,
+		});
+		expect(result.mod).toBe(mod);
 	});
 
 	it('fails vendor when a required specifier is not vendored', async () => {
