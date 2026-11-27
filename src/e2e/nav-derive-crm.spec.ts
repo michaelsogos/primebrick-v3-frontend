@@ -255,12 +255,25 @@ test.describe("create leaf auto-wire — the leaf follows the route's fate (2026
     await loginAsTestAdmin(page);
   });
 
-  test("a standard entity with create permission carries a create child leaf in the sidebar", async ({ page }) => {
+  test("a standard entity with create permission carries a create leaf flagged sidebar:false — popover-only by design", async ({ page }) => {
     await page.goto("/crm/customer_accounts", { waitUntil: "domcontentloaded" });
-    await expect(
-      page.locator('[data-sidebar="sidebar"] a[href="/crm/customer_accounts/create"]').first(),
-      "the create leaf is visible in the nav — auto-wired, child of the list leaf",
-    ).toBeVisible({ timeout: 5_000 });
+    // payload pin: the autowire flags create leaves sidebar:false — the sidebar
+    // skips them, the popover lists them (user-ratified placement, derive-entity-nav.ts:156-162)
+    type NavLeaf = { id: string; href?: string; sidebar?: boolean };
+    type ModuleSummary = { id: string; nav?: NavLeaf[] };
+    const raw = (await page.evaluate(async () => {
+      const r = await fetch("/api/v1/modules", { credentials: "include" });
+      if (!r.ok) return `{"error":${r.status}}`;
+      return r.text();
+    })) as string;
+    const payload = extJsonParse(raw) as { error?: number; modules?: ModuleSummary[] };
+    const crm = (payload.modules ?? []).find((m) => m.id === "crm");
+    const createLeaf = crm?.nav?.find((l) => l.href === "/crm/customer_accounts/create");
+    expect(createLeaf?.sidebar, "create leaf autowired sidebar:false — popover-only placement").toBe(false);
+    expect(
+      await page.locator(`[data-sidebar="sidebar"] a[href="/crm/customer_accounts/create"]`).count(),
+      "the sidebar never renders create leaves — popover-only by design",
+    ).toBe(0);
   });
 
   test("customer_consents — read-only surface — carries NO create leaf, exactly like it carries no create route", async ({ page }) => {
