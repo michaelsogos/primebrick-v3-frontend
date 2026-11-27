@@ -67,6 +67,25 @@ export default defineConfig(({ mode }) => {
 					'..'
 				]
 			},
+			watch: {
+				// Mitigation for vitejs/vite#24172 (Windows): when a watched folder is
+				// deleted AND recreated, libuv ≤1.52.1 reports the deletion in an
+				// endless loop and chokidar 3.x never closes the leaked handle — the
+				// dev server pins a full CPU core until restarted. Neither fix is
+				// released yet (nodejs/node#66282 open, chokidar 6 not in vite).
+				// Ignoring regenerated artifact dirs — the only folders in this
+				// project that get wiped+recreated in normal workflow — prevents the
+				// loop entirely (measured in the issue: CPU back to 1–2.6%).
+				// These are outputs, never HMR sources, so watching them is useless
+				// anyway. Branch switches can still recreate SOURCE folders — after
+				// one, restart the dev server.
+				ignored: [
+					'**/build/**',
+					'**/.svelte-kit/output/**',
+					'**/playwright-report/**',
+					'**/test-results/**'
+				]
+			},
 			proxy: {
 				'/api': {
 					target: apiOrigin,
