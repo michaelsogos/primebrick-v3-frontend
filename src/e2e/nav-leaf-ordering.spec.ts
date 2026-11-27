@@ -24,7 +24,7 @@ test.describe.configure({ mode: "serial" });
 /** Visible sidebar leaf labels+hrefs in DOM order, scoped to one prefix. */
 async function sidebarLeaves(page: Page, hrefPrefix: string): Promise<{ label: string; href: string }[]> {
   const anchors = page.locator(`[data-sidebar="sidebar"] a[href^="${hrefPrefix}"]`);
-  await expect(anchors.first(), "at least one sidebar leaf is visible").toBeVisible({ timeout: 15_000 });
+  await expect(anchors.first(), "at least one sidebar leaf is visible").toBeVisible({ timeout: 5_000 });
   const out: { label: string; href: string }[] = [];
   for (const a of await anchors.all()) {
     const label = ((await a.textContent()) ?? "").trim();
@@ -76,20 +76,20 @@ test.describe("nav leaf ordering — pinned + alphabetical + last-by-design", ()
     await page.goto("/crm/settings/customer_types", { waitUntil: "domcontentloaded" });
     await page.getByTestId("app-launcher-trigger").click();
     const panel = page.getByTestId("app-launcher-panel");
-    await expect(panel, "the launcher panel opens").toBeVisible({ timeout: 10_000 });
+    await expect(panel, "the launcher panel opens").toBeVisible({ timeout: 5_000 });
     // Walk the columns like the user does: pick the crm app root (the
     // favorites pseudo-root is the panel default and shows no module
     // pages), then preview the Settings module row.
     const appRows = panel.locator('[data-launcher-col="0"] [data-launcher-row]');
-    await expect(appRows.first(), "the apps column lists entries").toBeVisible({ timeout: 10_000 });
+    await expect(appRows.first(), "the apps column lists entries").toBeVisible({ timeout: 5_000 });
     await appRows.last().click();
     const moduleRows = panel.locator('[data-launcher-col="1"] [data-launcher-row]');
-    await expect(moduleRows.first(), "the modules column lists entries").toBeVisible({ timeout: 10_000 });
+    await expect(moduleRows.first(), "the modules column lists entries").toBeVisible({ timeout: 5_000 });
     await moduleRows.last().hover();
     // The preview column lists the active module's pages as option rows
     // (div[data-launcher-row] — keyboard-driven, never anchors).
     const rows = panel.locator('[data-launcher-col="2"] [data-launcher-row]');
-    await expect(rows.first(), "the preview lists the settings leaves").toBeVisible({ timeout: 10_000 });
+    await expect(rows.first(), "the preview lists the settings leaves").toBeVisible({ timeout: 5_000 });
     const labels: string[] = [];
     for (const r of await rows.all()) {
       labels.push(((await r.textContent()) ?? "").trim());

@@ -1,3 +1,4 @@
+import { extJsonStringify, extJsonParse } from "@primebrick/core/ext-json";
 import { test, expect } from "@playwright/test";
 import { loginAsTestAdmin } from "./helpers/admin-login";
 
@@ -18,23 +19,23 @@ test.beforeEach(async ({ page }) => {
 test("the popover preview lists create leaves for standard entities — and the sidebar does NOT", async ({ page }) => {
   await page.goto("/crm/customer_accounts", { waitUntil: "domcontentloaded" });
   // Sidebar truth first: flat leaves, zero create entries, zero expanders.
-  await expect(page.locator('a[href="/crm/customer_accounts"]').first()).toBeVisible({ timeout: 10_000 });
+  await expect(page.locator('a[href="/crm/customer_accounts"]').first()).toBeVisible({ timeout: 5_000 });
   const sidebarCreates = await page.locator('[data-sidebar="sidebar"] a[href$="/create"]').count();
   expect(sidebarCreates, "the sidebar carries NO create leaves — flat single-level, user-ratified").toBe(0);
 
   await page.getByTestId("app-launcher-trigger").click();
   const panel = page.getByTestId("app-launcher-panel");
-  await expect(panel, "the launcher panel opens").toBeVisible({ timeout: 10_000 });
+  await expect(panel, "the launcher panel opens").toBeVisible({ timeout: 5_000 });
   // Walk the columns: crm app root, then the CRM module row.
   const appRows = panel.locator('[data-launcher-col="0"] [data-launcher-row]');
-  await expect(appRows.first()).toBeVisible({ timeout: 10_000 });
+  await expect(appRows.first()).toBeVisible({ timeout: 5_000 });
   await appRows.last().click();
   const moduleRows = panel.locator('[data-launcher-col="1"] [data-launcher-row]');
-  await expect(moduleRows.first()).toBeVisible({ timeout: 10_000 });
+  await expect(moduleRows.first()).toBeVisible({ timeout: 5_000 });
   // The CRM root module — first row is the root module, settings is a sibling.
   await moduleRows.first().hover();
   const rows = panel.locator('[data-launcher-col="2"] [data-launcher-row]');
-  await expect(rows.first(), "the preview lists the crm leaves").toBeVisible({ timeout: 10_000 });
+  await expect(rows.first(), "the preview lists the crm leaves").toBeVisible({ timeout: 5_000 });
 
   // The hidden channel carries the creates — reveal it through the panel's
   // own switch (canonical testid), never a text guess.
@@ -44,7 +45,7 @@ test("the popover preview lists create leaves for standard entities — and the 
   for (const r of await rows.all()) {
     labels.push(((await r.textContent()) ?? "").trim());
   }
-  console.log("popover preview rows:", JSON.stringify(labels));
+  console.log("popover preview rows:", extJsonStringify(labels));
   await page.screenshot({ path: "popover-evidence.png" });
 
   // End-user property: every standard entity with create permission shows
@@ -53,7 +54,7 @@ test("the popover preview lists create leaves for standard entities — and the 
   // leaf carries the SAME label as the create page title ("New") and sits
   // immediately BEFORE its list leaf in the flat popover column.
   const createIdx = labels.map((l, i) => (/^New |^Nuovo /.test(l) ? i : -1)).filter((i) => i >= 0);
-  console.log("create row positions:", JSON.stringify(createIdx), "of", labels.length);
+  console.log("create row positions:", extJsonStringify(createIdx), "of", labels.length);
   expect(createIdx.length, "the popover lists the auto-wired create leaves").toBeGreaterThanOrEqual(3);
   for (const i of createIdx) {
     const next = labels[i + 1] ?? "";

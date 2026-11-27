@@ -1,3 +1,4 @@
+import { extJsonStringify, extJsonParse } from "@primebrick/core/ext-json";
 import { test, expect } from "@playwright/test";
 import { loginAsTestAdmin } from "./helpers/admin-login";
 
@@ -174,11 +175,12 @@ const RESIDUE: Record<string, Record<Lang4, string>> = {
 };
 
 async function fetchCrmDict(page: import("@playwright/test").Page, lang: string): Promise<Record<string, string>> {
-  return (await page.evaluate(async (l) => {
+  const raw = (await page.evaluate(async (l) => {
     const r = await fetch(`/api/v1/system/translations/crm/${l}`, { credentials: "include" });
-    if (!r.ok) return { __error: r.status };
-    return r.json();
-  }, lang)) as Record<string, string>;
+    if (!r.ok) return `{"__error":${r.status}}`;
+    return r.text();
+  }, lang)) as string;
+  return extJsonParse(raw) as Record<string, string>;
 }
 
 test.beforeEach(async ({ page }) => {
@@ -187,7 +189,7 @@ test.beforeEach(async ({ page }) => {
 
 test("the crm dict keyset is complete in every offered language — zero missing rows", async ({ page }) => {
   await page.goto("/crm/customer_accounts", { waitUntil: "domcontentloaded" });
-  await expect(page.locator('a[href="/crm/customer_accounts"]').first()).toBeVisible({ timeout: 10_000 });
+  await expect(page.locator('a[href="/crm/customer_accounts"]').first()).toBeVisible({ timeout: 5_000 });
 
   const enDict = await fetchCrmDict(page, "en-GB");
   expect(Object.keys(enDict).length, "the en-GB reference dict is non-empty").toBeGreaterThan(100);
@@ -203,7 +205,7 @@ test("the crm dict keyset is complete in every offered language — zero missing
 
 test("entity naming + create compositions + residue keys carry the authored translations — never english", async ({ page }) => {
   await page.goto("/crm/customer_accounts", { waitUntil: "domcontentloaded" });
-  await expect(page.locator('a[href="/crm/customer_accounts"]').first()).toBeVisible({ timeout: 10_000 });
+  await expect(page.locator('a[href="/crm/customer_accounts"]').first()).toBeVisible({ timeout: 5_000 });
 
   for (const lang of LANGS) {
     const dict = await fetchCrmDict(page, lang);
@@ -219,15 +221,15 @@ test("entity naming + create compositions + residue keys carry the authored tran
         [`crm.${table}.nav`, exp.pl],
       ];
       for (const [key, expected] of checks) {
-        if (dict[key] !== expected) wrong.push(`${key} → got ${JSON.stringify(dict[key])}, expected ${JSON.stringify(expected)}`);
+        if (dict[key] !== expected) wrong.push(`${key} → got ${extJsonStringify(dict[key])}, expected ${extJsonStringify(expected)}`);
       }
     }
     for (const [table, perLang] of Object.entries(CREATES)) {
       const key = `crm.${table}.nav.create`;
-      if (dict[key] !== perLang[lang]) wrong.push(`${key} → got ${JSON.stringify(dict[key])}, expected ${JSON.stringify(perLang[lang])}`);
+      if (dict[key] !== perLang[lang]) wrong.push(`${key} → got ${extJsonStringify(dict[key])}, expected ${extJsonStringify(perLang[lang])}`);
     }
     for (const [key, perLang] of Object.entries(RESIDUE)) {
-      if (dict[key] !== perLang[lang]) wrong.push(`${key} → got ${JSON.stringify(dict[key])}, expected ${JSON.stringify(perLang[lang])}`);
+      if (dict[key] !== perLang[lang]) wrong.push(`${key} → got ${extJsonStringify(dict[key])}, expected ${extJsonStringify(perLang[lang])}`);
     }
     console.log(`${lang}: naming mismatches: ${wrong.length}`, wrong.slice(0, 6));
     expect(wrong, `${lang} naming matrix must match the authored translations exactly`).toEqual([]);
@@ -242,7 +244,7 @@ test("browser: popover creates + sidebar leaves render translated per language �
     await page.goto("/crm/customer_accounts", { waitUntil: "domcontentloaded" });
     await page.evaluate((l) => sessionStorage.setItem("pb.lang", l), lang);
     await page.reload({ waitUntil: "domcontentloaded" });
-    await expect(page.locator('a[href="/crm/customer_accounts"]').first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('a[href="/crm/customer_accounts"]').first()).toBeVisible({ timeout: 5_000 });
 
     // Sidebar truth: the derived leaves carry the translated nav labels.
     const accountsLabel = ((await page.locator('a[href="/crm/customer_accounts"]').first().textContent()) ?? "").trim();
@@ -253,20 +255,20 @@ test("browser: popover creates + sidebar leaves render translated per language �
     // Popover truth: walk the launcher columns like the user does.
     await page.getByTestId("app-launcher-trigger").click();
     const panel = page.getByTestId("app-launcher-panel");
-    await expect(panel, "the launcher panel opens").toBeVisible({ timeout: 10_000 });
+    await expect(panel, "the launcher panel opens").toBeVisible({ timeout: 5_000 });
     const appRows = panel.locator('[data-launcher-col="0"] [data-launcher-row]');
-    await expect(appRows.first()).toBeVisible({ timeout: 10_000 });
+    await expect(appRows.first()).toBeVisible({ timeout: 5_000 });
     await appRows.last().click();
     const moduleRows = panel.locator('[data-launcher-col="1"] [data-launcher-row]');
-    await expect(moduleRows.first()).toBeVisible({ timeout: 10_000 });
+    await expect(moduleRows.first()).toBeVisible({ timeout: 5_000 });
     await moduleRows.first().hover();
     const rows = panel.locator('[data-launcher-col="2"] [data-launcher-row]');
-    await expect(rows.first(), "the preview lists the crm leaves").toBeVisible({ timeout: 10_000 });
+    await expect(rows.first(), "the preview lists the crm leaves").toBeVisible({ timeout: 5_000 });
     await page.locator("#app-launcher-show-all-switch").click();
 
     const labels: string[] = [];
     for (const r of await rows.all()) labels.push(((await r.textContent()) ?? "").trim());
-    console.log(`${lang} popover rows:`, JSON.stringify(labels));
+    console.log(`${lang} popover rows:`, extJsonStringify(labels));
 
     // No raw keys ever render — a raw crm.* key in the popover is a bug.
     const rawKeys = labels.filter((l) => /^crm\./.test(l));
@@ -286,10 +288,10 @@ test("browser: popover creates + sidebar leaves render translated per language �
     for (const [table, perLang] of Object.entries(CREATES)) {
       const composition = perLang[lang];
       const idx = labels.indexOf(composition);
-      expect(idx, `${lang} popover lists ${JSON.stringify(composition)}`).toBeGreaterThanOrEqual(0);
+      expect(idx, `${lang} popover lists ${extJsonStringify(composition)}`).toBeGreaterThanOrEqual(0);
       const expectedList = NAMING[TABLE_ENTITY[table]][lang].pl;
       const next = labels[idx + 1] ?? "";
-      expect(next, `${lang} create leaf ${JSON.stringify(composition)} immediately precedes its list ${JSON.stringify(expectedList)}`).toBe(expectedList);
+      expect(next, `${lang} create leaf ${extJsonStringify(composition)} immediately precedes its list ${extJsonStringify(expectedList)}`).toBe(expectedList);
     }
 
     await page.keyboard.press("Escape");

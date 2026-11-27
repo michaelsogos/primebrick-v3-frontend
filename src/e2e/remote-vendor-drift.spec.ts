@@ -1,3 +1,4 @@
+import { extJsonStringify, extJsonParse } from "@primebrick/core/ext-json";
 import { test, expect, type Page, type Route } from "@playwright/test";
 import { loginAsTestAdmin } from "./helpers/admin-login";
 
@@ -36,14 +37,14 @@ async function serveDriftedManifest(
 ): Promise<void> {
   await page.route("**/vendor-manifest.json", async (route: Route) => {
     const res = await route.fetch();
-    const manifest = (await res.json()) as Manifest;
+    const manifest = extJsonParse(await res.text()) as Manifest;
     for (const [key, entry] of Object.entries(manifest)) {
       if (match(key)) entry.version = bump(entry.version);
     }
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify(manifest),
+      body: extJsonStringify(manifest),
     });
   });
 }
@@ -69,7 +70,7 @@ test.describe("vendor drift proportionality — runtime never brutal", () => {
     await expect(
       page.locator(REMOTE_CONTENT),
       "the page mounts despite @primebrick minor drift — runtime never blocks our libs",
-    ).toBeVisible({ timeout: 15_000 });
+    ).toBeVisible({ timeout: 5_000 });
     expect(await page.locator(REMOTE_ERROR).count(), "no vendor error panel for @primebrick drift").toBe(0);
   });
 
@@ -79,7 +80,7 @@ test.describe("vendor drift proportionality — runtime never brutal", () => {
     await expect(
       page.locator(REMOTE_CONTENT),
       "the page mounts despite a svelte patch drift",
-    ).toBeVisible({ timeout: 15_000 });
+    ).toBeVisible({ timeout: 5_000 });
     expect(await page.locator(REMOTE_ERROR).count(), "no vendor error panel for patch drift").toBe(0);
   });
 
@@ -90,7 +91,7 @@ test.describe("vendor drift proportionality — runtime never brutal", () => {
     await expect(
       errorPanel,
       "svelte minor drift keeps the runtime block — internal API shapes genuinely change",
-    ).toBeVisible({ timeout: 15_000 });
+    ).toBeVisible({ timeout: 5_000 });
     await expect(errorPanel).toHaveAttribute("data-error-kind", "vendor");
     // The content container is always in the DOM (binds before import resolves)
     // — the truthful assertion is that it stays hidden and empty behind the block.

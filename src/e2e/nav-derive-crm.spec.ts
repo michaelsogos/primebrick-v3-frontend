@@ -1,3 +1,4 @@
+import { extJsonStringify, extJsonParse } from "@primebrick/core/ext-json";
 import { test, expect } from "@playwright/test";
 import { loginAsTestAdmin } from "./helpers/admin-login";
 
@@ -95,11 +96,12 @@ test.describe("pipeline fake deletion — the end-user truth", () => {
     type NavLeaf = { id: string };
     type RouteDecl = { route: string };
     type ModuleSummary = { id: string; nav?: NavLeaf[]; routes?: RouteDecl[]; route_prefixes?: string[] };
-    const payload = (await page.evaluate(async () => {
+    const raw = (await page.evaluate(async () => {
       const r = await fetch("/api/v1/modules", { credentials: "include" });
-      if (!r.ok) return { error: r.status };
-      return r.json();
-    })) as { error?: number; modules?: ModuleSummary[] };
+      if (!r.ok) return `{"error":${r.status}}`;
+      return r.text();
+    })) as string;
+    const payload = extJsonParse(raw) as { error?: number; modules?: ModuleSummary[] };
     expect(payload.error, "modules payload reachable").toBeUndefined();
     const crm = (payload.modules ?? []).find((m) => m.id === "crm");
     expect(crm, "crm module in payload").toBeTruthy();
@@ -151,11 +153,12 @@ test.describe("icon defaults — the kind materialization end-user truth", () =>
     // emission-side, so the payload IS the contract the user sees rendered
     type NavLeaf = { id: string; icon?: string; label_key?: string };
     type ModuleSummary = { id: string; nav?: NavLeaf[] };
-    const payload = (await page.evaluate(async () => {
+    const raw = (await page.evaluate(async () => {
       const r = await fetch("/api/v1/modules", { credentials: "include" });
-      if (!r.ok) return { error: r.status };
-      return r.json();
-    })) as { error?: number; modules?: ModuleSummary[] };
+      if (!r.ok) return `{"error":${r.status}}`;
+      return r.text();
+    })) as string;
+    const payload = extJsonParse(raw) as { error?: number; modules?: ModuleSummary[] };
     expect(payload.error, "modules payload reachable").toBeUndefined();
     const modules = payload.modules ?? [];
     const crm = modules.find((m) => m.id === "crm");
@@ -257,7 +260,7 @@ test.describe("create leaf auto-wire — the leaf follows the route's fate (2026
     await expect(
       page.locator('[data-sidebar="sidebar"] a[href="/crm/customer_accounts/create"]').first(),
       "the create leaf is visible in the nav — auto-wired, child of the list leaf",
-    ).toBeVisible({ timeout: 15_000 });
+    ).toBeVisible({ timeout: 5_000 });
   });
 
   test("customer_consents — read-only surface — carries NO create leaf, exactly like it carries no create route", async ({ page }) => {
@@ -265,7 +268,7 @@ test.describe("create leaf auto-wire — the leaf follows the route's fate (2026
     await expect(
       page.locator('[data-sidebar="sidebar"] a[href="/crm/customer_consents"]').first(),
       "the list leaf exists",
-    ).toBeVisible({ timeout: 15_000 });
+    ).toBeVisible({ timeout: 5_000 });
     expect(
       await page.locator('[data-sidebar="sidebar"] a[href="/crm/customer_consents/create"]').count(),
       "no create route → no create leaf — the leaf never outlives its surface",
