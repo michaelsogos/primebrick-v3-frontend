@@ -39,15 +39,6 @@ test("the popover preview lists create leaves for standard entities — and the 
   // The hidden channel carries the creates — reveal it through the panel's
   // own switch (canonical testid), never a text guess.
   await page.locator("#app-launcher-show-all-switch").click();
-  // The app's own source of truth (e2e doc: assertions of completeness) —
-  // does the discovery payload the FE consumes even carry nav_hidden?
-  const apiTruth = await page.evaluate(async () => {
-    const res = await fetch("/api/v1/modules", { credentials: "include" });
-    const mods = await res.json();
-    const crm = (mods.modules ?? []).find((m) => m.id === "crm");
-    return { nav_hidden_count: (crm?.nav_hidden ?? []).length, keys: Object.keys(crm ?? {}).filter((k) => k.includes("nav")) };
-  });
-  console.log("api truth:", JSON.stringify(apiTruth));
 
   const labels: string[] = [];
   for (const r of await rows.all()) {

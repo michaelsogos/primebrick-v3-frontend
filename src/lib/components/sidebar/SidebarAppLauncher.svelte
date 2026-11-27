@@ -547,7 +547,7 @@
             <div
               class="flex size-8 shrink-0 items-center justify-center rounded-md border border-sidebar-border bg-sidebar text-sidebar-foreground"
             >
-              <DynamicIcon name={APP_ROOT_ICON} size={16} />
+              <DynamicIcon name={APP_ROOT_ICON} size={18} />
             </div>
             {#if !collapsed}
               <div class="grid min-w-0 flex-1 text-left leading-tight">
@@ -626,7 +626,7 @@
                   {#if root === FAVORITES_ROOT}
                     <GradientIcon size={14} paths={starPaths} stops={amberStops} filled stroke_width={1.5} />
                   {:else}
-                    <DynamicIcon name={APP_ROOT_ICON} size={14} />
+                    <DynamicIcon name={APP_ROOT_ICON} size={16} />
                   {/if}
                 </div>
                 <span class="min-w-0 flex-1 truncate">
@@ -699,7 +699,7 @@
                 >
                   <div class="flex size-5 shrink-0 items-center justify-center">
                     {#if g.m.icon}
-                      <DynamicIcon name={g.m.icon} size={14} />
+                      <DynamicIcon name={g.m.icon} size={16} />
                     {/if}
                   </div>
                   <span class="min-w-0 flex-1 truncate">{resolveModuleLabel(g.m, $t)}</span>
@@ -742,7 +742,7 @@
               >
                 <div class="flex size-5 shrink-0 items-center justify-center">
                   {#if m.icon}
-                    <DynamicIcon name={m.icon} size={14} />
+                    <DynamicIcon name={m.icon} size={16} />
                   {/if}
                 </div>
                 <span class="min-w-0 flex-1 truncate">{resolveModuleLabel(m, $t)}</span>
@@ -806,7 +806,7 @@
                 >
                   <div class="flex size-5 shrink-0 items-center justify-center">
                     {#if item.icon}
-                      <DynamicIcon name={item.icon} size={14} />
+                      <DynamicIcon name={item.icon} size={16} />
                     {:else}
                       <GradientIcon size={14} paths={starPaths} stops={amberStops} filled stroke_width={1.5} />
                     {/if}
@@ -828,7 +828,7 @@
                       removeFavorite(item.href);
                     }}
                   >
-                    <StarOff size={14} />
+                    <StarOff size={16} />
                   </button>
                 </div>
               {:else}
@@ -859,7 +859,7 @@
               >
                 <div class="flex size-5 shrink-0 items-center justify-center">
                   {#if item.icon}
-                    <DynamicIcon name={item.icon} size={14} />
+                    <DynamicIcon name={item.icon} size={16} />
                   {/if}
                 </div>
                 <span class="min-w-0 flex-1 truncate">{$t(item.label_key)}</span>
