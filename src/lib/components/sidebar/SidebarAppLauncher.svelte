@@ -8,6 +8,7 @@
   import { uiLang } from '$lib/i18n/store.svelte';
   import { loadModuleTranslations } from '$lib/i18n/use-module-translations.svelte';
   import { defaultLeafHref, flattenNavLeaves, shellNav } from '$lib/shell/modules-shell.svelte';
+  import { sortNavLeaves } from '$lib/shell/nav-ordering';
   import { resolveModuleLabel } from '$lib/shell/module-label';
   import { routesCensusFromModules } from '$lib/api';
   import { routePatternMatches } from '$lib/navigation/access-guard';
@@ -205,7 +206,11 @@
     const mod = shellNav.modules.find((m) => m.id === activeModuleId);
     const inRoot = (i: ModuleNavLink) =>
       i.href.split('/').filter(Boolean)[0] === activeApp;
-    const nav = (mod?.nav ?? []).filter(inRoot);
+    // The SAME leaf ordering as the sidebar — one rule, every surface
+    // (pinned positions win, unpinned alphabetical by translated label).
+    // Surfaced by the user 2026-11-27: reading the raw payload here made
+    // the launcher disagree with the sidebar.
+    const nav = sortNavLeaves((mod?.nav ?? []).filter(inRoot), (key) => $t(key));
     if (!showAll) return nav;
     const hidden = (mod?.nav_hidden ?? [])
       .filter(inRoot)
