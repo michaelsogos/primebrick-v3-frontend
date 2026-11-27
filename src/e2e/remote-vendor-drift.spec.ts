@@ -19,8 +19,10 @@ test.describe.configure({ mode: "serial" });
  *   third-party patch drift    → page MOUNTS
  *   third-party minor drift    → vendor error panel (still blocked)
  *
- * Vehicle: /crm/customers/create — the live component_url route on the
- * crm-pages chunk (same remote-mount machinery every remote page rides).
+ * Vehicle: /system/emailsender/providers/create — a live component_url route
+ * on the emailsender-pages chunk (same remote-mount machinery every remote
+ * page rides). The crm customers create rode it too until 2026-11-27, when
+ * customers became fully autowired and the remote stub died by design.
  */
 
 const REMOTE_CONTENT = '[data-testid="remote-page-content"]';
@@ -66,7 +68,7 @@ test.describe("vendor drift proportionality — runtime never brutal", () => {
 
   test("@primebrick/* minor drift — the remote page MOUNTS, never blocks", async ({ page }) => {
     await serveDriftedManifest(page, (key) => key.startsWith("@primebrick/"), bumpMinor);
-    await page.goto("/crm/customers/create", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/emailsender/providers/create", { waitUntil: "domcontentloaded" });
     await expect(
       page.locator(REMOTE_CONTENT),
       "the page mounts despite @primebrick minor drift — runtime never blocks our libs",
@@ -76,7 +78,7 @@ test.describe("vendor drift proportionality — runtime never brutal", () => {
 
   test("third-party patch drift — the remote page MOUNTS", async ({ page }) => {
     await serveDriftedManifest(page, (key) => key.startsWith("svelte"), bumpPatch);
-    await page.goto("/crm/customers/create", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/emailsender/providers/create", { waitUntil: "domcontentloaded" });
     await expect(
       page.locator(REMOTE_CONTENT),
       "the page mounts despite a svelte patch drift",
@@ -86,7 +88,7 @@ test.describe("vendor drift proportionality — runtime never brutal", () => {
 
   test("third-party minor drift — the vendor error panel still blocks", async ({ page }) => {
     await serveDriftedManifest(page, (key) => key.startsWith("svelte"), bumpMinor);
-    await page.goto("/crm/customers/create", { waitUntil: "domcontentloaded" });
+    await page.goto("/system/emailsender/providers/create", { waitUntil: "domcontentloaded" });
     const errorPanel = page.locator(REMOTE_ERROR);
     await expect(
       errorPanel,
