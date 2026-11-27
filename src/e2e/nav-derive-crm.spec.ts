@@ -77,3 +77,56 @@ test.describe("crm nav auto-derivation", () => {
     ).toBe(0);
   });
 });
+
+test.describe("icon defaults — the kind materialization end-user truth", () => {
+  test.beforeEach(async ({ page }) => {
+    await loginAsTestAdmin(page);
+  });
+
+  test("emission materializes kind defaults — authored icons win", async ({ page }) => {
+    await page.goto("/crm/customers", { waitUntil: "domcontentloaded" });
+    // the SAME payload the sidebar consumes — icon materialization is
+    // emission-side, so the payload IS the contract the user sees rendered
+    const payload = await page.evaluate(async () => {
+      const r = await fetch("/api/v1/modules", { credentials: "include" });
+      if (!r.ok) return { error: r.status };
+      return r.json();
+    });
+    expect(payload.error, "modules payload reachable").toBeUndefined();
+    const crm = payload.modules.find((m) => m.id === "crm");
+    const crmSettings = payload.modules.find((m) => m.id === "crm-settings");
+    expect(crm, "crm module in payload").toBeTruthy();
+    expect(crmSettings, "crm-settings sibling module in payload").toBeTruthy();
+
+    const leaf = (mod, id) => (mod?.nav ?? []).find((l) => l.id === id);
+
+    // authored icons ALWAYS win — the customers/pipeline overrides survive
+    expect(leaf(crm, "customers")?.icon).toBe("users-round");
+    expect(leaf(crm, "pipeline")?.icon).toBe("git-branch");
+
+    // dict kind default — the migrated vocabularies carry the authored
+    // table-dictionary glyph through materialization, never table-2
+    expect(leaf(crmSettings, "customer_types")?.icon).toBe("table-dictionary");
+    expect(leaf(crmSettings, "customer_link_types")?.icon).toBe("table-dictionary");
+
+    // builtin authored override — sequences keeps its custom glyph
+    expect(leaf(crmSettings, "sequences")?.icon).toBe("sequence-numeric-right");
+
+    // list kind default — the unmigrated derive as list → table-2 today;
+    // this pins CURRENT truth so the migration diff is visible when it lands
+    expect(leaf(crm, "customer_accounts")?.icon).toBe("table-2");
+  });
+
+  test("the sidebar renders the materialized glyph, not the list default, on a dict leaf", async ({ page }) => {
+    await page.goto("/crm/settings/customer_types", { waitUntil: "domcontentloaded" });
+    const dictLeaf = page.locator('a[href="/crm/settings/customer_types"]').first();
+    await expect(dictLeaf).toBeVisible({ timeout: 5_000 });
+    // the leaf renders an svg glyph…
+    await expect(dictLeaf.locator("svg").first()).toBeVisible();
+    // …and it is NOT the lucide list glyph — table-dictionary is a custom
+    // authored glyph (no lucide class); lucide-table-2 here would mean the
+    // list default leaked onto a dict leaf
+    const classes = await dictLeaf.locator("svg").first().getAttribute("class");
+    expect(classes ?? "", "dict leaf must not render the list glyph").not.toContain("lucide-table-2");
+  });
+});
