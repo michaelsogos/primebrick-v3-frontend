@@ -704,24 +704,13 @@
 	const i18nKeySuggestion = $derived(
 		i18nKeySuggestionFor(translation_key, record?.code ?? record?.name),
 	);
-	const i18nKeyFieldOptions = $derived(
-		i18nKeyOptions(
-			$dict as Record<string, string>,
-			{ contains: i18nKeyScope },
-			typeof stringValue.value === 'string' &&
-			stringValue.value &&
-			stringValue.value !== i18nKeySuggestion
-				? [stringValue.value]
-				: [],
-		),
-	);
 	/**
-	 * FILTER variant vocabulary + scope — the user-ratified badge contract
+	 * Translation-combobox vocabulary — the user-ratified badge contract
 	 * (2026-11-26, plan Part G): NOTHING pre-filters the options invisibly.
 	 * The vocabulary is the full loaded dict (plus the bound value so a
-	 * stored key stays selectable); the `entities.<tk>.rows.` family scope
-	 * rides as a PRESET-REMOVABLE badge inside the popover — visible, and
-	 * the user can X it to browse the whole catalog.
+	 * stored key stays selectable); the imposed namespace composition and
+	 * the `entities.<tk>.rows.` family scope ride as VISIBLE badges inside
+	 * the popover — the first muted/sealed, the second preset-removable.
 	 */
 	const i18nKeyFilterOptions = $derived(
 		i18nKeyOptions(
@@ -731,6 +720,29 @@
 		),
 	);
 	const i18nKeyPresetFilters = $derived([{ label: i18nKeyScope, terms: [i18nKeyScope] }]);
+	/**
+	 * IMPOSED namespace composition — MANDATORY for every translation
+	 * combobox, filters AND forms (user-ratified 2026-11-26, twice): the
+	 * catalog is ALWAYS narrowed to `app.*` + `custom.*` + the current
+	 * module's namespace — OR-ed within ONE badge (prefix semantics on the
+	 * key), AND-ed against the removable OR-group. The badge is muted and
+	 * sealed (no X): removing every removable filter NEVER reveals the raw
+	 * catalog — `ai.*` and foreign-module keys are unreachable by contract.
+	 * Module resolution: the owning-entity `service` prop wins; the shell's
+	 * selected module is the page-context fallback. Unresolvable (truly
+	 * neutral surfaces) degrades to the app/custom floor — never wider.
+	 */
+	const i18nKeyModuleNs = $derived.by(() => {
+		const mod = service ?? shellNav.selectedModuleId;
+		return mod && mod !== 'app' && mod !== 'custom' ? `${mod}.` : null;
+	});
+	const i18nKeyImposedFilters = $derived.by(() => {
+		const terms = i18nKeyModuleNs
+			? ['app.', 'custom.', i18nKeyModuleNs]
+			: ['app.', 'custom.'];
+		const label = terms.map((t) => t.replace(/\.$/, '')).join('/');
+		return [{ label, terms, match: 'prefix' as const }];
+	});
 	// The suggestion is the ASSIGNED value — a previous suggestion is
 	// replaced when its source moves; an explicit user pick or clear is
 	// respected until the source changes (TranslationKeyCell semantics).
@@ -1111,13 +1123,15 @@
 			const raw = Array.isArray(v) ? (v[0] ?? '') : v;
 			stringValue.value = coerceI18nKeyChange(raw, i18nKeyScope, slugifyKey);
 		}}
-		options={i18nKeyFieldOptions}
+		options={i18nKeyFilterOptions}
 		valueField="key"
 		labelField="key"
 		isLabelTranslated={true}
 		iconField="_icon"
 		iconColorField="_icon_color"
 		allowCreate={true}
+		imposed_filters={i18nKeyImposedFilters}
+		preset_filters={i18nKeyPresetFilters}
 		createdIcon={I18N_KEY_OPTION_ICON}
 		createdIconColor={I18N_KEY_OPTION_COLOR}
 		defaultSearch={i18nKeyDefaultSearch}
@@ -1165,6 +1179,7 @@
 		iconField="_icon"
 		iconColorField="_icon_color"
 		allowCreate={false}
+		imposed_filters={i18nKeyImposedFilters}
 		preset_filters={i18nKeyPresetFilters}
 		{placeholder}
 		searchPlaceholder={placeholder}

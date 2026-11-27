@@ -109,6 +109,17 @@ test.describe("combobox popover filter badges (i18n_key filter vocabulary)", () 
       popover.locator(`[data-testid="combo-filter-badge"][data-term="${SCOPE_TERM}"]`),
     ).toHaveAttribute("data-kind", "preset");
 
+    // The IMPOSED namespace composition — the mandatory half of the contract:
+    // app/custom/crm sealed in ONE muted badge (OR-ed within), no X anywhere.
+    const imposed = popover.locator('[data-testid="combo-filter-badge"][data-kind="imposed"]');
+    await expect(imposed, "the imposed namespace badge is present").toHaveCount(1);
+    await expect(imposed, "imposed namespace badge visible").toBeVisible();
+    await expect(
+      imposed.locator('[data-testid="combo-filter-badge-remove"]'),
+      "the imposed badge is sealed — no remove affordance",
+    ).toHaveCount(0);
+    await expect(imposed).toHaveAttribute("data-term", "app. OR custom. OR crm.");
+
     // With the scope active the untyped list offers only in-family keys.
     const items = popover.locator("[cmdk-item], [role='option']");
     await expect(items.first()).toBeVisible({ timeout: 5_000 });
@@ -136,6 +147,21 @@ test.describe("combobox popover filter badges (i18n_key filter vocabulary)", () 
         { timeout: 5_000 },
       )
       .toBe(true);
+
+    // THE decisive contract probe: with every removable badge gone, the list
+    // is STILL not the raw catalog — every key line must stay inside the
+    // imposed namespaces. `ai.*` and foreign-module keys are unreachable.
+    const texts = await popover.locator("[cmdk-item], [role='option']").allInnerTexts();
+    expect(texts.length, "catalog rows render inside the imposed composition").toBeGreaterThan(0);
+    for (const text of texts) {
+      const keyLines = text.match(/^[a-z][a-z0-9]*(?:\.[a-z0-9_]+)+$/gm) ?? [];
+      for (const key of keyLines) {
+        expect(
+          /^(app|custom|crm)\./.test(key),
+          `key ${key.slice(0, 70)} stays inside the imposed app/custom/crm composition`,
+        ).toBe(true);
+      }
+    }
     await page.keyboard.press("Escape");
   });
 
