@@ -1,6 +1,11 @@
 import { test, expect } from "@playwright/test";
 import { loginAsTestAdmin } from "./helpers/admin-login";
 
+// Shared Edge session + one ephemeral actor: parallel workers race the same
+// login surface. The nav contract is sequential user evidence, never a
+// multi-session concurrency test.
+test.describe.configure({ mode: "serial" });
+
 /* CRM nav auto-derivation — the facade wire contract (2026-11-27):
  * the SAME entity declarations that serve the routes derive the module's
  * navigation inside createMicroservice. This spec pins the user-visible
@@ -12,8 +17,10 @@ import { loginAsTestAdmin } from "./helpers/admin-login";
  *   read/audit-only     → list reachable, no create route surface
  *   customer            → exactly one leaf (author-owned, never doubled)
  *
- * Assertions ride hrefs/archetype markers, never label text — the label
- * seeds are a separate ledger task and raw keys must not red this spec.
+ * Label keys are entity-canonical, never placement-dependent: a vocabulary
+ * carries `crm.<table>.nav` wherever it sits, so the seeds that already
+ * exist for every entity resolve with zero duplication. A leaf rendering
+ * a raw key IS the red this spec exists for.
  */
 
 test.describe("crm nav auto-derivation", () => {
@@ -87,18 +94,21 @@ test.describe("icon defaults — the kind materialization end-user truth", () =>
     await page.goto("/crm/customers", { waitUntil: "domcontentloaded" });
     // the SAME payload the sidebar consumes — icon materialization is
     // emission-side, so the payload IS the contract the user sees rendered
-    const payload = await page.evaluate(async () => {
+    type NavLeaf = { id: string; icon?: string; label_key?: string };
+    type ModuleSummary = { id: string; nav?: NavLeaf[] };
+    const payload = (await page.evaluate(async () => {
       const r = await fetch("/api/v1/modules", { credentials: "include" });
       if (!r.ok) return { error: r.status };
       return r.json();
-    });
+    })) as { error?: number; modules?: ModuleSummary[] };
     expect(payload.error, "modules payload reachable").toBeUndefined();
-    const crm = payload.modules.find((m) => m.id === "crm");
-    const crmSettings = payload.modules.find((m) => m.id === "crm-settings");
+    const modules = payload.modules ?? [];
+    const crm = modules.find((m) => m.id === "crm");
+    const crmSettings = modules.find((m) => m.id === "crm-settings");
     expect(crm, "crm module in payload").toBeTruthy();
     expect(crmSettings, "crm-settings sibling module in payload").toBeTruthy();
 
-    const leaf = (mod, id) => (mod?.nav ?? []).find((l) => l.id === id);
+    const leaf = (mod: ModuleSummary | undefined, id: string) => (mod?.nav ?? []).find((l) => l.id === id);
 
     // authored icons ALWAYS win — the customers/pipeline overrides survive
     expect(leaf(crm, "customers")?.icon).toBe("users-round");
@@ -115,18 +125,68 @@ test.describe("icon defaults — the kind materialization end-user truth", () =>
     // list kind default — the unmigrated derive as list → table-2 today;
     // this pins CURRENT truth so the migration diff is visible when it lands
     expect(leaf(crm, "customer_accounts")?.icon).toBe("table-2");
+
+    // label keys are entity-canonical — the SAME key shape a standard leaf
+    // carries, never placement-dependent. The seeds for `crm.<table>.nav`
+    // already exist for every entity, so the wire needs zero duplication.
+    expect(leaf(crmSettings, "customer_types")?.label_key).toBe("crm.customer_types.nav");
+    expect(leaf(crmSettings, "account_kinds")?.label_key).toBe("crm.account_kinds.nav");
+    expect(leaf(crm, "customer_accounts")?.label_key).toBe("crm.customer_accounts.nav");
   });
 
-  test("the sidebar renders the materialized glyph, not the list default, on a dict leaf", async ({ page }) => {
+  test("the sidebar renders the table-dictionary glyph on a dict leaf", async ({ page }) => {
     await page.goto("/crm/settings/customer_types", { waitUntil: "domcontentloaded" });
     const dictLeaf = page.locator('a[href="/crm/settings/customer_types"]').first();
     await expect(dictLeaf).toBeVisible({ timeout: 5_000 });
-    // the leaf renders an svg glyph…
+    // end-user truth, not payload shape: the rendered SVG is the authored
+    // table-dictionary glyph. Its x=10.5 column split is unique in
+    // CUSTOM_ICONS — a bare "not table-2" assertion would pass even when
+    // the glyph is missing or swapped for another non-list icon.
     await expect(dictLeaf.locator("svg").first()).toBeVisible();
-    // …and it is NOT the lucide list glyph — table-dictionary is a custom
-    // authored glyph (no lucide class); lucide-table-2 here would mean the
-    // list default leaked onto a dict leaf
+    expect(
+      await dictLeaf.locator('path[d="M10.5 3v18"]').count(),
+      "dict leaf renders the table-dictionary glyph, never the list default",
+    ).toBe(1);
     const classes = await dictLeaf.locator("svg").first().getAttribute("class");
     expect(classes ?? "", "dict leaf must not render the list glyph").not.toContain("lucide-table-2");
+  });
+
+  test("the breadcrumb carries the same table-dictionary glyph on a dict page", async ({ page }) => {
+    await page.goto("/crm/settings/account_kinds", { waitUntil: "domcontentloaded" });
+    const breadcrumb = page.locator('nav[data-slot="breadcrumb"]').first();
+    await expect(breadcrumb, "breadcrumb mounted on the dict page").toBeVisible({ timeout: 5_000 });
+    expect(
+      await breadcrumb.locator('path[d="M10.5 3v18"]').count(),
+      "breadcrumb resolves the moved leaf through the same nav payload and carries its dict icon",
+    ).toBeGreaterThan(0);
+  });
+
+  test("every CRM vocabulary leaf lands under settings with the table-dictionary glyph", async ({ page }) => {
+    await page.goto("/crm/settings/customer_types", { waitUntil: "domcontentloaded" });
+    for (const table of [
+      "account_kinds",
+      "company_dimensions",
+      "consent_types",
+      "contact_types",
+      "legal_forms",
+      "local_address_types",
+      "marketing_qualifications",
+      "qualifications",
+    ]) {
+      const leaf = page.locator(`a[href="/crm/settings/${table}"]`).first();
+      await expect(leaf, `${table} is a settings dict leaf`).toBeVisible({ timeout: 5_000 });
+      await expect(leaf.locator("svg").first(), `${table} renders an icon`).toBeVisible();
+      const text = ((await leaf.textContent()) ?? "").trim();
+      expect(text.length, `${table} renders a label`).toBeGreaterThan(0);
+      expect(text, `${table} renders the translated label, never the raw key`).not.toContain("crm.");
+      expect(
+        await leaf.locator('path[d="M10.5 3v18"]').count(),
+        `${table} renders the table-dictionary glyph, never the list default`,
+      ).toBe(1);
+      expect(
+        await page.locator(`a[href="/crm/${table}"]`).count(),
+        `${table} no longer renders as a root standard-list leaf`,
+      ).toBe(0);
+    }
   });
 });
