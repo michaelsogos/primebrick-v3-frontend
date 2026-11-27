@@ -52,12 +52,12 @@ test("the popover preview lists create leaves for standard entities — and the 
   // Pairing + label contract (user-ratified 2026-11-27): every create
   // leaf carries the SAME label as the create page title ("New") and sits
   // immediately BEFORE its list leaf in the flat popover column.
-  const createIdx = labels.map((l, i) => (/^New$|^Nuovo$/.test(l) ? i : -1)).filter((i) => i >= 0);
+  const createIdx = labels.map((l, i) => (/^New |^Nuovo /.test(l) ? i : -1)).filter((i) => i >= 0);
   console.log("create row positions:", JSON.stringify(createIdx), "of", labels.length);
   expect(createIdx.length, "the popover lists the auto-wired create leaves").toBeGreaterThanOrEqual(3);
   for (const i of createIdx) {
     const next = labels[i + 1] ?? "";
-    expect(next, `the create at position ${i} immediately precedes its list leaf`).not.toMatch(/^New$|^Nuovo$/);
+    expect(next, `the create at position ${i} immediately precedes its list leaf`).not.toMatch(/^New |^Nuovo /);
   }
 
   // Wired icon contract (user-ratified 2026-11-27): create pages default
@@ -66,7 +66,7 @@ test("the popover preview lists create leaves for standard entities — and the 
   let filePlusCount = 0;
   for (const r of await rows.all()) {
     const t = ((await r.textContent()) ?? "").trim();
-    if (!/^New$|^Nuovo$/.test(t)) continue;
+    if (!/^New |^Nuovo /.test(t)) continue;
     if ((await r.locator("svg.lucide-file-plus").count()) > 0) filePlusCount++;
   }
   console.log("create rows with file-plus icon:", filePlusCount);
