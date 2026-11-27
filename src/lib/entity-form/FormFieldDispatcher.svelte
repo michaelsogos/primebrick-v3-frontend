@@ -715,6 +715,22 @@
 				: [],
 		),
 	);
+	/**
+	 * FILTER variant vocabulary + scope — the user-ratified badge contract
+	 * (2026-11-26, plan Part G): NOTHING pre-filters the options invisibly.
+	 * The vocabulary is the full loaded dict (plus the bound value so a
+	 * stored key stays selectable); the `entities.<tk>.rows.` family scope
+	 * rides as a PRESET-REMOVABLE badge inside the popover — visible, and
+	 * the user can X it to browse the whole catalog.
+	 */
+	const i18nKeyFilterOptions = $derived(
+		i18nKeyOptions(
+			$dict as Record<string, string>,
+			{},
+			typeof stringValue.value === 'string' && stringValue.value ? [stringValue.value] : [],
+		),
+	);
+	const i18nKeyPresetFilters = $derived([{ label: i18nKeyScope, terms: [i18nKeyScope] }]);
 	// The suggestion is the ASSIGNED value — a previous suggestion is
 	// replaced when its source moves; an explicit user pick or clear is
 	// respected until the source changes (TranslationKeyCell semantics).
@@ -1142,13 +1158,14 @@
 			const raw = Array.isArray(v) ? (v[0] ?? '') : v;
 			stringValue.value = raw;
 		}}
-		options={i18nKeyFieldOptions}
+		options={i18nKeyFilterOptions}
 		valueField="key"
 		labelField="key"
 		isLabelTranslated={true}
 		iconField="_icon"
 		iconColorField="_icon_color"
 		allowCreate={false}
+		preset_filters={i18nKeyPresetFilters}
 		{placeholder}
 		searchPlaceholder={placeholder}
 		truncateFrom="start"
