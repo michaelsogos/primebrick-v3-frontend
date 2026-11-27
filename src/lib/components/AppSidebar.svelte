@@ -37,7 +37,7 @@
   const navItems = $derived.by(() => {
     const nav = shellNav.moduleNav?.nav ?? [];
     const root = shellNav.rootForRoute(page.url.pathname);
-    const scoped = nav.filter((item) => item.href.split('/').filter(Boolean)[0] === root);
+    const scoped = nav.filter((item) => item.href.split('/').filter(Boolean)[0] === root && item.sidebar !== false);
     // Pinned positions win; unpinned leaves sort alphabetically by their
     // translated label — the ordering can only live here, where the i18n
     // resolution exists (user-ratified 2026-11-27).

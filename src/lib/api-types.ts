@@ -132,6 +132,7 @@ export type ModuleNavLink = {
    * last; colliding pins tie-break alphabetically.
    */
   order?: number;
+  sidebar?: boolean;
   children?: ModuleNavLink[];
 };
 
