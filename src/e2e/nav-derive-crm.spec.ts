@@ -85,6 +85,61 @@ test.describe("crm nav auto-derivation", () => {
   });
 });
 
+test.describe("pipeline fake deletion — the end-user truth", () => {
+  test.beforeEach(async ({ page }) => {
+    await loginAsTestAdmin(page);
+  });
+
+  test("the payload carries no pipeline leaf, route or /system/crm prefix", async ({ page }) => {
+    await page.goto("/crm/customers", { waitUntil: "domcontentloaded" });
+    type NavLeaf = { id: string };
+    type RouteDecl = { route: string };
+    type ModuleSummary = { id: string; nav?: NavLeaf[]; routes?: RouteDecl[]; route_prefixes?: string[] };
+    const payload = (await page.evaluate(async () => {
+      const r = await fetch("/api/v1/modules", { credentials: "include" });
+      if (!r.ok) return { error: r.status };
+      return r.json();
+    })) as { error?: number; modules?: ModuleSummary[] };
+    expect(payload.error, "modules payload reachable").toBeUndefined();
+    const crm = (payload.modules ?? []).find((m) => m.id === "crm");
+    expect(crm, "crm module in payload").toBeTruthy();
+    expect(
+      (crm?.nav ?? []).some((l) => l.id === "pipeline"),
+      "the fake pipeline leaf is gone from the crm nav",
+    ).toBe(false);
+    expect(
+      (crm?.routes ?? []).some((r) => r.route === "/system/crm/pipeline"),
+      "the fake pipeline route is gone from the crm census",
+    ).toBe(false);
+    expect(
+      crm?.route_prefixes ?? [],
+      "crm is back inside the documented single-namespace contract",
+    ).not.toContain("/system/crm");
+  });
+
+  test("the sidebar carries no pipeline leaf anywhere", async ({ page }) => {
+    await page.goto("/crm/customers", { waitUntil: "domcontentloaded" });
+    await expect(page.locator('a[href="/crm/customers"]').first()).toBeVisible({ timeout: 5_000 });
+    expect(
+      await page.locator('a[href$="/pipeline"]').count(),
+      "no sidebar leaf points at any pipeline path",
+    ).toBe(0);
+  });
+
+  test("/system/crm/pipeline renders no pipeline content — dead is dead", async ({ page }) => {
+    // The deletion truth: the dead URL is indistinguishable from a route
+    // that never existed — no census decl means nothing mounts the fake
+    // page. What the shell shows for unknown routes generally (redirect /
+    // resolution state) is pre-existing shell behavior outside this slice.
+    await page.goto("/system/crm/pipeline", { waitUntil: "domcontentloaded" });
+    await page.waitForTimeout(2_000);
+    expect(
+      await page.locator('[data-testid="remote-page-content"]').count(),
+      "no remote page content mounts at the deleted route",
+    ).toBe(0);
+  });
+});
+
 test.describe("icon defaults — the kind materialization end-user truth", () => {
   test.beforeEach(async ({ page }) => {
     await loginAsTestAdmin(page);
@@ -110,9 +165,10 @@ test.describe("icon defaults — the kind materialization end-user truth", () =>
 
     const leaf = (mod: ModuleSummary | undefined, id: string) => (mod?.nav ?? []).find((l) => l.id === id);
 
-    // authored icons ALWAYS win — the customers/pipeline overrides survive
+    // authored icons ALWAYS win — the customers override survives;
+    // the fake pipeline leaf is deleted forever, never coming back
     expect(leaf(crm, "customers")?.icon).toBe("users-round");
-    expect(leaf(crm, "pipeline")?.icon).toBe("git-branch");
+    expect(leaf(crm, "pipeline"), "the fake pipeline leaf stays deleted").toBeUndefined();
 
     // dict kind default — the migrated vocabularies carry the authored
     // table-dictionary glyph through materialization, never table-2

@@ -23,7 +23,7 @@ import { extJsonStringify, extJsonParse } from '@primebrick/core/ext-json';
  * a pure armed-state registry (no create route, no create CTA). The
  * module's only remote surface is the `job.runDetail` SHEET (covered by
  * remote-sheet specs); remote-PAGE machinery is exercised here through
- * crm's live `/system/crm/pipeline` component_url route.
+ * crm's live `/crm/customers/create` component_url route.
  *
  * These specs verify: standard single-table rendering, preset AND-ing on
  * the wire, sparkline batch fetch, exactly-one-active nav item
@@ -901,13 +901,13 @@ test.describe("/system/job/* pages (module-owned)", () => {
   }) => {
     // Simulate the crm service's module-assets endpoint being unreachable:
     // the chunk fetch aborts before import() is even attempted. (The job
-    // module owns no remote PAGE — /system/crm/pipeline is a live
+    // module owns no remote PAGE — /crm/customers/create is a live
     // component_url route exercising the same remote-mount machinery.)
     await page.route("**/api/v1/module-assets/**", (route) =>
       route.abort("connectionrefused"),
     );
 
-    await page.goto("/system/crm/pipeline", { waitUntil: "domcontentloaded" });
+    await page.goto("/crm/customers/create", { waitUntil: "domcontentloaded" });
 
     // In-content error panel — classified 'network' (fetch threw).
     const errorPanel = page.locator(REMOTE_ERROR);
@@ -917,7 +917,7 @@ test.describe("/system/job/* pages (module-owned)", () => {
     // The app shell survives: sidebar nav is still rendered, and the
     // failure NEVER escalated to the system full-page error.
     await expect(page.locator(SYSTEM_ERROR_PAGE)).toHaveCount(0);
-    await expect(page.locator("a[href='/system/crm/pipeline']").first()).toBeVisible({
+    await expect(page.locator("a[href='/crm/customers']").first()).toBeVisible({
       timeout: 15000,
     });
 

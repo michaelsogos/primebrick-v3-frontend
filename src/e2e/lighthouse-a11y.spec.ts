@@ -49,7 +49,6 @@ const ROUTES: string[] = [
   "/mcp/consent",
   "/customers",
   "/customers/new",
-  "/crm/pipeline",
   "/system/settings",
   "/system/settings/profile",
   "/system/settings/security",
