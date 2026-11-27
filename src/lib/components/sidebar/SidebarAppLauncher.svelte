@@ -210,12 +210,22 @@
     // (pinned positions win, unpinned alphabetical by translated label).
     // Surfaced by the user 2026-11-27: reading the raw payload here made
     // the launcher disagree with the sidebar.
-    const nav = sortNavLeaves((mod?.nav ?? []).filter(inRoot), (key) => $t(key));
-    if (!showAll) return nav;
+    // Children (the auto-wired create leaves) flatten immediately after
+    // their parent — the popover column is flat, but a leaf is a leaf on
+    // every surface; hiding children here dropped the creates (same user
+    // catch, same day).
+    const sorted = sortNavLeaves((mod?.nav ?? []).filter(inRoot), (key) => $t(key));
+    const flat: (ModuleNavLink & { hidden?: boolean })[] = [];
+    const pushWithChildren = (l: ModuleNavLink) => {
+      flat.push(l);
+      for (const c of sortNavLeaves(l.children ?? [], (key) => $t(key))) pushWithChildren(c);
+    };
+    for (const l of sorted) pushWithChildren(l);
+    if (!showAll) return flat;
     const hidden = (mod?.nav_hidden ?? [])
       .filter(inRoot)
       .map((i) => ({ ...i, hidden: true as const }));
-    return [...nav, ...hidden];
+    return [...flat, ...hidden];
   });
 
   /* Selection (gradient) = ONLY what the user previewed or the route
