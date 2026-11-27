@@ -50,6 +50,26 @@
 **One-shot detached start** (idempotent — skips ports already listening):
 `powershell -ExecutionPolicy Bypass -File primebrick-workspace/scripts/dev-stack.ps1`
 
+## Launch context (Windows) — Git Bash chain REQUIRED
+
+`dev-stack.ps1` MUST be launched from a shell chain that carries Git
+`usr/bin` in PATH — agent exec shells (Git Bash) qualify, pure
+PowerShell/cmd does NOT.
+
+Why: headed windows pipe service output through `tee.exe` for raw UTF-8
+logs. `tee.exe` exists ONLY in `C:\Program Files\Git\usr\bin`, which is in
+neither the user nor the machine PATH. Git Bash prepends `/usr/bin` and
+MSYS2 converts it for every Windows child process, so the chain
+bash → powershell → node → cmd → service window inherits it.
+
+Since 2026-11-27 `dev-stack.mjs` probes tee before any spawn (`ensureTee`:
+PATH first, then the well-known Git path prepended to its own PATH so
+every window inherits it) and fails fast with a clear error if neither
+resolves — no more doomed windows. Failure mode being prevented: each
+window dies instantly with "tee.exe non riconosciuto" then hangs at
+Read-Host; dev-stack waits the full 30s port timeout per service — it
+looks like a slow boot, it is instant death.
+
 ## Procedure — before starting or touching a server
 
 1. **Check the port** (Windows):
