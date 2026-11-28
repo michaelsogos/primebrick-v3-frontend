@@ -157,3 +157,20 @@ test("browser: create at the canonical path renders the entity form with the aut
   const bodyText = (await page.locator("body").textContent()) ?? "";
   expect(bodyText.length, "the form page is not empty").toBeGreaterThan(200);
 });
+
+test("browser: legacy short paths are dead — ONE surface per entity, never two", async ({ page }) => {
+  // The ratified end state: the old short URLs serve nothing. SvelteKit prefers
+  // concrete filesystem routes over the catch-all, so the orphaned legacy route
+  // files under src/routes/(app)/system/job/ were live duplicates until deleted.
+  // End-user proof: no entity table renders at any legacy address.
+  for (const legacy of OLD) {
+    await page.goto(legacy, { waitUntil: "domcontentloaded" });
+    // Hydration gate — the shell is up, so resolution has finished one way
+    // or the other; a table appearing after this point would be a live duplicate.
+    await expect(page.locator('[data-sidebar="sidebar"] a[href^="/system/"]').first()).toBeVisible({ timeout: 5_000 });
+    await expect(page.locator("table"), `legacy ${legacy} must not serve a list table`).toHaveCount(0);
+  }
+  // The canonical surfaces are untouched by the death of the legacy ones.
+  await page.goto(CANON.triggers, { waitUntil: "domcontentloaded" });
+  await expect(page.locator("table")).toBeVisible({ timeout: 5_000 });
+});

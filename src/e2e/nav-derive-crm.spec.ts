@@ -1,4 +1,4 @@
-import { extJsonStringify, extJsonParse } from "@primebrick/core/ext-json";
+import { extJsonParse } from "@primebrick/core/ext-json";
 import { test, expect } from "@playwright/test";
 import { loginAsTestAdmin } from "./helpers/admin-login";
 
